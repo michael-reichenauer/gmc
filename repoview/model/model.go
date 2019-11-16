@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const masterID = "master:local"
+
 type Model struct {
 	gitModel *gitmodel.Handler
 
@@ -23,12 +25,20 @@ func NewModel(repoPath string) *Model {
 }
 func (h *Model) Load() {
 	h.gitModel.Load()
-	h.parse([]string{"master:local"})
+	h.parse([]string{})
 }
 
 func (h *Model) parse(branchIds []string) {
 	h.repo = newRepo()
 	h.repo.gitRepo = h.gitModel.GetRepo()
+
+	if len(branchIds) == 0 {
+		branchIds = append(branchIds, masterID)
+		currentBranch, ok := h.repo.gitRepo.CurrentBranch()
+		if ok && currentBranch.ID != masterID {
+			branchIds = append(branchIds, currentBranch.ID)
+		}
+	}
 
 	for _, id := range branchIds {
 		branch, ok := h.repo.gitRepo.BranchByID(id)
@@ -51,6 +61,13 @@ func (h *Model) parse(branchIds []string) {
 		b.tip = h.repo.commitById[b.tipId]
 		c := b.tip
 		for {
+			if c.Branch != b {
+				// this commit is not part of the branch (multiple branched on the same commit)
+				if b.tipId == c.ID {
+					b.bottom = c
+				}
+				break
+			}
 			if c == c.Branch.tip && c.Branch.isGitBranch {
 				c.graph[b.index].Branch.Set(BCommit)
 			} else if c == c.Branch.tip {
@@ -138,7 +155,10 @@ func (h *Model) parse(branchIds []string) {
 				}
 			} else {
 				// Other branch
-				if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {
+				if b.tip == c {
+					// this branch tip does not have a branch of its own,
+					c.graph[i].Branch.Set(BBottom | BPass)
+				} else if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {
 					c.graph[i].Branch.Set(BLine)
 				}
 			}

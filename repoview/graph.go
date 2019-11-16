@@ -27,6 +27,8 @@ func graphBranchRune(bm utils.Bitmask) rune {
 		return '┗'
 	case model.BBottom | model.BMergeLeft:
 		return '┺'
+	case model.BBottom | model.BPass:
+		return '┚'
 	case model.BLine:
 		return '┃'
 	case model.BLine | model.BPass:
