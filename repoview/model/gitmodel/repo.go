@@ -2,7 +2,7 @@ package gitmodel
 
 import (
 	"fmt"
-	"gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
 type Repo struct {

@@ -1,8 +1,8 @@
 package gitmodel
 
 import (
-	"gmc/utils/git"
-	"gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 )
 

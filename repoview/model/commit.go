@@ -2,7 +2,7 @@ package model
 
 import (
 	"fmt"
-	"gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils"
 	"time"
 )
 

@@ -1,8 +1,8 @@
 package repoview
 
 import (
-	"gmc/repoview/model"
-	"gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
 

@@ -2,7 +2,7 @@ package log
 
 import (
 	"fmt"
-	"gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/log/logger"
 )
 
 var std = logger.New("")

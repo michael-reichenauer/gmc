@@ -2,8 +2,8 @@ package model
 
 import (
 	"fmt"
-	"gmc/repoview/model/gitmodel"
-	"gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type repo struct {

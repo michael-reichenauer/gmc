@@ -2,7 +2,7 @@ package git
 
 import (
 	"fmt"
-	"gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"os/exec"
 	"strings"
 	"time"

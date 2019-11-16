@@ -2,9 +2,9 @@ package repoview
 
 import (
 	"fmt"
-	"gmc/utils"
-	"gmc/utils/log"
-	"gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 type Handler struct {

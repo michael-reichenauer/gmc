@@ -1,9 +1,9 @@
 package main
 
 import (
-	"gmc/repoview"
-	"gmc/utils"
-	"gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/repoview"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 func main() {

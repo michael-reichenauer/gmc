@@ -1,7 +1,7 @@
 package git
 
 import (
-	"gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils"
 	"testing"
 )
 

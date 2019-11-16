@@ -2,7 +2,7 @@ package ui
 
 import (
 	"github.com/jroimartin/gocui"
-	"gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type Handler struct {

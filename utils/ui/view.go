@@ -3,8 +3,8 @@ package ui
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	uuid "github.com/satori/go.uuid"
-	"gmc/utils/log"
 )
 
 type Properties struct {

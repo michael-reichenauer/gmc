@@ -2,8 +2,8 @@ package git
 
 import (
 	"fmt"
-	"gmc/utils"
-	"gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"os/exec"
 	"strconv"
 	"strings"
