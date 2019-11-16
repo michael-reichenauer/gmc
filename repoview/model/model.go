@@ -69,6 +69,8 @@ func (h *Model) parse(branchIds []string) {
 				break
 			}
 			if c == c.Branch.tip && c.Branch.isGitBranch {
+				c.graph[b.index].Branch.Set(BTip)
+			} else if c == c.Branch.tip && c.Branch.isGitBranch && c != c.Branch.bottom {
 				c.graph[b.index].Branch.Set(BCommit)
 			} else if c == c.Branch.tip {
 				c.graph[b.index].Branch.Set(BTip)
