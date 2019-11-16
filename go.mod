@@ -1,4 +1,4 @@
-module gmc
+module github.com/michael-reichenauer/gmc
 
 go 1.13
 
