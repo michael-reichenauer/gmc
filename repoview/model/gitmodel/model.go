@@ -4,35 +4,40 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
+	"sync"
 )
 
 var defaultBranchPrio = []string{"master:local", "develop:local"}
 
 type Handler struct {
-	gitRepo *git.Repo
-	repo    *Repo
-	err     error
+	gitRepo     *git.Repo
+	lock        sync.Mutex
+	currentRepo *Repo
+	err         error
 }
 
 func NewModel(repoPath string) *Handler {
 	return &Handler{
-		gitRepo: git.NewRepo(repoPath),
-		repo:    newRepo(),
+		gitRepo:     git.NewRepo(repoPath),
+		currentRepo: newRepo(),
 	}
 }
 
 func (h *Handler) GetRepo() Repo {
-	return *h.repo
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	return *h.currentRepo
 }
 
 func (h *Handler) Load() {
-	err := h.initRepo()
+	err := h.refreshRepo()
 	if err != nil {
 		h.err = err
 	}
 }
-func (h *Handler) initRepo() error {
-	h.repo = newRepo()
+
+func (h *Handler) refreshRepo() error {
+	repo := newRepo()
 	gitCommits, err := h.gitRepo.GetLog()
 	if err != nil {
 		return err
@@ -42,20 +47,23 @@ func (h *Handler) initRepo() error {
 		return err
 	}
 
-	h.repo.setGitCommits(gitCommits)
-	h.repo.setGitBranches(gitBranches)
+	repo.setGitCommits(gitCommits)
+	repo.setGitBranches(gitBranches)
 
-	h.setGitBranchTips()
-	h.setCommitBranchesAndChildren()
+	h.setGitBranchTips(repo)
+	h.setCommitBranchesAndChildren(repo)
+	h.determineCommitBranches(repo)
+	h.determineBranchHierarchy(repo)
 
-	h.determineCommitBranches()
-	h.determineBranchHierarchy()
+	h.lock.Lock()
+	h.currentRepo = repo
+	h.lock.Unlock()
 	return nil
 }
 
-func (h *Handler) setCommitBranchesAndChildren() {
-	for _, c := range h.repo.Commits {
-		parent, ok := h.repo.Parent(c, 0)
+func (h *Handler) setCommitBranchesAndChildren(repo *Repo) {
+	for _, c := range repo.Commits {
+		parent, ok := repo.Parent(c, 0)
 		if ok {
 			c.Parent = parent
 			c.Parent.Children = append(c.Parent.Children, c)
@@ -63,7 +71,7 @@ func (h *Handler) setCommitBranchesAndChildren() {
 			parent.ChildIDs = append(parent.ChildIDs, c.Id)
 		}
 
-		mergeParent, ok := h.repo.Parent(c, 1)
+		mergeParent, ok := repo.Parent(c, 1)
 		if ok {
 			c.MergeParent = mergeParent
 			c.MergeParent.MergeChildren = append(c.MergeParent.MergeChildren, c)
@@ -72,23 +80,23 @@ func (h *Handler) setCommitBranchesAndChildren() {
 	}
 }
 
-func (h *Handler) setGitBranchTips() {
-	for _, b := range h.repo.Branches {
-		h.repo.CommitById(b.TipID).addBranch(b)
+func (h *Handler) setGitBranchTips(repo *Repo) {
+	for _, b := range repo.Branches {
+		repo.CommitById(b.TipID).addBranch(b)
 		if b.IsCurrent {
-			h.repo.CommitById(b.TipID).IsCurrent = true
+			repo.CommitById(b.TipID).IsCurrent = true
 		}
 	}
 }
 
-func (h *Handler) determineCommitBranches() {
-	for _, c := range h.repo.Commits {
-		h.determineBranch(c)
+func (h *Handler) determineCommitBranches(repo *Repo) {
+	for _, c := range repo.Commits {
+		h.determineBranch(repo, c)
 		c.Branch.BottomID = c.Id
 	}
 }
 
-func (h *Handler) determineBranch(c *Commit) {
+func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 	if strings.HasPrefix(c.Id, "81e1a9f") {
 		log.Infof("")
 	}
@@ -110,13 +118,13 @@ func (h *Handler) determineBranch(c *Commit) {
 			from, _ := h.parseMergeBranchNames(mc.Subject)
 			if from != "" {
 				// Managed to parse a branch name
-				c.Branch = h.repo.AddNamedBranch(c, from)
+				c.Branch = repo.AddNamedBranch(c, from)
 				c.Branches = append(c.Branches, c.Branch)
 				return
 			}
 		}
 		// could not parse a name from any of the merge children, use id named branch
-		c.Branch = h.repo.AddIdNamedBranch(c)
+		c.Branch = repo.AddIdNamedBranch(c)
 		c.Branches = append(c.Branches, c.Branch)
 		return
 	}
@@ -147,7 +155,7 @@ func (h *Handler) determineBranch(c *Commit) {
 	}
 
 	// Commit, has many possible branches and many children, create a new multi branch
-	c.Branch = h.repo.AddMultiBranch(c)
+	c.Branch = repo.AddMultiBranch(c)
 	c.Branches = append(c.Branches, c.Branch)
 }
 
@@ -164,13 +172,13 @@ func (h *Handler) parseMergeBranchNames(subject string) (from string, into strin
 	return
 }
 
-func (h *Handler) determineBranchHierarchy() {
-	for _, b := range h.repo.Branches {
+func (h *Handler) determineBranchHierarchy(repo *Repo) {
+	for _, b := range repo.Branches {
 		if b.BottomID == "" {
 			b.BottomID = b.TipID
 		}
 
-		bottom := h.repo.commitById[b.BottomID]
+		bottom := repo.commitById[b.BottomID]
 		if bottom.Branch != b {
 			// the tip does not own the tip commit, i.e. a branch pointer to another branch
 			b.ParentBranch = bottom.Branch
