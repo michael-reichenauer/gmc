@@ -1,10 +1,10 @@
 package model
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
+	"sync"
 )
 
 const masterID = "master:local"
@@ -12,28 +12,100 @@ const masterID = "master:local"
 type Model struct {
 	gitModel *gitmodel.Handler
 
-	repo     *repo
-	err      error
-	isLoaded bool
+	lock        sync.Mutex
+	currentRepo *repo
+
+	err error
 }
 
 func NewModel(repoPath string) *Model {
 	return &Model{
-		gitModel: gitmodel.NewModel(repoPath),
-		repo:     newRepo(),
+		gitModel:    gitmodel.NewModel(repoPath),
+		currentRepo: newRepo(),
 	}
 }
+
 func (h *Model) Load() {
 	h.gitModel.Load()
-	h.parse([]string{})
+	gmRepo := h.gitModel.GetRepo()
+	h.LoadBranches([]string{}, gmRepo)
 }
 
-func (h *Model) parse(branchIds []string) {
-	h.repo = newRepo()
-	h.repo.gitRepo = h.gitModel.GetRepo()
+func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
+	repo := h.getRepoModel(branchIds, gmRepo)
+	h.lock.Lock()
+	h.currentRepo = repo
+	h.lock.Unlock()
+}
+
+func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
+	if h.err != nil {
+		return ViewPort{}, h.err
+	}
+
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	return newViewPort(h.currentRepo, first, last, selected), nil
+}
+
+func (h *Model) OpenBranch(viewPort ViewPort, index int) {
+	c := viewPort.repo.Commits[index]
+	if !c.IsMore {
+		// Not a point that can be expanded
+		return
+	}
+
+	branchIds := h.toBranchIds(viewPort.repo.Branches)
+
+	if len(c.ParentIDs) > 1 {
+		// commit has branch merged into this commit add it (if not already added
+		mergeParent := viewPort.repo.gitRepo.CommitById(c.ParentIDs[1])
+		branchIds = h.addBranch(branchIds, mergeParent.Branch)
+	}
+	for _, ccId := range c.ChildIDs {
+		cc := viewPort.repo.gitRepo.CommitById(ccId)
+		if cc.Branch.ID != c.Branch.id {
+			branchIds = h.addBranch(branchIds, cc.Branch)
+		}
+	}
+
+	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
+}
+
+func (h *Model) CloseBranch(viewPort ViewPort, index int) {
+	c := viewPort.repo.Commits[index]
+	if c.Branch.id == "master:local" {
+		// Cannot close master
+		return
+	}
+
+	// get branch ids except for the commit branch or decedent branches
+	var branchIds []string
+	for _, b := range viewPort.repo.Branches {
+		if b.id != c.Branch.id && !c.Branch.isAncestor(b) {
+			branchIds = append(branchIds, b.id)
+		}
+	}
+
+	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
+}
+
+func (h *Model) Refresh(viewPort ViewPort) {
+	var branchIds []string
+	for _, b := range viewPort.repo.Branches {
+		branchIds = append(branchIds, b.id)
+	}
+	h.gitModel.Load()
+	gmRepo := h.gitModel.GetRepo()
+	h.LoadBranches(branchIds, gmRepo)
+}
+
+func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
+	repo := newRepo()
+	repo.gitRepo = gRepo
 
 	if len(branchIds) == 0 {
-		currentBranch, ok := h.repo.gitRepo.CurrentBranch()
+		currentBranch, ok := repo.gitRepo.CurrentBranch()
 		if ok {
 			branchIds = h.addBranch(branchIds, currentBranch)
 		} else {
@@ -42,24 +114,24 @@ func (h *Model) parse(branchIds []string) {
 	}
 
 	for _, id := range branchIds {
-		branch, ok := h.repo.gitRepo.BranchByID(id)
+		branch, ok := repo.gitRepo.BranchByID(id)
 		if ok {
-			h.repo.addBranch(branch)
+			repo.addBranch(branch)
 		}
 	}
 
-	for _, c := range h.repo.gitRepo.Commits {
+	for _, c := range repo.gitRepo.Commits {
 		if strings.HasPrefix(c.Id, "81e1") {
 			log.Debugf("")
 		}
-		h.repo.addCommit(c)
+		repo.addCommit(c)
 	}
 
-	h.setParentChildRelations()
+	h.setParentChildRelations(repo)
 
 	// Draw branch lines
-	for _, b := range h.repo.Branches {
-		b.tip = h.repo.commitById[b.tipId]
+	for _, b := range repo.Branches {
+		b.tip = repo.commitById[b.tipId]
 		c := b.tip
 		for {
 			if c.Branch != b {
@@ -90,8 +162,8 @@ func (h *Model) parse(branchIds []string) {
 	}
 
 	// Draw branch connector lines
-	for _, c := range h.repo.Commits {
-		for i, b := range h.repo.Branches {
+	for _, c := range repo.Commits {
+		for i, b := range repo.Branches {
 			c.graph[i].BranchId = b.id
 			if c.Branch == b {
 				// Commit branch
@@ -108,7 +180,7 @@ func (h *Model) parse(branchIds []string) {
 						}
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
-							cc := h.repo.Commits[j]
+							cc := repo.Commits[j]
 							cc.graph[i].Connect.Set(BMLine)
 						}
 						c.MergeParent.graph[i].Connect.Set(BBranchRight) //  ╯
@@ -123,7 +195,7 @@ func (h *Model) parse(branchIds []string) {
 						}
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
-							cc := h.repo.Commits[j]
+							cc := repo.Commits[j]
 							cc.graph[i+1].Connect.Set(BMLine)
 						}
 						// Draw branch out rune ╰
@@ -141,7 +213,7 @@ func (h *Model) parse(branchIds []string) {
 							c.Parent.graph[k].Branch.Set(BPass)
 						}
 						for j := c.Index + 1; j < c.Parent.Index; j++ {
-							cc := h.repo.Commits[j]
+							cc := repo.Commits[j]
 							cc.graph[i].Connect.Set(BMLine)
 						}
 						c.Parent.graph[i].Connect.Set(BBranchRight)
@@ -149,7 +221,7 @@ func (h *Model) parse(branchIds []string) {
 						// Other branch is right side
 						c.graph[i+1].Connect.Set(BMergeRight)
 						for j := c.Index + 1; j < c.Parent.Index; j++ {
-							cc := h.repo.Commits[j]
+							cc := repo.Commits[j]
 							cc.graph[i+1].Connect.Set(BMLine)
 						}
 						c.Parent.graph[c.Parent.Branch.index].Connect.Set(BBranchLeft)
@@ -168,14 +240,14 @@ func (h *Model) parse(branchIds []string) {
 
 		}
 	}
-	h.isLoaded = true
+	return repo
 }
 
-func (h *Model) setParentChildRelations() {
-	for _, c := range h.repo.Commits {
+func (h *Model) setParentChildRelations(repo *repo) {
+	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
 			// if a commit has a parent, it is included in the repo model
-			c.Parent = h.repo.commitById[c.ParentIDs[0]]
+			c.Parent = repo.commitById[c.ParentIDs[0]]
 			if c.Branch != c.Parent.Branch {
 				// The parent branch is different, reached a bottom/beginning, i.e. knows the parent branch
 				c.Branch.bottom = c
@@ -184,7 +256,7 @@ func (h *Model) setParentChildRelations() {
 			}
 			if len(c.ParentIDs) > 1 {
 				// Merge parent can be nil if not the merge parent branch is included in the repo model as well
-				c.MergeParent = h.repo.commitById[c.ParentIDs[1]]
+				c.MergeParent = repo.commitById[c.ParentIDs[1]]
 			}
 		} else {
 			// No parent, reached initial commit of the repo
@@ -195,47 +267,12 @@ func (h *Model) setParentChildRelations() {
 			c.IsMore = true
 		}
 		for _, ccId := range c.ChildIDs {
-			if _, ok := h.repo.commitById[ccId]; !ok {
+			if _, ok := repo.commitById[ccId]; !ok {
 				// commit has a child, that is not visible, mark the commit as expandable
 				c.IsMore = true
 			}
 		}
 	}
-}
-
-func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
-	if h.err != nil {
-		return ViewPort{}, h.err
-	}
-	if !h.isLoaded {
-		return ViewPort{}, fmt.Errorf("git repository has not been loaded")
-	}
-
-	return newViewPort(h.repo, first, last, selected), nil
-}
-
-func (h *Model) OpenBranch(index int) {
-	c := h.repo.Commits[index]
-	if !c.IsMore {
-		// Not a point that can be expanded
-		return
-	}
-
-	branchIds := h.toBranchIds(h.repo.Branches)
-
-	if len(c.ParentIDs) > 1 {
-		// commit has branch merged into this commit add it (if not already added
-		mergeParent := h.repo.gitRepo.CommitById(c.ParentIDs[1])
-		branchIds = h.addBranch(branchIds, mergeParent.Branch)
-	}
-	for _, ccId := range c.ChildIDs {
-		cc := h.repo.gitRepo.CommitById(ccId)
-		if cc.Branch.ID != c.Branch.id {
-			branchIds = h.addBranch(branchIds, cc.Branch)
-		}
-	}
-
-	h.parse(branchIds)
 }
 
 func (h *Model) toBranchIds(branches []*branch) []string {
@@ -277,22 +314,4 @@ func (h *Model) branchAncestorIDs(b *gitmodel.Branch) []string {
 		ids[i], ids[opp] = ids[opp], ids[i]
 	}
 	return ids
-}
-
-func (h *Model) CloseBranch(index int) {
-	c := h.repo.Commits[index]
-	if c.Branch.id == "master:local" {
-		// Cannot close master
-		return
-	}
-
-	// get branch ids except for the commit branch or decedent branches
-	var branchIds []string
-	for _, b := range h.repo.Branches {
-		if b.id != c.Branch.id && !c.Branch.isAncestor(b) {
-			branchIds = append(branchIds, b.id)
-		}
-	}
-
-	h.parse(branchIds)
 }

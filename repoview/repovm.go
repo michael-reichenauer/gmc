@@ -37,6 +37,7 @@ type repoVM struct {
 	currentCommit string
 	repoPath      string
 	model         *model.Model
+	viewPort      model.ViewPort
 }
 
 func newRepoVM(repoPath string) *repoVM {
@@ -52,7 +53,8 @@ func (h *repoVM) Load() {
 }
 
 func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage, error) {
-	vp, err := h.model.GetRepoViewPort(firstLine, lastLine, selected)
+	var err error
+	h.viewPort, err = h.model.GetRepoViewPort(firstLine, lastLine, selected)
 	if err != nil {
 		return repoPage{}, err
 	}
@@ -62,10 +64,10 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	}
 
 	markerWidth := 13
-	messageLength, authorLength, timeLength := columnWidths(vp.GraphWidth+markerWidth, width)
+	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
 
 	var sb strings.Builder
-	for i, c := range vp.Commits {
+	for i, c := range h.viewPort.Commits {
 		writeSelectedMarker(&sb, c, i+firstLine, selected)
 		writeGraph(&sb, c)
 		sb.WriteString(" ")
@@ -73,7 +75,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		//writeCurrentMarker2(&sb, c, i+firstLine, selected)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeMessage(&sb, c, vp.SelectedBranch.ID, messageLength)
+		writeMessage(&sb, c, h.viewPort.SelectedBranch.ID, messageLength)
 		sb.WriteString(" ")
 		writeSid(&sb, c)
 		sb.WriteString(" ")
@@ -86,18 +88,22 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	return repoPage{
 		repoPath:           h.repoPath,
 		text:               sb.String(),
-		lines:              vp.TotalCommits,
-		currentBranchName:  vp.CurrentBranchName,
-		currentCommitIndex: vp.CurrentCommitIndex,
+		lines:              h.viewPort.TotalCommits,
+		currentBranchName:  h.viewPort.CurrentBranchName,
+		currentCommitIndex: h.viewPort.CurrentCommitIndex,
 	}, nil
 }
 
 func (h *repoVM) OpenBranch(index int) {
-	h.model.OpenBranch(index)
+	h.model.OpenBranch(h.viewPort, index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	h.model.CloseBranch(index)
+	h.model.CloseBranch(h.viewPort, index)
+}
+
+func (h *repoVM) Refresh() {
+	h.model.Refresh(h.viewPort)
 }
 
 func writeSelectedMarker(sb *strings.Builder, c model.Commit, index, selected int) {

@@ -13,6 +13,7 @@ type ViewPort struct {
 	GraphWidth         int
 	SelectedBranch     Branch
 	CurrentBranchName  string
+	repo               *repo
 }
 
 type Commit struct {
@@ -53,6 +54,7 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		CurrentBranchName: repo.CurrentBranchName,
 		GraphWidth:        len(repo.Branches) * 2,
 		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
+		repo:              repo,
 	}
 }
 
