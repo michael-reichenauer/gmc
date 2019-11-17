@@ -90,6 +90,16 @@ func (h *Model) CloseBranch(viewPort ViewPort, index int) {
 	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
 }
 
+func (h *Model) Refresh(viewPort ViewPort) {
+	var branchIds []string
+	for _, b := range viewPort.repo.Branches {
+		branchIds = append(branchIds, b.id)
+	}
+	h.gitModel.Load()
+	gmRepo := h.gitModel.GetRepo()
+	h.LoadBranches(branchIds, gmRepo)
+}
+
 func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 	repo := newRepo()
 	repo.gitRepo = gRepo

@@ -83,7 +83,8 @@ func (h *Handler) onLeft() {
 }
 
 func (h *Handler) onRefresh() {
-	log.Infof("Refresh")
+	h.vm.Refresh()
+	h.view.NotifyChanged()
 }
 
 func (h *Handler) setWindowTitle(path, branch string) {

@@ -102,6 +102,10 @@ func (h *repoVM) CloseBranch(index int) {
 	h.model.CloseBranch(h.viewPort, index)
 }
 
+func (h *repoVM) Refresh() {
+	h.model.Refresh(h.viewPort)
+}
+
 func writeSelectedMarker(sb *strings.Builder, c model.Commit, index, selected int) {
 	if index == selected {
 		//color := branchColor(c.Branch.ID)
