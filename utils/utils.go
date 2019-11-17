@@ -14,6 +14,10 @@ func CurrentDir() string {
 	return dir
 }
 
+func BinPath() string {
+	return os.Args[0]
+}
+
 func CompileRegexp(regexpText string) *regexp.Regexp {
 	exp, err := regexp.Compile(regexpText)
 	if err != nil {

@@ -74,5 +74,5 @@ func (h *Handler) OnLoad(view *ui.View) {
 }
 
 func (h *Handler) setWindowTitle(path, branch string) {
-	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s", path))
+	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s", path, branch))
 }

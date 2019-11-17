@@ -37,6 +37,8 @@ func graphBranchRune(bm utils.Bitmask) rune {
 		return '╂'
 	case model.BPass:
 		return '─'
+	case model.BBlank:
+		return ' '
 	default:
 		return ' '
 	}

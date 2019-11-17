@@ -44,6 +44,8 @@ type View struct {
 	firstLine   int
 	lastLine    int
 	currentLine int
+	maxX        int
+	maxY        int
 }
 
 func (h *View) NotifyChanged() {
@@ -53,16 +55,28 @@ func (h *View) NotifyChanged() {
 			return err
 		}
 		view.Clear()
-		//maxX, maxY := g.Size()
-		//bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
-		//view, _ = g.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H)
-		x, _ := view.Size()
+		view.Cursor()
+		x, y := view.Size()
+		h.lastLine = h.firstLine + y - 1
 		h.viewData = h.viewModel.GetViewData(x, h.firstLine, h.lastLine, h.currentLine)
 		_, _ = view.Write([]byte(h.viewData.Text))
 		return nil
 	})
 }
 
+func (h *View) Resized() {
+	h.Gui.Update(func(g *gocui.Gui) error {
+		view, err := g.View(h.viewName)
+		if err != nil {
+			return err
+		}
+		view.Clear()
+		maxX, maxY := g.Size()
+		bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
+		_, _ = g.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H)
+		return nil
+	})
+}
 func (h *View) SetCursor(line int) {
 	h.Gui.Update(func(g *gocui.Gui) error {
 		view, err := g.View(h.viewName)

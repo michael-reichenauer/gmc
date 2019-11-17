@@ -155,11 +155,11 @@ func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, t
 	width := viewWidth - graphWidth
 	authorLength = 20
 	timeLength = 16
-	if width < 80 {
+	if width < 90 {
 		authorLength = 10
 		timeLength = 10
 	}
-	if width < 50 {
+	if width < 60 {
 		authorLength = 0
 		timeLength = 0
 	}

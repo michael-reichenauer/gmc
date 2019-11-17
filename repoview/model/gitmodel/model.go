@@ -49,6 +49,7 @@ func (h *Handler) initRepo() error {
 	h.setCommitBranchesAndChildren()
 
 	h.determineCommitBranches()
+	h.determineBranchHierarchy()
 	return nil
 }
 
@@ -83,6 +84,7 @@ func (h *Handler) setGitBranchTips() {
 func (h *Handler) determineCommitBranches() {
 	for _, c := range h.repo.Commits {
 		h.determineBranch(c)
+		c.Branch.BottomID = c.Id
 	}
 }
 
@@ -160,4 +162,20 @@ func (h *Handler) parseMergeBranchNames(subject string) (from string, into strin
 		}
 	}
 	return
+}
+
+func (h *Handler) determineBranchHierarchy() {
+	for _, b := range h.repo.Branches {
+		if b.BottomID == "" {
+			b.BottomID = b.TipID
+		}
+
+		bottom := h.repo.commitById[b.BottomID]
+		if bottom.Branch != b {
+			// the tip does not own the tip commit, i.e. a branch pointer to another branch
+			b.ParentBranch = bottom.Branch
+		} else if bottom.Parent != nil {
+			b.ParentBranch = bottom.Parent.Branch
+		}
+	}
 }

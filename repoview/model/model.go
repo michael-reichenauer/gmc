@@ -33,10 +33,11 @@ func (h *Model) parse(branchIds []string) {
 	h.repo.gitRepo = h.gitModel.GetRepo()
 
 	if len(branchIds) == 0 {
-		branchIds = append(branchIds, masterID)
 		currentBranch, ok := h.repo.gitRepo.CurrentBranch()
-		if ok && currentBranch.ID != masterID {
-			branchIds = append(branchIds, currentBranch.ID)
+		if ok {
+			branchIds = h.addBranch(branchIds, currentBranch)
+		} else {
+			branchIds = h.addBranchId(branchIds, masterID)
 		}
 	}
 
@@ -225,12 +226,12 @@ func (h *Model) OpenBranch(index int) {
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it (if not already added
 		mergeParent := h.repo.gitRepo.CommitById(c.ParentIDs[1])
-		branchIds = h.addBranchId(branchIds, mergeParent.Branch.ID)
+		branchIds = h.addBranch(branchIds, mergeParent.Branch)
 	}
 	for _, ccId := range c.ChildIDs {
 		cc := h.repo.gitRepo.CommitById(ccId)
 		if cc.Branch.ID != c.Branch.id {
-			branchIds = h.addBranchId(branchIds, cc.Branch.ID)
+			branchIds = h.addBranch(branchIds, cc.Branch)
 		}
 	}
 
@@ -245,6 +246,14 @@ func (h *Model) toBranchIds(branches []*branch) []string {
 	return ids
 }
 
+func (h *Model) addBranch(branchIds []string, branch *gitmodel.Branch) []string {
+	ids := h.branchAncestorIDs(branch)
+	for _, id := range ids {
+		branchIds = h.addBranchId(branchIds, id)
+	}
+	return branchIds
+}
+
 func (h *Model) addBranchId(branchIds []string, branchId string) []string {
 	isAdded := false
 	for _, id := range branchIds {
@@ -256,6 +265,18 @@ func (h *Model) addBranchId(branchIds []string, branchId string) []string {
 		branchIds = append(branchIds, branchId)
 	}
 	return branchIds
+}
+
+func (h *Model) branchAncestorIDs(b *gitmodel.Branch) []string {
+	var ids []string
+	for cb := b; cb != nil; cb = cb.ParentBranch {
+		ids = append(ids, cb.ID)
+	}
+	for i := len(ids)/2 - 1; i >= 0; i-- {
+		opp := len(ids) - 1 - i
+		ids[i], ids[opp] = ids[opp], ids[i]
+	}
+	return ids
 }
 
 func (h *Model) CloseBranch(index int) {
