@@ -21,6 +21,8 @@ func graphBranchRune(bm utils.Bitmask) rune {
 		return '┏'
 	case model.BTip | model.BMergeLeft:
 		return '┺'
+	case model.BTip | model.BMergeLeft | model.BBranchLeft:
+		return '╼'
 	case model.BTip | model.BPass:
 		return '┏'
 	case model.BTip | model.BBranchLeft:
@@ -40,7 +42,7 @@ func graphBranchRune(bm utils.Bitmask) rune {
 	case model.BBlank:
 		return ' '
 	default:
-		return ' '
+		return '*'
 	}
 }
 func graphConnectRune(bm utils.Bitmask) rune {
@@ -75,8 +77,10 @@ func graphConnectRune(bm utils.Bitmask) rune {
 		return '│'
 	case model.BPass:
 		return '─'
-	default:
+	case model.BBlank:
 		return ' '
+	default:
+		return '*'
 	}
 }
 func branchColor(name string) ui.Color {
