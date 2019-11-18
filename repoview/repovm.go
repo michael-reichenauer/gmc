@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
@@ -10,13 +11,6 @@ const (
 	RFC3339Small = "2006-01-02 15:04"
 )
 
-var branchColors = []ui.Color{
-	ui.CRed,
-	ui.CBlue,
-	ui.CYellow,
-	ui.CGreen,
-	ui.CCyan,
-}
 var (
 	currentMarker         = ui.White("●")
 	currentMarkerSelected = ui.White("┥")
@@ -31,12 +25,15 @@ type repoPage struct {
 	lines              int
 	currentBranchName  string
 	currentCommitIndex int
+	commitStatus       string
 }
 
 type repoVM struct {
 	currentCommit string
 	repoPath      string
 	model         *model.Model
+	viewPort      model.ViewPort
+	statusMessage string
 }
 
 func newRepoVM(repoPath string) *repoVM {
@@ -52,7 +49,8 @@ func (h *repoVM) Load() {
 }
 
 func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage, error) {
-	vp, err := h.model.GetRepoViewPort(firstLine, lastLine, selected)
+	var err error
+	h.viewPort, err = h.model.GetRepoViewPort(firstLine, lastLine, selected)
 	if err != nil {
 		return repoPage{}, err
 	}
@@ -61,46 +59,87 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		selected = lastLine
 	}
 
-	markerWidth := 13
-	messageLength, authorLength, timeLength := columnWidths(vp.GraphWidth+markerWidth, width)
+	markerWidth := 6 //13
+	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
 
 	var sb strings.Builder
-	for i, c := range vp.Commits {
-		writeSelectedMarker(&sb, c, i+firstLine, selected)
+	commits := h.viewPort.Commits
+	h.statusMessage = ""
+	if h.viewPort.StatusMessage != "" {
+		h.statusMessage = h.viewPort.StatusMessage
+		writeSelectedMarker(&sb, firstLine, selected)
+		sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))
+		sb.WriteString(ui.YellowDk(h.viewPort.StatusMessage))
+		sb.WriteString("\n")
+		commits = commits[:len(commits)-1]
+		firstLine++
+	}
+
+	for i, c := range commits {
+		writeSelectedMarker(&sb, i+firstLine, selected)
 		writeGraph(&sb, c)
 		sb.WriteString(" ")
 		writeMergeMarker(&sb, c)
-		//writeCurrentMarker2(&sb, c, i+firstLine, selected)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeMessage(&sb, c, vp.SelectedBranch.ID, messageLength)
+		writeMessage(&sb, c, h.viewPort.SelectedBranch.ID, messageLength)
 		sb.WriteString(" ")
-		writeSid(&sb, c)
-		sb.WriteString(" ")
+		//writeSid(&sb, c)
+		//sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)
 		sb.WriteString("\n")
 	}
 
+	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected)
+
 	return repoPage{
 		repoPath:           h.repoPath,
 		text:               sb.String(),
-		lines:              vp.TotalCommits,
-		currentBranchName:  vp.CurrentBranchName,
-		currentCommitIndex: vp.CurrentCommitIndex,
+		lines:              h.viewPort.TotalCommits,
+		currentBranchName:  h.viewPort.CurrentBranchName,
+		currentCommitIndex: h.viewPort.CurrentCommitIndex,
+		commitStatus:       commitStatus,
 	}, nil
 }
 
+func (h *repoVM) toCommitStatus(commits []model.Commit, selected int) string {
+	if h.statusMessage != "" && selected == 0 {
+		return ""
+	}
+	if h.statusMessage != "" {
+		selected--
+	}
+	c := commits[selected]
+	return fmt.Sprintf("%s %s", c.SID, c.Branch.Name)
+}
+
 func (h *repoVM) OpenBranch(index int) {
-	h.model.OpenBranch(index)
+	if h.statusMessage != "" && index == 0 {
+		return
+	}
+	if h.statusMessage != "" {
+		index--
+	}
+	h.model.OpenBranch(h.viewPort, index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	h.model.CloseBranch(index)
+	if h.statusMessage != "" && index == 0 {
+		return
+	}
+	if h.statusMessage != "" {
+		index--
+	}
+	h.model.CloseBranch(h.viewPort, index)
 }
 
-func writeSelectedMarker(sb *strings.Builder, c model.Commit, index, selected int) {
+func (h *repoVM) Refresh() {
+	h.model.Refresh(h.viewPort)
+}
+
+func writeSelectedMarker(sb *strings.Builder, index, selected int) {
 	if index == selected {
 		//color := branchColor(c.Branch.ID)
 		color := ui.CWhite
@@ -118,7 +157,7 @@ func writeMergeMarker(sb *strings.Builder, c model.Commit) {
 }
 func writeGraph(sb *strings.Builder, c model.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
-		bColor := branchColor(c.Graph[i].BranchId)
+		bColor := branchColor(c.Graph[i].BranchId, c.Branch.IsMultiBranch)
 
 		if i != 0 {
 			cColor := bColor
@@ -155,11 +194,11 @@ func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, t
 	width := viewWidth - graphWidth
 	authorLength = 20
 	timeLength = 16
-	if width < 80 {
+	if width < 90 {
 		authorLength = 10
 		timeLength = 10
 	}
-	if width < 50 {
+	if width < 60 {
 		authorLength = 0
 		timeLength = 0
 	}

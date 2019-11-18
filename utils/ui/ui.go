@@ -9,6 +9,9 @@ type Handler struct {
 	gui           *gocui.Gui
 	isInitialized bool
 	runFunc       func()
+	maxX          int
+	maxY          int
+	views         []*View
 }
 
 func NewUI() *Handler {
@@ -17,6 +20,7 @@ func NewUI() *Handler {
 
 func (h *Handler) Show(viewModel ViewModel) *View {
 	view := newView(h.gui, viewModel)
+	h.views = append(h.views, view)
 	view.show()
 	return view
 }
@@ -32,7 +36,8 @@ func (h *Handler) Run(runFunc func()) {
 	gui.InputEsc = true
 	// gui.Cursor = true
 	//g.Mouse = true
-
+	gui.BgColor = gocui.ColorBlack
+	gui.Cursor = false
 	gui.SetManagerFunc(h.layout)
 
 	if err = gui.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
@@ -61,11 +66,16 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (h *Handler) layout(gui *gocui.Gui) error {
-	//maxX, maxY := gui.Size()
-	//_, err := gui.SetView("main", 0, 0, maxX-1, maxY-1)
-	//if err != gocui.ErrUnknownView {
-	//	return err
-	//}
+	maxX, maxY := gui.Size()
+	if maxX != h.maxX || maxY != h.maxY {
+		h.maxX = maxX
+		h.maxY = maxY
+		for _, v := range h.views {
+			v.Resized()
+			v.NotifyChanged()
+		}
+	}
+
 	if h.isInitialized {
 		return nil
 	}

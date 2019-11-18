@@ -9,6 +9,8 @@ type Branch struct {
 	ID            string
 	Name          string
 	TipID         string
+	BottomID      string
+	ParentBranch  *Branch
 	IsCurrent     bool
 	IsGitBranch   bool
 	IsMultiBranch bool

@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -13,6 +14,8 @@ type ViewPort struct {
 	GraphWidth         int
 	SelectedBranch     Branch
 	CurrentBranchName  string
+	repo               *repo
+	StatusMessage      string
 }
 
 type Commit struct {
@@ -31,9 +34,10 @@ type Commit struct {
 }
 
 type Branch struct {
-	ID    string
-	Name  string
-	Index int
+	ID            string
+	Name          string
+	Index         int
+	IsMultiBranch bool
 }
 
 func newViewPort(repo *repo, first, last, selected int) ViewPort {
@@ -44,6 +48,7 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		first = -1
 		last = -1
 	}
+	statusMessage := toStatusMessage(repo)
 
 	return ViewPort{
 		Commits:           toCommits(repo, first, last),
@@ -53,7 +58,17 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		CurrentBranchName: repo.CurrentBranchName,
 		GraphWidth:        len(repo.Branches) * 2,
 		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
+		repo:              repo,
+		StatusMessage:     statusMessage,
 	}
+}
+
+func toStatusMessage(repo *repo) string {
+	if repo.gitRepo.Status.OK() {
+		return ""
+	}
+	return fmt.Sprintf("%d uncommited changes on branch '%s'",
+		repo.gitRepo.Status.AllChanges(), repo.CurrentBranchName)
 }
 
 func toCommits(repo *repo, first int, last int) []Commit {
@@ -86,8 +101,9 @@ func toCommit(c *commit) Commit {
 
 func toBranch(b *branch) Branch {
 	return Branch{
-		ID:    b.id,
-		Name:  b.name,
-		Index: b.index,
+		ID:            b.id,
+		Name:          b.name,
+		Index:         b.index,
+		IsMultiBranch: b.isMultiBranch,
 	}
 }

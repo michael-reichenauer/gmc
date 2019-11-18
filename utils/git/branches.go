@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -85,7 +84,6 @@ func parseBranch(line string) (Branch, bool, error) {
 		id = fmt.Sprintf("%s:remote", branchName)
 	}
 
-	log.Infof("Branch %v", match)
 	return Branch{
 		ID:               id,
 		Name:             branchName,
