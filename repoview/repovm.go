@@ -148,7 +148,7 @@ func writeMergeMarker(sb *strings.Builder, c model.Commit) {
 }
 func writeGraph(sb *strings.Builder, c model.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
-		bColor := branchColor(c.Graph[i].BranchId)
+		bColor := branchColor(c.Graph[i].BranchId, c.Branch.IsMultiBranch)
 
 		if i != 0 {
 			cColor := bColor

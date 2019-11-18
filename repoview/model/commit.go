@@ -37,15 +37,18 @@ func (c *commit) String() string {
 }
 
 const (
-	BBlank                     = 0
-	BCommit      utils.Bitmask = 1 << iota // ┣
-	BLine                                  // ┃
-	BPass                                  // ╂
-	BTip                                   // ┏
-	BBottom                                // ┗
-	BMergeLeft                             // ╭
-	BMergeRight                            // ╮
-	BBranchLeft                            //  ╰
-	BBranchRight                           // ╯
-	BMLine                                 // │
+	BBlank                = 0         //
+	BCommit utils.Bitmask = 1 << iota // ┣
+	BLine                             // ┃
+	BPass                             // ╂
+
+	BTip        // ┏
+	BBottom     // ┗
+	BMergeLeft  // ╭
+	BMergeRight // ╮
+
+	BBranchLeft  //  ╰
+	BBranchRight // ╯
+	BMLine       // │
+	BActiveTip   // ┣
 )

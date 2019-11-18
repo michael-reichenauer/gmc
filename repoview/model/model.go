@@ -150,15 +150,16 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 				}
 				break
 			}
-			if c == c.Branch.tip && c.Branch.isGitBranch && c != c.Branch.bottom {
-				c.graph[b.index].Branch.Set(BCommit)
-			} else if c == c.Branch.tip && c.Branch.isGitBranch {
+			if c == c.Branch.tip {
 				c.graph[b.index].Branch.Set(BTip)
-			} else if c == c.Branch.tip {
-				c.graph[b.index].Branch.Set(BTip)
-			} else if c == c.Branch.bottom {
+			}
+			if c == c.Branch.tip && c.Branch.isGitBranch {
+				c.graph[b.index].Branch.Set(BActiveTip)
+			}
+			if c == c.Branch.bottom {
 				c.graph[b.index].Branch.Set(BBottom)
-			} else {
+			}
+			if c != c.Branch.tip && c != c.Branch.bottom {
 				c.graph[b.index].Branch.Set(BCommit)
 			}
 

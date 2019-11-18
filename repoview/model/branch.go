@@ -11,6 +11,7 @@ type branch struct {
 	bottom         *commit
 	parentBranch   *branch
 	isGitBranch    bool
+	isMultiBranch  bool
 }
 
 func (b *branch) String() string {

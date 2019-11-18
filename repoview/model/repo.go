@@ -88,6 +88,7 @@ func (r *repo) toBranch(b *gitmodel.Branch, index int) *branch {
 		bottomId:       b.BottomID,
 		parentBranchID: parentBranchID,
 		isGitBranch:    b.IsGitBranch,
+		isMultiBranch:  b.IsMultiBranch,
 	}
 }
 

@@ -34,9 +34,10 @@ type Commit struct {
 }
 
 type Branch struct {
-	ID    string
-	Name  string
-	Index int
+	ID            string
+	Name          string
+	Index         int
+	IsMultiBranch bool
 }
 
 func newViewPort(repo *repo, first, last, selected int) ViewPort {
@@ -100,8 +101,9 @@ func toCommit(c *commit) Commit {
 
 func toBranch(b *branch) Branch {
 	return Branch{
-		ID:    b.id,
-		Name:  b.name,
-		Index: b.index,
+		ID:            b.id,
+		Name:          b.name,
+		Index:         b.index,
+		IsMultiBranch: b.isMultiBranch,
 	}
 }

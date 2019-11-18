@@ -82,8 +82,13 @@ func (h *Handler) onLeft() {
 }
 
 func (h *Handler) onRefresh() {
-	h.vm.Refresh()
-	h.view.NotifyChanged()
+	h.view.View.Clear()
+	h.view.Gui.Update(func(g *gocui.Gui) error {
+		h.vm.Refresh()
+		h.view.NotifyChanged()
+		return nil
+	})
+
 }
 
 func (h *Handler) setWindowTitle(path, branch string) {
