@@ -9,8 +9,14 @@ import (
 
 func hasLeft(bm utils.Bitmask) bool {
 	return bm.Has(model.BBranchLeft) ||
-		bm.Has(model.BPass) ||
-		bm.Has(model.BMergeLeft)
+		bm.Has(model.BMergeLeft) ||
+		bm.Has(model.BPass)
+}
+
+func hasRight(bm utils.Bitmask) bool {
+	return bm.Has(model.BBranchRight) ||
+		bm.Has(model.BMergeRight) ||
+		bm.Has(model.BPass)
 }
 
 func graphBranchRune(bm utils.Bitmask) rune {
@@ -58,44 +64,6 @@ func graphBranchRune(bm utils.Bitmask) rune {
 	}
 }
 
-//func graphBranchRune(bm utils.Bitmask) rune {
-//	switch bm {
-//	case model.BCommit:
-//		return '┣'
-//	case model.BCommit | model.BPass:
-//		return '╊'
-//	case model.BCommit | model.BMergeLeft:
-//		return '╊'
-//	case model.BCommit | model.BBranchLeft:
-//		return '╊'
-//	case model.BTip:
-//		return '┏'
-//	case model.BTip | model.BMergeLeft:
-//		return '┺'
-//	case model.BTip | model.BMergeLeft | model.BBranchLeft:
-//		return '┲'
-//	case model.BTip | model.BPass:
-//		return '┏'
-//	case model.BTip | model.BBranchLeft:
-//		return '┲'
-//	case model.BBottom:
-//		return '┗'
-//	case model.BBottom | model.BMergeLeft:
-//		return '┺'
-//	case model.BBottom | model.BPass:
-//		return '┚'
-//	case model.BLine:
-//		return '┃'
-//	case model.BLine | model.BPass:
-//		return '╂'
-//	case model.BPass:
-//		return '─'
-//	case model.BBlank:
-//		return ' '
-//	default:
-//		return '*'
-//	}
-//}
 func graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
 	case model.BMergeRight:
@@ -134,6 +102,7 @@ func graphConnectRune(bm utils.Bitmask) rune {
 		return '*'
 	}
 }
+
 func branchColor(name string, isMultiBranch bool) ui.Color {
 	if name == "master:local" {
 		return ui.CMagenta
@@ -146,3 +115,89 @@ func branchColor(name string, isMultiBranch bool) ui.Color {
 	index := int(h.Sum32()) % len(branchColors)
 	return branchColors[index]
 }
+
+//func graphBranchRune(bm utils.Bitmask) rune {
+//	switch bm {
+//	case model.BCommit:
+//		return '┣'
+//	case model.BCommit | model.BPass:
+//		return '╊'
+//	case model.BCommit | model.BMergeLeft:
+//		return '╊'
+//	case model.BCommit | model.BBranchLeft:
+//		return '╊'
+//	case model.BTip:
+//		return '┏'
+//	case model.BTip | model.BMergeLeft:
+//		return '┺'
+//	case model.BTip | model.BMergeLeft | model.BBranchLeft:
+//		return '┲'
+//	case model.BTip | model.BPass:
+//		return '┏'
+//	case model.BTip | model.BBranchLeft:
+//		return '┲'
+//	case model.BBottom:
+//		return '┗'
+//	case model.BBottom | model.BMergeLeft:
+//		return '┺'
+//	case model.BBottom | model.BPass:
+//		return '┚'
+//	case model.BLine:
+//		return '┃'
+//	case model.BLine | model.BPass:
+//		return '╂'
+//	case model.BPass:
+//		return '─'
+//	case model.BBlank:
+//		return ' '
+//	default:
+//		return '*'
+//	}
+//}
+
+//func graphConnectRune2(bm utils.Bitmask) rune {
+//	switch {
+//	case bm.Has(model.BMergeRight) && bm.Has(model.BBranchRight) && bm.Has(model.BPass):
+//		return '┼'
+//	case bm.Has(model.BMergeRight) && bm.Has(model.BBranchRight):
+//		return '┤'
+//	case bm.Has(model.BMergeRight) && bm.Has(model.BPass):
+//		return '┬'
+//	case bm.Has(model.BBranchRight) && bm.Has(model.BPass):
+//		return '┴'
+//	case bm.Has(model.BMergeRight) && bm.Has(model.BLine):
+//		return '┤'
+//	case bm.Has(model.BBranchRight) && bm.Has(model.BLine):
+//		return '┤'
+//	case bm.Has(model.BMergeRight):
+//		return '╮'
+//	case bm.Has(model.BBranchRight):
+//		return '╯'
+//
+//	case bm.Has(model.BMergeLeft) && bm.Has(model.BBranchLeft) && bm.Has(model.BPass):
+//		return '┼'
+//	case bm.Has(model.BMergeLeft) && bm.Has(model.BBranchLeft):
+//		return '├'
+//	case bm.Has(model.BMergeLeft) && bm.Has(model.BPass):
+//		return '┬'
+//	case bm.Has(model.BMergeLeft) && bm.Has(model.BLine):
+//		return '├'
+//	case bm.Has(model.BBranchRight) && bm.Has(model.BLine):
+//		return '├'
+//	case bm.Has(model.BBranchLeft) && bm.Has(model.BPass):
+//		return '┴'
+//	case bm.Has(model.BMergeLeft):
+//		return '╭'
+//	case bm.Has(model.BBranchLeft):
+//		return '╰'
+//
+//	case bm == model.BMLine:
+//		return '│'
+//	case bm == model.BPass:
+//		return '─'
+//	case bm == model.BBlank:
+//		return ' '
+//	default:
+//		return '*'
+//	}
+//}
