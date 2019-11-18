@@ -19,6 +19,9 @@ type Properties struct {
 type ViewData struct {
 	Text     string
 	MaxLines int
+	First    int
+	Last     int
+	Current  int
 }
 
 type Rect struct {
@@ -56,6 +59,9 @@ func (h *View) NotifyChanged() {
 		x, y := view.Size()
 		h.LastLine = h.FirstLine + y - 1
 		h.ViewData = h.viewModel.GetViewData(x, h.FirstLine, h.LastLine, h.CurrentLine)
+		h.FirstLine = h.ViewData.First
+		h.LastLine = h.ViewData.Last
+		h.CurrentLine = h.ViewData.Current
 		_, _ = view.Write([]byte(h.ViewData.Text))
 		return nil
 	})

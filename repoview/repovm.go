@@ -26,6 +26,9 @@ type repoPage struct {
 	currentBranchName  string
 	currentCommitIndex int
 	commitStatus       string
+	first              int
+	last               int
+	current            int
 }
 
 type repoVM struct {
@@ -54,10 +57,9 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	if err != nil {
 		return repoPage{}, err
 	}
-
-	if selected > lastLine {
-		selected = lastLine
-	}
+	firstLine = h.viewPort.First
+	lastLine = h.viewPort.Last
+	selected = h.viewPort.Selected
 
 	markerWidth := 6 //13
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
@@ -101,6 +103,9 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		currentBranchName:  h.viewPort.CurrentBranchName,
 		currentCommitIndex: h.viewPort.CurrentCommitIndex,
 		commitStatus:       commitStatus,
+		first:              firstLine,
+		last:               lastLine,
+		current:            selected,
 	}, nil
 }
 
