@@ -2,7 +2,6 @@ package gitmodel
 
 import (
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 	"sync"
 )
@@ -103,9 +102,6 @@ func (h *Handler) determineCommitBranches(repo *Repo) {
 }
 
 func (h *Handler) determineBranch(repo *Repo, c *Commit) {
-	if strings.HasPrefix(c.Id, "81e1a9f") {
-		log.Infof("")
-	}
 	if c.Branch != nil {
 		// Commit already knows its branch, e.g. deleted merged branch
 		return

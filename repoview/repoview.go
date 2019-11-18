@@ -51,7 +51,6 @@ func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewD
 }
 
 func (h *Handler) OnLoad(view *ui.View) {
-	log.Infof("onload")
 	h.view = view
 	h.vm.Load()
 	h.setWindowTitle(h.repoPath, "")

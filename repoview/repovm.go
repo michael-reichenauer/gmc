@@ -70,7 +70,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	var sb strings.Builder
 	commits := h.viewPort.Commits
 	h.statusMessage = ""
-	if h.viewPort.StatusMessage != "" && firstLine == 0 {
+	if h.viewPort.StatusMessage != "" {
 		h.statusMessage = h.viewPort.StatusMessage
 		writeSelectedMarker(&sb, firstLine, selected)
 		sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))

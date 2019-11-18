@@ -3,8 +3,8 @@ package model
 import (
 	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 	"sync"
+	"time"
 )
 
 const masterID = "master:local"
@@ -26,13 +26,17 @@ func NewModel(repoPath string) *Model {
 }
 
 func (h *Model) Load() {
+	t := time.Now()
 	h.gitModel.Load()
 	gmRepo := h.gitModel.GetRepo()
 	h.LoadBranches([]string{}, gmRepo)
+	log.Infof("Load time %v", time.Since(t))
 }
 
 func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
+	t := time.Now()
 	repo := h.getRepoModel(branchIds, gmRepo)
+	log.Infof("LoadBranches time %v", time.Since(t))
 	h.lock.Lock()
 	h.currentRepo = repo
 	h.lock.Unlock()
@@ -97,6 +101,7 @@ func (h *Model) CloseBranch(viewPort ViewPort, index int) {
 }
 
 func (h *Model) Refresh(viewPort ViewPort) {
+	t := time.Now()
 	var branchIds []string
 	for _, b := range viewPort.repo.Branches {
 		branchIds = append(branchIds, b.id)
@@ -104,6 +109,7 @@ func (h *Model) Refresh(viewPort ViewPort) {
 	h.gitModel.Load()
 	gmRepo := h.gitModel.GetRepo()
 	h.LoadBranches(branchIds, gmRepo)
+	log.Infof("Refresh time %v", time.Since(t))
 }
 
 func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
@@ -127,9 +133,6 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 	}
 
 	for _, c := range repo.gitRepo.Commits {
-		if strings.HasPrefix(c.Id, "81e1") {
-			log.Debugf("")
-		}
 		repo.addCommit(c)
 	}
 
