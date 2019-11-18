@@ -15,3 +15,7 @@ func (r *Repo) GetLog() ([]Commit, error) {
 func (r *Repo) GetBranches() ([]Branch, error) {
 	return getBranches(r.path)
 }
+
+func (r *Repo) GetStatus() (Status, error) {
+	return getStatus(r.path)
+}

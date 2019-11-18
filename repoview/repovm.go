@@ -38,6 +38,7 @@ type repoVM struct {
 	repoPath      string
 	model         *model.Model
 	viewPort      model.ViewPort
+	statusMessage string
 }
 
 func newRepoVM(repoPath string) *repoVM {
@@ -67,12 +68,23 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
 
 	var sb strings.Builder
-	for i, c := range h.viewPort.Commits {
-		writeSelectedMarker(&sb, c, i+firstLine, selected)
+	commits := h.viewPort.Commits
+	h.statusMessage = ""
+	if h.viewPort.StatusMessage != "" {
+		h.statusMessage = h.viewPort.StatusMessage
+		writeSelectedMarker(&sb, firstLine, selected)
+		sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))
+		sb.WriteString(ui.YellowDk(h.viewPort.StatusMessage))
+		sb.WriteString("\n")
+		commits = commits[:len(commits)-1]
+		firstLine++
+	}
+
+	for i, c := range commits {
+		writeSelectedMarker(&sb, i+firstLine, selected)
 		writeGraph(&sb, c)
 		sb.WriteString(" ")
 		writeMergeMarker(&sb, c)
-		//writeCurrentMarker2(&sb, c, i+firstLine, selected)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
 		writeMessage(&sb, c, h.viewPort.SelectedBranch.ID, messageLength)
@@ -95,10 +107,22 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 }
 
 func (h *repoVM) OpenBranch(index int) {
+	if h.statusMessage != "" && index == 0 {
+		return
+	}
+	if h.statusMessage != "" {
+		index--
+	}
 	h.model.OpenBranch(h.viewPort, index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
+	if h.statusMessage != "" && index == 0 {
+		return
+	}
+	if h.statusMessage != "" {
+		index--
+	}
 	h.model.CloseBranch(h.viewPort, index)
 }
 
@@ -106,7 +130,7 @@ func (h *repoVM) Refresh() {
 	h.model.Refresh(h.viewPort)
 }
 
-func writeSelectedMarker(sb *strings.Builder, c model.Commit, index, selected int) {
+func writeSelectedMarker(sb *strings.Builder, index, selected int) {
 	if index == selected {
 		//color := branchColor(c.Branch.ID)
 		color := ui.CWhite
@@ -124,7 +148,7 @@ func writeMergeMarker(sb *strings.Builder, c model.Commit) {
 }
 func writeGraph(sb *strings.Builder, c model.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
-		bColor := branchColor(c.Graph[i].BranchId)
+		bColor := branchColor(c.Graph[i].BranchId, c.Branch.IsMultiBranch)
 
 		if i != 0 {
 			cColor := bColor

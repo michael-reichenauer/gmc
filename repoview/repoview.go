@@ -51,7 +51,6 @@ func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewD
 }
 
 func (h *Handler) OnLoad(view *ui.View) {
-	log.Infof("onload")
 	h.view = view
 	h.vm.Load()
 	h.setWindowTitle(h.repoPath, "")
@@ -83,8 +82,13 @@ func (h *Handler) onLeft() {
 }
 
 func (h *Handler) onRefresh() {
-	h.vm.Refresh()
-	h.view.NotifyChanged()
+	h.view.View.Clear()
+	h.view.Gui.Update(func(g *gocui.Gui) error {
+		h.vm.Refresh()
+		h.view.NotifyChanged()
+		return nil
+	})
+
 }
 
 func (h *Handler) setWindowTitle(path, branch string) {

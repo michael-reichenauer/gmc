@@ -3,8 +3,8 @@ package model
 import (
 	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 	"sync"
+	"time"
 )
 
 const masterID = "master:local"
@@ -26,13 +26,17 @@ func NewModel(repoPath string) *Model {
 }
 
 func (h *Model) Load() {
+	t := time.Now()
 	h.gitModel.Load()
 	gmRepo := h.gitModel.GetRepo()
 	h.LoadBranches([]string{}, gmRepo)
+	log.Infof("Load time %v", time.Since(t))
 }
 
 func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
+	t := time.Now()
 	repo := h.getRepoModel(branchIds, gmRepo)
+	log.Infof("LoadBranches time %v", time.Since(t))
 	h.lock.Lock()
 	h.currentRepo = repo
 	h.lock.Unlock()
@@ -68,6 +72,12 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 			branchIds = h.addBranch(branchIds, cc.Branch)
 		}
 	}
+	for _, b := range viewPort.repo.gitRepo.Branches {
+		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.ID == c.Branch.id {
+			// empty branch with no own branch commit, (branch start)
+			branchIds = h.addBranch(branchIds, b)
+		}
+	}
 
 	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
 }
@@ -91,6 +101,7 @@ func (h *Model) CloseBranch(viewPort ViewPort, index int) {
 }
 
 func (h *Model) Refresh(viewPort ViewPort) {
+	t := time.Now()
 	var branchIds []string
 	for _, b := range viewPort.repo.Branches {
 		branchIds = append(branchIds, b.id)
@@ -98,6 +109,7 @@ func (h *Model) Refresh(viewPort ViewPort) {
 	h.gitModel.Load()
 	gmRepo := h.gitModel.GetRepo()
 	h.LoadBranches(branchIds, gmRepo)
+	log.Infof("Refresh time %v", time.Since(t))
 }
 
 func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
@@ -121,9 +133,6 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 	}
 
 	for _, c := range repo.gitRepo.Commits {
-		if strings.HasPrefix(c.Id, "81e1") {
-			log.Debugf("")
-		}
 		repo.addCommit(c)
 	}
 
@@ -141,15 +150,16 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 				}
 				break
 			}
-			if c == c.Branch.tip && c.Branch.isGitBranch && c != c.Branch.bottom {
-				c.graph[b.index].Branch.Set(BCommit)
-			} else if c == c.Branch.tip && c.Branch.isGitBranch {
+			if c == c.Branch.tip {
 				c.graph[b.index].Branch.Set(BTip)
-			} else if c == c.Branch.tip {
-				c.graph[b.index].Branch.Set(BTip)
-			} else if c == c.Branch.bottom {
+			}
+			if c == c.Branch.tip && c.Branch.isGitBranch {
+				c.graph[b.index].Branch.Set(BActiveTip)
+			}
+			if c == c.Branch.bottom {
 				c.graph[b.index].Branch.Set(BBottom)
-			} else {
+			}
+			if c != c.Branch.tip && c != c.Branch.bottom {
 				c.graph[b.index].Branch.Set(BCommit)
 			}
 
@@ -244,16 +254,22 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 }
 
 func (h *Model) setParentChildRelations(repo *repo) {
+	for _, b := range repo.Branches {
+		b.tip = repo.commitById[b.tipId]
+		b.bottom = repo.commitById[b.bottomId]
+		if b.parentBranchID != "" {
+			b.parentBranch = repo.BranchById(b.parentBranchID)
+		}
+		if b.tipId == b.bottomId && b.bottom.Branch != b {
+			// an empty branch, with no own branch commit, (branch start)
+			b.bottom.IsMore = true
+		}
+	}
+
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
 			// if a commit has a parent, it is included in the repo model
 			c.Parent = repo.commitById[c.ParentIDs[0]]
-			if c.Branch != c.Parent.Branch {
-				// The parent branch is different, reached a bottom/beginning, i.e. knows the parent branch
-				c.Branch.bottom = c
-				c.Branch.parentBranch = c.Parent.Branch
-				c.Parent.Branch.childBranches = append(c.Parent.Branch.childBranches, c.Branch)
-			}
 			if len(c.ParentIDs) > 1 {
 				// Merge parent can be nil if not the merge parent branch is included in the repo model as well
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]

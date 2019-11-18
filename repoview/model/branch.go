@@ -1,15 +1,17 @@
 package model
 
 type branch struct {
-	id            string
-	name          string
-	index         int
-	tipId         string
-	tip           *commit
-	bottom        *commit
-	parentBranch  *branch
-	childBranches []*branch
-	isGitBranch   bool
+	id             string
+	name           string
+	index          int
+	tipId          string
+	bottomId       string
+	parentBranchID string
+	tip            *commit
+	bottom         *commit
+	parentBranch   *branch
+	isGitBranch    bool
+	isMultiBranch  bool
 }
 
 func (b *branch) String() string {
