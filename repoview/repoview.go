@@ -9,12 +9,13 @@ import (
 )
 
 type Handler struct {
-	uiHandler     *ui.Handler
-	view          *ui.View
-	vm            *repoVM
-	repoPath      string
-	isSelected    bool
-	currentBranch string
+	uiHandler          *ui.Handler
+	view               *ui.View
+	vm                 *repoVM
+	repoPath           string
+	isSelected         bool
+	currentBranch      string
+	isShowCommitStatus bool
 }
 
 func New(uiHandler *ui.Handler, repoPath string) *Handler {
@@ -38,9 +39,8 @@ func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewD
 	if err != nil {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	}
-	if h.currentBranch != repoPage.currentBranchName || h.repoPath != repoPage.repoPath {
-		h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName)
-	}
+
+	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.commitStatus)
 
 	if !h.isSelected && repoPage.currentCommitIndex != -1 {
 		h.isSelected = true
@@ -53,7 +53,7 @@ func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewD
 func (h *Handler) OnLoad(view *ui.View) {
 	h.view = view
 	h.vm.Load()
-	h.setWindowTitle(h.repoPath, "")
+	h.setWindowTitle(h.repoPath, "", "")
 	h.view.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
 	h.view.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
 	h.view.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
@@ -68,7 +68,8 @@ func (h *Handler) OnLoad(view *ui.View) {
 }
 
 func (h *Handler) onEnter() {
-	log.Infof("Enter on commitVM %d", h.view.CurrentLine)
+	h.isShowCommitStatus = !h.isShowCommitStatus
+	h.view.NotifyChanged()
 }
 
 func (h *Handler) onRight() {
@@ -91,8 +92,12 @@ func (h *Handler) onRefresh() {
 
 }
 
-func (h *Handler) setWindowTitle(path, branch string) {
-	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s", path, branch))
+func (h *Handler) setWindowTitle(path, branch, status string) {
+	statusTxt := ""
+	if h.isShowCommitStatus {
+		statusTxt = fmt.Sprintf("  (%s)", status)
+	}
+	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
 }
 func (h *Handler) SetCursor(line int) {
 
