@@ -11,13 +11,6 @@ const (
 	RFC3339Small = "2006-01-02 15:04"
 )
 
-var branchColors = []ui.Color{
-	ui.CRed,
-	ui.CBlue,
-	ui.CYellow,
-	ui.CGreen,
-	ui.CCyan,
-}
 var (
 	currentMarker         = ui.White("●")
 	currentMarkerSelected = ui.White("┥")
@@ -66,7 +59,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		selected = lastLine
 	}
 
-	markerWidth := 13
+	markerWidth := 6 //13
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
 
 	var sb strings.Builder
@@ -91,8 +84,8 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		sb.WriteString(" ")
 		writeMessage(&sb, c, h.viewPort.SelectedBranch.ID, messageLength)
 		sb.WriteString(" ")
-		writeSid(&sb, c)
-		sb.WriteString(" ")
+		//writeSid(&sb, c)
+		//sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)

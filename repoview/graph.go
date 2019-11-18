@@ -7,6 +7,20 @@ import (
 	"hash/fnv"
 )
 
+var branchColors = []ui.Color{
+	ui.CRed,
+	ui.CBlue,
+	ui.CYellow,
+	ui.CGreen,
+	ui.CCyan,
+	ui.CRedDk,
+	ui.CGreenDk,
+	ui.CYellowDk,
+	ui.CBlueDk,
+	ui.CMagentaDk,
+	ui.CCyanDk,
+}
+
 func hasLeft(bm utils.Bitmask) bool {
 	return bm.Has(model.BBranchLeft) ||
 		bm.Has(model.BMergeLeft) ||

@@ -12,6 +12,13 @@ const (
 	CMagenta
 	CCyan
 	CWhite
+
+	CRedDk
+	CGreenDk
+	CYellowDk
+	CBlueDk
+	CMagentaDk
+	CCyanDk
 )
 
 var colors = map[Color]string{
@@ -23,6 +30,13 @@ var colors = map[Color]string{
 	CWhite:   "\033[37;2m",
 	CGreen:   "\033[32;1m",
 	CYellow:  "\033[33;1m",
+
+	CRedDk:     "\033[31;3m",
+	CBlueDk:    "\033[34;3m",
+	CMagentaDk: "\033[35;3m",
+	CCyanDk:    "\033[36;3m",
+	CGreenDk:   "\033[32;3m",
+	CYellowDk:  "\033[33;3m",
 }
 
 func ColorText(color Color, r rune) string {
