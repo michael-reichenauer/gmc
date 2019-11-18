@@ -9,6 +9,7 @@ type Repo struct {
 	Commits    []*Commit
 	commitById map[string]*Commit
 	Branches   []*Branch
+	Status     Status
 }
 
 func newRepo() *Repo {

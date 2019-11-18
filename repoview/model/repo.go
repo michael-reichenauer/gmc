@@ -76,14 +76,19 @@ func (r *repo) containsBranch(branch *gitmodel.Branch) bool {
 }
 
 func (r *repo) toBranch(b *gitmodel.Branch, index int) *branch {
-	return &branch{
-		id:          b.ID,
-		name:        b.Name,
-		index:       index,
-		tipId:       b.TipID,
-		isGitBranch: b.IsGitBranch,
+	parentBranchID := ""
+	if b.ParentBranch != nil {
+		parentBranchID = b.ParentBranch.ID
 	}
-
+	return &branch{
+		id:             b.ID,
+		name:           b.Name,
+		index:          index,
+		tipId:          b.TipID,
+		bottomId:       b.BottomID,
+		parentBranchID: parentBranchID,
+		isGitBranch:    b.IsGitBranch,
+	}
 }
 
 func (r *repo) toCommit(c *gitmodel.Commit, index int) *commit {

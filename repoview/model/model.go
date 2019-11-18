@@ -68,6 +68,12 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 			branchIds = h.addBranch(branchIds, cc.Branch)
 		}
 	}
+	for _, b := range viewPort.repo.gitRepo.Branches {
+		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.ID == c.Branch.id {
+			// empty branch with no own branch commit, (branch start)
+			branchIds = h.addBranch(branchIds, b)
+		}
+	}
 
 	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
 }
@@ -244,16 +250,22 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 }
 
 func (h *Model) setParentChildRelations(repo *repo) {
+	for _, b := range repo.Branches {
+		b.tip = repo.commitById[b.tipId]
+		b.bottom = repo.commitById[b.bottomId]
+		if b.parentBranchID != "" {
+			b.parentBranch = repo.BranchById(b.parentBranchID)
+		}
+		if b.tipId == b.bottomId && b.bottom.Branch != b {
+			// an empty branch, with no own branch commit, (branch start)
+			b.bottom.IsMore = true
+		}
+	}
+
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
 			// if a commit has a parent, it is included in the repo model
 			c.Parent = repo.commitById[c.ParentIDs[0]]
-			if c.Branch != c.Parent.Branch {
-				// The parent branch is different, reached a bottom/beginning, i.e. knows the parent branch
-				c.Branch.bottom = c
-				c.Branch.parentBranch = c.Parent.Branch
-				c.Parent.Branch.childBranches = append(c.Parent.Branch.childBranches, c.Branch)
-			}
 			if len(c.ParentIDs) > 1 {
 				// Merge parent can be nil if not the merge parent branch is included in the repo model as well
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]

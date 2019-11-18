@@ -46,6 +46,12 @@ func (h *Handler) refreshRepo() error {
 	if err != nil {
 		return err
 	}
+	gitStatus, err := h.gitRepo.GetStatus()
+	if err != nil {
+		return err
+	}
+
+	repo.Status = newStatus(gitStatus)
 
 	repo.setGitCommits(gitCommits)
 	repo.setGitBranches(gitBranches)

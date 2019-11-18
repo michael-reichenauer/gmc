@@ -25,3 +25,11 @@ func CompileRegexp(regexpText string) *regexp.Regexp {
 	}
 	return exp
 }
+
+func FileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}

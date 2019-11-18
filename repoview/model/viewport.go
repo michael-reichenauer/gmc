@@ -1,6 +1,7 @@
 package model
 
 import (
+	"fmt"
 	"time"
 )
 
@@ -14,6 +15,7 @@ type ViewPort struct {
 	SelectedBranch     Branch
 	CurrentBranchName  string
 	repo               *repo
+	StatusMessage      string
 }
 
 type Commit struct {
@@ -45,6 +47,7 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		first = -1
 		last = -1
 	}
+	statusMessage := toStatusMessage(repo)
 
 	return ViewPort{
 		Commits:           toCommits(repo, first, last),
@@ -55,7 +58,15 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		GraphWidth:        len(repo.Branches) * 2,
 		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
 		repo:              repo,
+		StatusMessage:     statusMessage,
 	}
+}
+
+func toStatusMessage(repo *repo) string {
+	if repo.gitRepo.Status.OK() {
+		return ""
+	}
+	return fmt.Sprintf("%d uncommited changes in working folder", repo.gitRepo.Status.AllChanges())
 }
 
 func toCommits(repo *repo, first int, last int) []Commit {
