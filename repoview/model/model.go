@@ -145,9 +145,6 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 		for {
 			if c.Branch != b {
 				// this commit is not part of the branch (multiple branched on the same commit)
-				if b.tipId == c.ID {
-					b.bottom = c
-				}
 				break
 			}
 			if c == c.Branch.tip {
@@ -243,6 +240,10 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 				if b.tip == c {
 					// this branch tip does not have a branch of its own,
 					c.graph[i].Branch.Set(BBottom | BPass)
+					for k := c.Branch.index + 1; k <= i; k++ {
+						c.graph[k].Connect.Set(BPass)
+						c.graph[k].Branch.Set(BPass)
+					}
 				} else if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {
 					c.graph[i].Branch.Set(BLine)
 				}

@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
@@ -31,6 +32,7 @@ type repoPage struct {
 	lines              int
 	currentBranchName  string
 	currentCommitIndex int
+	commitStatus       string
 }
 
 type repoVM struct {
@@ -97,13 +99,27 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		sb.WriteString("\n")
 	}
 
+	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected)
+
 	return repoPage{
 		repoPath:           h.repoPath,
 		text:               sb.String(),
 		lines:              h.viewPort.TotalCommits,
 		currentBranchName:  h.viewPort.CurrentBranchName,
 		currentCommitIndex: h.viewPort.CurrentCommitIndex,
+		commitStatus:       commitStatus,
 	}, nil
+}
+
+func (h *repoVM) toCommitStatus(commits []model.Commit, selected int) string {
+	if h.statusMessage != "" && selected == 0 {
+		return ""
+	}
+	if h.statusMessage != "" {
+		selected--
+	}
+	c := commits[selected]
+	return fmt.Sprintf("%s %s", c.SID, c.Branch.Name)
 }
 
 func (h *repoVM) OpenBranch(index int) {
