@@ -76,6 +76,11 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		commits = commits[:len(commits)-1]
 		firstLine++
 	}
+	sbid := ""
+	if h.statusMessage != "" && selected != 0 {
+		sbc := commits[selected-firstLine]
+		sbid = sbc.Branch.ID
+	}
 
 	for i, c := range commits {
 		writeSelectedMarker(&sb, i+firstLine, selected)
@@ -84,7 +89,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		writeMergeMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeMessage(&sb, c, h.viewPort.SelectedBranch.ID, messageLength)
+		writeMessage(&sb, c, sbid, messageLength)
 		sb.WriteString(" ")
 		//writeSid(&sb, c)
 		//sb.WriteString(" ")
