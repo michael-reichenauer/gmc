@@ -119,7 +119,7 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 			c.Branch = c.Branches[0]
 			return
 		}
-		if !c.Branches[0].IsRemote && c.Branches[0].RemoteName == c.Branches[0].Name {
+		if !c.Branches[0].IsRemote && c.Branches[0].RemoteName == c.Branches[1].Name {
 			// local and remote branch, prefer remote
 			c.Branch = c.Branches[1]
 			return
