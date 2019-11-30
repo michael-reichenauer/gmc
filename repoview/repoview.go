@@ -47,7 +47,13 @@ func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewD
 		h.SetCursor(repoPage.currentCommitIndex)
 	}
 
-	return ui.ViewData{Text: repoPage.text, MaxLines: repoPage.lines}
+	return ui.ViewData{
+		Text:     repoPage.text,
+		MaxLines: repoPage.lines,
+		First:    repoPage.first,
+		Last:     repoPage.last,
+		Current:  repoPage.current,
+	}
 }
 
 func (h *Handler) OnLoad(view *ui.View) {

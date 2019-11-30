@@ -16,6 +16,9 @@ type ViewPort struct {
 	CurrentBranchName  string
 	repo               *repo
 	StatusMessage      string
+	First              int
+	Last               int
+	Selected           int
 }
 
 type Commit struct {
@@ -41,12 +44,20 @@ type Branch struct {
 }
 
 func newViewPort(repo *repo, first, last, selected int) ViewPort {
+	size := last - first
 	if last >= len(repo.Commits) {
 		last = len(repo.Commits) - 1
 	}
-	if first >= len(repo.Commits) {
-		first = -1
-		last = -1
+	first = last - size
+	if first < 0 {
+		first = 0
+	}
+
+	if selected > last {
+		selected = last
+	}
+	if selected < first {
+		selected = first
 	}
 	statusMessage := toStatusMessage(repo)
 
@@ -60,6 +71,9 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
 		repo:              repo,
 		StatusMessage:     statusMessage,
+		First:             first,
+		Last:              last,
+		Selected:          selected,
 	}
 }
 
