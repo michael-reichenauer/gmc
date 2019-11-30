@@ -7,9 +7,10 @@ import (
 )
 
 type GraphColumn struct {
-	Connect  utils.Bitmask
-	Branch   utils.Bitmask
-	BranchId string
+	Connect           utils.Bitmask
+	Branch            utils.Bitmask
+	BranchName        string
+	BranchDisplayName string
 }
 
 type commit struct {

@@ -175,7 +175,8 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 	// Draw branch connector lines
 	for _, c := range repo.Commits {
 		for i, b := range repo.Branches {
-			c.graph[i].BranchId = b.name
+			c.graph[i].BranchName = b.name
+			c.graph[i].BranchDisplayName = b.displayName
 			if c.Branch == b {
 				// Commit branch
 				if c.MergeParent != nil {
