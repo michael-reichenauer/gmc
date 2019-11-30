@@ -3,7 +3,6 @@ package git
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
-	"os/exec"
 	"strconv"
 	"strings"
 )
@@ -15,23 +14,11 @@ const (
 var branchesRegexp = utils.CompileRegexp(branchesRegexpText)
 
 func getBranches(path string) ([]Branch, error) {
-	branchesText, err := getGitBranches(path)
+	branchesText, err := gitCmd(path, "branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
 	}
 	return parseBranches(branchesText)
-}
-
-func getGitBranches(path string) (string, error) {
-	cmd := exec.Command("git", "branch", "-vv", "--no-color", "--no-abbrev", "--all")
-	cmd.Dir = path
-
-	// Get the git branches output
-	out, err := cmd.Output()
-	if err != nil {
-		return "", fmt.Errorf("failed to get git branches, %v", err)
-	}
-	return string(out), nil
 }
 
 func parseBranches(branchesText string) ([]Branch, error) {
@@ -66,27 +53,27 @@ func parseBranch(line string) (Branch, bool, error) {
 		return Branch{}, true, nil
 	}
 
-	branchName := match[4]
+	name := match[4]
 	tipID := match[5]
 	isCurrent := match[1] == "*"
 	isDetached := strings.TrimSpace(match[3]) != ""
 	if isDetached {
-		branchName = fmt.Sprintf("(%s)", match[3])
+		name = fmt.Sprintf("(%s)", match[3])
 	}
-	isRemote := strings.HasPrefix(branchName, "remotes/")
+	isRemote := strings.HasPrefix(name, "remotes/")
 	remoteName := match[8]
 	aheadCount, _ := strconv.Atoi(match[11])
 	behindCount, _ := strconv.Atoi(match[14])
 	isRemoteMissing := match[15] == "gone"
 	tipCommitMessage := strings.TrimRight(match[17], "\r")
-	id := fmt.Sprintf("%s:local", branchName)
+	id := fmt.Sprintf("%s:local", name)
 	if isRemote {
-		id = fmt.Sprintf("%s:remote", branchName)
+		id = fmt.Sprintf("%s:remote", name)
 	}
 
 	return Branch{
 		ID:               id,
-		Name:             branchName,
+		Name:             name,
 		TipID:            tipID,
 		IsCurrent:        isCurrent,
 		IsDetached:       isDetached,

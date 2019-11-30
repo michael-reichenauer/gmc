@@ -11,7 +11,7 @@ var branchesText = `
 `
 
 func Test(t *testing.T) {
-	branchesText, err := getGitBranches(utils.CurrentDir())
+	branchesText, err := gitBranchesCmd(utils.CurrentDir())
 	if err != nil {
 		t.Fatal(err)
 	}

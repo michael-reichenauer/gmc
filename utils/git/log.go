@@ -2,8 +2,6 @@ package git
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"os/exec"
 	"strings"
 	"time"
 )
@@ -13,7 +11,7 @@ const (
 )
 
 func getLog(path string) ([]Commit, error) {
-	logText, err := getGitLog(path)
+	logText, err := gitCmd(path, "log", "--all", "--pretty=%H|%ai|%ci|%an|%P|%s")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git log, %v", err)
 	}
@@ -22,18 +20,18 @@ func getLog(path string) ([]Commit, error) {
 	return parseCommits(logText)
 }
 
-func getGitLog(path string) (string, error) {
-	cmd := exec.Command("git", "log", "--all", "--pretty=%H|%ai|%ci|%an|%P|%s")
-	cmd.Dir = path
-
-	// Get the git log output
-	out, err := cmd.Output()
-	if err != nil {
-		log.Warnf("Failed %v", err)
-		return "", fmt.Errorf("failed to get git log, %v", err)
-	}
-	return string(out), nil
-}
+//func getGitLog(path string) (string, error) {
+//	cmd := exec.Command("git", "log", "--all", "--pretty=%H|%ai|%ci|%an|%P|%s")
+//	cmd.Dir = path
+//
+//	// Get the git log output
+//	out, err := cmd.Output()
+//	if err != nil {
+//		log.Warnf("Failed %v", err)
+//		return "", fmt.Errorf("failed to get git log, %v", err)
+//	}
+//	return string(out), nil
+//}
 
 func parseCommits(logText string) ([]Commit, error) {
 	var commits []Commit

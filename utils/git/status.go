@@ -3,9 +3,7 @@ package git
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
-	"os/exec"
 	"path"
 	"strings"
 )
@@ -24,7 +22,7 @@ func (s *Status) String() string {
 }
 
 func getStatus(path string) (Status, error) {
-	gitStatus, err := getGitStatus(path)
+	gitStatus, err := gitCmd(path, "status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
 	if err != nil {
 		return Status{}, err
 	}
@@ -64,18 +62,19 @@ func parseStatus(path, statusText string) (Status, error) {
 	return status, nil
 }
 
-func getGitStatus(path string) (string, error) {
-	cmd := exec.Command("git", "status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
-	cmd.Dir = path
-
-	// Get the git log output
-	out, err := cmd.Output()
-	if err != nil {
-		log.Warnf("Failed %v", err)
-		return "", fmt.Errorf("failed to get git log, %v", err)
-	}
-	return string(out), nil
-}
+//
+//func getGitStatus(path string) (string, error) {
+//	cmd := exec.Command("git", "status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
+//	cmd.Dir = path
+//
+//	// Get the git log output
+//	out, err := cmd.Output()
+//	if err != nil {
+//		log.Warnf("Failed %v", err)
+//		return "", fmt.Errorf("failed to get git log, %v", err)
+//	}
+//	return string(out), nil
+//}
 
 func getMergeStatus(repoPath string) (string, bool) {
 	isMergeInProgress := false
