@@ -1,8 +1,8 @@
 package git
 
 type Branch struct {
-	ID               string
 	Name             string
+	DisplayName      string
 	TipID            string
 	IsCurrent        bool
 	IsRemote         bool
@@ -15,5 +15,5 @@ type Branch struct {
 }
 
 func (b *Branch) String() string {
-	return b.ID
+	return b.Name
 }

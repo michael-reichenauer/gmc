@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-var defaultBranchPrio = []string{"master:local", "develop:local"}
+var defaultBranchPrio = []string{"origin/master", "master", "origin/develop", "develop:"}
 
 type Handler struct {
 	gitRepo     *git.Repo
@@ -140,7 +140,7 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 	// Commit, has many possible branches, check if one is in the priority list, e.g. master, develop, ...
 	for _, bp := range defaultBranchPrio {
 		for _, cb := range c.Branches {
-			if bp == cb.ID {
+			if bp == cb.Name {
 				c.Branch = cb
 				return
 			}

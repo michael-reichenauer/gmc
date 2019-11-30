@@ -9,6 +9,8 @@ import (
 
 const (
 	branchesRegexpText = `(?im)^(\*)?\s+(\(HEAD detached at (\S+)\)|(\S+))\s+(\S+)(\s+)?(\[(\S+)(:\s)?(ahead\s(\d+))?(,\s)?(behind\s(\d+))?(gone)?\])?(\s+)?(.+)?`
+	remotePrefix       = "remotes/"
+	originPrefix       = "origin/"
 )
 
 var branchesRegexp = utils.CompileRegexp(branchesRegexpText)
@@ -26,33 +28,30 @@ func (h *branchesHandler) getBranches() ([]Branch, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
 	}
-	return h.parseBranches(branchesText)
+	return h.parseCmdOutput(branchesText)
 }
 
-func (h *branchesHandler) parseBranches(branchesText string) ([]Branch, error) {
+func (h *branchesHandler) parseCmdOutput(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		branch, skip, err := h.parseBranch(line)
+		branch, skip, err := h.parseBranchLine(line)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse branch line %q, %v", line, err)
 		}
 		if skip {
 			continue
 		}
-		if branch.IsRemote {
-			//todo:skipping remote branches for now
-			continue
-		}
+
 		branches = append(branches, branch)
 	}
 	return branches, nil
 }
 
-func (h *branchesHandler) parseBranch(line string) (Branch, bool, error) {
+func (h *branchesHandler) parseBranchLine(line string) (Branch, bool, error) {
 	match := branchesRegexp.FindStringSubmatch(line)
 	if match == nil {
 		return Branch{}, true, fmt.Errorf("failed to parse branch line %q", line)
@@ -62,26 +61,34 @@ func (h *branchesHandler) parseBranch(line string) (Branch, bool, error) {
 	}
 
 	name := match[4]
-	tipID := match[5]
-	isCurrent := match[1] == "*"
+	isRemote := false
+	if strings.HasPrefix(name, remotePrefix) {
+		isRemote = true
+		name = name[len(remotePrefix):]
+	}
 	isDetached := strings.TrimSpace(match[3]) != ""
 	if isDetached {
 		name = fmt.Sprintf("(%s)", match[3])
 	}
-	isRemote := strings.HasPrefix(name, "remotes/")
+
+	displayName := name
+	if strings.HasPrefix(name, originPrefix) {
+		// make remote branch display name same as local branch name
+		displayName = fmt.Sprintf("%s", name[len(originPrefix):])
+	}
+
+	tipID := match[5]
+	isCurrent := match[1] == "*"
+
 	remoteName := match[8]
 	aheadCount, _ := strconv.Atoi(match[11])
 	behindCount, _ := strconv.Atoi(match[14])
 	isRemoteMissing := match[15] == "gone"
 	tipCommitMessage := strings.TrimRight(match[17], "\r")
-	id := fmt.Sprintf("%s:local", name)
-	if isRemote {
-		id = fmt.Sprintf("%s:remote", name)
-	}
 
 	return Branch{
-		ID:               id,
 		Name:             name,
+		DisplayName:      displayName,
 		TipID:            tipID,
 		IsCurrent:        isCurrent,
 		IsDetached:       isDetached,

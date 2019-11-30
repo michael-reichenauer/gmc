@@ -79,7 +79,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	sbid := ""
 	if h.statusMessage != "" && selected != 0 {
 		sbc := commits[selected-firstLine]
-		sbid = sbc.Branch.ID
+		sbid = sbc.Branch.Name
 	}
 
 	for i, c := range commits {
@@ -122,7 +122,7 @@ func (h *repoVM) toCommitStatus(commits []model.Commit, selected int) string {
 		selected--
 	}
 	c := commits[selected]
-	return fmt.Sprintf("%s %s", c.SID, c.Branch.Name)
+	return fmt.Sprintf("%s %s", c.SID, c.Branch.DisplayName)
 }
 
 func (h *repoVM) OpenBranch(index int) {
@@ -229,7 +229,7 @@ func writeAuthorTime(sb *strings.Builder, commit model.Commit, length int) {
 
 func writeMessage(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
 	messaged := txt(c.Message, length)
-	if c.Branch.ID == selectedBranchID {
+	if c.Branch.Name == selectedBranchID {
 		sb.WriteString(ui.White(messaged))
 	} else {
 		sb.WriteString(ui.Dark(messaged))

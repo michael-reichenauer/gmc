@@ -33,7 +33,7 @@ type commit struct {
 }
 
 func (c *commit) String() string {
-	return fmt.Sprintf("%s %s (%s)", c.SID, c.Subject, c.Branch.name)
+	return fmt.Sprintf("%s %s (%s)", c.SID, c.Subject, c.Branch.displayName)
 }
 
 const (
