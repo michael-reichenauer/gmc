@@ -13,22 +13,30 @@ const (
 
 var branchesRegexp = utils.CompileRegexp(branchesRegexpText)
 
-func getBranches(path string) ([]Branch, error) {
-	branchesText, err := gitCmd(path, "branch", "-vv", "--no-color", "--no-abbrev", "--all")
+type branchesHandler struct {
+	cmd *gitCmd
+}
+
+func newBranches(cmd *gitCmd) *branchesHandler {
+	return &branchesHandler{cmd: cmd}
+}
+
+func (h *branchesHandler) getBranches() ([]Branch, error) {
+	branchesText, err := h.cmd.git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
 	}
-	return parseBranches(branchesText)
+	return h.parseBranches(branchesText)
 }
 
-func parseBranches(branchesText string) ([]Branch, error) {
+func (h *branchesHandler) parseBranches(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		branch, skip, err := parseBranch(line)
+		branch, skip, err := h.parseBranch(line)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse branch line %q, %v", line, err)
 		}
@@ -44,12 +52,12 @@ func parseBranches(branchesText string) ([]Branch, error) {
 	return branches, nil
 }
 
-func parseBranch(line string) (Branch, bool, error) {
+func (h *branchesHandler) parseBranch(line string) (Branch, bool, error) {
 	match := branchesRegexp.FindStringSubmatch(line)
 	if match == nil {
 		return Branch{}, true, fmt.Errorf("failed to parse branch line %q", line)
 	}
-	if isPointBranch(match) {
+	if h.isPointBranch(match) {
 		return Branch{}, true, nil
 	}
 
@@ -86,4 +94,4 @@ func parseBranch(line string) (Branch, bool, error) {
 	}, false, nil
 }
 
-func isPointBranch(matches []string) bool { return matches[5] == "->" }
+func (*branchesHandler) isPointBranch(matches []string) bool { return matches[5] == "->" }
