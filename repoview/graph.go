@@ -122,7 +122,7 @@ func branchColor(name string) ui.Color {
 	if name == "master" {
 		return ui.CMagenta
 	}
-	if strings.HasPrefix(name, "Multi:") {
+	if strings.HasPrefix(name, "multi:") {
 		return ui.CWhite
 	}
 	h := fnv.New32a()

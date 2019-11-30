@@ -10,6 +10,8 @@ type Branch struct {
 	TipID         string
 	BottomID      string
 	ParentBranch  *Branch
+	IsRemote      bool
+	RemoteName    string
 	IsCurrent     bool
 	IsGitBranch   bool
 	IsMultiBranch bool
@@ -22,6 +24,8 @@ func newBranch(gb git.Branch) *Branch {
 		DisplayName: gb.DisplayName,
 		TipID:       gb.TipID,
 		IsCurrent:   gb.IsCurrent,
+		IsRemote:    gb.IsRemote,
+		RemoteName:  gb.RemoteName,
 		IsGitBranch: true,
 	}
 }
