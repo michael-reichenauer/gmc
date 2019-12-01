@@ -2,8 +2,10 @@ package utils
 
 import (
 	"log"
+	"math/rand"
 	"os"
 	"regexp"
+	"time"
 )
 
 func CurrentDir() string {
@@ -45,4 +47,18 @@ func StringsIndex(s []string, e string) int {
 		}
 	}
 	return -1
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func RandStringRunes(n int) string {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
