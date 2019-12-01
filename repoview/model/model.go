@@ -83,6 +83,16 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 			branchIds = h.addBranch(branchIds, b)
 		}
 	}
+	for _, b := range viewPort.repo.gitRepo.Branches {
+		i1 := utils.StringsIndex(branchIds, b.RemoteName)
+		i2 := utils.StringsIndex(branchIds, b.Name)
+		if i2 == -1 && i1 != -1 {
+			// a remote branch is included, but not its local branch
+			branchIds = append(branchIds, "")
+			copy(branchIds[i1+1:], branchIds[i1:])
+			branchIds[i1] = b.Name
+		}
+	}
 
 	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
 }

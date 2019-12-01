@@ -100,9 +100,9 @@ func (h *Handler) onRefresh() {
 
 func (h *Handler) setWindowTitle(path, branch, status string) {
 	statusTxt := ""
-	if h.isShowCommitStatus {
-		statusTxt = fmt.Sprintf("  (%s)", status)
-	}
+	//if h.isShowCommitStatus {
+	statusTxt = fmt.Sprintf("  %s", status)
+	//}
 	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
 }
 func (h *Handler) SetCursor(line int) {

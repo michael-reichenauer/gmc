@@ -66,21 +66,21 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 
 	var sb strings.Builder
 	commits := h.viewPort.Commits
+	//h.statusMessage = ""
+	//if h.viewPort.StatusMessage != "" {
+	//	h.statusMessage = h.viewPort.StatusMessage
+	//	writeSelectedMarker(&sb, firstLine, selected)
+	//	sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))
+	//	sb.WriteString(ui.YellowDk(h.viewPort.StatusMessage))
+	//	sb.WriteString("\n")
+	//	commits = commits[:len(commits)-1]
+	//}
 	h.statusMessage = ""
-	if h.viewPort.StatusMessage != "" {
-		h.statusMessage = h.viewPort.StatusMessage
-		writeSelectedMarker(&sb, firstLine, selected)
-		sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))
-		sb.WriteString(ui.YellowDk(h.viewPort.StatusMessage))
-		sb.WriteString("\n")
-		commits = commits[:len(commits)-1]
-		firstLine++
-	}
 	sbid := ""
-	if h.statusMessage != "" && selected != 0 {
-		sbc := commits[selected-firstLine]
-		sbid = sbc.Branch.Name
-	}
+	//if h.statusMessage != "" && selected != 0 {
+	sbc := commits[selected-firstLine]
+	sbid = sbc.Branch.Name
+	//}
 
 	for i, c := range commits {
 		writeSelectedMarker(&sb, i+firstLine, selected)
@@ -99,7 +99,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		sb.WriteString("\n")
 	}
 
-	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected)
+	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected, h.viewPort.StatusMessage)
 
 	return repoPage{
 		repoPath:           h.repoPath,
@@ -114,34 +114,34 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	}, nil
 }
 
-func (h *repoVM) toCommitStatus(commits []model.Commit, selected int) string {
-	if h.statusMessage != "" && selected == 0 {
-		return ""
-	}
-	if h.statusMessage != "" {
-		selected--
-	}
+func (h *repoVM) toCommitStatus(commits []model.Commit, selected int, status string) string {
+	//if h.statusMessage != "" && selected == 0 {
+	//	return ""
+	//}
+	//if h.statusMessage != "" {
+	//	selected--
+	//}
 	c := commits[selected]
-	return fmt.Sprintf("%s %s", c.SID, c.Branch.Name)
+	return fmt.Sprintf(": %s   (%s %s)", status, c.SID, c.Branch.Name)
 }
 
 func (h *repoVM) OpenBranch(index int) {
-	if h.statusMessage != "" && index == 0 {
-		return
-	}
-	if h.statusMessage != "" {
-		index--
-	}
+	//if h.statusMessage != "" && index == 0 {
+	//	return
+	//}
+	//if h.statusMessage != "" {
+	//	index--
+	//}
 	h.model.OpenBranch(h.viewPort, index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	if h.statusMessage != "" && index == 0 {
-		return
-	}
-	if h.statusMessage != "" {
-		index--
-	}
+	//if h.statusMessage != "" && index == 0 {
+	//	return
+	//}
+	//if h.statusMessage != "" {
+	//	index--
+	//}
 	h.model.CloseBranch(h.viewPort, index)
 }
 
