@@ -79,7 +79,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	sbid := ""
 	if h.statusMessage != "" && selected != 0 {
 		sbc := commits[selected-firstLine]
-		sbid = sbc.Branch.ID
+		sbid = sbc.Branch.Name
 	}
 
 	for i, c := range commits {
@@ -167,7 +167,7 @@ func writeMergeMarker(sb *strings.Builder, c model.Commit) {
 }
 func writeGraph(sb *strings.Builder, c model.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
-		bColor := branchColor(c.Graph[i].BranchId, c.Branch.IsMultiBranch)
+		bColor := branchColor(c.Graph[i].BranchDisplayName)
 
 		if i != 0 {
 			cColor := bColor
@@ -229,7 +229,7 @@ func writeAuthorTime(sb *strings.Builder, commit model.Commit, length int) {
 
 func writeMessage(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
 	messaged := txt(c.Message, length)
-	if c.Branch.ID == selectedBranchID {
+	if c.Branch.Name == selectedBranchID {
 		sb.WriteString(ui.White(messaged))
 	} else {
 		sb.WriteString(ui.Dark(messaged))

@@ -7,9 +7,10 @@ import (
 )
 
 type GraphColumn struct {
-	Connect  utils.Bitmask
-	Branch   utils.Bitmask
-	BranchId string
+	Connect           utils.Bitmask
+	Branch            utils.Bitmask
+	BranchName        string
+	BranchDisplayName string
 }
 
 type commit struct {
@@ -33,7 +34,7 @@ type commit struct {
 }
 
 func (c *commit) String() string {
-	return fmt.Sprintf("%s %s (%s)", c.SID, c.Subject, c.Branch.name)
+	return fmt.Sprintf("%s %s (%s)", c.SID, c.Subject, c.Branch.displayName)
 }
 
 const (

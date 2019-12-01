@@ -1,21 +1,28 @@
 package git
 
 type Repo struct {
-	path string
+	status     *statusHandler
+	logHandler *logHandler
+	branches   *branchesHandler
 }
 
 func NewRepo(path string) *Repo {
-	return &Repo{path: path}
+	cmd := newGitCmd(path)
+	return &Repo{
+		status:     newStatus(cmd),
+		logHandler: newLog(cmd),
+		branches:   newBranches(cmd),
+	}
 }
 
-func (r *Repo) GetLog() ([]Commit, error) {
-	return getLog(r.path)
+func (h *Repo) GetLog() ([]Commit, error) {
+	return h.logHandler.getLog()
 }
 
-func (r *Repo) GetBranches() ([]Branch, error) {
-	return getBranches(r.path)
+func (h *Repo) GetBranches() ([]Branch, error) {
+	return h.branches.getBranches()
 }
 
-func (r *Repo) GetStatus() (Status, error) {
-	return getStatus(r.path)
+func (h *Repo) GetStatus() (Status, error) {
+	return h.status.getStatus()
 }

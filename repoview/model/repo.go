@@ -28,7 +28,7 @@ func (r *repo) CommitById(id string) (*commit, bool) {
 
 func (r *repo) BranchById(id string) *branch {
 	for _, b := range r.Branches {
-		if id == b.id {
+		if id == b.name {
 			return b
 		}
 	}
@@ -58,7 +58,7 @@ func (r *repo) addCommit(gmc *gitmodel.Commit) {
 func (r *repo) containsOneOfBranches(branches []*gitmodel.Branch) bool {
 	for _, rb := range r.Branches {
 		for _, b := range branches {
-			if rb.id == b.ID {
+			if rb.name == b.Name {
 				return true
 			}
 		}
@@ -68,7 +68,7 @@ func (r *repo) containsOneOfBranches(branches []*gitmodel.Branch) bool {
 
 func (r *repo) containsBranch(branch *gitmodel.Branch) bool {
 	for _, b := range r.Branches {
-		if b.id == branch.ID {
+		if b.name == branch.Name {
 			return true
 		}
 	}
@@ -78,11 +78,11 @@ func (r *repo) containsBranch(branch *gitmodel.Branch) bool {
 func (r *repo) toBranch(b *gitmodel.Branch, index int) *branch {
 	parentBranchID := ""
 	if b.ParentBranch != nil {
-		parentBranchID = b.ParentBranch.ID
+		parentBranchID = b.ParentBranch.Name
 	}
 	return &branch{
-		id:             b.ID,
 		name:           b.Name,
+		displayName:    b.DisplayName,
 		index:          index,
 		tipId:          b.TipID,
 		bottomId:       b.BottomID,
@@ -95,7 +95,7 @@ func (r *repo) toBranch(b *gitmodel.Branch, index int) *branch {
 func (r *repo) toCommit(c *gitmodel.Commit, index int) *commit {
 	var branch *branch
 	if c.Branch != nil {
-		branch = r.BranchById(c.Branch.ID)
+		branch = r.BranchById(c.Branch.Name)
 	}
 	return &commit{
 		ID:         c.Id,
@@ -119,7 +119,7 @@ func (r *repo) String() string {
 
 func (r *repo) ToBranchIndex(id string) int {
 	for i, b := range r.Branches {
-		if b.id == id {
+		if b.name == id {
 			return i
 		}
 	}

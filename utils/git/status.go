@@ -3,9 +3,7 @@ package git
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
-	"os/exec"
 	"path"
 	"strings"
 )
@@ -19,19 +17,27 @@ type Status struct {
 	MergeMessage string
 }
 
+type statusHandler struct {
+	cmd *gitCmd
+}
+
+func newStatus(cmd *gitCmd) *statusHandler {
+	return &statusHandler{cmd: cmd}
+}
+
 func (s *Status) String() string {
 	return fmt.Sprintf("M:%d,A:%d,D:%d,C:%d", s.Modified, s.Added, s.Deleted, s.Conflicted)
 }
 
-func getStatus(path string) (Status, error) {
-	gitStatus, err := getGitStatus(path)
+func (h *statusHandler) getStatus() (Status, error) {
+	gitStatus, err := h.cmd.git("status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
 	if err != nil {
 		return Status{}, err
 	}
-	return parseStatus(path, gitStatus)
+	return h.parseStatus(gitStatus)
 }
 
-func parseStatus(path, statusText string) (Status, error) {
+func (h *statusHandler) parseStatus(statusText string) (Status, error) {
 	status := Status{}
 	lines := strings.Split(statusText, "\n")
 	for _, line := range lines {
@@ -60,28 +66,15 @@ func parseStatus(path, statusText string) (Status, error) {
 			status.Modified++
 		}
 	}
-	status.MergeMessage, status.IsMerging = getMergeStatus(path)
+	status.MergeMessage, status.IsMerging = h.getMergeStatus()
 	return status, nil
 }
 
-func getGitStatus(path string) (string, error) {
-	cmd := exec.Command("git", "status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
-	cmd.Dir = path
-
-	// Get the git log output
-	out, err := cmd.Output()
-	if err != nil {
-		log.Warnf("Failed %v", err)
-		return "", fmt.Errorf("failed to get git log, %v", err)
-	}
-	return string(out), nil
-}
-
-func getMergeStatus(repoPath string) (string, bool) {
+func (h *statusHandler) getMergeStatus() (string, bool) {
 	isMergeInProgress := false
 	mergeMessage := ""
-	mergeIpPath := path.Join(repoPath, ".git", "MERGE_HEAD")
-	mergeMsgPath := path.Join(repoPath, ".git", "MERGE_MSG")
+	mergeIpPath := path.Join(h.cmd.workingDir, ".git", "MERGE_HEAD")
+	mergeMsgPath := path.Join(h.cmd.workingDir, ".git", "MERGE_MSG")
 	if utils.FileExists(mergeIpPath) {
 		isMergeInProgress = true
 		msg, _ := ioutil.ReadFile(mergeMsgPath)

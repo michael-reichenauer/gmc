@@ -5,6 +5,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"hash/fnv"
+	"strings"
 )
 
 var branchColors = []ui.Color{
@@ -117,11 +118,11 @@ func graphConnectRune(bm utils.Bitmask) rune {
 	}
 }
 
-func branchColor(name string, isMultiBranch bool) ui.Color {
-	if name == "master:local" {
+func branchColor(name string) ui.Color {
+	if name == "master" {
 		return ui.CMagenta
 	}
-	if isMultiBranch {
+	if strings.HasPrefix(name, "multi:") {
 		return ui.CWhite
 	}
 	h := fnv.New32a()

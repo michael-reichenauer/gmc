@@ -75,7 +75,7 @@ func areEqual(a, b []*Branch) bool {
 		return false
 	}
 	for i, v := range a {
-		if v != b[i] && v.ID != b[i].ID {
+		if v != b[i] && v.Name != b[i].Name {
 			return false
 		}
 	}
