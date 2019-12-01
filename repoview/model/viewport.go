@@ -81,8 +81,7 @@ func toStatusMessage(repo *repo) string {
 	if repo.gitRepo.Status.OK() {
 		return ""
 	}
-	return fmt.Sprintf("%d uncommited changes on branch '%s'",
-		repo.gitRepo.Status.AllChanges(), repo.CurrentBranchName)
+	return fmt.Sprintf("%d uncommited changes", repo.gitRepo.Status.AllChanges())
 }
 
 func toCommits(repo *repo, first int, last int) []Commit {

@@ -17,7 +17,7 @@ var branchColors = []ui.Color{
 	ui.CRedDk,
 	ui.CGreenDk,
 	ui.CYellowDk,
-	ui.CBlueDk,
+	//ui.CBlueDk,
 	ui.CMagentaDk,
 	ui.CCyanDk,
 }
