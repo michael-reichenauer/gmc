@@ -37,8 +37,8 @@ type Commit struct {
 }
 
 type Branch struct {
-	ID            string
 	Name          string
+	DisplayName   string
 	Index         int
 	IsMultiBranch bool
 }
@@ -115,8 +115,8 @@ func toCommit(c *commit) Commit {
 
 func toBranch(b *branch) Branch {
 	return Branch{
-		ID:            b.id,
 		Name:          b.name,
+		DisplayName:   b.displayName,
 		Index:         b.index,
 		IsMultiBranch: b.isMultiBranch,
 	}

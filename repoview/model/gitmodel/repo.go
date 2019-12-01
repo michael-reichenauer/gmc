@@ -43,7 +43,7 @@ func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 
 func (r *Repo) BranchByName(name string) (*Branch, bool) {
 	for _, br := range r.Branches {
-		if br.Name == name {
+		if br.DisplayName == name {
 			return br, true
 		}
 	}
@@ -51,7 +51,7 @@ func (r *Repo) BranchByName(name string) (*Branch, bool) {
 }
 func (r *Repo) BranchByID(id string) (*Branch, bool) {
 	for _, br := range r.Branches {
-		if br.ID == id {
+		if br.Name == id {
 			return br, true
 		}
 	}
@@ -76,10 +76,9 @@ func (r *Repo) Parent(commit *Commit, index int) (*Commit, bool) {
 }
 
 func (r *Repo) AddMultiBranch(c *Commit) *Branch {
-	id := fmt.Sprintf("%s:local", c.Sid)
 	b := &Branch{
-		ID:            id,
-		Name:          c.Sid,
+		Name:          fmt.Sprintf("multi:%s", c.Sid),
+		DisplayName:   fmt.Sprintf("multi:%s", c.Sid),
 		TipID:         c.Id,
 		IsCurrent:     false,
 		IsGitBranch:   false,
@@ -91,10 +90,9 @@ func (r *Repo) AddMultiBranch(c *Commit) *Branch {
 }
 
 func (r *Repo) AddNamedBranch(c *Commit, branchName string) *Branch {
-	id := fmt.Sprintf("%s%s:local", branchName, c.Sid)
 	b := &Branch{
-		ID:            id,
-		Name:          branchName,
+		Name:          fmt.Sprintf("%s:%s", branchName, c.Sid),
+		DisplayName:   branchName,
 		TipID:         c.Id,
 		IsCurrent:     false,
 		IsGitBranch:   false,
@@ -105,10 +103,9 @@ func (r *Repo) AddNamedBranch(c *Commit, branchName string) *Branch {
 	return b
 }
 func (r *Repo) AddIdNamedBranch(c *Commit) *Branch {
-	id := fmt.Sprintf("branch%s:local", c.Sid)
 	b := &Branch{
-		ID:            id,
-		Name:          "branch" + c.Sid,
+		Name:          fmt.Sprintf("branch:%s", c.Sid),
+		DisplayName:   fmt.Sprintf("branch:%s", c.Sid),
 		TipID:         c.Id,
 		IsCurrent:     false,
 		IsGitBranch:   false,

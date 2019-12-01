@@ -6,7 +6,7 @@ import (
 	"sync"
 )
 
-var defaultBranchPrio = []string{"master:local", "develop:local"}
+var defaultBranchPrio = []string{"origin/master", "master", "origin/develop", "develop:"}
 
 type Handler struct {
 	gitRepo     *git.Repo
@@ -113,6 +113,19 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 		return
 	}
 
+	if len(c.Branches) == 2 {
+		if c.Branches[0].IsRemote && c.Branches[0].Name == c.Branches[1].RemoteName {
+			// remote and local branch, prefer remote
+			c.Branch = c.Branches[0]
+			return
+		}
+		if !c.Branches[0].IsRemote && c.Branches[0].RemoteName == c.Branches[1].Name {
+			// local and remote branch, prefer remote
+			c.Branch = c.Branches[1]
+			return
+		}
+	}
+
 	if len(c.Branches) == 0 && len(c.Children) == 0 {
 		// Commit has no branch, must be a deleted branch tip merged into some branch or unusual branch
 		// Trying to parse a branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
@@ -140,7 +153,7 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 	// Commit, has many possible branches, check if one is in the priority list, e.g. master, develop, ...
 	for _, bp := range defaultBranchPrio {
 		for _, cb := range c.Branches {
-			if bp == cb.ID {
+			if bp == cb.Name {
 				c.Branch = cb
 				return
 			}

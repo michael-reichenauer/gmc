@@ -2,6 +2,7 @@ package git
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -12,17 +13,15 @@ e8cbef1cf080fe4b102482157000468fffe45e67|2019-10-12 18:48:43 +0200|2019-10-12 18
 `
 
 func TestLogFromCurrentDir(t *testing.T) {
-	logText, err := getGitLog(utils.CurrentDir())
+	log, err := newLog(newGitCmd(utils.CurrentDir())).getLog()
 	if err != nil {
 		t.Fatal(err)
 	}
-	if logText == "" {
-		t.Errorf("Empty log text form %q", utils.CurrentDir())
-	}
+	assert.NotEqual(t, 0, len(log))
 }
 
 func TestLog(t *testing.T) {
-	commits, err := parseCommits(logText)
+	commits, err := newLog(newGitCmd(utils.CurrentDir())).parseCommits(logText)
 	if err != nil {
 		t.Fatal(err)
 	}

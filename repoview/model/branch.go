@@ -1,8 +1,8 @@
 package model
 
 type branch struct {
-	id             string
 	name           string
+	displayName    string
 	index          int
 	tipId          string
 	bottomId       string
@@ -15,7 +15,7 @@ type branch struct {
 }
 
 func (b *branch) String() string {
-	return b.name
+	return b.displayName
 }
 
 func (b *branch) isAncestor(dc *branch) bool {
