@@ -2,7 +2,9 @@ package model
 
 import (
 	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"sort"
 	"sync"
 	"time"
 )
@@ -129,11 +131,28 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 		}
 	}
 
+	var branches []*gitmodel.Branch
 	for _, id := range branchIds {
 		branch, ok := repo.gitRepo.BranchByID(id)
 		if ok {
-			repo.addBranch(branch)
+			branches = append(branches, branch)
 		}
+
+	}
+	sort.SliceStable(branches, func(i, j int) bool {
+		if branches[i].Name == branches[j].RemoteName {
+			return true
+		}
+		i1 := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[i].Name)
+		i2 := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[j].Name)
+		if i1 != -1 && (i1 < i2 || i2 == -1) {
+			return true
+		}
+		return false
+	})
+
+	for _, b := range branches {
+		repo.addBranch(b)
 	}
 
 	for _, c := range repo.gitRepo.Commits {
@@ -214,7 +233,8 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 						c.MergeParent.graph[c.MergeParent.Branch.index].Connect.Set(BBranchLeft)
 						c.MergeParent.graph[c.MergeParent.Branch.index].Branch.Set(BBranchLeft)
 					}
-				} else if c.Parent != nil && c.Parent.Branch != c.Branch {
+				}
+				if c.Parent != nil && c.Parent.Branch != c.Branch {
 					// Commit parent is on other branch (bottom/first commit on this branch)
 					if c.Parent.Branch.index < c.Branch.index {
 						// Other branch is left side e

@@ -33,3 +33,16 @@ func FileExists(filename string) bool {
 	}
 	return !info.IsDir()
 }
+
+func StringsContains(s []string, e string) bool {
+	return StringsIndex(s, e) != -1
+}
+
+func StringsIndex(s []string, e string) int {
+	for i, a := range s {
+		if a == e {
+			return i
+		}
+	}
+	return -1
+}
