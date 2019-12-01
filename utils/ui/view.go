@@ -3,8 +3,8 @@ package ui
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	uuid "github.com/satori/go.uuid"
 )
 
 type Properties struct {
@@ -102,7 +102,7 @@ func (h *View) SetKey(key interface{}, modifier gocui.Modifier, handler func()) 
 }
 
 func newView(gui *gocui.Gui, viewModel ViewModel) *View {
-	viewName := uuid.NewV4().String()
+	viewName := utils.RandStringRunes(10)
 	//	viewName := "main"
 	properties := viewModel.Properties()
 	if properties.Bounds == nil {
