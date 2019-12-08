@@ -43,7 +43,15 @@ func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 
 func (r *Repo) BranchByName(name string) (*Branch, bool) {
 	for _, br := range r.Branches {
-		if br.DisplayName == name {
+		if br.Name == name {
+			return br, true
+		}
+	}
+	return nil, false
+}
+func (r *Repo) LocalBranchByRemoteName(remoteName string) (*Branch, bool) {
+	for _, br := range r.Branches {
+		if br.RemoteName == remoteName {
 			return br, true
 		}
 	}

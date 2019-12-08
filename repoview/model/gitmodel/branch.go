@@ -31,5 +31,5 @@ func newBranch(gb git.Branch) *Branch {
 }
 
 func (b *Branch) String() string {
-	return b.DisplayName
+	return b.Name
 }
