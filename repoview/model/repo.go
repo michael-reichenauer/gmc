@@ -38,9 +38,6 @@ func (r *repo) BranchById(id string) *branch {
 func (r *repo) addBranch(gb *gitmodel.Branch) {
 	b := r.toBranch(gb, len(r.Branches))
 	r.Branches = append(r.Branches, b)
-	if gb.IsCurrent {
-		r.CurrentBranchName = gb.Name
-	}
 }
 
 func (r *repo) addCommit(gmc *gitmodel.Commit) {

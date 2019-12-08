@@ -134,6 +134,10 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
+	currentBranch, ok := gRepo.CurrentBranch()
+	if ok {
+		repo.CurrentBranchName = currentBranch.Name
+	}
 
 	for _, c := range repo.gitRepo.Commits {
 		repo.addCommit(c)
