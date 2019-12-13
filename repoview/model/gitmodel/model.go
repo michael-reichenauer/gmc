@@ -2,7 +2,6 @@ package gitmodel
 
 import (
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"strings"
 	"sync"
 )
 
@@ -96,8 +95,9 @@ func (h *Handler) setGitBranchTips(repo *Repo) {
 
 func (h *Handler) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
+		parseBranchNames(c)
 		h.determineBranch(repo, c)
-		c.Branch.BottomID = c.Id
+		c.Branch.BottomID = c.Id // ##############?????????
 	}
 }
 
@@ -130,7 +130,7 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 		// Commit has no branch, must be a deleted branch tip merged into some branch or unusual branch
 		// Trying to parse a branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
 		for _, mc := range c.MergeChildren {
-			from, _ := h.parseMergeBranchNames(mc.Subject)
+			from, _ := parseMergeBranchNames(mc.Subject)
 			if from != "" {
 				// Managed to parse a branch name
 				c.Branch = repo.AddNamedBranch(c, from)
@@ -172,19 +172,6 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 	// Commit, has many possible branches and many children, create a new multi branch
 	c.Branch = repo.AddMultiBranch(c)
 	c.Branches = append(c.Branches, c.Branch)
-}
-
-func (h *Handler) parseMergeBranchNames(subject string) (from string, into string) {
-	if strings.HasPrefix(subject, "Merge branch '") {
-		ei := strings.LastIndex(subject, "'")
-		if ei > 14 {
-			from = subject[14:ei]
-			if strings.HasPrefix(subject[ei:], "' into ") {
-				into = subject[ei+7:]
-			}
-		}
-	}
-	return
 }
 
 func (h *Handler) determineBranchHierarchy(repo *Repo) {

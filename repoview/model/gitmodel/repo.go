@@ -6,17 +6,19 @@ import (
 )
 
 type Repo struct {
-	Commits    []*Commit
-	commitById map[string]*Commit
-	Branches   []*Branch
-	Status     Status
+	Commits              []*Commit
+	commitById           map[string]*Commit
+	Branches             []*Branch
+	Status               Status
+	branchNameFromCommit map[string]string
 }
 
 func newRepo() *Repo {
 	r := &Repo{
-		Commits:    []*Commit{},
-		commitById: make(map[string]*Commit),
-		Branches:   []*Branch{},
+		Commits:              []*Commit{},
+		commitById:           make(map[string]*Commit),
+		Branches:             []*Branch{},
+		branchNameFromCommit: make(map[string]string),
 	}
 	return r
 }
