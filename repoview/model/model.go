@@ -4,7 +4,6 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"sort"
 	"sync"
 	"time"
 )
@@ -69,18 +68,18 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it (if not already added
 		mergeParent := viewPort.repo.gitRepo.CommitById(c.ParentIDs[1])
-		branchIds = h.addBranch(branchIds, mergeParent.Branch)
+		branchIds = h.addBranchWithAncestors(branchIds, mergeParent.Branch)
 	}
 	for _, ccId := range c.ChildIDs {
 		cc := viewPort.repo.gitRepo.CommitById(ccId)
 		if cc.Branch.Name != c.Branch.name {
-			branchIds = h.addBranch(branchIds, cc.Branch)
+			branchIds = h.addBranchWithAncestors(branchIds, cc.Branch)
 		}
 	}
 	for _, b := range viewPort.repo.gitRepo.Branches {
 		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
 			// empty branch with no own branch commit, (branch start)
-			branchIds = h.addBranch(branchIds, b)
+			branchIds = h.addBranchWithAncestors(branchIds, b)
 		}
 	}
 	for _, b := range viewPort.repo.gitRepo.Branches {
@@ -131,38 +130,13 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 	repo := newRepo()
 	repo.gitRepo = gRepo
 
-	if len(branchIds) == 0 {
-		currentBranch, ok := repo.gitRepo.CurrentBranch()
-		if ok {
-			branchIds = h.addBranch(branchIds, currentBranch)
-		} else {
-			branchIds = h.addBranchId(branchIds, masterName)
-			branchIds = h.addBranchId(branchIds, remoteMasterName)
-		}
-	}
-
-	var branches []*gitmodel.Branch
-	for _, id := range branchIds {
-		branch, ok := repo.gitRepo.BranchByID(id)
-		if ok {
-			branches = append(branches, branch)
-		}
-
-	}
-	sort.SliceStable(branches, func(i, j int) bool {
-		if branches[i].Name == branches[j].RemoteName {
-			return true
-		}
-		i1 := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[i].Name)
-		i2 := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[j].Name)
-		if i1 != -1 && (i1 < i2 || i2 == -1) {
-			return true
-		}
-		return false
-	})
-
+	branches := h.getGitModelBranches(branchIds, gRepo)
 	for _, b := range branches {
 		repo.addBranch(b)
+	}
+	currentBranch, ok := gRepo.CurrentBranch()
+	if ok {
+		repo.CurrentBranchName = currentBranch.Name
 	}
 
 	for _, c := range repo.gitRepo.Commits {
@@ -331,39 +305,6 @@ func (h *Model) toBranchIds(branches []*branch) []string {
 	var ids []string
 	for _, b := range branches {
 		ids = append(ids, b.name)
-	}
-	return ids
-}
-
-func (h *Model) addBranch(branchIds []string, branch *gitmodel.Branch) []string {
-	ids := h.branchAncestorIDs(branch)
-	for _, id := range ids {
-		branchIds = h.addBranchId(branchIds, id)
-	}
-	return branchIds
-}
-
-func (h *Model) addBranchId(branchIds []string, branchId string) []string {
-	isAdded := false
-	for _, id := range branchIds {
-		if id == branchId {
-			isAdded = true
-		}
-	}
-	if !isAdded {
-		branchIds = append(branchIds, branchId)
-	}
-	return branchIds
-}
-
-func (h *Model) branchAncestorIDs(b *gitmodel.Branch) []string {
-	var ids []string
-	for cb := b; cb != nil; cb = cb.ParentBranch {
-		ids = append(ids, cb.Name)
-	}
-	for i := len(ids)/2 - 1; i >= 0; i-- {
-		opp := len(ids) - 1 - i
-		ids[i], ids[opp] = ids[opp], ids[i]
 	}
 	return ids
 }

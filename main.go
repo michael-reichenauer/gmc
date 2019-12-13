@@ -11,11 +11,11 @@ import (
 	"runtime"
 )
 
+const version = "0.3"
+
 var (
 	repoPath = flag.String("d", "", "Specify directory")
 )
-
-var version string
 
 func main() {
 	flag.Parse()

@@ -99,7 +99,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		sb.WriteString("\n")
 	}
 
-	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected, h.viewPort.StatusMessage)
+	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected-firstLine, h.viewPort.StatusMessage)
 
 	return repoPage{
 		repoPath:           h.repoPath,
@@ -115,6 +115,9 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 }
 
 func (h *repoVM) toCommitStatus(commits []model.Commit, selected int, status string) string {
+	if selected >= len(commits) {
+		return ""
+	}
 	//if h.statusMessage != "" && selected == 0 {
 	//	return ""
 	//}

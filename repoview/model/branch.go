@@ -7,6 +7,7 @@ type branch struct {
 	tipId          string
 	bottomId       string
 	parentBranchID string
+	remoteName     string
 	tip            *commit
 	bottom         *commit
 	parentBranch   *branch
@@ -15,7 +16,7 @@ type branch struct {
 }
 
 func (b *branch) String() string {
-	return b.displayName
+	return b.name
 }
 
 func (b *branch) isAncestor(dc *branch) bool {
