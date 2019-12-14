@@ -9,6 +9,7 @@ var DefaultBranchPrio = []string{"origin/master", "master", "origin/develop", "d
 
 type Handler struct {
 	gitRepo     *git.Repo
+	branchNames *branchNamesHandler
 	lock        sync.Mutex
 	currentRepo *Repo
 	err         error
@@ -17,6 +18,7 @@ type Handler struct {
 func NewModel(repoPath string) *Handler {
 	return &Handler{
 		gitRepo:     git.NewRepo(repoPath),
+		branchNames: newBranchNamesHandler(),
 		currentRepo: newRepo(),
 	}
 }
@@ -95,7 +97,8 @@ func (h *Handler) setGitBranchTips(repo *Repo) {
 
 func (h *Handler) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
-		parseBranchNames(c)
+		h.branchNames.parseCommit(c)
+
 		h.determineBranch(repo, c)
 		c.Branch.BottomID = c.Id // ##############?????????
 	}
@@ -128,16 +131,15 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 
 	if len(c.Branches) == 0 && len(c.Children) == 0 {
 		// Commit has no branch, must be a deleted branch tip merged into some branch or unusual branch
-		// Trying to parse a branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
-		for _, mc := range c.MergeChildren {
-			from, _ := parseMergeBranchNames(mc.Subject)
-			if from != "" {
-				// Managed to parse a branch name
-				c.Branch = repo.AddNamedBranch(c, from)
-				c.Branches = append(c.Branches, c.Branch)
-				return
-			}
+		// Trying to ues parsed branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
+		name := h.branchNames.branchName(c.Id)
+		if name != "" {
+			// Managed to parse a branch name
+			c.Branch = repo.AddNamedBranch(c, name)
+			c.Branches = append(c.Branches, c.Branch)
+			return
 		}
+
 		// could not parse a name from any of the merge children, use id named branch
 		c.Branch = repo.AddIdNamedBranch(c)
 		c.Branches = append(c.Branches, c.Branch)

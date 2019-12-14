@@ -14,8 +14,7 @@ const (
 )
 
 type Model struct {
-	gitModel *gitmodel.Handler
-
+	gitModel    *gitmodel.Handler
 	lock        sync.Mutex
 	currentRepo *repo
 

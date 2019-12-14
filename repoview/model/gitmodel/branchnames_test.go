@@ -6,12 +6,13 @@ import (
 )
 
 func TestParseBranchNames(t *testing.T) {
-	f, i := parseBranchNames(c("1", "Merge branch 'develop' into master", "2", "3"))
-	assert.Equal(t, "develop", f)
-	assert.Equal(t, "master", i)
-	f, i = parseBranchNames(c("1", "Merge branch 'develop'", "2", "3"))
-	assert.Equal(t, "develop", f)
-	assert.Equal(t, "", i)
+	h := newBranchNamesHandler()
+	fi := h.parseCommit(c("1", "Merge branch 'develop' into master", "2", "3"))
+	assert.Equal(t, "develop", fi.from)
+	assert.Equal(t, "master", fi.into)
+	fi = h.parseCommit(c("2", "Merge branch 'develop'", "3", "4"))
+	assert.Equal(t, "develop", fi.from)
+	assert.Equal(t, "", fi.into)
 }
 
 func c(id, subject string, parents ...string) *Commit {
