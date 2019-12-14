@@ -2,8 +2,6 @@ package gitmodel
 
 import (
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 	"sync"
 )
 
@@ -102,14 +100,11 @@ func (h *Handler) determineCommitBranches(repo *Repo) {
 		h.branchNames.parseCommit(c)
 
 		h.determineBranch(repo, c)
-		c.Branch.BottomID = c.Id // ##############?????????
+		c.Branch.BottomID = c.Id
 	}
 }
 
 func (h *Handler) determineBranch(repo *Repo, c *Commit) {
-	if strings.HasPrefix(c.Id, "955") {
-		log.Debugf("")
-	}
 	if c.Branch != nil {
 		// Commit already knows its branch
 		panic("Commit already knows its branch") // ##############?????????
@@ -131,14 +126,14 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 	if branch := h.isMergedDeletedBranch(repo, c); branch != nil {
 		// Commit has no branch, must be a deleted branch tip merged into some other branch
 		c.Branch = branch
-		c.Branches = append(c.Branches, c.Branch)
+		c.addBranch(c.Branch)
 		return
 	}
 
 	if len(c.Branches) == 0 && len(c.Children) == 1 {
 		// commit has no known branches (middle commit in deleted branch), but has one child, use that branch
 		c.Branch = c.Children[0].Branch
-		c.Branches = append(c.Branches, c.Branch)
+		c.addBranch(c.Branch)
 		return
 	}
 
@@ -164,25 +159,25 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 		if branch == nil {
 			branch = repo.AddNamedBranch(current, name)
 		}
-		for current = current.Parent; current != c; current = current.Parent {
-			current.Children[0].Branch = branch
+		for ; current != c.Parent; current = current.Parent {
+			current.Branch = branch
+			current.IsLikely = true
+			current.addBranch(branch)
 		}
-		c.Branch = branch
 		c.Branch.BottomID = c.Id
-		c.IsLikely = true
 		return
 	}
 
 	if branch := h.isChildMultiBranch(c); branch != nil {
 		// one of the commit children is a multi branch, reuse
 		c.Branch = branch
-		c.Branches = append(c.Branches, c.Branch)
+		c.addBranch(c.Branch)
 		return
 	}
 
 	// Commit, has several possible branches, create a new multi branch
 	c.Branch = repo.AddMultiBranch(c)
-	c.Branches = append(c.Branches, c.Branch)
+	c.addBranch(c.Branch)
 }
 
 func (h *Handler) hasPriorityBranch(c *Commit) *Branch {

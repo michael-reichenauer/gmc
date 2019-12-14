@@ -31,9 +31,6 @@ func (h *branchNamesHandler) parseCommit(c *Commit) fromInto {
 	}
 
 	fi := h.parseMergeBranchNames(c.Subject)
-	if strings.HasPrefix(c.Id, "25917413496") {
-		fi = fromInto{}
-	}
 
 	// set the branch name of the commit and merge parent.
 	// could actually be multiple names, but lets ignore that
