@@ -22,6 +22,7 @@ type Commit struct {
 	MergeChildren []*Commit
 	Branch        *Branch
 	Branches      []*Branch
+	IsLikely      bool
 }
 
 func newCommit(gc git.Commit) *Commit {
