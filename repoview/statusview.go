@@ -26,14 +26,13 @@ func NewStatusView(uiHandler *ui.Handler, repoPath string) *StatusViewHandler {
 
 func (h *StatusViewHandler) Properties() ui.Properties {
 	return ui.Properties{
-		Title:         "",
-		OnLoad:        h.OnLoad,
-		IsCurrentView: true,
+		Title:  "",
+		OnLoad: h.OnLoad,
 	}
 }
 
-func (h *StatusViewHandler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewData {
-	//repoPage, err := h.vm.GetRepoPage(width, firstLine, lastLine, selected)
+func (h *StatusViewHandler) GetViewData(viewPort ui.ViewPort) ui.ViewData {
+	//repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	//if err != nil {
 	//	return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	//}

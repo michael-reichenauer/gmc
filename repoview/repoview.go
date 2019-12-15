@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -28,14 +27,13 @@ func New(uiHandler *ui.Handler, repoPath string) *Handler {
 
 func (h *Handler) Properties() ui.Properties {
 	return ui.Properties{
-		Title:         "",
-		OnLoad:        h.OnLoad,
-		IsCurrentView: true,
+		Title:  "",
+		OnLoad: h.OnLoad,
 	}
 }
 
-func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewData {
-	repoPage, err := h.vm.GetRepoPage(width, firstLine, lastLine, selected)
+func (h *Handler) GetViewData(viewPort ui.ViewPort) ui.ViewData {
+	repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	if err != nil {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	}
@@ -172,22 +170,22 @@ func (h *Handler) pageUpp() {
 	h.viewHandler.NotifyChanged()
 }
 
-func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
-	log.Infof("Set line %d", line)
-
-	if line >= h.viewHandler.ViewData.MaxLines {
-		return nil
-	}
-	cx, _ := view.Cursor()
-	_ = view.SetCursor(cx, line)
-
-	h.viewHandler.CurrentLine = line
-	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
-		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
-		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
-		h.viewHandler.LastLine = h.viewHandler.LastLine + move
-	}
-	h.viewHandler.NotifyChanged()
-
-	return nil
-}
+//func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
+//	log.Infof("Set line %d", line)
+//
+//	if line >= h.viewHandler.ViewData.MaxLines {
+//		return nil
+//	}
+//	cx, _ := view.Cursor()
+//	_ = view.SetCursor(cx, line)
+//
+//	h.viewHandler.CurrentLine = line
+//	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
+//		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
+//		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
+//		h.viewHandler.LastLine = h.viewHandler.LastLine + move
+//	}
+//	h.viewHandler.NotifyChanged()
+//
+//	return nil
+//}

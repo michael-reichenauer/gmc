@@ -8,12 +8,10 @@ import (
 )
 
 type Properties struct {
-	Title         string
-	HasFrame      bool
-	Bounds        func(screenRect Rect) Rect
-	IsCurrentView bool
-	OnLoad        func(view *ViewHandler)
-	OnClose       func()
+	Title    string
+	HasFrame bool
+	OnLoad   func(view *ViewHandler)
+	OnClose  func()
 }
 
 type ViewData struct {
@@ -24,13 +22,20 @@ type ViewData struct {
 	Current  int
 }
 
+type ViewPort struct {
+	Width   int
+	First   int
+	Last    int
+	Current int
+}
+
 type Rect struct {
 	X, Y, W, H int
 }
 
 type View interface {
 	Properties() Properties
-	GetViewData(width, firstLine, lastLine, currentLine int) ViewData
+	GetViewData(viewPort ViewPort) ViewData
 }
 
 type ViewHandler struct {
@@ -65,7 +70,7 @@ func (h *ViewHandler) NotifyChanged() {
 		view.Cursor()
 		x, y := view.Size()
 		h.LastLine = h.FirstLine + y - 1
-		h.ViewData = h.viewModel.GetViewData(x, h.FirstLine, h.LastLine, h.CurrentLine)
+		h.ViewData = h.viewModel.GetViewData(ViewPort{Width: x, First: h.FirstLine, Last: h.LastLine, Current: h.CurrentLine})
 		h.FirstLine = h.ViewData.First
 		h.LastLine = h.ViewData.Last
 		h.CurrentLine = h.ViewData.Current
@@ -82,7 +87,7 @@ func (h *ViewHandler) Resized() {
 		}
 		view.Clear()
 		maxX, maxY := g.Size()
-		bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
+		bounds := Rect{0, 0, maxX - 1, maxY}
 		_, _ = g.SetView(h.ViewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H)
 		return nil
 	})
@@ -109,12 +114,8 @@ func (h *ViewHandler) SetKey(key interface{}, modifier gocui.Modifier, handler f
 }
 
 func newView(gui *gocui.Gui, viewModel View) *ViewHandler {
-	viewName := utils.RandStringRunes(10)
-	//	viewName := "main"
+	viewName := utils.RandomString(10)
 	properties := viewModel.Properties()
-	if properties.Bounds == nil {
-		properties.Bounds = func(sr Rect) Rect { return Rect{0, 0, sr.W - 1, sr.H} }
-	}
 
 	return &ViewHandler{gui: gui, ViewName: viewName, viewModel: viewModel, properties: properties}
 }
@@ -122,7 +123,7 @@ func newView(gui *gocui.Gui, viewModel View) *ViewHandler {
 func (h *ViewHandler) show() {
 	h.gui.Update(func(g *gocui.Gui) error {
 		maxX, maxY := g.Size()
-		bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
+		bounds := Rect{0, 0, maxX - 1, maxY}
 		if gv, err := g.SetView(h.ViewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
 			if err != gocui.ErrUnknownView {
 				return err
@@ -142,11 +143,10 @@ func (h *ViewHandler) show() {
 				h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 			}
 
-			if h.properties.IsCurrentView {
+			if len(h.gui.Views()) == 1 {
 				if _, err := h.gui.SetCurrentView(h.ViewName); err != nil {
 					return err
 				}
-
 			}
 		}
 		if h.properties.OnLoad != nil {
