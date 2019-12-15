@@ -3,7 +3,6 @@ package repoview
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -56,18 +55,15 @@ func (h *RepoView) GetViewData(viewPort ui.ViewPort) ui.ViewData {
 
 func (h *RepoView) OnLoad(view *ui.ViewHandler) {
 	h.viewHandler = view
+
 	h.vm.Load()
 	h.setWindowTitle(h.repoPath, "", "")
+
 	h.viewHandler.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
 	h.viewHandler.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
 	h.viewHandler.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.viewHandler.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
 	h.viewHandler.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
-	h.viewHandler.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.cursorDown)
-	h.viewHandler.SetKey(gocui.KeySpace, gocui.ModNone, h.pageDown)
-	h.viewHandler.SetKey(gocui.KeyPgdn, gocui.ModNone, h.pageDown)
-	h.viewHandler.SetKey(gocui.KeyPgup, gocui.ModNone, h.pageUpp)
-	h.viewHandler.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.cursorUp)
 	h.viewHandler.NotifyChanged()
 }
 
@@ -99,92 +95,9 @@ func (h *RepoView) setWindowTitle(path, branch, status string) {
 	//if h.isShowCommitStatus {
 	statusTxt = fmt.Sprintf("  %s", status)
 	//}
-	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
 }
+
 func (h *RepoView) SetCursor(line int) {
-
 	//	h.setCursor(g, view, line)
-
 }
-
-func (h *RepoView) cursorUp() {
-	if h.viewHandler.CurrentLine <= 0 {
-		return
-	}
-
-	cx, cy := h.viewHandler.Cursor()
-	_ = h.viewHandler.SetCursor(cx, cy-1)
-
-	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine - 1
-	if h.viewHandler.CurrentLine < h.viewHandler.FirstLine {
-		move := h.viewHandler.FirstLine - h.viewHandler.CurrentLine
-		h.viewHandler.FirstLine = h.viewHandler.FirstLine - move
-		h.viewHandler.LastLine = h.viewHandler.LastLine - move
-	}
-	h.viewHandler.NotifyChanged()
-}
-
-func (h *RepoView) cursorDown() {
-	if h.viewHandler.CurrentLine >= h.viewHandler.ViewData.MaxLines-1 {
-		return
-	}
-	cx, cy := h.viewHandler.Cursor()
-	_ = h.viewHandler.SetCursor(cx, cy+1)
-
-	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine + 1
-	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
-		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
-		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
-		h.viewHandler.LastLine = h.viewHandler.LastLine + move
-	}
-	h.viewHandler.NotifyChanged()
-}
-func (h *RepoView) pageDown() {
-
-	_, y := h.viewHandler.Size()
-	move := y - 2
-	if h.viewHandler.LastLine+move >= h.viewHandler.ViewData.MaxLines-1 {
-		move = h.viewHandler.ViewData.MaxLines - 1 - h.viewHandler.LastLine
-	}
-	if move < 1 {
-		return
-	}
-	h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
-	h.viewHandler.LastLine = h.viewHandler.LastLine + move
-	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine + move
-	h.viewHandler.NotifyChanged()
-}
-func (h *RepoView) pageUpp() {
-	_, y := h.viewHandler.Size()
-	move := y - 2
-	if h.viewHandler.FirstLine-move < 0 {
-		move = h.viewHandler.FirstLine
-	}
-	if move < 1 {
-		return
-	}
-	h.viewHandler.FirstLine = h.viewHandler.FirstLine - move
-	h.viewHandler.LastLine = h.viewHandler.LastLine - move
-	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine - move
-	h.viewHandler.NotifyChanged()
-}
-
-//func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
-//	log.Infof("Set line %d", line)
-//
-//	if line >= h.viewHandler.ViewData.MaxLines {
-//		return nil
-//	}
-//	cx, _ := view.Cursor()
-//	_ = view.SetCursor(cx, line)
-//
-//	h.viewHandler.CurrentLine = line
-//	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
-//		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
-//		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
-//		h.viewHandler.LastLine = h.viewHandler.LastLine + move
-//	}
-//	h.viewHandler.NotifyChanged()
-//
-//	return nil
-//}

@@ -2,6 +2,7 @@ package ui
 
 import (
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
@@ -58,6 +59,10 @@ func (h *Handler) Run(runFunc func()) {
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Fatalf("failed, %v", err)
 	}
+}
+
+func SetWindowTitle(text string) {
+	_, _ = utils.SetConsoleTitle(text)
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {

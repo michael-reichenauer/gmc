@@ -149,6 +149,11 @@ func (h *ViewHandler) show() {
 				}
 			}
 		}
+		h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.CursorDown)
+		h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
+		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.PageDown)
+		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
+		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 		if h.properties.OnLoad != nil {
 			h.properties.OnLoad(h)
 		}
@@ -171,3 +176,84 @@ func (h *ViewHandler) SetCursor(x int, y int) error {
 func (h *ViewHandler) Size() (int, int) {
 	return h.guiView.Size()
 }
+
+func (h *ViewHandler) CursorUp() {
+	if h.CurrentLine <= 0 {
+		return
+	}
+
+	cx, cy := h.Cursor()
+	_ = h.SetCursor(cx, cy-1)
+
+	h.CurrentLine = h.CurrentLine - 1
+	if h.CurrentLine < h.FirstLine {
+		move := h.FirstLine - h.CurrentLine
+		h.FirstLine = h.FirstLine - move
+		h.LastLine = h.LastLine - move
+	}
+	h.NotifyChanged()
+}
+
+func (h *ViewHandler) CursorDown() {
+	if h.CurrentLine >= h.ViewData.MaxLines-1 {
+		return
+	}
+	cx, cy := h.Cursor()
+	_ = h.SetCursor(cx, cy+1)
+
+	h.CurrentLine = h.CurrentLine + 1
+	if h.CurrentLine > h.LastLine {
+		move := h.CurrentLine - h.LastLine
+		h.FirstLine = h.FirstLine + move
+		h.LastLine = h.LastLine + move
+	}
+	h.NotifyChanged()
+}
+func (h *ViewHandler) PageDown() {
+	_, y := h.Size()
+	move := y - 2
+	if h.LastLine+move >= h.ViewData.MaxLines-1 {
+		move = h.ViewData.MaxLines - 1 - h.LastLine
+	}
+	if move < 1 {
+		return
+	}
+	h.FirstLine = h.FirstLine + move
+	h.LastLine = h.LastLine + move
+	h.CurrentLine = h.CurrentLine + move
+	h.NotifyChanged()
+}
+func (h *ViewHandler) PageUpp() {
+	_, y := h.Size()
+	move := y - 2
+	if h.FirstLine-move < 0 {
+		move = h.FirstLine
+	}
+	if move < 1 {
+		return
+	}
+	h.FirstLine = h.FirstLine - move
+	h.LastLine = h.LastLine - move
+	h.CurrentLine = h.CurrentLine - move
+	h.NotifyChanged()
+}
+
+//func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
+//	log.Infof("Set line %d", line)
+//
+//	if line >= h.viewHandler.ViewData.MaxLines {
+//		return nil
+//	}
+//	cx, _ := view.Cursor()
+//	_ = view.SetCursor(cx, line)
+//
+//	h.viewHandler.CurrentLine = line
+//	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
+//		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
+//		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
+//		h.viewHandler.LastLine = h.viewHandler.LastLine + move
+//	}
+//	h.viewHandler.NotifyChanged()
+//
+//	return nil
+//}
