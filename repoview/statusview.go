@@ -8,7 +8,7 @@ import (
 
 type StatusViewHandler struct {
 	uiHandler          *ui.Handler
-	view               *ui.View
+	view               *ui.ViewHandler
 	vm                 *statusVM
 	repoPath           string
 	isSelected         bool
@@ -53,7 +53,7 @@ func (h *StatusViewHandler) GetViewData(width, firstLine, lastLine, selected int
 	}
 }
 
-func (h *StatusViewHandler) OnLoad(view *ui.View) {
+func (h *StatusViewHandler) OnLoad(view *ui.ViewHandler) {
 	h.view = view
 	//h.vm.Load()
 	h.view.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
@@ -82,13 +82,11 @@ func (h *StatusViewHandler) onLeft() {
 }
 
 func (h *StatusViewHandler) onRefresh() {
-	h.view.View.Clear()
-	h.view.Gui.Update(func(g *gocui.Gui) error {
+	h.view.GuiView.Clear()
+	h.view.RunOnUI(func() {
 		//h.vm.Refresh()
 		h.view.NotifyChanged()
-		return nil
 	})
-
 }
 
 func (h *StatusViewHandler) SetCursor(line int) {
@@ -102,8 +100,8 @@ func (h *StatusViewHandler) cursorUp() {
 		return
 	}
 
-	cx, cy := h.view.View.Cursor()
-	_ = h.view.View.SetCursor(cx, cy-1)
+	cx, cy := h.view.GuiView.Cursor()
+	_ = h.view.GuiView.SetCursor(cx, cy-1)
 
 	h.view.CurrentLine = h.view.CurrentLine - 1
 	if h.view.CurrentLine < h.view.FirstLine {
@@ -118,8 +116,8 @@ func (h *StatusViewHandler) cursorDown() {
 	if h.view.CurrentLine >= h.view.ViewData.MaxLines-1 {
 		return
 	}
-	cx, cy := h.view.View.Cursor()
-	_ = h.view.View.SetCursor(cx, cy+1)
+	cx, cy := h.view.GuiView.Cursor()
+	_ = h.view.GuiView.SetCursor(cx, cy+1)
 
 	h.view.CurrentLine = h.view.CurrentLine + 1
 	if h.view.CurrentLine > h.view.LastLine {
@@ -130,7 +128,7 @@ func (h *StatusViewHandler) cursorDown() {
 	h.view.NotifyChanged()
 }
 func (h *StatusViewHandler) pageDown() {
-	_, y := h.view.View.Size()
+	_, y := h.view.GuiView.Size()
 	move := y - 2
 	if h.view.LastLine+move >= h.view.ViewData.MaxLines-1 {
 		move = h.view.ViewData.MaxLines - 1 - h.view.LastLine
@@ -144,7 +142,7 @@ func (h *StatusViewHandler) pageDown() {
 	h.view.NotifyChanged()
 }
 func (h *StatusViewHandler) pageUpp() {
-	_, y := h.view.View.Size()
+	_, y := h.view.GuiView.Size()
 	move := y - 2
 	if h.view.FirstLine-move < 0 {
 		move = h.view.FirstLine

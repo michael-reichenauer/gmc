@@ -12,7 +12,7 @@ type Properties struct {
 	HasFrame      bool
 	Bounds        func(screenRect Rect) Rect
 	IsCurrentView bool
-	OnLoad        func(view *View)
+	OnLoad        func(view *ViewHandler)
 	OnClose       func()
 }
 
@@ -28,18 +28,18 @@ type Rect struct {
 	X, Y, W, H int
 }
 
-type ViewModel interface {
+type View interface {
 	Properties() Properties
 	GetViewData(width, firstLine, lastLine, currentLine int) ViewData
 }
 
-type View struct {
-	Gui  *gocui.Gui
-	View *gocui.View
+type ViewHandler struct {
+	gui     *gocui.Gui
+	GuiView *gocui.View
 
 	properties  Properties
 	ViewName    string
-	viewModel   ViewModel
+	viewModel   View
 	ViewData    ViewData
 	FirstLine   int
 	LastLine    int
@@ -48,8 +48,15 @@ type View struct {
 	maxY        int
 }
 
-func (h *View) NotifyChanged() {
-	h.Gui.Update(func(g *gocui.Gui) error {
+func (h *ViewHandler) RunOnUI(f func()) {
+	h.gui.Update(func(g *gocui.Gui) error {
+		f()
+		return nil
+	})
+}
+
+func (h *ViewHandler) NotifyChanged() {
+	h.gui.Update(func(g *gocui.Gui) error {
 		view, err := g.View(h.ViewName)
 		if err != nil {
 			return err
@@ -67,8 +74,8 @@ func (h *View) NotifyChanged() {
 	})
 }
 
-func (h *View) Resized() {
-	h.Gui.Update(func(g *gocui.Gui) error {
+func (h *ViewHandler) Resized() {
+	h.gui.Update(func(g *gocui.Gui) error {
 		view, err := g.View(h.ViewName)
 		if err != nil {
 			return err
@@ -81,17 +88,17 @@ func (h *View) Resized() {
 	})
 }
 
-func (h *View) Close() {
-	h.Gui.Update(func(g *gocui.Gui) error {
+func (h *ViewHandler) Close() {
+	h.gui.Update(func(g *gocui.Gui) error {
 		if h.properties.OnClose != nil {
 			h.properties.OnClose()
 		}
-		return h.Gui.DeleteView(h.ViewName)
+		return h.gui.DeleteView(h.ViewName)
 	})
 }
 
-func (h *View) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
-	if err := h.Gui.SetKeybinding(
+func (h *ViewHandler) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
+	if err := h.gui.SetKeybinding(
 		h.ViewName, key, modifier,
 		func(gui *gocui.Gui, view *gocui.View) error {
 			handler()
@@ -101,7 +108,7 @@ func (h *View) SetKey(key interface{}, modifier gocui.Modifier, handler func()) 
 	}
 }
 
-func newView(gui *gocui.Gui, viewModel ViewModel) *View {
+func newView(gui *gocui.Gui, viewModel View) *ViewHandler {
 	viewName := utils.RandStringRunes(10)
 	//	viewName := "main"
 	properties := viewModel.Properties()
@@ -109,11 +116,11 @@ func newView(gui *gocui.Gui, viewModel ViewModel) *View {
 		properties.Bounds = func(sr Rect) Rect { return Rect{0, 0, sr.W - 1, sr.H} }
 	}
 
-	return &View{Gui: gui, ViewName: viewName, viewModel: viewModel, properties: properties}
+	return &ViewHandler{gui: gui, ViewName: viewName, viewModel: viewModel, properties: properties}
 }
 
-func (h *View) show() {
-	h.Gui.Update(func(g *gocui.Gui) error {
+func (h *ViewHandler) show() {
+	h.gui.Update(func(g *gocui.Gui) error {
 		maxX, maxY := g.Size()
 		bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
 		if gv, err := g.SetView(h.ViewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
@@ -121,22 +128,22 @@ func (h *View) show() {
 				return err
 			}
 
-			h.View = gv
-			_, vy := h.View.Size()
+			h.GuiView = gv
+			_, vy := h.GuiView.Size()
 			h.FirstLine = 0
 			h.LastLine = vy - 1
 
-			h.View.Frame = h.properties.Title != "" || h.properties.HasFrame
-			h.View.Editable = false
-			h.View.Wrap = false
-			h.View.Highlight = false
-			h.View.SelBgColor = gocui.ColorBlue
+			h.GuiView.Frame = h.properties.Title != "" || h.properties.HasFrame
+			h.GuiView.Editable = false
+			h.GuiView.Wrap = false
+			h.GuiView.Highlight = false
+			h.GuiView.SelBgColor = gocui.ColorBlue
 			if h.properties.Title != "" {
-				h.View.Title = fmt.Sprintf(" %s ", h.properties.Title)
+				h.GuiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 			}
 
 			if h.properties.IsCurrentView {
-				if _, err := h.Gui.SetCurrentView(h.ViewName); err != nil {
+				if _, err := h.gui.SetCurrentView(h.ViewName); err != nil {
 					return err
 				}
 

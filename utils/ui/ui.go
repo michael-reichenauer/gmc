@@ -11,14 +11,14 @@ type Handler struct {
 	runFunc       func()
 	maxX          int
 	maxY          int
-	views         []*View
+	views         []*ViewHandler
 }
 
 func NewUI() *Handler {
 	return &Handler{}
 }
 
-func (h *Handler) Show(viewModel ViewModel) *View {
+func (h *Handler) Show(viewModel View) *ViewHandler {
 	view := newView(h.gui, viewModel)
 	h.views = append(h.views, view)
 	view.show()

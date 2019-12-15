@@ -10,7 +10,7 @@ import (
 
 type Handler struct {
 	uiHandler          *ui.Handler
-	view               *ui.View
+	viewHandler        *ui.ViewHandler
 	vm                 *repoVM
 	repoPath           string
 	isSelected         bool
@@ -56,46 +56,44 @@ func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewD
 	}
 }
 
-func (h *Handler) OnLoad(view *ui.View) {
-	h.view = view
+func (h *Handler) OnLoad(view *ui.ViewHandler) {
+	h.viewHandler = view
 	h.vm.Load()
 	h.setWindowTitle(h.repoPath, "", "")
-	h.view.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
-	h.view.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
-	h.view.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
-	h.view.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
-	h.view.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
-	h.view.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.cursorDown)
-	h.view.SetKey(gocui.KeySpace, gocui.ModNone, h.pageDown)
-	h.view.SetKey(gocui.KeyPgdn, gocui.ModNone, h.pageDown)
-	h.view.SetKey(gocui.KeyPgup, gocui.ModNone, h.pageUpp)
-	h.view.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.cursorUp)
-	h.view.NotifyChanged()
+	h.viewHandler.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
+	h.viewHandler.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
+	h.viewHandler.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
+	h.viewHandler.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
+	h.viewHandler.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
+	h.viewHandler.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.cursorDown)
+	h.viewHandler.SetKey(gocui.KeySpace, gocui.ModNone, h.pageDown)
+	h.viewHandler.SetKey(gocui.KeyPgdn, gocui.ModNone, h.pageDown)
+	h.viewHandler.SetKey(gocui.KeyPgup, gocui.ModNone, h.pageUpp)
+	h.viewHandler.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.cursorUp)
+	h.viewHandler.NotifyChanged()
 }
 
 func (h *Handler) onEnter() {
 	h.isShowCommitStatus = !h.isShowCommitStatus
-	h.view.NotifyChanged()
+	h.viewHandler.NotifyChanged()
 }
 
 func (h *Handler) onRight() {
-	h.vm.OpenBranch(h.view.CurrentLine)
-	h.view.NotifyChanged()
+	h.vm.OpenBranch(h.viewHandler.CurrentLine)
+	h.viewHandler.NotifyChanged()
 }
 
 func (h *Handler) onLeft() {
-	h.vm.CloseBranch(h.view.CurrentLine)
-	h.view.NotifyChanged()
+	h.vm.CloseBranch(h.viewHandler.CurrentLine)
+	h.viewHandler.NotifyChanged()
 }
 
 func (h *Handler) onRefresh() {
-	h.view.View.Clear()
-	h.view.Gui.Update(func(g *gocui.Gui) error {
+	h.viewHandler.GuiView.Clear()
+	h.viewHandler.RunOnUI(func() {
 		h.vm.Refresh()
-		h.view.NotifyChanged()
-		return nil
+		h.viewHandler.NotifyChanged()
 	})
-
 }
 
 func (h *Handler) setWindowTitle(path, branch, status string) {
@@ -113,83 +111,83 @@ func (h *Handler) SetCursor(line int) {
 
 func (h *Handler) cursorUp() {
 
-	if h.view.CurrentLine <= 0 {
+	if h.viewHandler.CurrentLine <= 0 {
 		return
 	}
 
-	cx, cy := h.view.View.Cursor()
-	_ = h.view.View.SetCursor(cx, cy-1)
+	cx, cy := h.viewHandler.GuiView.Cursor()
+	_ = h.viewHandler.GuiView.SetCursor(cx, cy-1)
 
-	h.view.CurrentLine = h.view.CurrentLine - 1
-	if h.view.CurrentLine < h.view.FirstLine {
-		move := h.view.FirstLine - h.view.CurrentLine
-		h.view.FirstLine = h.view.FirstLine - move
-		h.view.LastLine = h.view.LastLine - move
+	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine - 1
+	if h.viewHandler.CurrentLine < h.viewHandler.FirstLine {
+		move := h.viewHandler.FirstLine - h.viewHandler.CurrentLine
+		h.viewHandler.FirstLine = h.viewHandler.FirstLine - move
+		h.viewHandler.LastLine = h.viewHandler.LastLine - move
 	}
-	h.view.NotifyChanged()
+	h.viewHandler.NotifyChanged()
 }
 
 func (h *Handler) cursorDown() {
-	if h.view.CurrentLine >= h.view.ViewData.MaxLines-1 {
+	if h.viewHandler.CurrentLine >= h.viewHandler.ViewData.MaxLines-1 {
 		return
 	}
-	cx, cy := h.view.View.Cursor()
-	_ = h.view.View.SetCursor(cx, cy+1)
+	cx, cy := h.viewHandler.GuiView.Cursor()
+	_ = h.viewHandler.GuiView.SetCursor(cx, cy+1)
 
-	h.view.CurrentLine = h.view.CurrentLine + 1
-	if h.view.CurrentLine > h.view.LastLine {
-		move := h.view.CurrentLine - h.view.LastLine
-		h.view.FirstLine = h.view.FirstLine + move
-		h.view.LastLine = h.view.LastLine + move
+	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine + 1
+	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
+		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
+		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
+		h.viewHandler.LastLine = h.viewHandler.LastLine + move
 	}
-	h.view.NotifyChanged()
+	h.viewHandler.NotifyChanged()
 }
 func (h *Handler) pageDown() {
 
-	_, y := h.view.View.Size()
+	_, y := h.viewHandler.GuiView.Size()
 	move := y - 2
-	if h.view.LastLine+move >= h.view.ViewData.MaxLines-1 {
-		move = h.view.ViewData.MaxLines - 1 - h.view.LastLine
+	if h.viewHandler.LastLine+move >= h.viewHandler.ViewData.MaxLines-1 {
+		move = h.viewHandler.ViewData.MaxLines - 1 - h.viewHandler.LastLine
 	}
 	if move < 1 {
 		return
 	}
-	h.view.FirstLine = h.view.FirstLine + move
-	h.view.LastLine = h.view.LastLine + move
-	h.view.CurrentLine = h.view.CurrentLine + move
-	h.view.NotifyChanged()
+	h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
+	h.viewHandler.LastLine = h.viewHandler.LastLine + move
+	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine + move
+	h.viewHandler.NotifyChanged()
 }
 func (h *Handler) pageUpp() {
-	_, y := h.view.View.Size()
+	_, y := h.viewHandler.GuiView.Size()
 	move := y - 2
-	if h.view.FirstLine-move < 0 {
-		move = h.view.FirstLine
+	if h.viewHandler.FirstLine-move < 0 {
+		move = h.viewHandler.FirstLine
 	}
 	if move < 1 {
 		return
 	}
-	h.view.FirstLine = h.view.FirstLine - move
-	h.view.LastLine = h.view.LastLine - move
-	h.view.CurrentLine = h.view.CurrentLine - move
-	h.view.NotifyChanged()
+	h.viewHandler.FirstLine = h.viewHandler.FirstLine - move
+	h.viewHandler.LastLine = h.viewHandler.LastLine - move
+	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine - move
+	h.viewHandler.NotifyChanged()
 }
 
 func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
 	log.Infof("Set line %d", line)
 
-	if line >= h.view.ViewData.MaxLines {
+	if line >= h.viewHandler.ViewData.MaxLines {
 		return nil
 	}
 	cx, _ := view.Cursor()
 	_ = view.SetCursor(cx, line)
 
-	h.view.CurrentLine = line
-	if h.view.CurrentLine > h.view.LastLine {
-		move := h.view.CurrentLine - h.view.LastLine
-		h.view.FirstLine = h.view.FirstLine + move
-		h.view.LastLine = h.view.LastLine + move
+	h.viewHandler.CurrentLine = line
+	if h.viewHandler.CurrentLine > h.viewHandler.LastLine {
+		move := h.viewHandler.CurrentLine - h.viewHandler.LastLine
+		h.viewHandler.FirstLine = h.viewHandler.FirstLine + move
+		h.viewHandler.LastLine = h.viewHandler.LastLine + move
 	}
-	h.view.NotifyChanged()
+	h.viewHandler.NotifyChanged()
 
 	return nil
 }
