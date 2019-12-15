@@ -149,7 +149,7 @@ func (h *repoVM) CloseBranch(index int) {
 }
 
 func (h *repoVM) Refresh() {
-	h.model.Refresh(h.viewPort)
+	//h.model.Refresh(h.viewPort)
 }
 
 func writeSelectedMarker(sb *strings.Builder, index, selected int) {

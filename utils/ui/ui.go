@@ -27,12 +27,14 @@ func (h *Handler) Show(viewModel ViewModel) *View {
 
 func (h *Handler) Run(runFunc func()) {
 	h.runFunc = runFunc
+
 	gui, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		log.Fatalf("failed, %v", err)
 	}
 	h.gui = gui
 	defer gui.Close()
+
 	gui.InputEsc = true
 	// gui.Cursor = true
 	//g.Mouse = true
@@ -44,9 +46,6 @@ func (h *Handler) Run(runFunc func()) {
 		log.Fatalf("failed, %v", err)
 	}
 	if err = gui.SetKeybinding("", gocui.KeyEsc, gocui.ModNone, quit); err != nil {
-		log.Fatalf("failed, %v", err)
-	}
-	if err = gui.SetKeybinding("", gocui.KeyBackspace, gocui.ModNone, quit); err != nil {
 		log.Fatalf("failed, %v", err)
 	}
 	if err = gui.SetKeybinding("", 'q', gocui.ModNone, quit); err != nil {
@@ -62,11 +61,14 @@ func (h *Handler) Run(runFunc func()) {
 }
 
 func quit(g *gocui.Gui, v *gocui.View) error {
+	log.Infof("Quiting")
 	return gocui.ErrQuit
 }
 
 func (h *Handler) layout(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
+
+	// Resize all views if console window is resized
 	if maxX != h.maxX || maxY != h.maxY {
 		h.maxX = maxX
 		h.maxY = maxY
