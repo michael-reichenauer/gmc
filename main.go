@@ -41,7 +41,7 @@ func main() {
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		repoView := repoview.New(uiHandler, *repoPath)
+		repoView := repoview.NewRepoView(uiHandler, *repoPath)
 		_ = uiHandler.Show(repoView)
 	})
 }

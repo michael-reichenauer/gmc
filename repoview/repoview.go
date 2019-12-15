@@ -7,7 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-type Handler struct {
+type RepoView struct {
 	uiHandler          *ui.Handler
 	viewHandler        *ui.ViewHandler
 	vm                 *repoVM
@@ -17,22 +17,22 @@ type Handler struct {
 	isShowCommitStatus bool
 }
 
-func New(uiHandler *ui.Handler, repoPath string) *Handler {
-	return &Handler{
+func NewRepoView(uiHandler *ui.Handler, repoPath string) *RepoView {
+	return &RepoView{
 		uiHandler: uiHandler,
 		repoPath:  repoPath,
 		vm:        newRepoVM(repoPath),
 	}
 }
 
-func (h *Handler) Properties() ui.Properties {
+func (h *RepoView) Properties() ui.Properties {
 	return ui.Properties{
 		Title:  "",
 		OnLoad: h.OnLoad,
 	}
 }
 
-func (h *Handler) GetViewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *RepoView) GetViewData(viewPort ui.ViewPort) ui.ViewData {
 	repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	if err != nil {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
@@ -54,7 +54,7 @@ func (h *Handler) GetViewData(viewPort ui.ViewPort) ui.ViewData {
 	}
 }
 
-func (h *Handler) OnLoad(view *ui.ViewHandler) {
+func (h *RepoView) OnLoad(view *ui.ViewHandler) {
 	h.viewHandler = view
 	h.vm.Load()
 	h.setWindowTitle(h.repoPath, "", "")
@@ -71,22 +71,22 @@ func (h *Handler) OnLoad(view *ui.ViewHandler) {
 	h.viewHandler.NotifyChanged()
 }
 
-func (h *Handler) onEnter() {
+func (h *RepoView) onEnter() {
 	h.isShowCommitStatus = !h.isShowCommitStatus
 	h.viewHandler.NotifyChanged()
 }
 
-func (h *Handler) onRight() {
+func (h *RepoView) onRight() {
 	h.vm.OpenBranch(h.viewHandler.CurrentLine)
 	h.viewHandler.NotifyChanged()
 }
 
-func (h *Handler) onLeft() {
+func (h *RepoView) onLeft() {
 	h.vm.CloseBranch(h.viewHandler.CurrentLine)
 	h.viewHandler.NotifyChanged()
 }
 
-func (h *Handler) onRefresh() {
+func (h *RepoView) onRefresh() {
 	h.viewHandler.Clear()
 	h.viewHandler.RunOnUI(func() {
 		h.vm.Refresh()
@@ -94,21 +94,20 @@ func (h *Handler) onRefresh() {
 	})
 }
 
-func (h *Handler) setWindowTitle(path, branch, status string) {
+func (h *RepoView) setWindowTitle(path, branch, status string) {
 	statusTxt := ""
 	//if h.isShowCommitStatus {
 	statusTxt = fmt.Sprintf("  %s", status)
 	//}
 	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
 }
-func (h *Handler) SetCursor(line int) {
+func (h *RepoView) SetCursor(line int) {
 
 	//	h.setCursor(g, view, line)
 
 }
 
-func (h *Handler) cursorUp() {
-
+func (h *RepoView) cursorUp() {
 	if h.viewHandler.CurrentLine <= 0 {
 		return
 	}
@@ -125,7 +124,7 @@ func (h *Handler) cursorUp() {
 	h.viewHandler.NotifyChanged()
 }
 
-func (h *Handler) cursorDown() {
+func (h *RepoView) cursorDown() {
 	if h.viewHandler.CurrentLine >= h.viewHandler.ViewData.MaxLines-1 {
 		return
 	}
@@ -140,7 +139,7 @@ func (h *Handler) cursorDown() {
 	}
 	h.viewHandler.NotifyChanged()
 }
-func (h *Handler) pageDown() {
+func (h *RepoView) pageDown() {
 
 	_, y := h.viewHandler.Size()
 	move := y - 2
@@ -155,7 +154,7 @@ func (h *Handler) pageDown() {
 	h.viewHandler.CurrentLine = h.viewHandler.CurrentLine + move
 	h.viewHandler.NotifyChanged()
 }
-func (h *Handler) pageUpp() {
+func (h *RepoView) pageUpp() {
 	_, y := h.viewHandler.Size()
 	move := y - 2
 	if h.viewHandler.FirstLine-move < 0 {
