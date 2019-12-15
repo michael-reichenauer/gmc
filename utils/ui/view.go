@@ -35,7 +35,7 @@ type View interface {
 
 type ViewHandler struct {
 	gui     *gocui.Gui
-	GuiView *gocui.View
+	guiView *gocui.View
 
 	properties  Properties
 	ViewName    string
@@ -128,18 +128,18 @@ func (h *ViewHandler) show() {
 				return err
 			}
 
-			h.GuiView = gv
-			_, vy := h.GuiView.Size()
+			h.guiView = gv
+			_, vy := h.guiView.Size()
 			h.FirstLine = 0
 			h.LastLine = vy - 1
 
-			h.GuiView.Frame = h.properties.Title != "" || h.properties.HasFrame
-			h.GuiView.Editable = false
-			h.GuiView.Wrap = false
-			h.GuiView.Highlight = false
-			h.GuiView.SelBgColor = gocui.ColorBlue
+			h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
+			h.guiView.Editable = false
+			h.guiView.Wrap = false
+			h.guiView.Highlight = false
+			h.guiView.SelBgColor = gocui.ColorBlue
 			if h.properties.Title != "" {
-				h.GuiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
+				h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 			}
 
 			if h.properties.IsCurrentView {
@@ -154,4 +154,20 @@ func (h *ViewHandler) show() {
 		}
 		return nil
 	})
+}
+
+func (h *ViewHandler) Clear() {
+	h.guiView.Clear()
+}
+
+func (h *ViewHandler) Cursor() (int, int) {
+	return h.guiView.Cursor()
+}
+
+func (h *ViewHandler) SetCursor(x int, y int) error {
+	return h.guiView.SetCursor(x, y)
+}
+
+func (h *ViewHandler) Size() (int, int) {
+	return h.guiView.Size()
 }

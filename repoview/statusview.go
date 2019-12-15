@@ -82,7 +82,7 @@ func (h *StatusViewHandler) onLeft() {
 }
 
 func (h *StatusViewHandler) onRefresh() {
-	h.view.GuiView.Clear()
+	h.view.Clear()
 	h.view.RunOnUI(func() {
 		//h.vm.Refresh()
 		h.view.NotifyChanged()
@@ -100,8 +100,8 @@ func (h *StatusViewHandler) cursorUp() {
 		return
 	}
 
-	cx, cy := h.view.GuiView.Cursor()
-	_ = h.view.GuiView.SetCursor(cx, cy-1)
+	cx, cy := h.view.Cursor()
+	_ = h.view.SetCursor(cx, cy-1)
 
 	h.view.CurrentLine = h.view.CurrentLine - 1
 	if h.view.CurrentLine < h.view.FirstLine {
@@ -116,8 +116,8 @@ func (h *StatusViewHandler) cursorDown() {
 	if h.view.CurrentLine >= h.view.ViewData.MaxLines-1 {
 		return
 	}
-	cx, cy := h.view.GuiView.Cursor()
-	_ = h.view.GuiView.SetCursor(cx, cy+1)
+	cx, cy := h.view.Cursor()
+	_ = h.view.SetCursor(cx, cy+1)
 
 	h.view.CurrentLine = h.view.CurrentLine + 1
 	if h.view.CurrentLine > h.view.LastLine {
@@ -128,7 +128,7 @@ func (h *StatusViewHandler) cursorDown() {
 	h.view.NotifyChanged()
 }
 func (h *StatusViewHandler) pageDown() {
-	_, y := h.view.GuiView.Size()
+	_, y := h.view.Size()
 	move := y - 2
 	if h.view.LastLine+move >= h.view.ViewData.MaxLines-1 {
 		move = h.view.ViewData.MaxLines - 1 - h.view.LastLine
@@ -142,7 +142,7 @@ func (h *StatusViewHandler) pageDown() {
 	h.view.NotifyChanged()
 }
 func (h *StatusViewHandler) pageUpp() {
-	_, y := h.view.GuiView.Size()
+	_, y := h.view.Size()
 	move := y - 2
 	if h.view.FirstLine-move < 0 {
 		move = h.view.FirstLine
