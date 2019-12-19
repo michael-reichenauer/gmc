@@ -12,15 +12,14 @@ type StatusViewHandler struct {
 
 func NewStatusView(uiHandler *ui.UI) *StatusViewHandler {
 	h := &StatusViewHandler{
-		View: uiHandler.NewView(),
-		vm:   newStatusVM(),
+		vm: newStatusVM(),
 	}
-	h.Properties().OnViewData = h.onViewData
+	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
 	return h
 }
 
-func (h *StatusViewHandler) onViewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *StatusViewHandler) viewData(viewPort ui.ViewPort) ui.ViewData {
 	//repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	//if err != nil {
 	//	return ui.viewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}

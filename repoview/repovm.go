@@ -62,27 +62,17 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	lastLine = h.viewPort.Last
 	selected = h.viewPort.Selected
 
-	markerWidth := 6 //13
+	markerWidth := 8 //13
 	log.Infof("before width")
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
 	log.Infof("after width %d %d %d", messageLength, authorLength, timeLength)
 	var sb strings.Builder
 	commits := h.viewPort.Commits
-	//h.statusMessage = ""
-	//if h.viewPort.StatusMessage != "" {
-	//	h.statusMessage = h.viewPort.StatusMessage
-	//	writeSelectedMarker(&sb, firstLine, selected)
-	//	sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))
-	//	sb.WriteString(ui.YellowDk(h.viewPort.StatusMessage))
-	//	sb.WriteString("\n")
-	//	commits = commits[:len(commits)-1]
-	//}
+
 	h.statusMessage = ""
 	sbid := ""
-	//if h.statusMessage != "" && selected != 0 {
 	sbc := commits[selected-firstLine]
 	sbid = sbc.Branch.Name
-	//}
 
 	for i, c := range commits {
 		writeSelectedMarker(&sb, i+firstLine, selected)
@@ -93,8 +83,6 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		sb.WriteString(" ")
 		writeMessage(&sb, c, sbid, messageLength)
 		sb.WriteString(" ")
-		//writeSid(&sb, c)
-		//sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)

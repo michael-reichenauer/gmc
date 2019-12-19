@@ -24,8 +24,8 @@ func NewUI() *UI {
 	return &UI{}
 }
 
-func (h *UI) NewView() View {
-	return newView(h)
+func (h *UI) NewView(viewData func(viewPort ViewPort) ViewData) View {
+	return newView(h, viewData)
 }
 
 func (h *UI) Run(runFunc func()) {

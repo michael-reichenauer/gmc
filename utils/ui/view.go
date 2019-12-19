@@ -10,9 +10,8 @@ type Properties struct {
 	Title    string
 	HasFrame bool
 
-	OnViewData func(viewPort ViewPort) ViewData
-	OnLoad     func()
-	OnClose    func()
+	OnLoad  func()
+	OnClose func()
 }
 
 type ViewData struct {
@@ -46,18 +45,20 @@ type view struct {
 	gui     *gocui.Gui
 	guiView *gocui.View
 
-	properties  *Properties
-	viewName    string
-	viewData    ViewData
-	firstLine   int
-	lastLine    int
-	currentLine int
+	properties      *Properties
+	viewName        string
+	viewData        func(viewPort ViewPort) ViewData
+	currentViewData ViewData
+	firstLine       int
+	lastLine        int
+	currentLine     int
 }
 
-func newView(ui *UI) *view {
+func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
 	return &view{
 		gui:        ui.Gui(),
 		viewName:   ui.NewViewName(),
+		viewData:   viewData,
 		properties: &Properties{}}
 }
 
@@ -127,11 +128,11 @@ func (h *view) NotifyChanged() {
 		h.guiView.Clear()
 		x, y := h.guiView.Size()
 		h.lastLine = h.firstLine + y - 1
-		h.viewData = h.properties.OnViewData(ViewPort{Width: x, First: h.firstLine, Last: h.lastLine, Current: h.currentLine})
-		h.firstLine = h.viewData.First
-		h.lastLine = h.viewData.Last
-		h.currentLine = h.viewData.Current
-		if _, err := h.guiView.Write([]byte(h.viewData.Text)); err != nil {
+		h.currentViewData = h.viewData(ViewPort{Width: x, First: h.firstLine, Last: h.lastLine, Current: h.currentLine})
+		h.firstLine = h.currentViewData.First
+		h.lastLine = h.currentViewData.Last
+		h.currentLine = h.currentViewData.Current
+		if _, err := h.guiView.Write([]byte(h.currentViewData.Text)); err != nil {
 			log.Fatal(err)
 		}
 		return nil
@@ -186,7 +187,7 @@ func (h *view) CursorUp() {
 }
 
 func (h *view) CursorDown() {
-	if h.currentLine >= h.viewData.MaxLines-1 {
+	if h.currentLine >= h.currentViewData.MaxLines-1 {
 		return
 	}
 	h.currentLine = h.currentLine + 1
@@ -200,8 +201,8 @@ func (h *view) CursorDown() {
 func (h *view) PageDown() {
 	_, y := h.Size()
 	move := y - 2
-	if h.lastLine+move >= h.viewData.MaxLines-1 {
-		move = h.viewData.MaxLines - 1 - h.lastLine
+	if h.lastLine+move >= h.currentViewData.MaxLines-1 {
+		move = h.currentViewData.MaxLines - 1 - h.lastLine
 	}
 	if move < 1 {
 		return

@@ -3,36 +3,33 @@ package repoview
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 type RepoView struct {
 	ui.View
-	vm                 *repoVM
-	repoPath           string
-	isSelected         bool
-	currentBranch      string
-	isShowCommitStatus bool
+	vm            *repoVM
+	repoPath      string
+	isSelected    bool
+	currentBranch string
 }
 
 func NewRepoView(uiHandler *ui.UI, repoPath string) *RepoView {
 	h := &RepoView{
-		View:     uiHandler.NewView(),
 		repoPath: repoPath,
 		vm:       newRepoVM(repoPath),
 	}
-	h.Properties().OnViewData = h.onViewData
+	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
 	return h
 }
 
-func (h *RepoView) onViewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	if err != nil {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	}
-	log.Infof("got repo")
+
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.commitStatus)
 
 	if !h.isSelected && repoPage.currentCommitIndex != -1 {
@@ -62,7 +59,6 @@ func (h *RepoView) onLoad() {
 }
 
 func (h *RepoView) onEnter() {
-	h.isShowCommitStatus = !h.isShowCommitStatus
 	h.NotifyChanged()
 }
 
@@ -87,8 +83,6 @@ func (h *RepoView) onRefresh() {
 
 func (h *RepoView) setWindowTitle(path, branch, status string) {
 	statusTxt := ""
-	//if h.isShowCommitStatus {
 	statusTxt = fmt.Sprintf("  %s", status)
-	//}
 	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
 }
