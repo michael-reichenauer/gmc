@@ -23,7 +23,7 @@ func NewStatusView(uiHandler *ui.Handler) *StatusViewHandler {
 func (h *StatusViewHandler) onViewData(viewPort ui.ViewPort) ui.ViewData {
 	//repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	//if err != nil {
-	//	return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
+	//	return ui.viewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	//}
 	log.Infof("status")
 	return ui.ViewData{

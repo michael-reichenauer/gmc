@@ -23,7 +23,7 @@ func (h *MainWindow) Show() {
 	width, height := h.uiHandler.WindowSize()
 	h.statusView.Show(ui.Rect{X: 0, Y: 0, W: width, H: 1})
 	h.repoView.Show(ui.Rect{X: 0, Y: 1, W: width, H: height - 1})
-	h.repoView.SetCurrent()
+	h.repoView.SetCurrentView()
 }
 
 func (h *MainWindow) OnResizeWindow() {

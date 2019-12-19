@@ -23,46 +23,39 @@ type Handler struct {
 func NewUI() *Handler {
 	return &Handler{}
 }
+
 func (h *Handler) NewView() View {
 	return newView(h)
 }
-
-//func (h *Handler) Show(view View, bounds func(w, h int) Rect) *ViewHandler {
-//	viewHandler := newView(h.gui, view)
-//	viewHandler.SetBound(bounds)
-//	h.views = append(h.views, viewHandler)
-//	viewHandler.show()
-//	return viewHandler
-//}
 
 func (h *Handler) Run(runFunc func()) {
 	h.runFunc = runFunc
 
 	gui, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
-		log.Fatalf("failed, %v", err)
+		log.Fatal(err)
 	}
 	h.gui = gui
 	defer gui.Close()
 
+	gui.SetManagerFunc(h.layout)
 	gui.InputEsc = true
-	// gui.Cursor = true
-	//g.Mouse = true
 	gui.BgColor = gocui.ColorBlack
 	gui.Cursor = false
-	gui.SetManagerFunc(h.layout)
+	//g.Mouse = true
 
 	h.SetKeyBinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	h.SetKeyBinding("", 'q', gocui.ModNone, quit)
 	h.SetKeyBinding("", gocui.KeyCtrlQ, gocui.ModNone, quit)
+
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
-		log.Fatalf("failed, %v", err)
+		log.Fatal(err)
 	}
 }
 
 func (h *Handler) SetKeyBinding(viewName string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
 	if err := h.gui.SetKeybinding(viewName, key, mod, handler); err != nil {
-		log.Fatalf("failed, %v", err)
+		log.Fatal(err)
 	}
 }
 
