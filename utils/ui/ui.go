@@ -11,7 +11,7 @@ type Rect struct {
 	X, Y, W, H int
 }
 
-type Handler struct {
+type UI struct {
 	gui            *gocui.Gui
 	isInitialized  bool
 	runFunc        func()
@@ -20,15 +20,15 @@ type Handler struct {
 	OnResizeWindow func()
 }
 
-func NewUI() *Handler {
-	return &Handler{}
+func NewUI() *UI {
+	return &UI{}
 }
 
-func (h *Handler) NewView() View {
+func (h *UI) NewView() View {
 	return newView(h)
 }
 
-func (h *Handler) Run(runFunc func()) {
+func (h *UI) Run(runFunc func()) {
 	h.runFunc = runFunc
 
 	gui, err := gocui.NewGui(gocui.OutputNormal)
@@ -47,13 +47,26 @@ func (h *Handler) Run(runFunc func()) {
 	h.SetKeyBinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	h.SetKeyBinding("", 'q', gocui.ModNone, quit)
 	h.SetKeyBinding("", gocui.KeyCtrlQ, gocui.ModNone, quit)
+	h.SetKeyBinding("", gocui.KeyEsc, gocui.ModNone, quit)
 
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		log.Fatal(err)
 	}
 }
 
-func (h *Handler) SetKeyBinding(viewName string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
+func (h *UI) Gui() *gocui.Gui {
+	return h.gui
+}
+
+func (h *UI) NewViewName() string {
+	return utils.RandomString(10)
+}
+
+func (h *UI) WindowSize() (width, height int) {
+	return h.gui.Size()
+}
+
+func (h *UI) SetKeyBinding(viewName string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
 	if err := h.gui.SetKeybinding(viewName, key, mod, handler); err != nil {
 		log.Fatal(err)
 	}
@@ -68,13 +81,10 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-func (h *Handler) layout(gui *gocui.Gui) error {
+func (h *UI) layout(gui *gocui.Gui) error {
 	maxX, maxY := gui.Size()
-	log.Infof("layout %d %d %d %d", maxX, maxY, h.maxX, h.maxY)
-
 	// Resize window and notify all views if console window is resized
 	if maxX != h.maxX || maxY != h.maxY {
-		log.Infof("resize %d %d", maxX, maxY)
 		h.maxX = maxX
 		h.maxY = maxY
 		if h.OnResizeWindow != nil {
@@ -90,16 +100,4 @@ func (h *Handler) layout(gui *gocui.Gui) error {
 	go h.runFunc()
 
 	return nil
-}
-
-func (h *Handler) Gui() *gocui.Gui {
-	return h.gui
-}
-
-func (h *Handler) NewViewName() string {
-	return utils.RandomString(10)
-}
-
-func (h *Handler) WindowSize() (width, height int) {
-	return h.gui.Size()
 }

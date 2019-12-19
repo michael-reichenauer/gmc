@@ -42,7 +42,7 @@ type View interface {
 	PostOnUIThread(func())
 }
 
-type viewHandler struct {
+type view struct {
 	gui     *gocui.Gui
 	guiView *gocui.View
 
@@ -54,14 +54,14 @@ type viewHandler struct {
 	currentLine int
 }
 
-func newView(uiHandler *Handler) *viewHandler {
-	return &viewHandler{
-		gui:        uiHandler.Gui(),
-		viewName:   uiHandler.NewViewName(),
+func newView(ui *UI) *view {
+	return &view{
+		gui:        ui.Gui(),
+		viewName:   ui.NewViewName(),
 		properties: &Properties{}}
 }
 
-func (h *viewHandler) Show(bounds Rect) {
+func (h *view) Show(bounds Rect) {
 	log.Infof("show before set")
 	if gv, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W+1, bounds.H+1); err != nil {
 		if err != gocui.ErrUnknownView {
@@ -95,34 +95,34 @@ func (h *viewHandler) Show(bounds Rect) {
 	log.Infof("after more2")
 }
 
-func (h *viewHandler) SetBounds(bounds Rect) {
+func (h *view) SetBounds(bounds Rect) {
 	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W+1, bounds.H+1); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (h *viewHandler) SetCurrentView() {
+func (h *view) SetCurrentView() {
 	if _, err := h.gui.SetCurrentView(h.viewName); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (h viewHandler) CurrentLine() int {
+func (h view) CurrentLine() int {
 	return h.currentLine
 }
 
-func (h *viewHandler) Properties() *Properties {
+func (h *view) Properties() *Properties {
 	return h.properties
 }
 
-func (h *viewHandler) PostOnUIThread(f func()) {
+func (h *view) PostOnUIThread(f func()) {
 	h.gui.Update(func(g *gocui.Gui) error {
 		f()
 		return nil
 	})
 }
 
-func (h *viewHandler) NotifyChanged() {
+func (h *view) NotifyChanged() {
 	h.gui.Update(func(g *gocui.Gui) error {
 		h.guiView.Clear()
 		x, y := h.guiView.Size()
@@ -138,7 +138,7 @@ func (h *viewHandler) NotifyChanged() {
 	})
 }
 
-func (h *viewHandler) Close() {
+func (h *view) Close() {
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}
@@ -147,7 +147,7 @@ func (h *viewHandler) Close() {
 	}
 }
 
-func (h *viewHandler) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
+func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
 	if err := h.gui.SetKeybinding(h.viewName, key, modifier, func(gui *gocui.Gui, view *gocui.View) error {
 		handler()
 		return nil
@@ -156,23 +156,23 @@ func (h *viewHandler) SetKey(key interface{}, modifier gocui.Modifier, handler f
 	}
 }
 
-func (h *viewHandler) Clear() {
+func (h *view) Clear() {
 	h.guiView.Clear()
 }
 
-func (h *viewHandler) Cursor() (int, int) {
+func (h *view) Cursor() (int, int) {
 	return h.guiView.Cursor()
 }
 
-func (h *viewHandler) SetCursor(x int, y int) error {
+func (h *view) SetCursor(x int, y int) error {
 	return h.guiView.SetCursor(x, y)
 }
 
-func (h *viewHandler) Size() (int, int) {
+func (h *view) Size() (int, int) {
 	return h.guiView.Size()
 }
 
-func (h *viewHandler) CursorUp() {
+func (h *view) CursorUp() {
 	if h.currentLine <= 0 {
 		return
 	}
@@ -185,7 +185,7 @@ func (h *viewHandler) CursorUp() {
 	h.NotifyChanged()
 }
 
-func (h *viewHandler) CursorDown() {
+func (h *view) CursorDown() {
 	if h.currentLine >= h.viewData.MaxLines-1 {
 		return
 	}
@@ -197,7 +197,7 @@ func (h *viewHandler) CursorDown() {
 	}
 	h.NotifyChanged()
 }
-func (h *viewHandler) PageDown() {
+func (h *view) PageDown() {
 	_, y := h.Size()
 	move := y - 2
 	if h.lastLine+move >= h.viewData.MaxLines-1 {
@@ -212,7 +212,7 @@ func (h *viewHandler) PageDown() {
 	h.NotifyChanged()
 }
 
-func (h *viewHandler) PageUpp() {
+func (h *view) PageUpp() {
 	_, y := h.Size()
 	move := y - 2
 	if h.firstLine-move < 0 {
@@ -227,22 +227,22 @@ func (h *viewHandler) PageUpp() {
 	h.NotifyChanged()
 }
 
-//func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
+//func (h *UI) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
 //	log.Infof("Set line %d", line)
 //
-//	if line >= h.viewHandler.viewData.MaxLines {
+//	if line >= h.view.viewData.MaxLines {
 //		return nil
 //	}
 //	cx, _ := view.Cursor()
 //	_ = view.SetCursor(cx, line)
 //
-//	h.viewHandler.CurrentLine = line
-//	if h.viewHandler.CurrentLine > h.viewHandler.lastLine {
-//		move := h.viewHandler.CurrentLine - h.viewHandler.lastLine
-//		h.viewHandler.firstLine = h.viewHandler.firstLine + move
-//		h.viewHandler.lastLine = h.viewHandler.lastLine + move
+//	h.view.CurrentLine = line
+//	if h.view.CurrentLine > h.view.lastLine {
+//		move := h.view.CurrentLine - h.view.lastLine
+//		h.view.firstLine = h.view.firstLine + move
+//		h.view.lastLine = h.view.lastLine + move
 //	}
-//	h.viewHandler.NotifyChanged()
+//	h.view.NotifyChanged()
 //
 //	return nil
 //}

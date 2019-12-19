@@ -6,12 +6,12 @@ import (
 )
 
 type MainWindow struct {
-	uiHandler  *ui.Handler
+	uiHandler  *ui.UI
 	statusView *StatusViewHandler
 	repoView   *RepoView
 }
 
-func NewMainWindow(uiHandler *ui.Handler, repoPath string) *MainWindow {
+func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 	return &MainWindow{
 		uiHandler:  uiHandler,
 		statusView: NewStatusView(uiHandler),

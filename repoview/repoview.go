@@ -16,7 +16,7 @@ type RepoView struct {
 	isShowCommitStatus bool
 }
 
-func NewRepoView(uiHandler *ui.Handler, repoPath string) *RepoView {
+func NewRepoView(uiHandler *ui.UI, repoPath string) *RepoView {
 	h := &RepoView{
 		View:     uiHandler.NewView(),
 		repoPath: repoPath,

@@ -10,7 +10,7 @@ type StatusViewHandler struct {
 	vm *statusVM
 }
 
-func NewStatusView(uiHandler *ui.Handler) *StatusViewHandler {
+func NewStatusView(uiHandler *ui.UI) *StatusViewHandler {
 	h := &StatusViewHandler{
 		View: uiHandler.NewView(),
 		vm:   newStatusVM(),
