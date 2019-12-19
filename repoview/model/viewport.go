@@ -1,11 +1,11 @@
 package model
 
 import (
-	"fmt"
 	"time"
 )
 
 type ViewPort struct {
+	repo               *repo
 	Commits            []Commit
 	TotalCommits       int
 	FirstIndex         int
@@ -14,11 +14,10 @@ type ViewPort struct {
 	GraphWidth         int
 	SelectedBranch     Branch
 	CurrentBranchName  string
-	repo               *repo
-	StatusMessage      string
 	First              int
 	Last               int
 	Selected           int
+	RepoPath           string
 }
 
 type Commit struct {
@@ -59,7 +58,6 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 	if selected < first {
 		selected = first
 	}
-	statusMessage := toStatusMessage(repo)
 
 	return ViewPort{
 		Commits:           toCommits(repo, first, last),
@@ -70,18 +68,11 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		GraphWidth:        len(repo.Branches) * 2,
 		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
 		repo:              repo,
-		StatusMessage:     statusMessage,
 		First:             first,
 		Last:              last,
 		Selected:          selected,
+		RepoPath:          repo.gitRepo.RepoPath,
 	}
-}
-
-func toStatusMessage(repo *repo) string {
-	if repo.gitRepo.Status.OK() {
-		return ""
-	}
-	return fmt.Sprintf("%d uncommited changes", repo.gitRepo.Status.AllChanges())
 }
 
 func toCommits(repo *repo, first int, last int) []Commit {

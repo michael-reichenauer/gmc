@@ -3,6 +3,7 @@ package repoview
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/repoview/model"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -14,10 +15,9 @@ type RepoView struct {
 	currentBranch string
 }
 
-func NewRepoView(uiHandler *ui.UI, repoPath string) *RepoView {
+func newRepoView(uiHandler *ui.UI, model *model.Model) *RepoView {
 	h := &RepoView{
-		repoPath: repoPath,
-		vm:       newRepoVM(repoPath),
+		vm: newRepoVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -30,7 +30,7 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	}
 
-	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.commitStatus)
+	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName)
 
 	if !h.isSelected && repoPage.currentCommitIndex != -1 {
 		h.isSelected = true
@@ -48,7 +48,7 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 
 func (h *RepoView) onLoad() {
 	h.vm.Load()
-	h.setWindowTitle(h.repoPath, "", "")
+	h.setWindowTitle(h.repoPath, "")
 
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
@@ -81,8 +81,6 @@ func (h *RepoView) onRefresh() {
 	})
 }
 
-func (h *RepoView) setWindowTitle(path, branch, status string) {
-	statusTxt := ""
-	statusTxt = fmt.Sprintf("  %s", status)
-	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
+func (h *RepoView) setWindowTitle(path, branch string) {
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s", path, branch))
 }

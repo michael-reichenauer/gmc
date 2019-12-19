@@ -63,7 +63,6 @@ func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
 }
 
 func (h *view) Show(bounds Rect) {
-	log.Infof("show before set")
 	if gv, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W+1, bounds.H+1); err != nil {
 		if err != gocui.ErrUnknownView {
 			log.Fatal(err)
@@ -93,7 +92,6 @@ func (h *view) Show(bounds Rect) {
 			h.properties.OnLoad()
 		}
 	}
-	log.Infof("after more2")
 }
 
 func (h *view) SetBounds(bounds Rect) {

@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,13 @@ func CurrentDir() string {
 
 func BinPath() string {
 	return os.Args[0]
+}
+
+func Text(text string, length int) string {
+	if len(text) <= length {
+		return text + strings.Repeat(" ", length-len(text))
+	}
+	return text[0:length]
 }
 
 func CompileRegexp(regexpText string) *regexp.Regexp {

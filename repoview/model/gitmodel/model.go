@@ -38,6 +38,7 @@ func (h *Handler) Load() {
 
 func (h *Handler) refreshRepo() error {
 	repo := newRepo()
+	repo.RepoPath = h.gitRepo.RepoPath
 	gitCommits, err := h.gitRepo.GetLog()
 	if err != nil {
 		return err

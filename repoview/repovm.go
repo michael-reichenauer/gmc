@@ -1,8 +1,8 @@
 package repoview
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
@@ -10,6 +10,7 @@ import (
 
 const (
 	RFC3339Small = "2006-01-02 15:04"
+	markerWidth  = 8
 )
 
 type repoPage struct {
@@ -18,7 +19,6 @@ type repoPage struct {
 	lines              int
 	currentBranchName  string
 	currentCommitIndex int
-	commitStatus       string
 	first              int
 	last               int
 	current            int
@@ -26,17 +26,16 @@ type repoPage struct {
 
 type repoVM struct {
 	currentCommit string
-	repoPath      string
 	model         *model.Model
+
 	viewPort      model.ViewPort
 	statusMessage string
 }
 
-func newRepoVM(repoPath string) *repoVM {
+func newRepoVM(model *model.Model) *repoVM {
 	return &repoVM{
 		currentCommit: "",
-		repoPath:      repoPath,
-		model:         model.NewModel(repoPath),
+		model:         model,
 	}
 }
 
@@ -45,6 +44,7 @@ func (h *repoVM) Load() {
 }
 
 func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage, error) {
+	log.Infof("Get repo page")
 	var err error
 	h.viewPort, err = h.model.GetRepoViewPort(firstLine, lastLine, selected)
 	if err != nil {
@@ -54,10 +54,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	lastLine = h.viewPort.Last
 	selected = h.viewPort.Selected
 
-	markerWidth := 8 //13
-	log.Infof("before width")
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
-	log.Infof("after width %d %d %d", messageLength, authorLength, timeLength)
 	var sb strings.Builder
 	commits := h.viewPort.Commits
 
@@ -81,52 +78,23 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		sb.WriteString("\n")
 	}
 
-	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected-firstLine, h.viewPort.StatusMessage)
-
 	return repoPage{
-		repoPath:           h.repoPath,
+		repoPath:           h.viewPort.RepoPath,
 		text:               sb.String(),
 		lines:              h.viewPort.TotalCommits,
 		currentBranchName:  h.viewPort.CurrentBranchName,
 		currentCommitIndex: h.viewPort.CurrentCommitIndex,
-		commitStatus:       commitStatus,
 		first:              firstLine,
 		last:               lastLine,
 		current:            selected,
 	}, nil
 }
 
-func (h *repoVM) toCommitStatus(commits []model.Commit, selected int, status string) string {
-	if selected >= len(commits) {
-		return ""
-	}
-	//if h.statusMessage != "" && selected == 0 {
-	//	return ""
-	//}
-	//if h.statusMessage != "" {
-	//	selected--
-	//}
-	c := commits[selected]
-	return fmt.Sprintf(": %s   (%s %s)", status, c.SID, c.Branch.Name)
-}
-
 func (h *repoVM) OpenBranch(index int) {
-	//if h.statusMessage != "" && index == 0 {
-	//	return
-	//}
-	//if h.statusMessage != "" {
-	//	index--
-	//}
 	h.model.OpenBranch(h.viewPort, index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	//if h.statusMessage != "" && index == 0 {
-	//	return
-	//}
-	//if h.statusMessage != "" {
-	//	index--
-	//}
 	h.model.CloseBranch(h.viewPort, index)
 }
 
@@ -198,25 +166,18 @@ func writeSid(sb *strings.Builder, c model.Commit) {
 }
 
 func writeAuthor(sb *strings.Builder, commit model.Commit, length int) {
-	sb.WriteString(ui.Dark(txt(commit.Author, length)))
+	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
 }
 
 func writeAuthorTime(sb *strings.Builder, commit model.Commit, length int) {
-	sb.WriteString(ui.Dark(txt(commit.AuthorTime.Format(RFC3339Small), length)))
+	sb.WriteString(ui.Dark(utils.Text(commit.AuthorTime.Format(RFC3339Small), length)))
 }
 
 func writeMessage(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
-	messaged := txt(c.Message, length)
+	messaged := utils.Text(c.Message, length)
 	if c.Branch.Name == selectedBranchID {
 		sb.WriteString(ui.White(messaged))
 	} else {
 		sb.WriteString(ui.Dark(messaged))
 	}
-}
-
-func txt(text string, length int) string {
-	if len(text) <= length {
-		return text + strings.Repeat(" ", length-len(text))
-	}
-	return text[0:length]
 }

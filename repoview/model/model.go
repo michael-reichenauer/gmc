@@ -13,6 +13,10 @@ const (
 	remoteMasterName = "origin/master"
 )
 
+type Status struct {
+	AllChanges int
+	GraphWidth int
+}
 type Model struct {
 	gitModel    *gitmodel.Handler
 	lock        sync.Mutex
@@ -43,6 +47,16 @@ func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
 	h.lock.Lock()
 	h.currentRepo = repo
 	h.lock.Unlock()
+}
+
+func (h *Model) GetStatus() Status {
+	if h.currentRepo.gitRepo.Status.OK() {
+		return Status{}
+	}
+	return Status{
+		AllChanges: h.currentRepo.gitRepo.Status.AllChanges(),
+		GraphWidth: len(h.currentRepo.Branches) * 2,
+	}
 }
 
 func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
