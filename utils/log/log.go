@@ -20,7 +20,15 @@ func Warnf(format string, v ...interface{}) {
 }
 
 func Fatalf(format string, v ...interface{}) {
-	std.Output(logger.Fatal, fmt.Sprintf(format, v...))
+	msg := fmt.Sprintf(format, v...)
+	std.Output(logger.Fatal, msg)
+	panic(msg)
+}
+
+func Fatal(v ...interface{}) {
+	msg := fmt.Sprint(v...)
+	std.Output(logger.Fatal, msg)
+	panic(msg)
 }
 
 //// Fatal is equivalent to Print() followed by a call to os.Exit(1).

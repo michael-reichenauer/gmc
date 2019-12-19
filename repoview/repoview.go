@@ -3,12 +3,12 @@ package repoview
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 type RepoView struct {
-	uiHandler          *ui.Handler
-	viewHandler        *ui.ViewHandler
+	ui.View
 	vm                 *repoVM
 	repoPath           string
 	isSelected         bool
@@ -17,31 +17,27 @@ type RepoView struct {
 }
 
 func NewRepoView(uiHandler *ui.Handler, repoPath string) *RepoView {
-	return &RepoView{
-		uiHandler: uiHandler,
-		repoPath:  repoPath,
-		vm:        newRepoVM(repoPath),
+	h := &RepoView{
+		View:     uiHandler.NewView(),
+		repoPath: repoPath,
+		vm:       newRepoVM(repoPath),
 	}
+	h.Properties().OnViewData = h.onViewData
+	h.Properties().OnLoad = h.onLoad
+	return h
 }
 
-func (h *RepoView) Properties() ui.Properties {
-	return ui.Properties{
-		Title:  "",
-		OnLoad: h.OnLoad,
-	}
-}
-
-func (h *RepoView) GetViewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *RepoView) onViewData(viewPort ui.ViewPort) ui.ViewData {
 	repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
 	if err != nil {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	}
-
+	log.Infof("got repo")
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.commitStatus)
 
 	if !h.isSelected && repoPage.currentCommitIndex != -1 {
 		h.isSelected = true
-		h.SetCursor(repoPage.currentCommitIndex)
+		//h.SetCursor(repoPage.currentCommitIndex)
 	}
 
 	return ui.ViewData{
@@ -53,40 +49,39 @@ func (h *RepoView) GetViewData(viewPort ui.ViewPort) ui.ViewData {
 	}
 }
 
-func (h *RepoView) OnLoad(view *ui.ViewHandler) {
-	h.viewHandler = view
-
+func (h *RepoView) onLoad() {
 	h.vm.Load()
 	h.setWindowTitle(h.repoPath, "", "")
 
-	h.viewHandler.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
-	h.viewHandler.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
-	h.viewHandler.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
-	h.viewHandler.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
-	h.viewHandler.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
-	h.viewHandler.NotifyChanged()
+	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
+	h.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
+	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
+	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
+	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
+	h.NotifyChanged()
 }
 
 func (h *RepoView) onEnter() {
 	h.isShowCommitStatus = !h.isShowCommitStatus
-	h.viewHandler.NotifyChanged()
+	h.NotifyChanged()
 }
 
 func (h *RepoView) onRight() {
-	h.vm.OpenBranch(h.viewHandler.CurrentLine)
-	h.viewHandler.NotifyChanged()
+	h.vm.OpenBranch(h.CurrentLine())
+	h.NotifyChanged()
 }
 
 func (h *RepoView) onLeft() {
-	h.vm.CloseBranch(h.viewHandler.CurrentLine)
-	h.viewHandler.NotifyChanged()
+	h.vm.CloseBranch(h.CurrentLine())
+	h.NotifyChanged()
 }
 
 func (h *RepoView) onRefresh() {
-	h.viewHandler.Clear()
-	h.viewHandler.RunOnUI(func() {
+	h.Clear()
+	h.PostOnUIThread(func() {
+		// Posted to allow the clear to show while new data is calculated
 		h.vm.Refresh()
-		h.viewHandler.NotifyChanged()
+		h.NotifyChanged()
 	})
 }
 
@@ -96,8 +91,4 @@ func (h *RepoView) setWindowTitle(path, branch, status string) {
 	statusTxt = fmt.Sprintf("  %s", status)
 	//}
 	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
-}
-
-func (h *RepoView) SetCursor(line int) {
-	//	h.setCursor(g, view, line)
 }

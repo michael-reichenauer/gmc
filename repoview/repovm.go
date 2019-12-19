@@ -3,6 +3,7 @@ package repoview
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -62,8 +63,9 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	selected = h.viewPort.Selected
 
 	markerWidth := 6 //13
+	log.Infof("before width")
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
-
+	log.Infof("after width %d %d %d", messageLength, authorLength, timeLength)
 	var sb strings.Builder
 	commits := h.viewPort.Commits
 	//h.statusMessage = ""
@@ -216,6 +218,9 @@ func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, t
 		timeLength = 0
 	}
 	msgLength = viewWidth - graphWidth - authorLength - timeLength
+	if msgLength < 0 {
+		msgLength = 0
+	}
 	return
 }
 func writeSid(sb *strings.Builder, c model.Commit) {
