@@ -12,14 +12,6 @@ const (
 	RFC3339Small = "2006-01-02 15:04"
 )
 
-var (
-	currentMarker         = ui.White("●")
-	currentMarkerSelected = ui.White("┥")
-	selectedMarker2       = ui.White("│")
-	selectedMarker        = '│'
-	moreMarker            = ui.Dark(">")
-)
-
 type repoPage struct {
 	repoPath           string
 	text               string
@@ -177,22 +169,12 @@ func writeGraph(sb *strings.Builder, c model.Commit) {
 }
 func writeCurrentMarker(sb *strings.Builder, c model.Commit) {
 	if c.IsCurrent {
-		sb.WriteString(currentMarker)
+		sb.WriteString(currentCommitMarker)
 	} else {
 		sb.WriteString(" ")
 	}
 }
-func writeCurrentMarker2(sb *strings.Builder, c model.Commit, index, selected int) {
-	if c.IsCurrent && index == selected {
-		sb.WriteString(currentMarkerSelected)
-	} else if index == selected {
-		sb.WriteString(selectedMarker2)
-	} else if c.IsCurrent {
-		sb.WriteString(currentMarker)
-	} else {
-		sb.WriteString(" ")
-	}
-}
+
 func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, timeLength int) {
 	width := viewWidth - graphWidth
 	authorLength = 20
