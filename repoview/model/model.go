@@ -49,16 +49,6 @@ func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
 	h.lock.Unlock()
 }
 
-func (h *Model) GetStatus() Status {
-	if h.currentRepo.gitRepo.Status.OK() {
-		return Status{}
-	}
-	return Status{
-		AllChanges: h.currentRepo.gitRepo.Status.AllChanges(),
-		GraphWidth: len(h.currentRepo.Branches) * 2,
-	}
-}
-
 func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
 	if h.err != nil {
 		return ViewPort{}, h.err
@@ -152,8 +142,9 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
+	repo.addVirtualStatusCommit()
 	for _, c := range repo.gitRepo.Commits {
-		repo.addCommit(c)
+		repo.addGitCommit(c)
 	}
 
 	h.setParentChildRelations(repo)

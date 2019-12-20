@@ -3,7 +3,6 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/model"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -44,7 +43,6 @@ func (h *repoVM) Load() {
 }
 
 func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage, error) {
-	log.Infof("Get repo page")
 	var err error
 	h.viewPort, err = h.model.GetRepoViewPort(firstLine, lastLine, selected)
 	if err != nil {
@@ -70,7 +68,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		writeMergeMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeMessage(&sb, c, sbid, messageLength)
+		writeSubject(&sb, c, sbid, messageLength)
 		sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
@@ -169,15 +167,22 @@ func writeAuthor(sb *strings.Builder, commit model.Commit, length int) {
 	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
 }
 
-func writeAuthorTime(sb *strings.Builder, commit model.Commit, length int) {
-	sb.WriteString(ui.Dark(utils.Text(commit.AuthorTime.Format(RFC3339Small), length)))
+func writeAuthorTime(sb *strings.Builder, c model.Commit, length int) {
+	if c.ID == model.StatusID {
+		return
+	}
+	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))
 }
 
-func writeMessage(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
-	messaged := utils.Text(c.Message, length)
+func writeSubject(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
+	subject := utils.Text(c.Subject, length)
+	if c.ID == model.StatusID {
+		sb.WriteString(ui.YellowDk(subject))
+		return
+	}
 	if c.Branch.Name == selectedBranchID {
-		sb.WriteString(ui.White(messaged))
+		sb.WriteString(ui.White(subject))
 	} else {
-		sb.WriteString(ui.Dark(messaged))
+		sb.WriteString(ui.Dark(subject))
 	}
 }

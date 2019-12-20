@@ -4,6 +4,12 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"time"
+)
+
+const (
+	StatusID  = "0000000000000000000000000000000000000000"
+	StatusSID = "000000"
 )
 
 type repo struct {
@@ -40,11 +46,27 @@ func (r *repo) addBranch(gb *gitmodel.Branch) {
 	r.Branches = append(r.Branches, b)
 }
 
-func (r *repo) addCommit(gmc *gitmodel.Commit) {
-	if !r.containsBranch(gmc.Branch) {
+func (r *repo) addVirtualStatusCommit() {
+	if r.gitRepo.Status.OK() {
 		return
 	}
-	c := r.toCommit(gmc, len(r.Commits))
+	cb, ok := r.gitRepo.CurrentBranch()
+	if !ok || !r.containsBranch(cb) {
+		return
+	}
+	allChanges := r.gitRepo.Status.AllChanges()
+	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
+
+	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))
+	r.Commits = append(r.Commits, c)
+	r.commitById[c.ID] = c
+}
+
+func (r *repo) addGitCommit(gc *gitmodel.Commit) {
+	if !r.containsBranch(gc.Branch) {
+		return
+	}
+	c := r.toCommit(gc, len(r.Commits))
 	r.Commits = append(r.Commits, c)
 	r.commitById[c.ID] = c
 	if c.IsCurrent {
@@ -105,6 +127,24 @@ func (r *repo) toCommit(c *gitmodel.Commit, index int) *commit {
 		ParentIDs:  c.ParentIDs,
 		ChildIDs:   c.ChildIDs,
 		IsCurrent:  c.IsCurrent,
+		Branch:     branch,
+		Index:      index,
+		graph:      make([]GraphColumn, len(r.Branches)),
+	}
+}
+
+func (r *repo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
+	branch := r.BranchById(branchName)
+	return &commit{
+		ID:         StatusID,
+		SID:        StatusSID,
+		Subject:    statusText,
+		Message:    statusText,
+		Author:     "",
+		AuthorTime: time.Now(),
+		ParentIDs:  []string{branch.tipId},
+		ChildIDs:   []string{},
+		IsCurrent:  false,
 		Branch:     branch,
 		Index:      index,
 		graph:      make([]GraphColumn, len(r.Branches)),
