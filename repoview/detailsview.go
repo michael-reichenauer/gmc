@@ -19,5 +19,5 @@ func newDetailsView(uiHandler *ui.UI, model *model.Model) *DetailsView {
 }
 
 func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
-	return ui.ViewData{Text: "commit details", MaxLines: 1, First: 0, Last: 1, Current: 1}
+	return ui.ViewData{Text: "commit details more", MaxLines: 1, First: 0, Last: 1, Current: 1}
 }

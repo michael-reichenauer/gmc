@@ -181,6 +181,9 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 
 	// Draw branch connector lines
 	for _, c := range repo.Commits {
+		if c.ID == StatusID {
+			continue
+		}
 		for i, b := range repo.Branches {
 			c.graph[i].BranchName = b.name
 			c.graph[i].BranchDisplayName = b.displayName
@@ -274,10 +277,10 @@ func (h *Model) setParentChildRelations(repo *repo) {
 		if b.parentBranchID != "" {
 			b.parentBranch = repo.BranchById(b.parentBranchID)
 		}
-		if b.tipId == b.bottomId && b.bottom.Branch != b {
-			// an empty branch, with no own branch commit, (branch start)
-			b.bottom.IsMore = true
-		}
+		//if b.tipId == b.bottomId && b.bottom.Branch != b {
+		//	// an empty branch, with no own branch commit, (branch start)
+		//	b.bottom.IsMore = true
+		//}
 	}
 
 	for _, c := range repo.Commits {
