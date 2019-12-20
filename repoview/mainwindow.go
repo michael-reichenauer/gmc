@@ -7,27 +7,30 @@ import (
 )
 
 type MainWindow struct {
-	uiHandler  *ui.UI
-	model      *model.Model
-	statusView *StatusViewHandler
-	repoView   *RepoView
+	uiHandler *ui.UI
+	model     *model.Model
+	//statusView *StatusView
+	repoView    *RepoView
+	detailsView *DetailsView
 }
 
 func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 	m := model.NewModel(repoPath)
 	return &MainWindow{
-		uiHandler:  uiHandler,
-		model:      m,
-		statusView: newStatusView(uiHandler, m),
-		repoView:   newRepoView(uiHandler, m),
+		uiHandler: uiHandler,
+		model:     m,
+		//statusView: newStatusView(uiHandler, m),
+		repoView:    newRepoView(uiHandler, m),
+		detailsView: newDetailsView(uiHandler, m),
 	}
 }
 
 func (h *MainWindow) Show() {
 	r := ui.Rect{0, 0, 1, 1}
 	h.repoView.Properties().HasFrame = true
-	h.statusView.Show(r)
+	//h.statusView.Show(r)
 	h.repoView.Show(r)
+	h.detailsView.Show(r)
 	h.repoView.SetCurrentView()
 
 	h.OnResizeWindow()
@@ -36,9 +39,11 @@ func (h *MainWindow) Show() {
 func (h *MainWindow) OnResizeWindow() {
 	width, height := h.uiHandler.WindowSize()
 	log.Infof("Resize %d %d", width, height)
-	h.statusView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: 1})
-	h.repoView.SetBounds(ui.Rect{X: 0, Y: 2, W: width, H: height})
+	//h.statusView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: 1})
+	h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - 5})
+	h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - 4, W: width, H: 4})
 
-	h.statusView.NotifyChanged()
+	//h.statusView.NotifyChanged()
 	h.repoView.NotifyChanged()
+	h.detailsView.NotifyChanged()
 }

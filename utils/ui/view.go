@@ -95,7 +95,7 @@ func (h *view) Show(bounds Rect) {
 }
 
 func (h *view) SetBounds(bounds Rect) {
-	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
+	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		log.Fatal(err)
 	}
 }

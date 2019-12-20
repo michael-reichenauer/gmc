@@ -7,20 +7,20 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-type StatusViewHandler struct {
+type StatusView struct {
 	ui.View
 	vm *statusVM
 }
 
-func newStatusView(uiHandler *ui.UI, model *model.Model) *StatusViewHandler {
-	h := &StatusViewHandler{
+func newStatusView(uiHandler *ui.UI, model *model.Model) *StatusView {
+	h := &StatusView{
 		vm: newStatusVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	return h
 }
 
-func (h *StatusViewHandler) viewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *StatusView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	log.Infof("Get status")
 	status, err := h.vm.GetStatus(viewPort.Width)
 	if err != nil {
