@@ -21,6 +21,7 @@ type repoPage struct {
 	first              int
 	last               int
 	current            int
+	uncommittedChanges int
 }
 
 type repoVM struct {
@@ -80,6 +81,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		first:              firstLine,
 		last:               lastLine,
 		current:            selected,
+		uncommittedChanges: h.viewPort.UncommittedChanges,
 	}, nil
 }
 

@@ -18,6 +18,7 @@ type ViewPort struct {
 	Last               int
 	Selected           int
 	RepoPath           string
+	UncommittedChanges int
 }
 
 type Commit struct {
@@ -61,18 +62,19 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 	}
 
 	return ViewPort{
-		Commits:           toCommits(repo, first, last),
-		FirstIndex:        first,
-		LastIndex:         last,
-		TotalCommits:      len(repo.Commits),
-		CurrentBranchName: repo.CurrentBranchName,
-		GraphWidth:        len(repo.Branches) * 2,
-		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
-		repo:              repo,
-		First:             first,
-		Last:              last,
-		Selected:          selected,
-		RepoPath:          repo.gitRepo.RepoPath,
+		Commits:            toCommits(repo, first, last),
+		FirstIndex:         first,
+		LastIndex:          last,
+		TotalCommits:       len(repo.Commits),
+		CurrentBranchName:  repo.CurrentBranchName,
+		GraphWidth:         len(repo.Branches) * 2,
+		SelectedBranch:     toBranch(repo.Commits[selected].Branch),
+		repo:               repo,
+		First:              first,
+		Last:               last,
+		Selected:           selected,
+		RepoPath:           repo.gitRepo.RepoPath,
+		UncommittedChanges: repo.gitRepo.Status.AllChanges(),
 	}
 }
 

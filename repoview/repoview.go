@@ -30,7 +30,7 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
 	}
 
-	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName)
+	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
 
 	if !h.isSelected && repoPage.currentCommitIndex != -1 {
 		h.isSelected = true
@@ -48,7 +48,7 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 
 func (h *RepoView) onLoad() {
 	h.vm.Load()
-	h.setWindowTitle(h.repoPath, "")
+	h.setWindowTitle(h.repoPath, "", 0)
 
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
@@ -81,6 +81,10 @@ func (h *RepoView) onRefresh() {
 	})
 }
 
-func (h *RepoView) setWindowTitle(path, branch string) {
-	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s", path, branch))
+func (h *RepoView) setWindowTitle(path, branch string, changes int) {
+	changesText := ""
+	if changes > 0 {
+		changesText = fmt.Sprintf(" {%d}", changes)
+	}
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s%s - %s", path, changesText, branch))
 }
