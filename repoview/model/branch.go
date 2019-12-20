@@ -13,6 +13,7 @@ type branch struct {
 	parentBranch   *branch
 	isGitBranch    bool
 	isMultiBranch  bool
+	isRemote       bool
 }
 
 func (b *branch) String() string {

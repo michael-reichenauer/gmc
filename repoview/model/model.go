@@ -49,6 +49,10 @@ func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
 	h.lock.Unlock()
 }
 
+func (h *Model) GetCommitByIndex(index int) (Commit, error) {
+	return toCommit(h.currentRepo.Commits[index]), nil
+}
+
 func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
 	if h.err != nil {
 		return ViewPort{}, h.err

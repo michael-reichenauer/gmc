@@ -9,15 +9,17 @@ import (
 
 type RepoView struct {
 	ui.View
+	detailsView   *DetailsView
 	vm            *repoVM
 	repoPath      string
 	isSelected    bool
 	currentBranch string
 }
 
-func newRepoView(uiHandler *ui.UI, model *model.Model) *RepoView {
+func newRepoView(uiHandler *ui.UI, model *model.Model, detailsView *DetailsView) *RepoView {
 	h := &RepoView{
-		vm: newRepoVM(model),
+		detailsView: detailsView,
+		vm:          newRepoVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -36,6 +38,7 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 		h.isSelected = true
 		//h.SetCursor(repoPage.currentCommitIndex)
 	}
+	h.detailsView.SetCurrent(repoPage.current)
 
 	return ui.ViewData{
 		Text:     repoPage.text,

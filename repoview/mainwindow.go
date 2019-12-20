@@ -14,11 +14,13 @@ type MainWindow struct {
 
 func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 	m := model.NewModel(repoPath)
+	detailsView := newDetailsView(uiHandler, m)
+	repoView := newRepoView(uiHandler, m, detailsView)
 	return &MainWindow{
 		uiHandler:   uiHandler,
 		model:       m,
-		repoView:    newRepoView(uiHandler, m),
-		detailsView: newDetailsView(uiHandler, m),
+		repoView:    repoView,
+		detailsView: detailsView,
 	}
 }
 

@@ -101,7 +101,7 @@ func writeSelectedMarker(sb *strings.Builder, index, selected int) {
 	if index == selected {
 		//color := branchColor(c.Branch.ID)
 		color := ui.CWhite
-		sb.WriteString(ui.ColorText(color, selectedMarker))
+		sb.WriteString(ui.ColorRune(color, selectedMarker))
 	} else {
 		sb.WriteString(" ")
 	}
@@ -122,12 +122,12 @@ func writeGraph(sb *strings.Builder, c model.Commit) {
 			if c.Graph[i].Connect.Has(model.BPass) {
 				cColor = ui.CWhite
 			}
-			sb.WriteString(ui.ColorText(cColor, graphConnectRune(c.Graph[i].Connect)))
+			sb.WriteString(ui.ColorRune(cColor, graphConnectRune(c.Graph[i].Connect)))
 		}
 		if c.Graph[i].Branch == model.BPass {
 			bColor = ui.CWhite
 		}
-		sb.WriteString(ui.ColorText(bColor, graphBranchRune(c.Graph[i].Branch)))
+		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
 	}
 }
 func writeCurrentMarker(sb *strings.Builder, c model.Commit) {

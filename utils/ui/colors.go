@@ -39,8 +39,11 @@ var colors = map[Color]string{
 	CYellowDk:  "\033[33;3m",
 }
 
-func ColorText(color Color, r rune) string {
+func ColorRune(color Color, r rune) string {
 	return colors[color] + string(r) + colorEnd
+}
+func ColorText(color Color, text string) string {
+	return colors[color] + text + colorEnd
 }
 
 const (
