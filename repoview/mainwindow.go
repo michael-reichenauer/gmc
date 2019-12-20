@@ -24,19 +24,20 @@ func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 }
 
 func (h *MainWindow) Show() {
-	width, height := h.uiHandler.WindowSize()
-	h.statusView.Show(ui.Rect{X: 0, Y: 0, W: width, H: 1})
-	h.repoView.Show(ui.Rect{X: 0, Y: 1, W: width, H: height - 1})
+	r := ui.Rect{0, 0, 1, 1}
+	h.repoView.Properties().HasFrame = true
+	h.statusView.Show(r)
+	h.repoView.Show(r)
 	h.repoView.SetCurrentView()
-	h.statusView.NotifyChanged()
-	h.repoView.NotifyChanged()
+
+	h.OnResizeWindow()
 }
 
 func (h *MainWindow) OnResizeWindow() {
 	width, height := h.uiHandler.WindowSize()
 	log.Infof("Resize %d %d", width, height)
 	h.statusView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: 1})
-	h.repoView.SetBounds(ui.Rect{X: 0, Y: 1, W: width, H: height - 1})
+	h.repoView.SetBounds(ui.Rect{X: 0, Y: 2, W: width, H: height})
 
 	h.statusView.NotifyChanged()
 	h.repoView.NotifyChanged()

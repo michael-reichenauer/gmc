@@ -27,10 +27,10 @@ func (h *statusVM) GetStatus(width int) (string, error) {
 		return "", nil
 	}
 	pad := ""
-	for i := 0; i < gw; i++ {
-		pad = pad + " "
-	}
+	//for i := 0; i < gw; i++ {
+	//	pad = pad + " "
+	//}
 
-	statusText := utils.Text(fmt.Sprintf("%d uncommited chages", status.AllChanges), width)
+	statusText := utils.Text(fmt.Sprintf(" %d uncommited changes", status.AllChanges), width)
 	return pad + ui.YellowDk(statusText), nil
 }
