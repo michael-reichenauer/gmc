@@ -40,6 +40,7 @@ type Branch struct {
 	DisplayName   string
 	Index         int
 	IsMultiBranch bool
+	RemoteName    string
 }
 
 func newViewPort(repo *repo, first, last, selected int) ViewPort {
@@ -109,5 +110,6 @@ func toBranch(b *branch) Branch {
 		DisplayName:   b.displayName,
 		Index:         b.index,
 		IsMultiBranch: b.isMultiBranch,
+		RemoteName:    b.remoteName,
 	}
 }

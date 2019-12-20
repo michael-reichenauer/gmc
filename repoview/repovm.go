@@ -26,9 +26,7 @@ type repoPage struct {
 type repoVM struct {
 	currentCommit string
 	model         *model.Model
-
 	viewPort      model.ViewPort
-	statusMessage string
 }
 
 func newRepoVM(model *model.Model) *repoVM {
@@ -56,10 +54,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	var sb strings.Builder
 	commits := h.viewPort.Commits
 
-	h.statusMessage = ""
-	sbid := ""
-	sbc := commits[selected-firstLine]
-	sbid = sbc.Branch.Name
+	selectedCommit := commits[selected-firstLine]
 
 	for i, c := range commits {
 		writeSelectedMarker(&sb, i+firstLine, selected)
@@ -68,7 +63,7 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		writeMergeMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeSubject(&sb, c, sbid, messageLength)
+		writeSubject(&sb, c, selectedCommit, messageLength)
 		sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
@@ -174,13 +169,15 @@ func writeAuthorTime(sb *strings.Builder, c model.Commit, length int) {
 	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))
 }
 
-func writeSubject(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
+func writeSubject(sb *strings.Builder, c model.Commit, selectedCommit model.Commit, length int) {
 	subject := utils.Text(c.Subject, length)
 	if c.ID == model.StatusID {
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}
-	if c.Branch.Name == selectedBranchID {
+	if c.Branch.Name == selectedCommit.Branch.Name ||
+		c.Branch.Name == selectedCommit.Branch.RemoteName ||
+		c.Branch.RemoteName == selectedCommit.Branch.Name {
 		sb.WriteString(ui.White(subject))
 	} else {
 		sb.WriteString(ui.Dark(subject))
