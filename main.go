@@ -4,8 +4,8 @@ import (
 	"flag"
 	"github.com/mattn/go-isatty"
 	"github.com/michael-reichenauer/gmc/repoview"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"log"
 	"os"
@@ -37,7 +37,7 @@ func main() {
 		*repoPath = utils.CurrentDir()
 	}
 
-	path, err := gitmodel.GetWorkingFolderRoot(*repoPath)
+	path, err := git.WorkingFolderRoot(*repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -8,8 +8,6 @@ import (
 var DefaultBranchPrio = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type Handler struct {
-	StatusChange  chan interface{}
-	RepoChange    chan interface{}
 	gitRepo       *git.Repo
 	branchNames   *branchNamesHandler
 	monitor       *monitor
@@ -20,16 +18,18 @@ type Handler struct {
 }
 
 func NewModel(repoPath string) *Handler {
-	m := newMonitor(repoPath)
-	m.Start()
+	gitRepo := git.NewRepo(repoPath)
 	return &Handler{
-		gitRepo:      git.NewRepo(repoPath),
-		branchNames:  newBranchNamesHandler(),
-		monitor:      m,
-		StatusChange: m.StatusChange,
-		RepoChange:   m.RepoChange,
-		currentRepo:  newRepo(),
+		gitRepo:     gitRepo,
+		branchNames: newBranchNamesHandler(),
+		monitor:     newMonitor(gitRepo.RepoPath),
+		currentRepo: newRepo(),
 	}
+}
+
+func (h *Handler) Start() {
+	h.monitor.Start()
+	go h.monitorRepoRoutine()
 }
 
 func (h *Handler) GetRepo() Repo {
@@ -49,6 +49,10 @@ func (h *Handler) Load() {
 	if err != nil {
 		h.err = err
 	}
+}
+
+func (h *Handler) monitorRepoRoutine() {
+
 }
 
 func (h *Handler) refreshRepo() error {
