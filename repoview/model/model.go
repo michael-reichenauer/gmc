@@ -17,12 +17,11 @@ type Status struct {
 	AllChanges int
 	GraphWidth int
 }
+
 type Model struct {
-	StatusChange chan interface{}
-	RepoChange   chan interface{}
-	gitModel     *gitmodel.Handler
-	lock         sync.Mutex
-	currentRepo  *repo
+	gitModel    *gitmodel.Handler
+	lock        sync.Mutex
+	currentRepo *repo
 
 	err error
 }
@@ -30,10 +29,8 @@ type Model struct {
 func NewModel(repoPath string) *Model {
 	gm := gitmodel.NewModel(repoPath)
 	return &Model{
-		gitModel:     gm,
-		StatusChange: gm.StatusChange,
-		RepoChange:   gm.RepoChange,
-		currentRepo:  newRepo(),
+		gitModel:    gm,
+		currentRepo: newRepo(),
 	}
 }
 
@@ -41,13 +38,14 @@ func (h *Model) Load() {
 	t := time.Now()
 	h.gitModel.Load()
 	gmRepo := h.gitModel.GetRepo()
-	h.LoadBranches([]string{}, gmRepo)
+	gmStatus := h.gitModel.GetStatus()
+	h.LoadBranches([]string{}, gmRepo, gmStatus)
 	log.Infof("Load time %v", time.Since(t))
 }
 
-func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
+func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) {
 	t := time.Now()
-	repo := h.getRepoModel(branchIds, gmRepo)
+	repo := h.getRepoModel(branchIds, gmRepo, gmStatus)
 	log.Infof("LoadBranches time %v", time.Since(t))
 	h.lock.Lock()
 	h.currentRepo = repo
@@ -79,22 +77,22 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it (if not already added
-		mergeParent := viewPort.repo.gitRepo.CommitById(c.ParentIDs[1])
+		mergeParent := viewPort.repo.gmRepo.CommitById(c.ParentIDs[1])
 		branchIds = h.addBranchWithAncestors(branchIds, mergeParent.Branch)
 	}
 	for _, ccId := range c.ChildIDs {
-		cc := viewPort.repo.gitRepo.CommitById(ccId)
+		cc := viewPort.repo.gmRepo.CommitById(ccId)
 		if cc.Branch.Name != c.Branch.name {
 			branchIds = h.addBranchWithAncestors(branchIds, cc.Branch)
 		}
 	}
-	for _, b := range viewPort.repo.gitRepo.Branches {
+	for _, b := range viewPort.repo.gmRepo.Branches {
 		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
 			// empty branch with no own branch commit, (branch start)
 			branchIds = h.addBranchWithAncestors(branchIds, b)
 		}
 	}
-	for _, b := range viewPort.repo.gitRepo.Branches {
+	for _, b := range viewPort.repo.gmRepo.Branches {
 		i1 := utils.StringsIndex(branchIds, b.RemoteName)
 		i2 := utils.StringsIndex(branchIds, b.Name)
 		if i2 == -1 && i1 != -1 {
@@ -105,7 +103,7 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 		}
 	}
 
-	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
+	h.LoadBranches(branchIds, viewPort.repo.gmRepo, viewPort.repo.gmStatus)
 }
 
 func (h *Model) CloseBranch(viewPort ViewPort, index int) {
@@ -123,7 +121,7 @@ func (h *Model) CloseBranch(viewPort ViewPort, index int) {
 		}
 	}
 
-	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
+	h.LoadBranches(branchIds, viewPort.repo.gmRepo, viewPort.repo.gmStatus)
 }
 
 func (h *Model) Refresh(viewPort ViewPort) {
@@ -134,25 +132,27 @@ func (h *Model) Refresh(viewPort ViewPort) {
 	}
 	h.gitModel.Load()
 	gmRepo := h.gitModel.GetRepo()
-	h.LoadBranches(branchIds, gmRepo)
+	gmStatus := h.gitModel.GetStatus()
+	h.LoadBranches(branchIds, gmRepo, gmStatus)
 	log.Infof("Refresh time %v", time.Since(t))
 }
 
-func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
+func (h *Model) getRepoModel(branchIds []string, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) *repo {
 	repo := newRepo()
-	repo.gitRepo = gRepo
+	repo.gmRepo = gmRepo
+	repo.gmStatus = gmStatus
 
-	branches := h.getGitModelBranches(branchIds, gRepo)
+	branches := h.getGitModelBranches(branchIds, gmRepo, gmStatus)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
-	currentBranch, ok := gRepo.CurrentBranch()
+	currentBranch, ok := gmRepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
 	repo.addVirtualStatusCommit()
-	for _, c := range repo.gitRepo.Commits {
+	for _, c := range repo.gmRepo.Commits {
 		repo.addGitCommit(c)
 	}
 

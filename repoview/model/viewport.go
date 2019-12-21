@@ -74,8 +74,8 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		First:              first,
 		Last:               last,
 		Selected:           selected,
-		RepoPath:           repo.gitRepo.RepoPath,
-		UncommittedChanges: repo.gitRepo.Status.AllChanges(),
+		RepoPath:           repo.gmRepo.RepoPath,
+		UncommittedChanges: repo.gmStatus.AllChanges(),
 	}
 }
 

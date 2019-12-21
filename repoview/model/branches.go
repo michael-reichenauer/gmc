@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo) []*gitmodel.Branch {
+func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) []*gitmodel.Branch {
 	if len(branchIds) == 0 {
 		// No specified branches, default to current, or master
 		branchIds = h.getDefaultBranchIDs(gmRepo)
@@ -22,7 +22,7 @@ func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo) []
 
 	branches = h.addLocalBranches(branches, gmRepo)
 	branches = h.addRemoteBranches(branches, gmRepo)
-	branches = h.removeSameLocalAsRemotes(branches, gmRepo)
+	branches = h.removeSameLocalAsRemotes(branches, gmRepo, gmStatus)
 	h.sortBranches(branches)
 	return branches
 }
@@ -143,8 +143,8 @@ func (h *Model) branchAncestorIDs(b *gitmodel.Branch) []string {
 	return ids
 }
 
-func (h *Model) removeSameLocalAsRemotes(branches []*gitmodel.Branch, gmRepo gitmodel.Repo) []*gitmodel.Branch {
-	statusOk := gmRepo.Status.OK()
+func (h *Model) removeSameLocalAsRemotes(branches []*gitmodel.Branch, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) []*gitmodel.Branch {
+	statusOk := gmStatus.OK()
 	currentBranch, _ := gmRepo.CurrentBranch()
 
 	var bs []*gitmodel.Branch

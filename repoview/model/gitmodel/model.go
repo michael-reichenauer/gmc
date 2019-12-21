@@ -8,14 +8,15 @@ import (
 var DefaultBranchPrio = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type Handler struct {
-	StatusChange chan interface{}
-	RepoChange   chan interface{}
-	gitRepo      *git.Repo
-	branchNames  *branchNamesHandler
-	monitor      *monitor
-	lock         sync.Mutex
-	currentRepo  *Repo
-	err          error
+	StatusChange  chan interface{}
+	RepoChange    chan interface{}
+	gitRepo       *git.Repo
+	branchNames   *branchNamesHandler
+	monitor       *monitor
+	lock          sync.Mutex
+	currentRepo   *Repo
+	currentStatus *Status
+	err           error
 }
 
 func NewModel(repoPath string) *Handler {
@@ -35,6 +36,12 @@ func (h *Handler) GetRepo() Repo {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 	return *h.currentRepo
+}
+
+func (h *Handler) GetStatus() Status {
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	return *h.currentStatus
 }
 
 func (h *Handler) Load() {
@@ -59,8 +66,7 @@ func (h *Handler) refreshRepo() error {
 	if err != nil {
 		return err
 	}
-
-	repo.Status = newStatus(gitStatus)
+	status := newStatus(gitStatus)
 
 	repo.setGitCommits(gitCommits)
 	repo.setGitBranches(gitBranches)
@@ -72,6 +78,7 @@ func (h *Handler) refreshRepo() error {
 
 	h.lock.Lock()
 	h.currentRepo = repo
+	h.currentStatus = &status
 	h.lock.Unlock()
 	return nil
 }

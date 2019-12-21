@@ -18,7 +18,8 @@ type repo struct {
 	Branches          []*branch
 	CurrentCommit     *commit
 	CurrentBranchName string
-	gitRepo           gitmodel.Repo
+	gmRepo            gitmodel.Repo
+	gmStatus          gitmodel.Status
 }
 
 func newRepo() *repo {
@@ -47,14 +48,14 @@ func (r *repo) addBranch(gb *gitmodel.Branch) {
 }
 
 func (r *repo) addVirtualStatusCommit() {
-	if r.gitRepo.Status.OK() {
+	if r.gmStatus.OK() {
 		return
 	}
-	cb, ok := r.gitRepo.CurrentBranch()
+	cb, ok := r.gmRepo.CurrentBranch()
 	if !ok || !r.containsBranch(cb) {
 		return
 	}
-	allChanges := r.gitRepo.Status.AllChanges()
+	allChanges := r.gmStatus.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
 
 	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))

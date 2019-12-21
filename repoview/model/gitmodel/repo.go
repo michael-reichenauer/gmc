@@ -6,10 +6,10 @@ import (
 )
 
 type Repo struct {
-	Commits              []*Commit
-	commitById           map[string]*Commit
-	Branches             []*Branch
-	Status               Status
+	Commits    []*Commit
+	commitById map[string]*Commit
+	Branches   []*Branch
+	//	Status               Status
 	branchNameFromCommit map[string]string
 	RepoPath             string
 }
