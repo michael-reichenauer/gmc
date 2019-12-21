@@ -12,14 +12,14 @@ import (
 
 // ssk.
 type monitor struct {
-	FileChange chan interface{}
-	RepoChange chan interface{}
-	watcher    *fsnotify.Watcher
-	repoPath   string
-	gitPath    string
-	refsPath   string
-	fetchHead  string
-	quit       chan chan<- interface{}
+	StatusChange chan interface{}
+	RepoChange   chan interface{}
+	watcher      *fsnotify.Watcher
+	repoPath     string
+	gitPath      string
+	refsPath     string
+	fetchHead    string
+	quit         chan chan<- interface{}
 }
 
 func newMonitor(repoPath string) *monitor {
@@ -28,14 +28,14 @@ func newMonitor(repoPath string) *monitor {
 		log.Fatal(err)
 	}
 	return &monitor{
-		watcher:    watcher,
-		repoPath:   repoPath,
-		gitPath:    filepath.Join(repoPath, ".git"),
-		refsPath:   filepath.Join(repoPath, ".git", "refs"),
-		fetchHead:  filepath.Join(repoPath, ".git", "FETCH_HEAD"),
-		FileChange: make(chan interface{}),
-		RepoChange: make(chan interface{}),
-		quit:       make(chan chan<- interface{}),
+		watcher:      watcher,
+		repoPath:     repoPath,
+		gitPath:      filepath.Join(repoPath, ".git"),
+		refsPath:     filepath.Join(repoPath, ".git", "refs"),
+		fetchHead:    filepath.Join(repoPath, ".git", "FETCH_HEAD"),
+		StatusChange: make(chan interface{}),
+		RepoChange:   make(chan interface{}),
+		quit:         make(chan chan<- interface{}),
 	}
 }
 
@@ -57,7 +57,7 @@ func (h *monitor) monitorRoutine() {
 		select {
 		case event := <-h.watcher.Events:
 			if h.isIgnore(event.Name) {
-				fmt.Printf("ignoring: %s\n", event.Name)
+				//fmt.Printf("ignoring: %s\n", event.Name)
 			} else if h.isRepoChange(event.Name) {
 				fmt.Printf("Repo change: %s\n", event.Name)
 				select {
@@ -67,17 +67,17 @@ func (h *monitor) monitorRoutine() {
 			} else if h.isStatusChange(event.Name) {
 				fmt.Printf("Status change: %s\n", event.Name)
 				select {
-				case h.FileChange <- nil:
+				case h.StatusChange <- nil:
 				default:
 				}
 			} else {
-				fmt.Printf("ignoring: %s\n", event.Name)
+				// fmt.Printf("ignoring: %s\n", event.Name)
 			}
 		case err = <-h.watcher.Errors:
 			fmt.Println("ERROR", err)
 		case closed := <-h.quit:
-			close(h.FileChange)
-			close(h.FileChange)
+			close(h.StatusChange)
+			close(h.StatusChange)
 			close(closed)
 			return
 		}

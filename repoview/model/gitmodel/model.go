@@ -8,18 +8,26 @@ import (
 var DefaultBranchPrio = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type Handler struct {
-	gitRepo     *git.Repo
-	branchNames *branchNamesHandler
-	lock        sync.Mutex
-	currentRepo *Repo
-	err         error
+	StatusChange chan interface{}
+	RepoChange   chan interface{}
+	gitRepo      *git.Repo
+	branchNames  *branchNamesHandler
+	monitor      *monitor
+	lock         sync.Mutex
+	currentRepo  *Repo
+	err          error
 }
 
 func NewModel(repoPath string) *Handler {
+	m := newMonitor(repoPath)
+	m.Start()
 	return &Handler{
-		gitRepo:     git.NewRepo(repoPath),
-		branchNames: newBranchNamesHandler(),
-		currentRepo: newRepo(),
+		gitRepo:      git.NewRepo(repoPath),
+		branchNames:  newBranchNamesHandler(),
+		monitor:      m,
+		StatusChange: m.StatusChange,
+		RepoChange:   m.RepoChange,
+		currentRepo:  newRepo(),
 	}
 }
 

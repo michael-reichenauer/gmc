@@ -18,17 +18,22 @@ type Status struct {
 	GraphWidth int
 }
 type Model struct {
-	gitModel    *gitmodel.Handler
-	lock        sync.Mutex
-	currentRepo *repo
+	StatusChange chan interface{}
+	RepoChange   chan interface{}
+	gitModel     *gitmodel.Handler
+	lock         sync.Mutex
+	currentRepo  *repo
 
 	err error
 }
 
 func NewModel(repoPath string) *Model {
+	gm := gitmodel.NewModel(repoPath)
 	return &Model{
-		gitModel:    gitmodel.NewModel(repoPath),
-		currentRepo: newRepo(),
+		gitModel:     gm,
+		StatusChange: gm.StatusChange,
+		RepoChange:   gm.RepoChange,
+		currentRepo:  newRepo(),
 	}
 }
 
