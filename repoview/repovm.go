@@ -1,7 +1,7 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
@@ -26,11 +26,11 @@ type repoPage struct {
 
 type repoVM struct {
 	currentCommit string
-	model         *model.Model
-	viewPort      model.ViewPort
+	model         *viewmodel.Model
+	viewPort      viewmodel.ViewPort
 }
 
-func newRepoVM(model *model.Model) *repoVM {
+func newRepoVM(model *viewmodel.Model) *repoVM {
 	return &repoVM{
 		currentCommit: "",
 		model:         model,
@@ -94,7 +94,7 @@ func (h *repoVM) CloseBranch(index int) {
 }
 
 func (h *repoVM) Refresh() {
-	//h.model.Refresh(h.viewPort)
+	//h.viewmodel.Refresh(h.viewPort)
 }
 
 func writeSelectedMarker(sb *strings.Builder, index, selected int) {
@@ -106,31 +106,31 @@ func writeSelectedMarker(sb *strings.Builder, index, selected int) {
 		sb.WriteString(" ")
 	}
 }
-func writeMergeMarker(sb *strings.Builder, c model.Commit) {
+func writeMergeMarker(sb *strings.Builder, c viewmodel.Commit) {
 	if c.IsMore {
 		sb.WriteString(moreMarker)
 	} else {
 		sb.WriteString(" ")
 	}
 }
-func writeGraph(sb *strings.Builder, c model.Commit) {
+func writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
 		bColor := branchColor(c.Graph[i].BranchDisplayName)
 
 		if i != 0 {
 			cColor := bColor
-			if c.Graph[i].Connect.Has(model.BPass) {
+			if c.Graph[i].Connect.Has(viewmodel.BPass) {
 				cColor = ui.CWhite
 			}
 			sb.WriteString(ui.ColorRune(cColor, graphConnectRune(c.Graph[i].Connect)))
 		}
-		if c.Graph[i].Branch == model.BPass {
+		if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}
 		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
 	}
 }
-func writeCurrentMarker(sb *strings.Builder, c model.Commit) {
+func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 	if c.IsCurrent {
 		sb.WriteString(currentCommitMarker)
 	} else {
@@ -156,24 +156,24 @@ func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, t
 	}
 	return
 }
-func writeSid(sb *strings.Builder, c model.Commit) {
+func writeSid(sb *strings.Builder, c viewmodel.Commit) {
 	sb.WriteString(ui.Dark(c.SID))
 }
 
-func writeAuthor(sb *strings.Builder, commit model.Commit, length int) {
+func writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {
 	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
 }
 
-func writeAuthorTime(sb *strings.Builder, c model.Commit, length int) {
-	if c.ID == model.StatusID {
+func writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
+	if c.ID == viewmodel.StatusID {
 		return
 	}
 	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))
 }
 
-func writeSubject(sb *strings.Builder, c model.Commit, selectedCommit model.Commit, length int) {
+func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmodel.Commit, length int) {
 	subject := utils.Text(c.Subject, length)
-	if c.ID == model.StatusID {
+	if c.ID == viewmodel.StatusID {
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}

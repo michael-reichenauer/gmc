@@ -1,7 +1,7 @@
-package model
+package viewmodel
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"sync"
@@ -294,10 +294,10 @@ func (h *Model) setParentChildRelations(repo *repo) {
 
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
-			// if a commit has a parent, it is included in the repo model
+			// if a commit has a parent, it is included in the repo viewmodel
 			c.Parent = repo.commitById[c.ParentIDs[0]]
 			if len(c.ParentIDs) > 1 {
-				// Merge parent can be nil if not the merge parent branch is included in the repo model as well
+				// Merge parent can be nil if not the merge parent branch is included in the repo viewmodel as well
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]
 			}
 		} else {

@@ -1,8 +1,8 @@
-package model
+package viewmodel
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"time"
 )

@@ -1,7 +1,7 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"hash/fnv"
@@ -29,50 +29,50 @@ var branchColors = []ui.Color{
 }
 
 func hasLeft(bm utils.Bitmask) bool {
-	return bm.Has(model.BBranchLeft) ||
-		bm.Has(model.BMergeLeft) ||
-		bm.Has(model.BPass)
+	return bm.Has(viewmodel.BBranchLeft) ||
+		bm.Has(viewmodel.BMergeLeft) ||
+		bm.Has(viewmodel.BPass)
 }
 
 func graphBranchRune(bm utils.Bitmask) rune {
 	switch {
 	// commit of a branch with only one commit (tip==bottom)
-	case bm.Has(model.BTip) && bm.Has(model.BBottom) && bm.Has(model.BActiveTip) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && bm.Has(viewmodel.BActiveTip) && hasLeft(bm):
 		return '┺'
-	case bm.Has(model.BTip) && bm.Has(model.BBottom) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && hasLeft(bm):
 		return '╼'
 
 	// commit is tip
-	case bm.Has(model.BTip) && bm.Has(model.BActiveTip) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip) && hasLeft(bm):
 		return '╊'
-	case bm.Has(model.BTip) && bm.Has(model.BActiveTip):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip):
 		return '┣'
-	case bm.Has(model.BTip) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && hasLeft(bm):
 		return '┲'
-	case bm.Has(model.BTip):
+	case bm.Has(viewmodel.BTip):
 		return '┏'
 
 	// commit is bottom
-	case bm.Has(model.BBottom) && hasLeft(bm):
+	case bm.Has(viewmodel.BBottom) && hasLeft(bm):
 		return '┺'
-	case bm.Has(model.BBottom):
+	case bm.Has(viewmodel.BBottom):
 		return '┚'
 
 	// commit is within branch
-	case bm.Has(model.BCommit) && hasLeft(bm):
+	case bm.Has(viewmodel.BCommit) && hasLeft(bm):
 		return '╊'
-	case bm.Has(model.BCommit):
+	case bm.Has(viewmodel.BCommit):
 		return '┣'
 
 	// commit is not part of branch
-	case bm.Has(model.BLine) && hasLeft(bm):
+	case bm.Has(viewmodel.BLine) && hasLeft(bm):
 		return '╂'
-	case bm.Has(model.BLine):
+	case bm.Has(viewmodel.BLine):
 		return '┃'
 
-	case bm == model.BPass:
+	case bm == viewmodel.BPass:
 		return '─'
-	case bm == model.BBlank:
+	case bm == viewmodel.BBlank:
 		return ' '
 	default:
 		return '*'
@@ -81,37 +81,37 @@ func graphBranchRune(bm utils.Bitmask) rune {
 
 func graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
-	case model.BMergeRight:
+	case viewmodel.BMergeRight:
 		return '╮'
-	case model.BMergeRight | model.BPass:
+	case viewmodel.BMergeRight | viewmodel.BPass:
 		return '┬'
-	case model.BMergeRight | model.BMLine:
+	case viewmodel.BMergeRight | viewmodel.BMLine:
 		return '┤'
-	case model.BMergeRight | model.BBranchRight:
+	case viewmodel.BMergeRight | viewmodel.BBranchRight:
 		return '┤'
-	case model.BMergeRight | model.BBranchRight | model.BPass:
+	case viewmodel.BMergeRight | viewmodel.BBranchRight | viewmodel.BPass:
 		return '┴'
-	case model.BBranchRight:
+	case viewmodel.BBranchRight:
 		return '╯'
-	case model.BBranchRight | model.BPass:
+	case viewmodel.BBranchRight | viewmodel.BPass:
 		return '┴'
-	case model.BBranchRight | model.BMLine:
+	case viewmodel.BBranchRight | viewmodel.BMLine:
 		return '┤'
-	case model.BMergeLeft:
+	case viewmodel.BMergeLeft:
 		return '╭'
-	case model.BMergeLeft | model.BBranchLeft:
+	case viewmodel.BMergeLeft | viewmodel.BBranchLeft:
 		return '├'
-	case model.BMergeLeft | model.BMLine:
+	case viewmodel.BMergeLeft | viewmodel.BMLine:
 		return '├'
-	case model.BBranchLeft:
+	case viewmodel.BBranchLeft:
 		return '╰'
-	case model.BBranchLeft | model.BMLine:
+	case viewmodel.BBranchLeft | viewmodel.BMLine:
 		return '├'
-	case model.BMLine:
+	case viewmodel.BMLine:
 		return '│'
-	case model.BPass:
+	case viewmodel.BPass:
 		return '─'
-	case model.BBlank:
+	case viewmodel.BBlank:
 		return ' '
 	default:
 		return '*'

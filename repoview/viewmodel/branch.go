@@ -1,4 +1,4 @@
-package model
+package viewmodel
 
 type branch struct {
 	name           string

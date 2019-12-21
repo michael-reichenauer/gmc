@@ -2,13 +2,13 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"testing"
 )
 
 func TestView(t *testing.T) {
-	m := model.NewModel(`C:\Work Files\GitMind`)
+	m := viewmodel.NewModel(`C:\Work Files\GitMind`)
 	vm := newRepoVM(m)
 	vm.Load()
 	vd, _ := vm.GetRepoPage(100, 0, 20, 0)
@@ -16,7 +16,7 @@ func TestView(t *testing.T) {
 }
 
 func TestViewCurrent(t *testing.T) {
-	m := model.NewModel(utils.CurrentDir())
+	m := viewmodel.NewModel(utils.CurrentDir())
 	vm := newRepoVM(m)
 	vm.Load()
 	vd, _ := vm.GetRepoPage(100, 0, 18, 1)

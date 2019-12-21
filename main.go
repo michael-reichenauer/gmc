@@ -4,7 +4,7 @@ import (
 	"flag"
 	"github.com/mattn/go-isatty"
 	"github.com/michael-reichenauer/gmc/repoview"
-	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"log"
