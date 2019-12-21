@@ -13,6 +13,10 @@ const (
 	remoteMasterName = "origin/master"
 )
 
+type Status struct {
+	AllChanges int
+	GraphWidth int
+}
 type Model struct {
 	gitModel    *gitmodel.Handler
 	lock        sync.Mutex
@@ -43,6 +47,10 @@ func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
 	h.lock.Lock()
 	h.currentRepo = repo
 	h.lock.Unlock()
+}
+
+func (h *Model) GetCommitByIndex(index int) (Commit, error) {
+	return toCommit(h.currentRepo.Commits[index]), nil
 }
 
 func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
@@ -138,8 +146,9 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
+	repo.addVirtualStatusCommit()
 	for _, c := range repo.gitRepo.Commits {
-		repo.addCommit(c)
+		repo.addGitCommit(c)
 	}
 
 	h.setParentChildRelations(repo)
@@ -176,6 +185,9 @@ func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
 
 	// Draw branch connector lines
 	for _, c := range repo.Commits {
+		if c.ID == StatusID {
+			continue
+		}
 		for i, b := range repo.Branches {
 			c.graph[i].BranchName = b.name
 			c.graph[i].BranchDisplayName = b.displayName
@@ -269,10 +281,10 @@ func (h *Model) setParentChildRelations(repo *repo) {
 		if b.parentBranchID != "" {
 			b.parentBranch = repo.BranchById(b.parentBranchID)
 		}
-		if b.tipId == b.bottomId && b.bottom.Branch != b {
-			// an empty branch, with no own branch commit, (branch start)
-			b.bottom.IsMore = true
-		}
+		//if b.tipId == b.bottomId && b.bottom.Branch != b {
+		//	// an empty branch, with no own branch commit, (branch start)
+		//	b.bottom.IsMore = true
+		//}
 	}
 
 	for _, c := range repo.Commits {

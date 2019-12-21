@@ -22,7 +22,7 @@ func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo) []
 
 	branches = h.addLocalBranches(branches, gmRepo)
 	branches = h.addRemoteBranches(branches, gmRepo)
-	branches = h.removeSameLocalAsRemotes(branches)
+	branches = h.removeSameLocalAsRemotes(branches, gmRepo)
 	h.sortBranches(branches)
 	return branches
 }
@@ -34,7 +34,7 @@ func (h *Model) addLocalBranches(branches []*gitmodel.Branch, gmRepo gitmodel.Re
 		if branch.IsRemote {
 			if !h.containsLocalBranch(branches, branch.Name) {
 				b, ok := gmRepo.LocalBranchByRemoteName(branch.Name)
-				if ok && !h.containsSameRemoteBranch(branches, b) {
+				if ok {
 					bs = append(bs, b)
 				}
 			}
@@ -143,10 +143,15 @@ func (h *Model) branchAncestorIDs(b *gitmodel.Branch) []string {
 	return ids
 }
 
-func (h *Model) removeSameLocalAsRemotes(branches []*gitmodel.Branch) []*gitmodel.Branch {
+func (h *Model) removeSameLocalAsRemotes(branches []*gitmodel.Branch, gmRepo gitmodel.Repo) []*gitmodel.Branch {
+	statusOk := gmRepo.Status.OK()
+	currentBranch, _ := gmRepo.CurrentBranch()
+
 	var bs []*gitmodel.Branch
 	for _, branch := range branches {
-		if branch.RemoteName != "" && h.containsSameRemoteBranch(branches, branch) {
+		if branch.RemoteName != "" &&
+			h.containsSameRemoteBranch(branches, branch) &&
+			!(!statusOk && branch == currentBranch) {
 			continue
 		}
 		bs = append(bs, branch)

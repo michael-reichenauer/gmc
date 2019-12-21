@@ -3,17 +3,15 @@ package ui
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type Properties struct {
-	Title         string
-	HasFrame      bool
-	Bounds        func(screenRect Rect) Rect
-	IsCurrentView bool
-	OnLoad        func(view *View)
-	OnClose       func()
+	Title    string
+	HasFrame bool
+
+	OnLoad  func()
+	OnClose func()
 }
 
 type ViewData struct {
@@ -24,127 +22,226 @@ type ViewData struct {
 	Current  int
 }
 
-type Rect struct {
-	X, Y, W, H int
+type ViewPort struct {
+	Width   int
+	First   int
+	Last    int
+	Current int
 }
 
-type ViewModel interface {
-	Properties() Properties
-	GetViewData(width, firstLine, lastLine, currentLine int) ViewData
+type View interface {
+	Properties() *Properties
+	Show(bounds Rect)
+	SetBounds(bounds Rect)
+	SetCurrentView()
+	NotifyChanged()
+	SetKey(key interface{}, modifier gocui.Modifier, handler func())
+	CurrentLine() int
+	Clear()
+	PostOnUIThread(func())
 }
 
-type View struct {
-	Gui  *gocui.Gui
-	View *gocui.View
+type view struct {
+	gui     *gocui.Gui
+	guiView *gocui.View
 
-	properties  Properties
-	ViewName    string
-	viewModel   ViewModel
-	ViewData    ViewData
-	FirstLine   int
-	LastLine    int
-	CurrentLine int
-	maxX        int
-	maxY        int
+	properties      *Properties
+	viewName        string
+	viewData        func(viewPort ViewPort) ViewData
+	currentViewData ViewData
+	firstLine       int
+	lastLine        int
+	currentLine     int
 }
 
-func (h *View) NotifyChanged() {
-	h.Gui.Update(func(g *gocui.Gui) error {
-		view, err := g.View(h.ViewName)
-		if err != nil {
-			return err
+func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
+	return &view{
+		gui:        ui.Gui(),
+		viewName:   ui.NewViewName(),
+		viewData:   viewData,
+		properties: &Properties{}}
+}
+
+func (h *view) Show(bounds Rect) {
+	if gv, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
+		if err != gocui.ErrUnknownView {
+			log.Fatal(err)
 		}
-		view.Clear()
-		view.Cursor()
-		x, y := view.Size()
-		h.LastLine = h.FirstLine + y - 1
-		h.ViewData = h.viewModel.GetViewData(x, h.FirstLine, h.LastLine, h.CurrentLine)
-		h.FirstLine = h.ViewData.First
-		h.LastLine = h.ViewData.Last
-		h.CurrentLine = h.ViewData.Current
-		_, _ = view.Write([]byte(h.ViewData.Text))
-		return nil
-	})
-}
 
-func (h *View) Resized() {
-	h.Gui.Update(func(g *gocui.Gui) error {
-		view, err := g.View(h.ViewName)
-		if err != nil {
-			return err
+		h.guiView = gv
+		_, vy := h.guiView.Size()
+		h.firstLine = 0
+		h.lastLine = vy - 1
+
+		h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
+		h.guiView.Editable = false
+		h.guiView.Wrap = false
+		h.guiView.Highlight = false
+		h.guiView.SelBgColor = gocui.ColorBlue
+		if h.properties.Title != "" {
+			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 		}
-		view.Clear()
-		maxX, maxY := g.Size()
-		bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
-		_, _ = g.SetView(h.ViewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H)
-		return nil
-	})
-}
 
-func (h *View) Close() {
-	h.Gui.Update(func(g *gocui.Gui) error {
-		if h.properties.OnClose != nil {
-			h.properties.OnClose()
-		}
-		return h.Gui.DeleteView(h.ViewName)
-	})
-}
+		h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.CursorDown)
+		h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
+		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.PageDown)
+		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
+		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
-func (h *View) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
-	if err := h.Gui.SetKeybinding(
-		h.ViewName, key, modifier,
-		func(gui *gocui.Gui, view *gocui.View) error {
-			handler()
-			return nil
-		}); err != nil {
-		log.Fatalf("failed, %v", err)
-	}
-}
-
-func newView(gui *gocui.Gui, viewModel ViewModel) *View {
-	viewName := utils.RandStringRunes(10)
-	//	viewName := "main"
-	properties := viewModel.Properties()
-	if properties.Bounds == nil {
-		properties.Bounds = func(sr Rect) Rect { return Rect{0, 0, sr.W - 1, sr.H} }
-	}
-
-	return &View{Gui: gui, ViewName: viewName, viewModel: viewModel, properties: properties}
-}
-
-func (h *View) show() {
-	h.Gui.Update(func(g *gocui.Gui) error {
-		maxX, maxY := g.Size()
-		bounds := h.properties.Bounds(Rect{0, 0, maxX, maxY})
-		if gv, err := g.SetView(h.ViewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
-			if err != gocui.ErrUnknownView {
-				return err
-			}
-
-			h.View = gv
-			_, vy := h.View.Size()
-			h.FirstLine = 0
-			h.LastLine = vy - 1
-
-			h.View.Frame = h.properties.Title != "" || h.properties.HasFrame
-			h.View.Editable = false
-			h.View.Wrap = false
-			h.View.Highlight = false
-			h.View.SelBgColor = gocui.ColorBlue
-			if h.properties.Title != "" {
-				h.View.Title = fmt.Sprintf(" %s ", h.properties.Title)
-			}
-
-			if h.properties.IsCurrentView {
-				if _, err := h.Gui.SetCurrentView(h.ViewName); err != nil {
-					return err
-				}
-
-			}
-		}
 		if h.properties.OnLoad != nil {
-			h.properties.OnLoad(h)
+			h.properties.OnLoad()
+		}
+	}
+}
+
+func (h *view) SetBounds(bounds Rect) {
+	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (h *view) SetCurrentView() {
+	if _, err := h.gui.SetCurrentView(h.viewName); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (h view) CurrentLine() int {
+	return h.currentLine
+}
+
+func (h *view) Properties() *Properties {
+	return h.properties
+}
+
+func (h *view) PostOnUIThread(f func()) {
+	h.gui.Update(func(g *gocui.Gui) error {
+		f()
+		return nil
+	})
+}
+
+func (h *view) NotifyChanged() {
+	h.gui.Update(func(g *gocui.Gui) error {
+		h.guiView.Clear()
+		x, y := h.guiView.Size()
+		h.lastLine = h.firstLine + y - 1
+		h.currentViewData = h.viewData(ViewPort{Width: x, First: h.firstLine, Last: h.lastLine, Current: h.currentLine})
+		h.firstLine = h.currentViewData.First
+		h.lastLine = h.currentViewData.Last
+		h.currentLine = h.currentViewData.Current
+		if _, err := h.guiView.Write([]byte(h.currentViewData.Text)); err != nil {
+			log.Fatal(err)
 		}
 		return nil
 	})
 }
+
+func (h *view) Close() {
+	if h.properties.OnClose != nil {
+		h.properties.OnClose()
+	}
+	if err := h.gui.DeleteView(h.viewName); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
+	if err := h.gui.SetKeybinding(h.viewName, key, modifier, func(gui *gocui.Gui, view *gocui.View) error {
+		handler()
+		return nil
+	}); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (h *view) Clear() {
+	h.guiView.Clear()
+}
+
+func (h *view) Cursor() (int, int) {
+	return h.guiView.Cursor()
+}
+
+func (h *view) SetCursor(x int, y int) error {
+	return h.guiView.SetCursor(x, y)
+}
+
+func (h *view) Size() (int, int) {
+	return h.guiView.Size()
+}
+
+func (h *view) CursorUp() {
+	if h.currentLine <= 0 {
+		return
+	}
+	h.currentLine = h.currentLine - 1
+	if h.currentLine < h.firstLine {
+		move := h.firstLine - h.currentLine
+		h.firstLine = h.firstLine - move
+		h.lastLine = h.lastLine - move
+	}
+	h.NotifyChanged()
+}
+
+func (h *view) CursorDown() {
+	if h.currentLine >= h.currentViewData.MaxLines-1 {
+		return
+	}
+	h.currentLine = h.currentLine + 1
+	if h.currentLine > h.lastLine {
+		move := h.currentLine - h.lastLine
+		h.firstLine = h.firstLine + move
+		h.lastLine = h.lastLine + move
+	}
+	h.NotifyChanged()
+}
+func (h *view) PageDown() {
+	_, y := h.Size()
+	move := y - 2
+	if h.lastLine+move >= h.currentViewData.MaxLines-1 {
+		move = h.currentViewData.MaxLines - 1 - h.lastLine
+	}
+	if move < 1 {
+		return
+	}
+	h.firstLine = h.firstLine + move
+	h.lastLine = h.lastLine + move
+	h.currentLine = h.currentLine + move
+	h.NotifyChanged()
+}
+
+func (h *view) PageUpp() {
+	_, y := h.Size()
+	move := y - 2
+	if h.firstLine-move < 0 {
+		move = h.firstLine
+	}
+	if move < 1 {
+		return
+	}
+	h.firstLine = h.firstLine - move
+	h.lastLine = h.lastLine - move
+	h.currentLine = h.currentLine - move
+	h.NotifyChanged()
+}
+
+//func (h *UI) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
+//	log.Infof("Set line %d", line)
+//
+//	if line >= h.view.viewData.MaxLines {
+//		return nil
+//	}
+//	cx, _ := view.Cursor()
+//	_ = view.SetCursor(cx, line)
+//
+//	h.view.CurrentLine = line
+//	if h.view.CurrentLine > h.view.lastLine {
+//		move := h.view.CurrentLine - h.view.lastLine
+//		h.view.firstLine = h.view.firstLine + move
+//		h.view.lastLine = h.view.lastLine + move
+//	}
+//	h.view.NotifyChanged()
+//
+//	return nil
+//}

@@ -1,11 +1,11 @@
 package model
 
 import (
-	"fmt"
 	"time"
 )
 
 type ViewPort struct {
+	repo               *repo
 	Commits            []Commit
 	TotalCommits       int
 	FirstIndex         int
@@ -14,11 +14,11 @@ type ViewPort struct {
 	GraphWidth         int
 	SelectedBranch     Branch
 	CurrentBranchName  string
-	repo               *repo
-	StatusMessage      string
 	First              int
 	Last               int
 	Selected           int
+	RepoPath           string
+	UncommittedChanges int
 }
 
 type Commit struct {
@@ -41,6 +41,8 @@ type Branch struct {
 	DisplayName   string
 	Index         int
 	IsMultiBranch bool
+	RemoteName    string
+	IsRemote      bool
 }
 
 func newViewPort(repo *repo, first, last, selected int) ViewPort {
@@ -59,29 +61,22 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 	if selected < first {
 		selected = first
 	}
-	statusMessage := toStatusMessage(repo)
 
 	return ViewPort{
-		Commits:           toCommits(repo, first, last),
-		FirstIndex:        first,
-		LastIndex:         last,
-		TotalCommits:      len(repo.Commits),
-		CurrentBranchName: repo.CurrentBranchName,
-		GraphWidth:        len(repo.Branches) * 2,
-		SelectedBranch:    toBranch(repo.Commits[selected].Branch),
-		repo:              repo,
-		StatusMessage:     statusMessage,
-		First:             first,
-		Last:              last,
-		Selected:          selected,
+		Commits:            toCommits(repo, first, last),
+		FirstIndex:         first,
+		LastIndex:          last,
+		TotalCommits:       len(repo.Commits),
+		CurrentBranchName:  repo.CurrentBranchName,
+		GraphWidth:         len(repo.Branches) * 2,
+		SelectedBranch:     toBranch(repo.Commits[selected].Branch),
+		repo:               repo,
+		First:              first,
+		Last:               last,
+		Selected:           selected,
+		RepoPath:           repo.gitRepo.RepoPath,
+		UncommittedChanges: repo.gitRepo.Status.AllChanges(),
 	}
-}
-
-func toStatusMessage(repo *repo) string {
-	if repo.gitRepo.Status.OK() {
-		return ""
-	}
-	return fmt.Sprintf("%d uncommited changes", repo.gitRepo.Status.AllChanges())
 }
 
 func toCommits(repo *repo, first int, last int) []Commit {
@@ -118,5 +113,7 @@ func toBranch(b *branch) Branch {
 		DisplayName:   b.displayName,
 		Index:         b.index,
 		IsMultiBranch: b.isMultiBranch,
+		RemoteName:    b.remoteName,
+		IsRemote:      b.isRemote,
 	}
 }

@@ -1,22 +1,15 @@
 package repoview
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
 
 const (
 	RFC3339Small = "2006-01-02 15:04"
-)
-
-var (
-	currentMarker         = ui.White("●")
-	currentMarkerSelected = ui.White("┥")
-	selectedMarker2       = ui.White("│")
-	selectedMarker        = '│'
-	moreMarker            = ui.Dark(">")
+	markerWidth  = 8
 )
 
 type repoPage struct {
@@ -25,25 +18,22 @@ type repoPage struct {
 	lines              int
 	currentBranchName  string
 	currentCommitIndex int
-	commitStatus       string
 	first              int
 	last               int
 	current            int
+	uncommittedChanges int
 }
 
 type repoVM struct {
 	currentCommit string
-	repoPath      string
 	model         *model.Model
 	viewPort      model.ViewPort
-	statusMessage string
 }
 
-func newRepoVM(repoPath string) *repoVM {
+func newRepoVM(model *model.Model) *repoVM {
 	return &repoVM{
 		currentCommit: "",
-		repoPath:      repoPath,
-		model:         model.NewModel(repoPath),
+		model:         model,
 	}
 }
 
@@ -61,26 +51,11 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	lastLine = h.viewPort.Last
 	selected = h.viewPort.Selected
 
-	markerWidth := 6 //13
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
-
 	var sb strings.Builder
 	commits := h.viewPort.Commits
-	//h.statusMessage = ""
-	//if h.viewPort.StatusMessage != "" {
-	//	h.statusMessage = h.viewPort.StatusMessage
-	//	writeSelectedMarker(&sb, firstLine, selected)
-	//	sb.WriteString(txt(" ", h.viewPort.GraphWidth+3))
-	//	sb.WriteString(ui.YellowDk(h.viewPort.StatusMessage))
-	//	sb.WriteString("\n")
-	//	commits = commits[:len(commits)-1]
-	//}
-	h.statusMessage = ""
-	sbid := ""
-	//if h.statusMessage != "" && selected != 0 {
-	sbc := commits[selected-firstLine]
-	sbid = sbc.Branch.Name
-	//}
+
+	selectedCommit := commits[selected-firstLine]
 
 	for i, c := range commits {
 		writeSelectedMarker(&sb, i+firstLine, selected)
@@ -89,74 +64,44 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 		writeMergeMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeMessage(&sb, c, sbid, messageLength)
+		writeSubject(&sb, c, selectedCommit, messageLength)
 		sb.WriteString(" ")
-		//writeSid(&sb, c)
-		//sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)
 		sb.WriteString("\n")
 	}
 
-	commitStatus := h.toCommitStatus(h.viewPort.Commits, selected-firstLine, h.viewPort.StatusMessage)
-
 	return repoPage{
-		repoPath:           h.repoPath,
+		repoPath:           h.viewPort.RepoPath,
 		text:               sb.String(),
 		lines:              h.viewPort.TotalCommits,
 		currentBranchName:  h.viewPort.CurrentBranchName,
 		currentCommitIndex: h.viewPort.CurrentCommitIndex,
-		commitStatus:       commitStatus,
 		first:              firstLine,
 		last:               lastLine,
 		current:            selected,
+		uncommittedChanges: h.viewPort.UncommittedChanges,
 	}, nil
 }
 
-func (h *repoVM) toCommitStatus(commits []model.Commit, selected int, status string) string {
-	if selected >= len(commits) {
-		return ""
-	}
-	//if h.statusMessage != "" && selected == 0 {
-	//	return ""
-	//}
-	//if h.statusMessage != "" {
-	//	selected--
-	//}
-	c := commits[selected]
-	return fmt.Sprintf(": %s   (%s %s)", status, c.SID, c.Branch.Name)
-}
-
 func (h *repoVM) OpenBranch(index int) {
-	//if h.statusMessage != "" && index == 0 {
-	//	return
-	//}
-	//if h.statusMessage != "" {
-	//	index--
-	//}
 	h.model.OpenBranch(h.viewPort, index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	//if h.statusMessage != "" && index == 0 {
-	//	return
-	//}
-	//if h.statusMessage != "" {
-	//	index--
-	//}
 	h.model.CloseBranch(h.viewPort, index)
 }
 
 func (h *repoVM) Refresh() {
-	h.model.Refresh(h.viewPort)
+	//h.model.Refresh(h.viewPort)
 }
 
 func writeSelectedMarker(sb *strings.Builder, index, selected int) {
 	if index == selected {
 		//color := branchColor(c.Branch.ID)
 		color := ui.CWhite
-		sb.WriteString(ui.ColorText(color, selectedMarker))
+		sb.WriteString(ui.ColorRune(color, selectedMarker))
 	} else {
 		sb.WriteString(" ")
 	}
@@ -177,32 +122,22 @@ func writeGraph(sb *strings.Builder, c model.Commit) {
 			if c.Graph[i].Connect.Has(model.BPass) {
 				cColor = ui.CWhite
 			}
-			sb.WriteString(ui.ColorText(cColor, graphConnectRune(c.Graph[i].Connect)))
+			sb.WriteString(ui.ColorRune(cColor, graphConnectRune(c.Graph[i].Connect)))
 		}
 		if c.Graph[i].Branch == model.BPass {
 			bColor = ui.CWhite
 		}
-		sb.WriteString(ui.ColorText(bColor, graphBranchRune(c.Graph[i].Branch)))
+		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
 	}
 }
 func writeCurrentMarker(sb *strings.Builder, c model.Commit) {
 	if c.IsCurrent {
-		sb.WriteString(currentMarker)
+		sb.WriteString(currentCommitMarker)
 	} else {
 		sb.WriteString(" ")
 	}
 }
-func writeCurrentMarker2(sb *strings.Builder, c model.Commit, index, selected int) {
-	if c.IsCurrent && index == selected {
-		sb.WriteString(currentMarkerSelected)
-	} else if index == selected {
-		sb.WriteString(selectedMarker2)
-	} else if c.IsCurrent {
-		sb.WriteString(currentMarker)
-	} else {
-		sb.WriteString(" ")
-	}
-}
+
 func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, timeLength int) {
 	width := viewWidth - graphWidth
 	authorLength = 20
@@ -216,6 +151,9 @@ func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, t
 		timeLength = 0
 	}
 	msgLength = viewWidth - graphWidth - authorLength - timeLength
+	if msgLength < 0 {
+		msgLength = 0
+	}
 	return
 }
 func writeSid(sb *strings.Builder, c model.Commit) {
@@ -223,25 +161,27 @@ func writeSid(sb *strings.Builder, c model.Commit) {
 }
 
 func writeAuthor(sb *strings.Builder, commit model.Commit, length int) {
-	sb.WriteString(ui.Dark(txt(commit.Author, length)))
+	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
 }
 
-func writeAuthorTime(sb *strings.Builder, commit model.Commit, length int) {
-	sb.WriteString(ui.Dark(txt(commit.AuthorTime.Format(RFC3339Small), length)))
+func writeAuthorTime(sb *strings.Builder, c model.Commit, length int) {
+	if c.ID == model.StatusID {
+		return
+	}
+	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))
 }
 
-func writeMessage(sb *strings.Builder, c model.Commit, selectedBranchID string, length int) {
-	messaged := txt(c.Message, length)
-	if c.Branch.Name == selectedBranchID {
-		sb.WriteString(ui.White(messaged))
+func writeSubject(sb *strings.Builder, c model.Commit, selectedCommit model.Commit, length int) {
+	subject := utils.Text(c.Subject, length)
+	if c.ID == model.StatusID {
+		sb.WriteString(ui.YellowDk(subject))
+		return
+	}
+	if c.Branch.Name == selectedCommit.Branch.Name ||
+		c.Branch.Name == selectedCommit.Branch.RemoteName ||
+		c.Branch.RemoteName == selectedCommit.Branch.Name {
+		sb.WriteString(ui.White(subject))
 	} else {
-		sb.WriteString(ui.Dark(messaged))
+		sb.WriteString(ui.Dark(subject))
 	}
-}
-
-func txt(text string, length int) string {
-	if len(text) <= length {
-		return text + strings.Repeat(" ", length-len(text))
-	}
-	return text[0:length]
 }

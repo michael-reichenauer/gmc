@@ -4,6 +4,7 @@ type Repo struct {
 	status     *statusHandler
 	logHandler *logHandler
 	branches   *branchesHandler
+	RepoPath   string
 }
 
 func NewRepo(path string) *Repo {
@@ -12,6 +13,7 @@ func NewRepo(path string) *Repo {
 		status:     newStatus(cmd),
 		logHandler: newLog(cmd),
 		branches:   newBranches(cmd),
+		RepoPath:   path,
 	}
 }
 

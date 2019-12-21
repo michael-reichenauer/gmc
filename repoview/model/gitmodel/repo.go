@@ -11,6 +11,7 @@ type Repo struct {
 	Branches             []*Branch
 	Status               Status
 	branchNameFromCommit map[string]string
+	RepoPath             string
 }
 
 func newRepo() *Repo {

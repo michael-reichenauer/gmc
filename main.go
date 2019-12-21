@@ -27,12 +27,8 @@ func main() {
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && runtime.GOOS == "windows" {
 		// Seems to be not running in a terminal like e.g. in goland,
 		// termbox requires a terminal, so lets restart as an external command on windows
-		var args []string
-		args = append(args, "/C")
-		args = append(args, "start")
-		for _, arg := range os.Args {
-			args = append(args, arg)
-		}
+		args := []string{"/C", "start"}
+		args = append(args, os.Args...)
 		cmd := exec.Command("cmd", args...)
 		_ = cmd.Start()
 		_ = cmd.Wait()
@@ -41,7 +37,8 @@ func main() {
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		repoView := repoview.New(uiHandler, *repoPath)
-		_ = uiHandler.Show(repoView)
+		mainWindow := repoview.NewMainWindow(uiHandler, *repoPath)
+		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
+		mainWindow.Show()
 	})
 }
