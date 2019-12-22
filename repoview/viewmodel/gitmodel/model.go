@@ -42,10 +42,21 @@ func (h *Handler) TriggerRefresh() {
 }
 
 func (h *Handler) monitorRepoChangesRoutine() {
+	var ticker *time.Ticker
+	tickerChan := func() <-chan time.Time {
+		if ticker == nil {
+			return nil
+		}
+		return ticker.C
+	}
 	for {
 		select {
 		case <-h.monitor.RepoChange:
-
+			log.Infof("repo event, postpone repo")
+			ticker = time.NewTicker(5 * time.Second)
+		case <-tickerChan():
+			log.Infof("refresh repo")
+			ticker = nil
 		}
 	}
 }

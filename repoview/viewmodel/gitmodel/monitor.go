@@ -11,14 +11,15 @@ import (
 
 // ssk.
 type monitor struct {
-	StatusChange chan interface{}
-	RepoChange   chan interface{}
-	watcher      *fsnotify.Watcher
-	repoPath     string
-	gitPath      string
-	refsPath     string
-	fetchHead    string
-	quit         chan chan<- interface{}
+	StatusChange  chan interface{}
+	RepoChange    chan interface{}
+	watcher       *fsnotify.Watcher
+	repoPath      string
+	gitPath       string
+	refsPath      string
+	headPath      string
+	fetchHeadPath string
+	quit          chan chan<- interface{}
 }
 
 func newMonitor(repoPath string) *monitor {
@@ -27,14 +28,15 @@ func newMonitor(repoPath string) *monitor {
 		log.Fatal(err)
 	}
 	return &monitor{
-		watcher:      watcher,
-		repoPath:     repoPath,
-		gitPath:      filepath.Join(repoPath, ".git"),
-		refsPath:     filepath.Join(repoPath, ".git", "refs"),
-		fetchHead:    filepath.Join(repoPath, ".git", "FETCH_HEAD"),
-		StatusChange: make(chan interface{}),
-		RepoChange:   make(chan interface{}),
-		quit:         make(chan chan<- interface{}),
+		watcher:       watcher,
+		repoPath:      repoPath,
+		gitPath:       filepath.Join(repoPath, ".git"),
+		refsPath:      filepath.Join(repoPath, ".git", "refs"),
+		headPath:      filepath.Join(repoPath, ".git", "HEAD"),
+		fetchHeadPath: filepath.Join(repoPath, ".git", "FETCH_HEAD"),
+		StatusChange:  make(chan interface{}),
+		RepoChange:    make(chan interface{}),
+		quit:          make(chan chan<- interface{}),
 	}
 }
 
@@ -106,7 +108,10 @@ func (h *monitor) isRepoChange(path string) bool {
 	if strings.HasSuffix(path, ".lock") {
 		return false
 	}
-	if path == h.fetchHead {
+	if path == h.fetchHeadPath {
+		return false
+	}
+	if path == h.headPath {
 		return true
 	}
 	if strings.HasPrefix(path, h.refsPath) {
