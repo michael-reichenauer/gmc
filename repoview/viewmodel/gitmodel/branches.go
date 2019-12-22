@@ -1,5 +1,6 @@
 package gitmodel
 
+// Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type branches struct {

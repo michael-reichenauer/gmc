@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
+//
 type RepoView struct {
 	ui.View
 	detailsView   *DetailsView

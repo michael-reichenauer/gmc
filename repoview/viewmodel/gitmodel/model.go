@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+//
 type Handler struct {
 	RepoEvents   chan Repo
 	StatusEvents chan Status
@@ -53,10 +54,11 @@ func (h *Handler) monitorRepoChangesRoutine() {
 		select {
 		case <-h.monitor.RepoChange:
 			log.Infof("repo event, postpone repo")
-			ticker = time.NewTicker(5 * time.Second)
+			ticker = time.NewTicker(3 * time.Second)
 		case <-tickerChan():
 			log.Infof("refresh repo")
 			ticker = nil
+			h.refreshRepo()
 		}
 	}
 }
@@ -73,10 +75,11 @@ func (h *Handler) monitorStatusChangesRoutine() {
 		select {
 		case <-h.monitor.StatusChange:
 			log.Infof("status event, postpone status")
-			ticker = time.NewTicker(5 * time.Second)
+			ticker = time.NewTicker(3 * time.Second)
 		case <-tickerChan():
 			log.Infof("refresh status")
 			ticker = nil
+			h.refreshStatus()
 		}
 	}
 }
