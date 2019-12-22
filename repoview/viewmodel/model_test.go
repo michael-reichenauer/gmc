@@ -1,4 +1,4 @@
-package model
+package viewmodel
 
 import (
 	"github.com/stretchr/testify/assert"

@@ -3,10 +3,11 @@ package repoview
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
+//
 type RepoView struct {
 	ui.View
 	detailsView   *DetailsView
@@ -16,13 +17,13 @@ type RepoView struct {
 	currentBranch string
 }
 
-func newRepoView(uiHandler *ui.UI, model *model.Model, detailsView *DetailsView) *RepoView {
+func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView) *RepoView {
 	h := &RepoView{
 		detailsView: detailsView,
-		vm:          newRepoVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
+	h.vm = newRepoVM(model, h)
 	return h
 }
 

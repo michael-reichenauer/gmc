@@ -1,7 +1,8 @@
-package model
+package viewmodel
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"fmt"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"sync"
@@ -17,40 +18,88 @@ type Status struct {
 	AllChanges int
 	GraphWidth int
 }
-type Model struct {
-	gitModel    *gitmodel.Handler
-	lock        sync.Mutex
-	currentRepo *repo
 
-	err error
+type Model struct {
+	ChangedEvents chan interface{}
+	gitModel      *gitmodel.Handler
+
+	lock         sync.Mutex
+	currentRepox *repo
+	gmRepo       gitmodel.Repo
+	gmStatus     gitmodel.Status
+	err          error
 }
 
 func NewModel(repoPath string) *Model {
+	gm := gitmodel.NewModel(repoPath)
 	return &Model{
-		gitModel:    gitmodel.NewModel(repoPath),
-		currentRepo: newRepo(),
+		ChangedEvents: make(chan interface{}),
+		gitModel:      gm,
+		currentRepox:  newRepo(),
 	}
 }
 
-func (h *Model) Load() {
-	t := time.Now()
-	h.gitModel.Load()
-	gmRepo := h.gitModel.GetRepo()
-	h.LoadBranches([]string{}, gmRepo)
-	log.Infof("Load time %v", time.Since(t))
+func (h *Model) Start() {
+	h.gitModel.Start()
+	go h.monitorGitModelRoutine()
 }
 
-func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo) {
+func (h *Model) monitorGitModelRoutine() {
+	for {
+		select {
+		case gmRepo := <-h.gitModel.RepoEvents:
+			h.lock.Lock()
+			h.gmRepo = gmRepo
+			h.lock.Unlock()
+
+		case gmStatus := <-h.gitModel.StatusEvents:
+			h.lock.Lock()
+			h.gmStatus = gmStatus
+			h.lock.Unlock()
+		}
+		var branchIds []string
+		h.lock.Lock()
+		for _, b := range h.currentRepox.Branches {
+			branchIds = append(branchIds, b.name)
+		}
+		h.lock.Unlock()
+		h.loadBranches(branchIds)
+	}
+}
+
+func (h *Model) TriggerRefresh() {
+	h.gitModel.TriggerRefresh()
+}
+
+//func (h *Model) Load() {
+//	t := time.Now()
+//	h.gitModel.Load()
+//	gmRepo := h.gitModel.GetRepo()
+//	gmStatus := h.gitModel.GetStatus()
+//	h.LoadBranches([]string{}, gmRepo, gmStatus)
+//	log.Infof("Load time %v", time.Since(t))
+//}
+
+func (h *Model) loadBranches(branchIds []string) {
 	t := time.Now()
-	repo := h.getRepoModel(branchIds, gmRepo)
+	repo := h.getRepoModel(branchIds)
 	log.Infof("LoadBranches time %v", time.Since(t))
 	h.lock.Lock()
-	h.currentRepo = repo
+	h.currentRepox = repo
 	h.lock.Unlock()
+	h.ChangedEvents <- nil
 }
 
 func (h *Model) GetCommitByIndex(index int) (Commit, error) {
-	return toCommit(h.currentRepo.Commits[index]), nil
+	if h.err != nil {
+		return Commit{}, h.err
+	}
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	if index < 0 || index >= len(h.currentRepox.Commits) {
+		return Commit{}, fmt.Errorf("no commit")
+	}
+	return toCommit(h.currentRepox.Commits[index]), nil
 }
 
 func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
@@ -60,7 +109,7 @@ func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error)
 
 	h.lock.Lock()
 	defer h.lock.Unlock()
-	return newViewPort(h.currentRepo, first, last, selected), nil
+	return newViewPort(h.currentRepox, first, last, selected), nil
 }
 
 func (h *Model) OpenBranch(viewPort ViewPort, index int) {
@@ -74,22 +123,22 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it (if not already added
-		mergeParent := viewPort.repo.gitRepo.CommitById(c.ParentIDs[1])
+		mergeParent := viewPort.repo.gmRepo.CommitById(c.ParentIDs[1])
 		branchIds = h.addBranchWithAncestors(branchIds, mergeParent.Branch)
 	}
 	for _, ccId := range c.ChildIDs {
-		cc := viewPort.repo.gitRepo.CommitById(ccId)
+		cc := viewPort.repo.gmRepo.CommitById(ccId)
 		if cc.Branch.Name != c.Branch.name {
 			branchIds = h.addBranchWithAncestors(branchIds, cc.Branch)
 		}
 	}
-	for _, b := range viewPort.repo.gitRepo.Branches {
+	for _, b := range viewPort.repo.gmRepo.Branches {
 		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
 			// empty branch with no own branch commit, (branch start)
 			branchIds = h.addBranchWithAncestors(branchIds, b)
 		}
 	}
-	for _, b := range viewPort.repo.gitRepo.Branches {
+	for _, b := range viewPort.repo.gmRepo.Branches {
 		i1 := utils.StringsIndex(branchIds, b.RemoteName)
 		i2 := utils.StringsIndex(branchIds, b.Name)
 		if i2 == -1 && i1 != -1 {
@@ -100,7 +149,7 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 		}
 	}
 
-	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
+	h.loadBranches(branchIds)
 }
 
 func (h *Model) CloseBranch(viewPort ViewPort, index int) {
@@ -118,36 +167,37 @@ func (h *Model) CloseBranch(viewPort ViewPort, index int) {
 		}
 	}
 
-	h.LoadBranches(branchIds, viewPort.repo.gitRepo)
+	h.loadBranches(branchIds)
 }
 
 func (h *Model) Refresh(viewPort ViewPort) {
-	t := time.Now()
-	var branchIds []string
-	for _, b := range viewPort.repo.Branches {
-		branchIds = append(branchIds, b.name)
-	}
-	h.gitModel.Load()
-	gmRepo := h.gitModel.GetRepo()
-	h.LoadBranches(branchIds, gmRepo)
-	log.Infof("Refresh time %v", time.Since(t))
+	//t := time.Now()
+	//var branchIds []string
+	//for _, b := range viewPort.repo.Branches {
+	//	branchIds = append(branchIds, b.name)
+	//}
+	//h.gitModel.Load()
+	//
+	//h.LoadBranches(branchIds, gmRepo, gmStatus)
+	//log.Infof("Refresh time %v", time.Since(t))
 }
 
-func (h *Model) getRepoModel(branchIds []string, gRepo gitmodel.Repo) *repo {
+func (h *Model) getRepoModel(branchIds []string) *repo {
 	repo := newRepo()
-	repo.gitRepo = gRepo
+	repo.gmRepo = h.gmRepo
+	repo.gmStatus = h.gmStatus
 
-	branches := h.getGitModelBranches(branchIds, gRepo)
+	branches := h.getGitModelBranches(branchIds, h.gmRepo, h.gmStatus)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
-	currentBranch, ok := gRepo.CurrentBranch()
+	currentBranch, ok := h.gmRepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
 	repo.addVirtualStatusCommit()
-	for _, c := range repo.gitRepo.Commits {
+	for _, c := range repo.gmRepo.Commits {
 		repo.addGitCommit(c)
 	}
 
@@ -289,10 +339,10 @@ func (h *Model) setParentChildRelations(repo *repo) {
 
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
-			// if a commit has a parent, it is included in the repo model
+			// if a commit has a parent, it is included in the repo viewmodel
 			c.Parent = repo.commitById[c.ParentIDs[0]]
 			if len(c.ParentIDs) > 1 {
-				// Merge parent can be nil if not the merge parent branch is included in the repo model as well
+				// Merge parent can be nil if not the merge parent branch is included in the repo viewmodel as well
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]
 			}
 		} else {

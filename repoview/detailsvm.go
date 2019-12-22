@@ -2,13 +2,13 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
 
 type detailsVM struct {
-	model         *model.Model
+	model         *viewmodel.Model
 	selectedIndex int
 }
 
@@ -16,7 +16,7 @@ type commitDetails struct {
 	Text string
 }
 
-func newDetailsVM(model *model.Model) *detailsVM {
+func newDetailsVM(model *viewmodel.Model) *detailsVM {
 	return &detailsVM{model: model}
 }
 
@@ -28,14 +28,14 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPort, index int) (commitDeta
 	return commitDetails{Text: toDetailsText(commit)}, nil
 }
 
-func toDetailsText(c model.Commit) string {
+func toDetailsText(c viewmodel.Commit) string {
 
 	var sb strings.Builder
 	sb.WriteString(toHeader("Id:") + ui.Gray(c.ID))
 	sb.WriteString("\n")
 	sb.WriteString(toHeader("Branch:") + toBranchText(c))
 	sb.WriteString("\n")
-	if c.ID == model.StatusID {
+	if c.ID == viewmodel.StatusID {
 		sb.WriteString(ui.YellowDk(" " + c.Message))
 	} else {
 		sb.WriteString(ui.Gray(" " + c.Message))
@@ -47,7 +47,7 @@ func toDetailsText(c model.Commit) string {
 func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-10s", text))
 }
-func toBranchText(c model.Commit) string {
+func toBranchText(c viewmodel.Commit) string {
 	bColor := branchColor(c.Branch.DisplayName)
 	typeText := ""
 	//if c.Branch.IsRemote {

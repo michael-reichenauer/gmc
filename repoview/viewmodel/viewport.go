@@ -1,4 +1,4 @@
-package model
+package viewmodel
 
 import (
 	"time"
@@ -61,6 +61,10 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 	if selected < first {
 		selected = first
 	}
+	var selectedBranch Branch
+	if selected < len(repo.Commits) {
+		selectedBranch = toBranch(repo.Commits[selected].Branch)
+	}
 
 	return ViewPort{
 		Commits:            toCommits(repo, first, last),
@@ -69,13 +73,13 @@ func newViewPort(repo *repo, first, last, selected int) ViewPort {
 		TotalCommits:       len(repo.Commits),
 		CurrentBranchName:  repo.CurrentBranchName,
 		GraphWidth:         len(repo.Branches) * 2,
-		SelectedBranch:     toBranch(repo.Commits[selected].Branch),
+		SelectedBranch:     selectedBranch,
 		repo:               repo,
 		First:              first,
 		Last:               last,
 		Selected:           selected,
-		RepoPath:           repo.gitRepo.RepoPath,
-		UncommittedChanges: repo.gitRepo.Status.AllChanges(),
+		RepoPath:           repo.gmRepo.RepoPath,
+		UncommittedChanges: repo.gmStatus.AllChanges(),
 	}
 }
 

@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -12,7 +12,7 @@ type DetailsView struct {
 	selectedIndex int
 }
 
-func newDetailsView(uiHandler *ui.UI, model *model.Model) *DetailsView {
+func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
 	h := &DetailsView{
 		vm: newDetailsVM(model),
 	}

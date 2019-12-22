@@ -1,19 +1,19 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/model"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 type MainWindow struct {
 	uiHandler   *ui.UI
-	model       *model.Model
+	model       *viewmodel.Model
 	repoView    *RepoView
 	detailsView *DetailsView
 }
 
 func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
-	m := model.NewModel(repoPath)
+	m := viewmodel.NewModel(repoPath)
 	detailsView := newDetailsView(uiHandler, m)
 	repoView := newRepoView(uiHandler, m, detailsView)
 	return &MainWindow{

@@ -1,74 +1,34 @@
 package gitmodel
 
-import (
-	"github.com/michael-reichenauer/gmc/utils/git"
-	"sync"
-)
+// Default branch priority determines parent child branch relations
+var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
-var DefaultBranchPrio = []string{"origin/master", "master", "origin/develop", "develop"}
-
-type Handler struct {
-	gitRepo     *git.Repo
-	branchNames *branchNamesHandler
-	lock        sync.Mutex
-	currentRepo *Repo
-	err         error
+type branches struct {
+	branchNames *branchNames
 }
 
-func NewModel(repoPath string) *Handler {
-	return &Handler{
-		gitRepo:     git.NewRepo(repoPath),
-		branchNames: newBranchNamesHandler(),
-		currentRepo: newRepo(),
-	}
+func newBranches() *branches {
+	return &branches{branchNames: newBranchNames()}
 }
 
-func (h *Handler) GetRepo() Repo {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	return *h.currentRepo
-}
-
-func (h *Handler) Load() {
-	err := h.refreshRepo()
-	if err != nil {
-		h.err = err
-	}
-}
-
-func (h *Handler) refreshRepo() error {
-	repo := newRepo()
-	repo.RepoPath = h.gitRepo.RepoPath
-	gitCommits, err := h.gitRepo.GetLog()
-	if err != nil {
-		return err
-	}
-	gitBranches, err := h.gitRepo.GetBranches()
-	if err != nil {
-		return err
-	}
-	gitStatus, err := h.gitRepo.GetStatus()
-	if err != nil {
-		return err
-	}
-
-	repo.Status = newStatus(gitStatus)
-
-	repo.setGitCommits(gitCommits)
-	repo.setGitBranches(gitBranches)
-
+func (h *branches) setBranchForAllCommits(repo *Repo) {
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo)
 	h.determineBranchHierarchy(repo)
 
-	h.lock.Lock()
-	h.currentRepo = repo
-	h.lock.Unlock()
-	return nil
 }
 
-func (h *Handler) setCommitBranchesAndChildren(repo *Repo) {
+func (h *branches) setGitBranchTips(repo *Repo) {
+	for _, b := range repo.Branches {
+		repo.CommitById(b.TipID).addBranch(b)
+		if b.IsCurrent {
+			repo.CommitById(b.TipID).IsCurrent = true
+		}
+	}
+}
+
+func (h *branches) setCommitBranchesAndChildren(repo *Repo) {
 	for _, c := range repo.Commits {
 		parent, ok := repo.Parent(c, 0)
 		if ok {
@@ -87,16 +47,23 @@ func (h *Handler) setCommitBranchesAndChildren(repo *Repo) {
 	}
 }
 
-func (h *Handler) setGitBranchTips(repo *Repo) {
+func (h *branches) determineBranchHierarchy(repo *Repo) {
 	for _, b := range repo.Branches {
-		repo.CommitById(b.TipID).addBranch(b)
-		if b.IsCurrent {
-			repo.CommitById(b.TipID).IsCurrent = true
+		if b.BottomID == "" {
+			b.BottomID = b.TipID
+		}
+
+		bottom := repo.commitById[b.BottomID]
+		if bottom.Branch != b {
+			// the tip does not own the tip commit, i.e. a branch pointer to another branch
+			b.ParentBranch = bottom.Branch
+		} else if bottom.Parent != nil {
+			b.ParentBranch = bottom.Parent.Branch
 		}
 	}
 }
 
-func (h *Handler) determineCommitBranches(repo *Repo) {
+func (h *branches) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
 		h.branchNames.parseCommit(c)
 
@@ -105,7 +72,7 @@ func (h *Handler) determineCommitBranches(repo *Repo) {
 	}
 }
 
-func (h *Handler) determineBranch(repo *Repo, c *Commit) {
+func (h *branches) determineBranch(repo *Repo, c *Commit) {
 	if c.Branch != nil {
 		// Commit already knows its branch
 		panic("Commit already knows its branch") // ##############?????????
@@ -181,11 +148,11 @@ func (h *Handler) determineBranch(repo *Repo, c *Commit) {
 	c.addBranch(c.Branch)
 }
 
-func (h *Handler) hasPriorityBranch(c *Commit) *Branch {
+func (h *branches) hasPriorityBranch(c *Commit) *Branch {
 	if len(c.Branches) < 1 {
 		return nil
 	}
-	for _, bp := range DefaultBranchPrio {
+	for _, bp := range DefaultBranchPriority {
 		for _, cb := range c.Branches {
 			if bp == cb.Name {
 				return cb
@@ -194,7 +161,7 @@ func (h *Handler) hasPriorityBranch(c *Commit) *Branch {
 	}
 	return nil
 }
-func (h *Handler) isChildMultiBranch(c *Commit) *Branch {
+func (h *branches) isChildMultiBranch(c *Commit) *Branch {
 	for _, cc := range c.Children {
 		if cc.Branch.IsMultiBranch {
 			// one of the commit children is a multi branch
@@ -204,7 +171,7 @@ func (h *Handler) isChildMultiBranch(c *Commit) *Branch {
 	return nil
 }
 
-func (h *Handler) tryGetBranchFromName(c *Commit, name string) *Branch {
+func (h *branches) tryGetBranchFromName(c *Commit, name string) *Branch {
 	for _, b := range c.Branches {
 		if name == b.DisplayName {
 			return b
@@ -213,7 +180,7 @@ func (h *Handler) tryGetBranchFromName(c *Commit, name string) *Branch {
 	return nil
 }
 
-func (h *Handler) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
+func (h *branches) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 0 {
 		// Commit has no branch, must be a deleted branch tip merged into some branch or unusual branch
 		// Trying to ues parsed branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
@@ -229,7 +196,7 @@ func (h *Handler) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
 	return nil
 }
 
-func (h *Handler) isLocalRemoteBranch(c *Commit) *Branch {
+func (h *branches) isLocalRemoteBranch(c *Commit) *Branch {
 	if len(c.Branches) == 2 {
 		if c.Branches[0].IsRemote && c.Branches[0].Name == c.Branches[1].RemoteName {
 			// remote and local branch, prefer remote
@@ -241,20 +208,4 @@ func (h *Handler) isLocalRemoteBranch(c *Commit) *Branch {
 		}
 	}
 	return nil
-}
-
-func (h *Handler) determineBranchHierarchy(repo *Repo) {
-	for _, b := range repo.Branches {
-		if b.BottomID == "" {
-			b.BottomID = b.TipID
-		}
-
-		bottom := repo.commitById[b.BottomID]
-		if bottom.Branch != b {
-			// the tip does not own the tip commit, i.e. a branch pointer to another branch
-			b.ParentBranch = bottom.Branch
-		} else if bottom.Parent != nil {
-			b.ParentBranch = bottom.Parent.Branch
-		}
-	}
 }

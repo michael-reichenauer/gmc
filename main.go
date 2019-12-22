@@ -5,7 +5,9 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -19,10 +21,6 @@ var (
 
 func main() {
 	flag.Parse()
-	if *repoPath == "" {
-		// No specified repo path, use current dir
-		*repoPath = utils.CurrentDir()
-	}
 
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && runtime.GOOS == "windows" {
 		// Seems to be not running in a terminal like e.g. in goland,
@@ -34,10 +32,19 @@ func main() {
 		_ = cmd.Wait()
 		return
 	}
+	if *repoPath == "" {
+		// No specified repo path, use current dir
+		*repoPath = utils.CurrentDir()
+	}
+
+	path, err := git.WorkingFolderRoot(*repoPath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		mainWindow := repoview.NewMainWindow(uiHandler, *repoPath)
+		mainWindow := repoview.NewMainWindow(uiHandler, path)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})

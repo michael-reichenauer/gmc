@@ -1,12 +1,12 @@
-package model
+package viewmodel
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/model/gitmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"sort"
 )
 
-func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo) []*gitmodel.Branch {
+func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) []*gitmodel.Branch {
 	if len(branchIds) == 0 {
 		// No specified branches, default to current, or master
 		branchIds = h.getDefaultBranchIDs(gmRepo)
@@ -22,7 +22,7 @@ func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitmodel.Repo) []
 
 	branches = h.addLocalBranches(branches, gmRepo)
 	branches = h.addRemoteBranches(branches, gmRepo)
-	branches = h.removeSameLocalAsRemotes(branches, gmRepo)
+	branches = h.removeSameLocalAsRemotes(branches, gmRepo, gmStatus)
 	h.sortBranches(branches)
 	return branches
 }
@@ -82,8 +82,8 @@ func (h *Model) sortBranches(branches []*gitmodel.Branch) {
 			return true
 		}
 		// Prioritize known branches like master, develop
-		il := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[l].Name)
-		ir := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[r].Name)
+		il := utils.StringsIndex(gitmodel.DefaultBranchPriority, branches[l].Name)
+		ir := utils.StringsIndex(gitmodel.DefaultBranchPriority, branches[r].Name)
 		if il != -1 && (il < ir || ir == -1) {
 			// Left item is known branch with higher priority
 			return true
@@ -143,8 +143,8 @@ func (h *Model) branchAncestorIDs(b *gitmodel.Branch) []string {
 	return ids
 }
 
-func (h *Model) removeSameLocalAsRemotes(branches []*gitmodel.Branch, gmRepo gitmodel.Repo) []*gitmodel.Branch {
-	statusOk := gmRepo.Status.OK()
+func (h *Model) removeSameLocalAsRemotes(branches []*gitmodel.Branch, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) []*gitmodel.Branch {
+	statusOk := gmStatus.OK()
 	currentBranch, _ := gmRepo.CurrentBranch()
 
 	var bs []*gitmodel.Branch
