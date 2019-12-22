@@ -58,6 +58,9 @@ func (h *Handler) monitorRepoChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("refresh repo")
 			ticker = nil
+			// refreshing both status and repo on repo changes, since repo change often do change status
+			// without changing files
+			h.refreshStatus()
 			h.refreshRepo()
 		}
 	}
