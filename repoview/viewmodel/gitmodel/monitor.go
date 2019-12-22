@@ -1,7 +1,6 @@
 package gitmodel
 
 import (
-	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -59,13 +58,13 @@ func (h *monitor) monitorFolderRoutine() {
 			if h.isIgnore(event.Name) {
 				//fmt.Printf("ignoring: %s\n", event.Name)
 			} else if h.isRepoChange(event.Name) {
-				fmt.Printf("Repo change: %s\n", event.Name)
+				log.Infof("Repo change: %s", event.Name)
 				select {
 				case h.RepoChange <- nil:
 				default:
 				}
 			} else if h.isStatusChange(event.Name) {
-				fmt.Printf("Status change: %s\n", event.Name)
+				log.Infof("Status change: %s", event.Name)
 				select {
 				case h.StatusChange <- nil:
 				default:
@@ -74,7 +73,7 @@ func (h *monitor) monitorFolderRoutine() {
 				// fmt.Printf("ignoring: %s\n", event.Name)
 			}
 		case err = <-h.watcher.Errors:
-			fmt.Println("ERROR", err)
+			log.Warnf("ERROR %v", err)
 		case closed := <-h.quit:
 			close(h.StatusChange)
 			close(h.StatusChange)
