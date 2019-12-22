@@ -25,20 +25,32 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	currentCommit string
-	model         *viewmodel.Model
-	viewPort      viewmodel.ViewPort
+	notifier notifier
+	model    *viewmodel.Model
+	viewPort viewmodel.ViewPort
 }
 
-func newRepoVM(model *viewmodel.Model) *repoVM {
+type notifier interface {
+	NotifyChanged()
+}
+
+func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
 	return &repoVM{
-		currentCommit: "",
-		model:         model,
+		notifier: notifier,
+		model:    model,
 	}
 }
 
 func (h *repoVM) Load() {
-	h.model.Load()
+	h.model.Start()
+	h.model.TriggerRefresh()
+	go h.monitorModelRoutine()
+}
+
+func (h *repoVM) monitorModelRoutine() {
+	for range h.model.ChangedEvents {
+		h.notifier.NotifyChanged()
+	}
 }
 
 func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage, error) {
@@ -55,7 +67,10 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	var sb strings.Builder
 	commits := h.viewPort.Commits
 
-	selectedCommit := commits[selected-firstLine]
+	var selectedCommit viewmodel.Commit
+	if selected-firstLine < len(commits) {
+		selectedCommit = commits[selected-firstLine]
+	}
 
 	for i, c := range commits {
 		writeSelectedMarker(&sb, i+firstLine, selected)
@@ -99,9 +114,7 @@ func (h *repoVM) Refresh() {
 
 func writeSelectedMarker(sb *strings.Builder, index, selected int) {
 	if index == selected {
-		//color := branchColor(c.Branch.ID)
-		color := ui.CWhite
-		sb.WriteString(ui.ColorRune(color, selectedMarker))
+		sb.WriteString(ui.ColorRune(ui.CWhite, selectedMarker))
 	} else {
 		sb.WriteString(" ")
 	}
@@ -155,9 +168,6 @@ func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, t
 		msgLength = 0
 	}
 	return
-}
-func writeSid(sb *strings.Builder, c viewmodel.Commit) {
-	sb.WriteString(ui.Dark(c.SID))
 }
 
 func writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {

@@ -82,8 +82,8 @@ func (h *Model) sortBranches(branches []*gitmodel.Branch) {
 			return true
 		}
 		// Prioritize known branches like master, develop
-		il := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[l].Name)
-		ir := utils.StringsIndex(gitmodel.DefaultBranchPrio, branches[r].Name)
+		il := utils.StringsIndex(gitmodel.DefaultBranchPriority, branches[l].Name)
+		ir := utils.StringsIndex(gitmodel.DefaultBranchPriority, branches[r].Name)
 		if il != -1 && (il < ir || ir == -1) {
 			// Left item is known branch with higher priority
 			return true

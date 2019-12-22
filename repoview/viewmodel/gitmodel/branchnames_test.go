@@ -6,7 +6,7 @@ import (
 )
 
 func TestParseBranchNames(t *testing.T) {
-	h := newBranchNamesHandler()
+	h := newBranchNames()
 	fi := h.parseCommit(c("1", "Merge branch 'develop' into master", "2", "3"))
 	assert.Equal(t, "develop", fi.from)
 	assert.Equal(t, "master", fi.into)

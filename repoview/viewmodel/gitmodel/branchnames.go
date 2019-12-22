@@ -9,19 +9,19 @@ type fromInto struct {
 	into string
 }
 
-type branchNamesHandler struct {
+type branchNames struct {
 	parsedCommits map[string]fromInto
 	branchNames   map[string]string
 }
 
-func newBranchNamesHandler() *branchNamesHandler {
-	return &branchNamesHandler{
+func newBranchNames() *branchNames {
+	return &branchNames{
 		parsedCommits: make(map[string]fromInto),
 		branchNames:   make(map[string]string),
 	}
 }
 
-func (h *branchNamesHandler) parseCommit(c *Commit) fromInto {
+func (h *branchNames) parseCommit(c *Commit) fromInto {
 	if len(c.ParentIDs) != 2 {
 		return fromInto{}
 	}
@@ -40,11 +40,11 @@ func (h *branchNamesHandler) parseCommit(c *Commit) fromInto {
 	return fi
 }
 
-func (h *branchNamesHandler) branchName(id string) string {
+func (h *branchNames) branchName(id string) string {
 	return h.branchNames[id]
 }
 
-func (h *branchNamesHandler) parseMergeBranchNames(subject string) fromInto {
+func (h *branchNames) parseMergeBranchNames(subject string) fromInto {
 	var fi fromInto
 	if strings.HasPrefix(subject, "Merge branch '") {
 		ei := strings.LastIndex(subject, "'")

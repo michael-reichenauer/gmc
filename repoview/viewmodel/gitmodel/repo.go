@@ -36,6 +36,13 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 		r.Commits = append(r.Commits, commit)
 		r.commitById[commit.Id] = commit
 	}
+
+	// Set current commit if there is a current branch
+	currentBranch, ok := r.CurrentBranch()
+	if ok {
+		currentCommit := r.CommitById(currentBranch.TipID)
+		currentCommit.IsCurrent = true
+	}
 }
 
 func (r *Repo) setGitBranches(gitBranches []git.Branch) {

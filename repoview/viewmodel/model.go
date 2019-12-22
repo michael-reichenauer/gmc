@@ -1,6 +1,7 @@
 package viewmodel
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -19,41 +20,86 @@ type Status struct {
 }
 
 type Model struct {
-	gitModel    *gitmodel.Handler
-	lock        sync.Mutex
-	currentRepo *repo
+	ChangedEvents chan interface{}
+	gitModel      *gitmodel.Handler
 
-	err error
+	lock         sync.Mutex
+	currentRepox *repo
+	gmRepo       gitmodel.Repo
+	gmStatus     gitmodel.Status
+	err          error
 }
 
 func NewModel(repoPath string) *Model {
 	gm := gitmodel.NewModel(repoPath)
 	return &Model{
-		gitModel:    gm,
-		currentRepo: newRepo(),
+		ChangedEvents: make(chan interface{}),
+		gitModel:      gm,
+		currentRepox:  newRepo(),
 	}
 }
 
-func (h *Model) Load() {
-	t := time.Now()
-	h.gitModel.Load()
-	gmRepo := h.gitModel.GetRepo()
-	gmStatus := h.gitModel.GetStatus()
-	h.LoadBranches([]string{}, gmRepo, gmStatus)
-	log.Infof("Load time %v", time.Since(t))
+func (h *Model) Start() {
+	h.gitModel.Start()
+	go h.monitorGitModelRoutine()
 }
 
-func (h *Model) LoadBranches(branchIds []string, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) {
+func (h *Model) monitorGitModelRoutine() {
+	for {
+		select {
+		case gmRepo := <-h.gitModel.RepoEvents:
+			h.lock.Lock()
+			h.gmRepo = gmRepo
+			h.lock.Unlock()
+
+		case gmStatus := <-h.gitModel.StatusEvents:
+			h.lock.Lock()
+			h.gmStatus = gmStatus
+			h.lock.Unlock()
+		}
+		var branchIds []string
+		h.lock.Lock()
+		for _, b := range h.currentRepox.Branches {
+			branchIds = append(branchIds, b.name)
+		}
+		h.lock.Unlock()
+		h.loadBranches(branchIds)
+	}
+}
+
+func (h *Model) TriggerRefresh() {
+	h.gitModel.TriggerRefresh()
+}
+
+//func (h *Model) Load() {
+//	t := time.Now()
+//	h.gitModel.Load()
+//	gmRepo := h.gitModel.GetRepo()
+//	gmStatus := h.gitModel.GetStatus()
+//	h.LoadBranches([]string{}, gmRepo, gmStatus)
+//	log.Infof("Load time %v", time.Since(t))
+//}
+
+func (h *Model) loadBranches(branchIds []string) {
 	t := time.Now()
-	repo := h.getRepoModel(branchIds, gmRepo, gmStatus)
+	repo := h.getRepoModel(branchIds)
 	log.Infof("LoadBranches time %v", time.Since(t))
 	h.lock.Lock()
-	h.currentRepo = repo
+	h.currentRepox = repo
 	h.lock.Unlock()
+	h.ChangedEvents <- nil
 }
 
 func (h *Model) GetCommitByIndex(index int) (Commit, error) {
-	return toCommit(h.currentRepo.Commits[index]), nil
+	if h.err != nil {
+		return Commit{}, h.err
+	}
+	h.lock.Lock()
+	defer h.lock.Unlock()
+	if index < 0 || index >= len(h.currentRepox.Commits) {
+		return Commit{}, fmt.Errorf("no commit")
+	}
+	return toCommit(h.currentRepox.Commits[index]), nil
 }
 
 func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error) {
@@ -63,7 +109,7 @@ func (h *Model) GetRepoViewPort(first, last int, selected int) (ViewPort, error)
 
 	h.lock.Lock()
 	defer h.lock.Unlock()
-	return newViewPort(h.currentRepo, first, last, selected), nil
+	return newViewPort(h.currentRepox, first, last, selected), nil
 }
 
 func (h *Model) OpenBranch(viewPort ViewPort, index int) {
@@ -103,7 +149,7 @@ func (h *Model) OpenBranch(viewPort ViewPort, index int) {
 		}
 	}
 
-	h.LoadBranches(branchIds, viewPort.repo.gmRepo, viewPort.repo.gmStatus)
+	h.loadBranches(branchIds)
 }
 
 func (h *Model) CloseBranch(viewPort ViewPort, index int) {
@@ -121,32 +167,31 @@ func (h *Model) CloseBranch(viewPort ViewPort, index int) {
 		}
 	}
 
-	h.LoadBranches(branchIds, viewPort.repo.gmRepo, viewPort.repo.gmStatus)
+	h.loadBranches(branchIds)
 }
 
 func (h *Model) Refresh(viewPort ViewPort) {
-	t := time.Now()
-	var branchIds []string
-	for _, b := range viewPort.repo.Branches {
-		branchIds = append(branchIds, b.name)
-	}
-	h.gitModel.Load()
-	gmRepo := h.gitModel.GetRepo()
-	gmStatus := h.gitModel.GetStatus()
-	h.LoadBranches(branchIds, gmRepo, gmStatus)
-	log.Infof("Refresh time %v", time.Since(t))
+	//t := time.Now()
+	//var branchIds []string
+	//for _, b := range viewPort.repo.Branches {
+	//	branchIds = append(branchIds, b.name)
+	//}
+	//h.gitModel.Load()
+	//
+	//h.LoadBranches(branchIds, gmRepo, gmStatus)
+	//log.Infof("Refresh time %v", time.Since(t))
 }
 
-func (h *Model) getRepoModel(branchIds []string, gmRepo gitmodel.Repo, gmStatus gitmodel.Status) *repo {
+func (h *Model) getRepoModel(branchIds []string) *repo {
 	repo := newRepo()
-	repo.gmRepo = gmRepo
-	repo.gmStatus = gmStatus
+	repo.gmRepo = h.gmRepo
+	repo.gmStatus = h.gmStatus
 
-	branches := h.getGitModelBranches(branchIds, gmRepo, gmStatus)
+	branches := h.getGitModelBranches(branchIds, h.gmRepo, h.gmStatus)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
-	currentBranch, ok := gmRepo.CurrentBranch()
+	currentBranch, ok := h.gmRepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}

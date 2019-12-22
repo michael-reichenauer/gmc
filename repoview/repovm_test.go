@@ -7,18 +7,33 @@ import (
 	"testing"
 )
 
+type mock struct {
+	notified func()
+}
+
+func (m *mock) NotifyChanged() {
+	m.notified()
+}
 func TestView(t *testing.T) {
 	m := viewmodel.NewModel(`C:\Work Files\GitMind`)
-	vm := newRepoVM(m)
+	var vm *repoVM
+	vm = newRepoVM(m, &mock{func() {
+		vd, _ := vm.GetRepoPage(100, 0, 20, 0)
+		fmt.Printf(vd.text)
+	}})
 	vm.Load()
-	vd, _ := vm.GetRepoPage(100, 0, 20, 0)
-	fmt.Printf(vd.text)
+
 }
 
 func TestViewCurrent(t *testing.T) {
 	m := viewmodel.NewModel(utils.CurrentDir())
-	vm := newRepoVM(m)
+	var vm *repoVM
+	done := make(chan interface{})
+	vm = newRepoVM(m, &mock{func() {
+		vd, _ := vm.GetRepoPage(100, 0, 20, 0)
+		fmt.Printf(vd.text)
+		close(done)
+	}})
 	vm.Load()
-	vd, _ := vm.GetRepoPage(100, 0, 18, 1)
-	fmt.Printf(vd.text)
+	<-done
 }

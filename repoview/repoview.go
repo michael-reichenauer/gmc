@@ -19,10 +19,10 @@ type RepoView struct {
 func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView) *RepoView {
 	h := &RepoView{
 		detailsView: detailsView,
-		vm:          newRepoVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
+	h.vm = newRepoVM(model, h)
 	return h
 }
 
