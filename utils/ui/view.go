@@ -14,19 +14,19 @@ type Properties struct {
 	OnClose func()
 }
 
-type ViewData struct {
-	Text     string
-	MaxLines int
-	First    int
-	Last     int
-	Current  int
+type ViewPort struct {
+	FirstLine   int
+	Lines       int
+	CurrentLine int
+	Width       int
 }
 
-type ViewPort struct {
-	Width   int
-	First   int
-	Last    int
-	Current int
+type ViewData struct {
+	Text      string
+	FirstLine int
+	Lines     int
+	//CurrentLine int
+	TotalLines int
 }
 
 type View interface {
@@ -45,13 +45,14 @@ type view struct {
 	gui     *gocui.Gui
 	guiView *gocui.View
 
-	properties      *Properties
-	viewName        string
-	viewData        func(viewPort ViewPort) ViewData
-	currentViewData ViewData
-	firstLine       int
-	lastLine        int
-	currentLine     int
+	properties *Properties
+	viewName   string
+	viewData   func(viewPort ViewPort) ViewData
+	//currentViewData ViewData
+	firstLine   int
+	lines       int
+	currentLine int
+	maxLines    int
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
@@ -63,16 +64,12 @@ func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
 }
 
 func (h *view) Show(bounds Rect) {
-	if gv, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
+	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
 			log.Fatal(err)
 		}
 
-		h.guiView = gv
-		_, vy := h.guiView.Size()
-		h.firstLine = 0
-		h.lastLine = vy - 1
-
+		h.guiView = guiView
 		h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
 		h.guiView.Editable = false
 		h.guiView.Wrap = false
@@ -89,9 +86,48 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
 		if h.properties.OnLoad != nil {
+			// Let the actual view handle load to initialise view data
 			h.properties.OnLoad()
 		}
 	}
+}
+
+func (h *view) NotifyChanged() {
+	h.gui.Update(func(g *gocui.Gui) error {
+		// Clear the view to make room for the new data
+		h.guiView.Clear()
+
+		// Get the view size to calculate the view port
+		x, y := h.guiView.Size()
+		h.lines = y - 1
+		if h.lines <= 0 || x <= 0 {
+			// View is to small (not visible)
+			return nil
+		}
+		viewPort := ViewPort{Width: x, FirstLine: h.firstLine, Lines: h.lines, CurrentLine: h.currentLine}
+
+		// Get the view data for that view port and get data sizes (could be smaller than view)
+		viewData := h.viewData(viewPort)
+		h.firstLine = viewData.FirstLine
+		h.lines = viewData.Lines
+		if h.currentLine < h.firstLine {
+			h.currentLine = h.firstLine
+		}
+		if h.currentLine > h.firstLine+h.lines {
+			h.currentLine = h.firstLine + h.lines
+		}
+		//h.currentLine = viewData.CurrentLine
+		if viewData.Lines <= 0 && viewData.Text == "" {
+			// No view data
+			return nil
+		}
+
+		// Show the new view data for the view port
+		if _, err := h.guiView.Write([]byte(viewData.Text)); err != nil {
+			log.Fatal(err)
+		}
+		return nil
+	})
 }
 
 func (h *view) SetBounds(bounds Rect) {
@@ -117,22 +153,6 @@ func (h *view) Properties() *Properties {
 func (h *view) PostOnUIThread(f func()) {
 	h.gui.Update(func(g *gocui.Gui) error {
 		f()
-		return nil
-	})
-}
-
-func (h *view) NotifyChanged() {
-	h.gui.Update(func(g *gocui.Gui) error {
-		h.guiView.Clear()
-		x, y := h.guiView.Size()
-		h.lastLine = h.firstLine + y - 1
-		h.currentViewData = h.viewData(ViewPort{Width: x, First: h.firstLine, Last: h.lastLine, Current: h.currentLine})
-		h.firstLine = h.currentViewData.First
-		h.lastLine = h.currentViewData.Last
-		h.currentLine = h.currentViewData.Current
-		if _, err := h.guiView.Write([]byte(h.currentViewData.Text)); err != nil {
-			log.Fatal(err)
-		}
 		return nil
 	})
 }
@@ -173,57 +193,58 @@ func (h *view) Size() (int, int) {
 
 func (h *view) CursorUp() {
 	if h.currentLine <= 0 {
+		// Already at the top
 		return
 	}
+
 	h.currentLine = h.currentLine - 1
 	if h.currentLine < h.firstLine {
-		move := h.firstLine - h.currentLine
-		h.firstLine = h.firstLine - move
-		h.lastLine = h.lastLine - move
+		// need to scroll upp one step
+		h.firstLine--
 	}
 	h.NotifyChanged()
 }
 
 func (h *view) CursorDown() {
-	if h.currentLine >= h.currentViewData.MaxLines-1 {
+	if h.currentLine >= h.maxLines-1 {
+		// Already at the bottom
 		return
 	}
 	h.currentLine = h.currentLine + 1
-	if h.currentLine > h.lastLine {
-		move := h.currentLine - h.lastLine
-		h.firstLine = h.firstLine + move
-		h.lastLine = h.lastLine + move
+	if h.currentLine > h.firstLine+h.lines {
+		// Need to scroll down one step
+		h.firstLine++
 	}
 	h.NotifyChanged()
 }
 func (h *view) PageDown() {
-	_, y := h.Size()
-	move := y - 2
-	if h.lastLine+move >= h.currentViewData.MaxLines-1 {
-		move = h.currentViewData.MaxLines - 1 - h.lastLine
-	}
-	if move < 1 {
-		return
-	}
-	h.firstLine = h.firstLine + move
-	h.lastLine = h.lastLine + move
-	h.currentLine = h.currentLine + move
-	h.NotifyChanged()
+	//_, y := h.Size()
+	//move := y - 2
+	//if h.lastLine+move >= h.currentViewData.MaxLines-1 {
+	//	move = h.currentViewData.MaxLines - 1 - h.lastLine
+	//}
+	//if move < 1 {
+	//	return
+	//}
+	//h.firstLine = h.firstLine + move
+	//h.lastLine = h.lastLine + move
+	//h.currentLine = h.currentLine + move
+	//h.NotifyChanged()
 }
 
 func (h *view) PageUpp() {
-	_, y := h.Size()
-	move := y - 2
-	if h.firstLine-move < 0 {
-		move = h.firstLine
-	}
-	if move < 1 {
-		return
-	}
-	h.firstLine = h.firstLine - move
-	h.lastLine = h.lastLine - move
-	h.currentLine = h.currentLine - move
-	h.NotifyChanged()
+	//_, y := h.Size()
+	//move := y - 2
+	//if h.firstLine-move < 0 {
+	//	move = h.firstLine
+	//}
+	//if move < 1 {
+	//	return
+	//}
+	//h.firstLine = h.firstLine - move
+	//h.lastLine = h.lastLine - move
+	//h.currentLine = h.currentLine - move
+	//h.NotifyChanged()
 }
 
 //func (h *UI) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {

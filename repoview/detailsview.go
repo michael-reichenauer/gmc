@@ -23,9 +23,9 @@ func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
 func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	details, err := h.vm.getCommitDetails(viewPort, h.selectedIndex)
 	if err != nil {
-		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
+		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), FirstLine: 0, Lines: 1, TotalLines: 1}
 	}
-	return ui.ViewData{Text: details.Text, MaxLines: 1, First: 0, Last: 1, Current: 1}
+	return ui.ViewData{Text: details.Text, FirstLine: 0, Lines: 1, TotalLines: 4}
 }
 
 func (h *DetailsView) SetCurrent(selectedIndex int) {

@@ -13,14 +13,13 @@ const (
 )
 
 type repoPage struct {
-	repoPath           string
 	text               string
+	firstLine          int
 	lines              int
+	currentLine        int
+	totalLines         int
+	repoPath           string
 	currentBranchName  string
-	currentCommitIndex int
-	first              int
-	last               int
-	current            int
 	uncommittedChanges int
 }
 
@@ -53,33 +52,33 @@ func (h *repoVM) monitorModelRoutine() {
 	}
 }
 
-func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage, error) {
+func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 	var err error
-	h.viewPort, err = h.model.GetRepoViewPort(firstLine, lastLine, selected)
+	h.viewPort, err = h.model.GetRepoViewPort(viewPort.FirstLine, viewPort.Lines)
 	if err != nil {
 		return repoPage{}, err
 	}
-	firstLine = h.viewPort.First
-	lastLine = h.viewPort.Last
-	selected = h.viewPort.Selected
+	//firstLine = h.viewPort.First
+	//lastLine = h.viewPort.Last
+	//selected = h.viewPort.Selected
 
-	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, width)
+	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, viewPort.Width)
 	var sb strings.Builder
 	commits := h.viewPort.Commits
 
-	var selectedCommit viewmodel.Commit
-	if selected-firstLine < len(commits) {
-		selectedCommit = commits[selected-firstLine]
+	var currentLineCommit viewmodel.Commit
+	if viewPort.CurrentLine-viewPort.FirstLine < len(commits) && viewPort.CurrentLine-viewPort.FirstLine >= 0 {
+		currentLineCommit = commits[viewPort.CurrentLine-viewPort.FirstLine]
 	}
 
 	for i, c := range commits {
-		writeSelectedMarker(&sb, i+firstLine, selected)
+		writeSelectedMarker(&sb, i+viewPort.FirstLine, viewPort.CurrentLine)
 		writeGraph(&sb, c)
 		sb.WriteString(" ")
 		writeMergeMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
-		writeSubject(&sb, c, selectedCommit, messageLength)
+		writeSubject(&sb, c, currentLineCommit, messageLength)
 		sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
@@ -90,22 +89,21 @@ func (h *repoVM) GetRepoPage(width, firstLine, lastLine, selected int) (repoPage
 	return repoPage{
 		repoPath:           h.viewPort.RepoPath,
 		text:               sb.String(),
-		lines:              h.viewPort.TotalCommits,
-		currentBranchName:  h.viewPort.CurrentBranchName,
-		currentCommitIndex: h.viewPort.CurrentCommitIndex,
-		first:              firstLine,
-		last:               lastLine,
-		current:            selected,
+		totalLines:         h.viewPort.TotalCommits,
+		firstLine:          h.viewPort.FirstIndex,
+		lines:              len(h.viewPort.Commits),
+		currentLine:        viewPort.CurrentLine,
 		uncommittedChanges: h.viewPort.UncommittedChanges,
+		currentBranchName:  h.viewPort.CurrentBranchName,
 	}, nil
 }
 
 func (h *repoVM) OpenBranch(index int) {
-	h.model.OpenBranch(h.viewPort, index)
+	h.model.OpenBranch(index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	h.model.CloseBranch(h.viewPort, index)
+	h.model.CloseBranch(index)
 }
 
 func (h *repoVM) Refresh() {

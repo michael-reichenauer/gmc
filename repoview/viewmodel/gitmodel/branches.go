@@ -21,9 +21,9 @@ func (h *branches) setBranchForAllCommits(repo *Repo) {
 
 func (h *branches) setGitBranchTips(repo *Repo) {
 	for _, b := range repo.Branches {
-		repo.CommitById(b.TipID).addBranch(b)
+		repo.CommitById[b.TipID].addBranch(b)
 		if b.IsCurrent {
-			repo.CommitById(b.TipID).IsCurrent = true
+			repo.CommitById[b.TipID].IsCurrent = true
 		}
 	}
 }
@@ -53,7 +53,7 @@ func (h *branches) determineBranchHierarchy(repo *Repo) {
 			b.BottomID = b.TipID
 		}
 
-		bottom := repo.commitById[b.BottomID]
+		bottom := repo.CommitById[b.BottomID]
 		if bottom.Branch != b {
 			// the tip does not own the tip commit, i.e. a branch pointer to another branch
 			b.ParentBranch = bottom.Branch

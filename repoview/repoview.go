@@ -10,11 +10,8 @@ import (
 //
 type RepoView struct {
 	ui.View
-	detailsView   *DetailsView
-	vm            *repoVM
-	repoPath      string
-	isSelected    bool
-	currentBranch string
+	detailsView *DetailsView
+	vm          *repoVM
 }
 
 func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView) *RepoView {
@@ -28,31 +25,31 @@ func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsV
 }
 
 func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
-	repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
+	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
+		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), FirstLine: 0, Lines: 1, TotalLines: 1}
 	}
 
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
 
-	if !h.isSelected && repoPage.currentCommitIndex != -1 {
-		h.isSelected = true
-		//h.SetCursor(repoPage.currentCommitIndex)
-	}
-	h.detailsView.SetCurrent(repoPage.current)
+	//if !h.isSelected && repoPage.currentCommitIndex != -1 {
+	//	h.isSelected = true
+	//	//h.SetCursor(repoPage.currentCommitIndex)
+	//}
+	h.detailsView.SetCurrent(repoPage.currentLine)
 
 	return ui.ViewData{
-		Text:     repoPage.text,
-		MaxLines: repoPage.lines,
-		First:    repoPage.first,
-		Last:     repoPage.last,
-		Current:  repoPage.current,
+		Text:       repoPage.text,
+		Lines:      repoPage.lines,
+		FirstLine:  repoPage.firstLine,
+		TotalLines: repoPage.totalLines,
+		//CurrentLine: repoPage.currentLine,
 	}
 }
 
 func (h *RepoView) onLoad() {
 	h.vm.Load()
-	h.setWindowTitle(h.repoPath, "", 0)
+	h.setWindowTitle("", "", 0)
 
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)

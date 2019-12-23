@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/ui"
 	"testing"
 )
 
@@ -18,7 +19,7 @@ func TestView(t *testing.T) {
 	m := viewmodel.NewModel(`C:\Work Files\GitMind`)
 	var vm *repoVM
 	vm = newRepoVM(m, &mock{func() {
-		vd, _ := vm.GetRepoPage(100, 0, 20, 0)
+		vd, _ := vm.GetRepoPage(ui.ViewPort{Lines: 20, Width: 100})
 		fmt.Printf(vd.text)
 	}})
 	vm.Load()
@@ -30,7 +31,7 @@ func TestViewCurrent(t *testing.T) {
 	var vm *repoVM
 	done := make(chan interface{})
 	vm = newRepoVM(m, &mock{func() {
-		vd, _ := vm.GetRepoPage(100, 0, 20, 0)
+		vd, _ := vm.GetRepoPage(ui.ViewPort{Lines: 20, Width: 100})
 		fmt.Printf(vd.text)
 		close(done)
 	}})
