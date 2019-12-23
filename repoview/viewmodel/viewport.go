@@ -50,8 +50,8 @@ func newViewPort(repo *repo, firstIndex, count int) ViewPort {
 
 func toCommits(repo *repo, firstIndex int, count int) []Commit {
 	commits := make([]Commit, count)
-	for i := firstIndex; i < firstIndex+count; i++ {
-		commits[i] = toCommit(repo.Commits[i])
+	for i := 0; i < count; i++ {
+		commits[i] = toCommit(repo.Commits[i+firstIndex])
 	}
 	return commits
 }

@@ -52,7 +52,7 @@ type view struct {
 	firstLine   int
 	lines       int
 	currentLine int
-	maxLines    int
+	totalLines  int
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
@@ -99,7 +99,7 @@ func (h *view) NotifyChanged() {
 
 		// Get the view size to calculate the view port
 		x, y := h.guiView.Size()
-		h.lines = y - 1
+		h.lines = y
 		if h.lines <= 0 || x <= 0 {
 			// View is to small (not visible)
 			return nil
@@ -110,13 +110,16 @@ func (h *view) NotifyChanged() {
 		viewData := h.viewData(viewPort)
 		h.firstLine = viewData.FirstLine
 		h.lines = viewData.Lines
+		h.totalLines = viewData.TotalLines
+
+		// Adjust current line to be in the visible area
 		if h.currentLine < h.firstLine {
 			h.currentLine = h.firstLine
 		}
 		if h.currentLine > h.firstLine+h.lines {
 			h.currentLine = h.firstLine + h.lines
 		}
-		//h.currentLine = viewData.CurrentLine
+
 		if viewData.Lines <= 0 && viewData.Text == "" {
 			// No view data
 			return nil
@@ -192,59 +195,88 @@ func (h *view) Size() (int, int) {
 }
 
 func (h *view) CursorUp() {
-	if h.currentLine <= 0 {
-		// Already at the top
-		return
-	}
-
-	h.currentLine = h.currentLine - 1
-	if h.currentLine < h.firstLine {
-		// need to scroll upp one step
-		h.firstLine--
-	}
-	h.NotifyChanged()
+	h.move(-1)
 }
 
 func (h *view) CursorDown() {
-	if h.currentLine >= h.maxLines-1 {
-		// Already at the bottom
-		return
-	}
-	h.currentLine = h.currentLine + 1
-	if h.currentLine > h.firstLine+h.lines {
-		// Need to scroll down one step
-		h.firstLine++
-	}
-	h.NotifyChanged()
+	h.move(1)
 }
+
 func (h *view) PageDown() {
-	//_, y := h.Size()
-	//move := y - 2
-	//if h.lastLine+move >= h.currentViewData.MaxLines-1 {
-	//	move = h.currentViewData.MaxLines - 1 - h.lastLine
-	//}
-	//if move < 1 {
-	//	return
-	//}
-	//h.firstLine = h.firstLine + move
-	//h.lastLine = h.lastLine + move
-	//h.currentLine = h.currentLine + move
-	//h.NotifyChanged()
+	_, y := h.Size()
+	h.scroll(y - 1)
 }
 
 func (h *view) PageUpp() {
-	//_, y := h.Size()
-	//move := y - 2
-	//if h.firstLine-move < 0 {
-	//	move = h.firstLine
-	//}
-	//if move < 1 {
-	//	return
-	//}
-	//h.firstLine = h.firstLine - move
-	//h.lastLine = h.lastLine - move
-	//h.currentLine = h.currentLine - move
-	//h.NotifyChanged()
+	_, y := h.Size()
+	h.scroll(-y + 1)
+}
+
+func (h *view) move(move int) {
+	if h.totalLines <= 0 {
+		// Cannot scroll empty view
+		return
+	}
+	newCurrent := h.currentLine + move
+
+	if newCurrent < 0 {
+		newCurrent = 0
+	}
+	if newCurrent >= h.totalLines {
+		newCurrent = h.totalLines - 1
+	}
+	if newCurrent == h.currentLine {
+		// No move, reached top or bottom
+		return
+	}
+
+	h.currentLine = newCurrent
+
+	if h.currentLine < h.firstLine {
+		// Need to scroll view up to the new current line
+		h.firstLine = h.currentLine
+	}
+	if h.currentLine >= h.firstLine+h.lines {
+		// Need to scroll view down to the new current line
+		h.firstLine = h.currentLine - h.lines + 1
+	}
+
+	h.NotifyChanged()
+}
+
+func (h *view) scroll(move int) {
+	if h.totalLines <= 0 {
+		// Cannot scroll empty view
+		return
+	}
+	newFirst := h.firstLine + move
+
+	if newFirst < 0 {
+		newFirst = 0
+	}
+	if newFirst+h.lines >= h.totalLines {
+		newFirst = h.totalLines - h.lines
+	}
+	if newFirst == h.firstLine {
+		// No move, reached top or bottom
+		return
+	}
+
+	newCurrent := h.currentLine + (newFirst - h.firstLine)
+
+	if newCurrent < newFirst {
+		// Need to scroll view up to the new current line
+		newCurrent = newFirst
+	}
+	if newCurrent >= newFirst+h.lines {
+		// Need to scroll view down to the new current line
+		newCurrent = newFirst - h.lines - 1
+	}
+
+	h.firstLine = newFirst
+	h.currentLine = newCurrent
+
+	h.NotifyChanged()
 }
 
 //func (h *UI) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
