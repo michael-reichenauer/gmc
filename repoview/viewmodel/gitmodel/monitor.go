@@ -42,7 +42,8 @@ func newMonitor(repoPath string) *monitor {
 
 func (h *monitor) Start() error {
 	go h.monitorFolderRoutine()
-	return filepath.Walk(h.repoPath, h.watchDir)
+	go filepath.Walk(h.repoPath, h.watchDir)
+	return nil
 }
 
 func (h *monitor) Close() {

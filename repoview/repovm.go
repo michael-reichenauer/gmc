@@ -3,6 +3,7 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -40,6 +41,7 @@ func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
 }
 
 func (h *repoVM) Load() {
+	log.Infof("repovm viewData ...")
 	h.model.Start()
 	h.model.TriggerRefresh()
 	go h.monitorModelRoutine()
@@ -57,7 +59,6 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 	if err != nil {
 		return repoPage{}, err
 	}
-
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, viewPort.Width)
 
 	commits := h.viewPort.Commits
@@ -68,12 +69,11 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 	}
 
 	var lines []string
-	for i, c := range commits {
+	for _, c := range commits {
 		var sb strings.Builder
-		writeSelectedMarker(&sb, i+viewPort.FirstIndex, viewPort.CurrentIndex)
 		writeGraph(&sb, c)
 		sb.WriteString(" ")
-		writeMergeMarker(&sb, c)
+		writeMoreMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
 		sb.WriteString(" ")
 		writeSubject(&sb, c, currentLineCommit, messageLength)
@@ -107,20 +107,14 @@ func (h *repoVM) Refresh() {
 	//h.viewmodel.Refresh(h.viewPort)
 }
 
-func writeSelectedMarker(sb *strings.Builder, index, selected int) {
-	if index == selected {
-		sb.WriteString(ui.ColorRune(ui.CWhite, selectedMarker))
-	} else {
-		sb.WriteString(" ")
-	}
-}
-func writeMergeMarker(sb *strings.Builder, c viewmodel.Commit) {
+func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
 	if c.IsMore {
 		sb.WriteString(moreMarker)
 	} else {
 		sb.WriteString(" ")
 	}
 }
+
 func writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
 		bColor := branchColor(c.Graph[i].BranchDisplayName)
@@ -171,6 +165,7 @@ func writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {
 
 func writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
 	if c.ID == viewmodel.StatusID {
+		sb.WriteString(ui.Dark(utils.Text("", length)))
 		return
 	}
 	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))

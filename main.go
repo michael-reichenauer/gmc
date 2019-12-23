@@ -6,8 +6,8 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
-	"log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -21,7 +21,7 @@ var (
 
 func main() {
 	flag.Parse()
-
+	log.Infof("Starting ...")
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && runtime.GOOS == "windows" {
 		// Seems to be not running in a terminal like e.g. in goland,
 		// termbox requires a terminal, so lets restart as an external command on windows
@@ -44,6 +44,7 @@ func main() {
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
+		log.Infof("running ...")
 		mainWindow := repoview.NewMainWindow(uiHandler, path)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()

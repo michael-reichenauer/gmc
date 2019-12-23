@@ -24,7 +24,7 @@ func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	if err != nil {
 		return ui.ViewData{}
 	}
-	return ui.ViewData{Lines: details.lines, FirstIndex: 0, Total: len(details.lines)}
+	return ui.ViewData{Lines: details.lines}
 }
 
 func (h *DetailsView) SetCurrent(selectedIndex int) {

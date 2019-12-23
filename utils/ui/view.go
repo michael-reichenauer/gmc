@@ -4,7 +4,16 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"math"
 	"strings"
+)
+
+var (
+	selectedMarker   = '│'
+	scrollBarHandle  = "▐"
+	scrollBarHandle2 = "┃"
+	scrollBarHandle3 = "│"
+	scrollBarBase    = '░'
 )
 
 type Properties struct {
@@ -48,9 +57,10 @@ type view struct {
 	viewName     string
 	viewData     func(viewPort ViewPort) ViewData
 	firstIndex   int
-	height       int
+	linesCount   int
 	currentIndex int
 	total        int
+	width        int
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
@@ -94,45 +104,80 @@ func (h *view) NotifyChanged() {
 	h.gui.Update(func(g *gocui.Gui) error {
 		// Clear the view to make room for the new data
 		h.guiView.Clear()
+		isCurrent := h.gui.CurrentView() == h.guiView
 
 		// Get the view size to calculate the view port
-		x, y := h.guiView.Size()
-		//h.height = y
-		if y <= 0 || x <= 0 {
+		width, height := h.guiView.Size()
+		if width <= 1 || height <= 0 {
 			// View is to small (not visible)
 			return nil
 		}
-		viewPort := ViewPort{Width: x, FirstIndex: h.firstIndex, Height: y, CurrentIndex: h.currentIndex}
+		viewPort := ViewPort{Width: width + 1, FirstIndex: h.firstIndex, Height: height, CurrentIndex: h.currentIndex}
 
 		// Get the view data for that view port and get data sizes (could be smaller than view)
 		viewData := h.viewData(viewPort)
+
+		h.width = width
 		h.firstIndex = viewData.FirstIndex
-		h.height = len(viewData.Lines)
 		h.total = viewData.Total
+		h.linesCount = len(viewData.Lines)
+		if h.linesCount > height {
+			// view data lines are more than view height, lets skip some lines
+			h.linesCount = height
+			viewData.Lines = viewData.Lines[:height]
+		}
+		if h.total < h.linesCount {
+			// total was probably not specified (or wrong), lets adjust
+			h.total = h.linesCount
+		}
 
 		// Adjust current line to be in the visible area
 		if h.currentIndex < h.firstIndex {
 			h.currentIndex = h.firstIndex
 		}
-		if h.currentIndex > h.firstIndex+h.height {
-			h.currentIndex = h.firstIndex + h.height
+		if h.currentIndex > h.firstIndex+h.linesCount {
+			h.currentIndex = h.firstIndex + h.linesCount
 		}
 
-		if h.height == 0 {
+		if h.linesCount == 0 {
 			// No view data
 			return nil
 		}
 
 		// Show the new view data for the view port
-		if _, err := h.guiView.Write(h.toViewBytes(viewData.Lines)); err != nil {
+		if _, err := h.guiView.Write(h.toViewBytes(viewData.Lines, isCurrent)); err != nil {
 			log.Fatal(err)
 		}
 		return nil
 	})
 }
 
-func (h *view) toViewBytes(lines []string) []byte {
-	return []byte(strings.Join(lines, "\n"))
+func (h *view) toViewBytes(lines []string, idCurrent bool) []byte {
+	scrollbarSize := float64(h.linesCount) / float64(h.total)
+	scrollbarStart := int(math.Floor(float64(h.firstIndex) * scrollbarSize))
+	scrollbarEnd := int(math.Ceil(float64(h.linesCount) * scrollbarSize))
+	if h.linesCount == h.total {
+		scrollbarStart = -1
+		scrollbarEnd = -1
+	}
+
+	var sb strings.Builder
+	for i, line := range lines {
+		if idCurrent && i+h.firstIndex == h.currentIndex {
+			sb.WriteString(ColorRune(CWhite, selectedMarker))
+		} else {
+			sb.WriteString(" ")
+		}
+		sb.WriteString(line)
+
+		if i >= scrollbarStart && i <= scrollbarStart+scrollbarEnd {
+			sb.WriteString(MagentaDk(scrollBarHandle))
+		} else {
+			sb.WriteString(" ")
+		}
+		sb.WriteString("\n")
+	}
+	return []byte(sb.String())
 }
 
 func (h *view) SetBounds(bounds Rect) {
@@ -238,9 +283,9 @@ func (h *view) move(move int) {
 		// Need to scroll view up to the new current line
 		h.firstIndex = h.currentIndex
 	}
-	if h.currentIndex >= h.firstIndex+h.height {
+	if h.currentIndex >= h.firstIndex+h.linesCount {
 		// Need to scroll view down to the new current line
-		h.firstIndex = h.currentIndex - h.height + 1
+		h.firstIndex = h.currentIndex - h.linesCount + 1
 	}
 
 	h.NotifyChanged()
@@ -256,8 +301,8 @@ func (h *view) scroll(move int) {
 	if newFirst < 0 {
 		newFirst = 0
 	}
-	if newFirst+h.height >= h.total {
-		newFirst = h.total - h.height
+	if newFirst+h.linesCount >= h.total {
+		newFirst = h.total - h.linesCount
 	}
 	if newFirst == h.firstIndex {
 		// No move, reached top or bottom
@@ -270,9 +315,9 @@ func (h *view) scroll(move int) {
 		// Need to scroll view up to the new current line
 		newCurrent = newFirst
 	}
-	if newCurrent >= newFirst+h.height {
+	if newCurrent >= newFirst+h.linesCount {
 		// Need to scroll view down to the new current line
-		newCurrent = newFirst - h.height - 1
+		newCurrent = newFirst - h.linesCount - 1
 	}
 
 	h.firstIndex = newFirst

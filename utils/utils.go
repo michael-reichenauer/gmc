@@ -22,10 +22,19 @@ func BinPath() string {
 }
 
 func Text(text string, length int) string {
-	if len(text) <= length {
-		return text + strings.Repeat(" ", length-len(text))
+	textLength := len([]rune(text))
+	if textLength < length {
+		return text + strings.Repeat(" ", length-textLength)
 	}
-	return text[0:length]
+	return string([]rune(text)[0:length])
+}
+
+func RunesText(text string, length int) string {
+	textLength := len([]rune(text))
+	if textLength < length {
+		return text + strings.Repeat(" ", length-textLength)
+	}
+	return string([]rune(text)[0:length])
 }
 
 func CompileRegexp(regexpText string) *regexp.Regexp {
