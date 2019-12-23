@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"strings"
 )
 
 type Properties struct {
@@ -15,18 +16,16 @@ type Properties struct {
 }
 
 type ViewPort struct {
-	FirstLine   int
-	Lines       int
-	CurrentLine int
-	Width       int
+	FirstIndex   int
+	Height       int
+	CurrentIndex int
+	Width        int
 }
 
 type ViewData struct {
-	Text      string
-	FirstLine int
-	Lines     int
-	//CurrentLine int
-	TotalLines int
+	Lines      []string
+	FirstIndex int
+	Total      int
 }
 
 type View interface {
@@ -45,14 +44,13 @@ type view struct {
 	gui     *gocui.Gui
 	guiView *gocui.View
 
-	properties *Properties
-	viewName   string
-	viewData   func(viewPort ViewPort) ViewData
-	//currentViewData ViewData
-	firstLine   int
-	lines       int
-	currentLine int
-	totalLines  int
+	properties   *Properties
+	viewName     string
+	viewData     func(viewPort ViewPort) ViewData
+	firstIndex   int
+	height       int
+	currentIndex int
+	total        int
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
@@ -99,38 +97,42 @@ func (h *view) NotifyChanged() {
 
 		// Get the view size to calculate the view port
 		x, y := h.guiView.Size()
-		h.lines = y
-		if h.lines <= 0 || x <= 0 {
+		//h.height = y
+		if y <= 0 || x <= 0 {
 			// View is to small (not visible)
 			return nil
 		}
-		viewPort := ViewPort{Width: x, FirstLine: h.firstLine, Lines: h.lines, CurrentLine: h.currentLine}
+		viewPort := ViewPort{Width: x, FirstIndex: h.firstIndex, Height: y, CurrentIndex: h.currentIndex}
 
 		// Get the view data for that view port and get data sizes (could be smaller than view)
 		viewData := h.viewData(viewPort)
-		h.firstLine = viewData.FirstLine
-		h.lines = viewData.Lines
-		h.totalLines = viewData.TotalLines
+		h.firstIndex = viewData.FirstIndex
+		h.height = len(viewData.Lines)
+		h.total = viewData.Total
 
 		// Adjust current line to be in the visible area
-		if h.currentLine < h.firstLine {
-			h.currentLine = h.firstLine
+		if h.currentIndex < h.firstIndex {
+			h.currentIndex = h.firstIndex
 		}
-		if h.currentLine > h.firstLine+h.lines {
-			h.currentLine = h.firstLine + h.lines
+		if h.currentIndex > h.firstIndex+h.height {
+			h.currentIndex = h.firstIndex + h.height
 		}
 
-		if viewData.Lines <= 0 && viewData.Text == "" {
+		if h.height == 0 {
 			// No view data
 			return nil
 		}
 
 		// Show the new view data for the view port
-		if _, err := h.guiView.Write([]byte(viewData.Text)); err != nil {
+		if _, err := h.guiView.Write(h.toViewBytes(viewData.Lines)); err != nil {
 			log.Fatal(err)
 		}
 		return nil
 	})
+}
+
+func (h *view) toViewBytes(lines []string) []byte {
+	return []byte(strings.Join(lines, "\n"))
 }
 
 func (h *view) SetBounds(bounds Rect) {
@@ -146,7 +148,7 @@ func (h *view) SetCurrentView() {
 }
 
 func (h view) CurrentLine() int {
-	return h.currentLine
+	return h.currentIndex
 }
 
 func (h *view) Properties() *Properties {
@@ -213,68 +215,68 @@ func (h *view) PageUpp() {
 }
 
 func (h *view) move(move int) {
-	if h.totalLines <= 0 {
+	if h.total <= 0 {
 		// Cannot scroll empty view
 		return
 	}
-	newCurrent := h.currentLine + move
+	newCurrent := h.currentIndex + move
 
 	if newCurrent < 0 {
 		newCurrent = 0
 	}
-	if newCurrent >= h.totalLines {
-		newCurrent = h.totalLines - 1
+	if newCurrent >= h.total {
+		newCurrent = h.total - 1
 	}
-	if newCurrent == h.currentLine {
+	if newCurrent == h.currentIndex {
 		// No move, reached top or bottom
 		return
 	}
 
-	h.currentLine = newCurrent
+	h.currentIndex = newCurrent
 
-	if h.currentLine < h.firstLine {
+	if h.currentIndex < h.firstIndex {
 		// Need to scroll view up to the new current line
-		h.firstLine = h.currentLine
+		h.firstIndex = h.currentIndex
 	}
-	if h.currentLine >= h.firstLine+h.lines {
+	if h.currentIndex >= h.firstIndex+h.height {
 		// Need to scroll view down to the new current line
-		h.firstLine = h.currentLine - h.lines + 1
+		h.firstIndex = h.currentIndex - h.height + 1
 	}
 
 	h.NotifyChanged()
 }
 
 func (h *view) scroll(move int) {
-	if h.totalLines <= 0 {
+	if h.total <= 0 {
 		// Cannot scroll empty view
 		return
 	}
-	newFirst := h.firstLine + move
+	newFirst := h.firstIndex + move
 
 	if newFirst < 0 {
 		newFirst = 0
 	}
-	if newFirst+h.lines >= h.totalLines {
-		newFirst = h.totalLines - h.lines
+	if newFirst+h.height >= h.total {
+		newFirst = h.total - h.height
 	}
-	if newFirst == h.firstLine {
+	if newFirst == h.firstIndex {
 		// No move, reached top or bottom
 		return
 	}
 
-	newCurrent := h.currentLine + (newFirst - h.firstLine)
+	newCurrent := h.currentIndex + (newFirst - h.firstIndex)
 
 	if newCurrent < newFirst {
 		// Need to scroll view up to the new current line
 		newCurrent = newFirst
 	}
-	if newCurrent >= newFirst+h.lines {
+	if newCurrent >= newFirst+h.height {
 		// Need to scroll view down to the new current line
-		newCurrent = newFirst - h.lines - 1
+		newCurrent = newFirst - h.height - 1
 	}
 
-	h.firstLine = newFirst
-	h.currentLine = newCurrent
+	h.firstIndex = newFirst
+	h.currentIndex = newCurrent
 
 	h.NotifyChanged()
 }

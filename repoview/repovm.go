@@ -13,11 +13,10 @@ const (
 )
 
 type repoPage struct {
-	text               string
-	firstLine          int
-	lines              int
-	currentLine        int
-	totalLines         int
+	lines              []string
+	firstIndex         int
+	currentIndex       int
+	total              int
 	repoPath           string
 	currentBranchName  string
 	uncommittedChanges int
@@ -54,25 +53,24 @@ func (h *repoVM) monitorModelRoutine() {
 
 func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 	var err error
-	h.viewPort, err = h.model.GetRepoViewPort(viewPort.FirstLine, viewPort.Lines)
+	h.viewPort, err = h.model.GetRepoViewPort(viewPort.FirstIndex, viewPort.Height)
 	if err != nil {
 		return repoPage{}, err
 	}
-	//firstLine = h.viewPort.First
-	//lastLine = h.viewPort.Last
-	//selected = h.viewPort.Selected
 
 	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, viewPort.Width)
-	var sb strings.Builder
+
 	commits := h.viewPort.Commits
 
 	var currentLineCommit viewmodel.Commit
-	if viewPort.CurrentLine-viewPort.FirstLine < len(commits) && viewPort.CurrentLine-viewPort.FirstLine >= 0 {
-		currentLineCommit = commits[viewPort.CurrentLine-viewPort.FirstLine]
+	if viewPort.CurrentIndex-viewPort.FirstIndex < len(commits) && viewPort.CurrentIndex-viewPort.FirstIndex >= 0 {
+		currentLineCommit = commits[viewPort.CurrentIndex-viewPort.FirstIndex]
 	}
 
+	var lines []string
 	for i, c := range commits {
-		writeSelectedMarker(&sb, i+viewPort.FirstLine, viewPort.CurrentLine)
+		var sb strings.Builder
+		writeSelectedMarker(&sb, i+viewPort.FirstIndex, viewPort.CurrentIndex)
 		writeGraph(&sb, c)
 		sb.WriteString(" ")
 		writeMergeMarker(&sb, c)
@@ -83,16 +81,15 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)
-		sb.WriteString("\n")
+		lines = append(lines, sb.String())
 	}
 
 	return repoPage{
 		repoPath:           h.viewPort.RepoPath,
-		text:               sb.String(),
-		totalLines:         h.viewPort.TotalCommits,
-		firstLine:          h.viewPort.FirstIndex,
-		lines:              len(h.viewPort.Commits),
-		currentLine:        viewPort.CurrentLine,
+		lines:              lines,
+		total:              h.viewPort.TotalCommits,
+		firstIndex:         h.viewPort.FirstIndex,
+		currentIndex:       viewPort.CurrentIndex,
 		uncommittedChanges: h.viewPort.UncommittedChanges,
 		currentBranchName:  h.viewPort.CurrentBranchName,
 	}, nil

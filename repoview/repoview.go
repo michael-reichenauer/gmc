@@ -27,7 +27,7 @@ func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsV
 func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), FirstLine: 0, Lines: 1, TotalLines: 1}
+		return ui.ViewData{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}, FirstIndex: 0, Total: 1}
 	}
 
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
@@ -36,15 +36,9 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	//	h.isSelected = true
 	//	//h.SetCursor(repoPage.currentCommitIndex)
 	//}
-	h.detailsView.SetCurrent(repoPage.currentLine)
+	h.detailsView.SetCurrent(repoPage.currentIndex)
 
-	return ui.ViewData{
-		Text:       repoPage.text,
-		Lines:      repoPage.lines,
-		FirstLine:  repoPage.firstLine,
-		TotalLines: repoPage.totalLines,
-		//CurrentLine: repoPage.currentLine,
-	}
+	return ui.ViewData{Lines: repoPage.lines, FirstIndex: repoPage.firstIndex, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {

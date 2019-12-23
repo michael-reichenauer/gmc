@@ -1,7 +1,6 @@
 package repoview
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
@@ -23,9 +22,9 @@ func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
 func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
 	details, err := h.vm.getCommitDetails(viewPort, h.selectedIndex)
 	if err != nil {
-		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), FirstLine: 0, Lines: 1, TotalLines: 1}
+		return ui.ViewData{}
 	}
-	return ui.ViewData{Text: details.Text, FirstLine: 0, Lines: 1, TotalLines: 4}
+	return ui.ViewData{Lines: details.lines, FirstIndex: 0, Total: len(details.lines)}
 }
 
 func (h *DetailsView) SetCurrent(selectedIndex int) {
