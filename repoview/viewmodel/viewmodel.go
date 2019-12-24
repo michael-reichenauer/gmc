@@ -23,11 +23,11 @@ type Model struct {
 	ChangedEvents chan interface{}
 	gitModel      *gitmodel.Handler
 
-	lock         sync.Mutex
-	currentRepox *repo
-	gmRepo       gitmodel.Repo
-	gmStatus     gitmodel.Status
-	err          error
+	lock        sync.Mutex
+	currentRepo *repo
+	gmRepo      gitmodel.Repo
+	gmStatus    gitmodel.Status
+	err         error
 }
 
 func NewModel(repoPath string) *Model {
@@ -35,7 +35,7 @@ func NewModel(repoPath string) *Model {
 	return &Model{
 		ChangedEvents: make(chan interface{}),
 		gitModel:      gm,
-		currentRepox:  newRepo(),
+		currentRepo:   newRepo(),
 	}
 }
 
@@ -63,7 +63,7 @@ func (h *Model) monitorGitModelRoutine() {
 		log.Infof("Detected change, refresh model")
 		var branchIds []string
 		h.lock.Lock()
-		for _, b := range h.currentRepox.Branches {
+		for _, b := range h.currentRepo.Branches {
 			branchIds = append(branchIds, b.name)
 		}
 		h.lock.Unlock()
@@ -80,7 +80,7 @@ func (h *Model) loadBranches(branchIds []string) {
 	repo := h.getRepoModel(branchIds)
 	log.Infof("LoadBranches time %v", time.Since(t))
 	h.lock.Lock()
-	h.currentRepox = repo
+	h.currentRepo = repo
 	h.lock.Unlock()
 	h.ChangedEvents <- nil
 }
@@ -91,10 +91,10 @@ func (h *Model) GetCommitByIndex(index int) (Commit, error) {
 	}
 	h.lock.Lock()
 	defer h.lock.Unlock()
-	if index < 0 || index >= len(h.currentRepox.Commits) {
+	if index < 0 || index >= len(h.currentRepo.Commits) {
 		return Commit{}, fmt.Errorf("no commit")
 	}
-	return toCommit(h.currentRepox.Commits[index]), nil
+	return toCommit(h.currentRepo.Commits[index]), nil
 }
 
 func (h *Model) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
@@ -105,32 +105,32 @@ func (h *Model) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
 	h.lock.Lock()
 	defer h.lock.Unlock()
 
-	if count > len(h.currentRepox.Commits) {
+	if count > len(h.currentRepo.Commits) {
 		// Requested count larger than available, return just all available commits
-		count = len(h.currentRepox.Commits)
+		count = len(h.currentRepo.Commits)
 	}
 
-	if firstIndex+count >= len(h.currentRepox.Commits) {
+	if firstIndex+count >= len(h.currentRepo.Commits) {
 		// Requested commits past available, adjust to return available commits
-		firstIndex = len(h.currentRepox.Commits) - count
+		firstIndex = len(h.currentRepo.Commits) - count
 	}
 
-	return newViewPort(h.currentRepox, firstIndex, count), nil
+	return newViewPort(h.currentRepo, firstIndex, count), nil
 }
 
 func (h *Model) OpenBranch(index int) {
 	h.lock.Lock()
-	if index >= len(h.currentRepox.Commits) {
+	if index >= len(h.currentRepo.Commits) {
 		// Repo must just have changed, just ignore
 		return
 	}
-	c := h.currentRepox.Commits[index]
+	c := h.currentRepo.Commits[index]
 	if !c.IsMore {
 		// Not a point that can be expanded
 		return
 	}
 
-	branchIds := h.toBranchIds(h.currentRepox.Branches)
+	branchIds := h.toBranchIds(h.currentRepo.Branches)
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it (if not already added
@@ -165,11 +165,11 @@ func (h *Model) OpenBranch(index int) {
 
 func (h *Model) CloseBranch(index int) {
 	h.lock.Lock()
-	if index >= len(h.currentRepox.Commits) {
+	if index >= len(h.currentRepo.Commits) {
 		// Repo must just have changed, just ignore
 		return
 	}
-	c := h.currentRepox.Commits[index]
+	c := h.currentRepo.Commits[index]
 	if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
 		// Cannot close master
 		return
@@ -177,7 +177,7 @@ func (h *Model) CloseBranch(index int) {
 
 	// get branch ids except for the commit branch or decedent branches
 	var branchIds []string
-	for _, b := range h.currentRepox.Branches {
+	for _, b := range h.currentRepo.Branches {
 		if b.name != c.Branch.name && !c.Branch.isAncestor(b) {
 			branchIds = append(branchIds, b.name)
 		}
