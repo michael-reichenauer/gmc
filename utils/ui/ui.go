@@ -82,8 +82,8 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 }
 
 func (h *UI) layout(gui *gocui.Gui) error {
-	maxX, maxY := gui.Size()
 	// Resize window and notify all views if console window is resized
+	maxX, maxY := gui.Size()
 	if maxX != h.maxX || maxY != h.maxY {
 		h.maxX = maxX
 		h.maxY = maxY
@@ -98,6 +98,5 @@ func (h *UI) layout(gui *gocui.Gui) error {
 	}
 	h.isInitialized = true
 	go h.runFunc()
-
 	return nil
 }

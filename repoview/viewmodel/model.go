@@ -72,15 +72,6 @@ func (h *Model) TriggerRefresh() {
 	h.gitModel.TriggerRefresh()
 }
 
-//func (h *Model) Load() {
-//	t := time.Now()
-//	h.gitModel.Load()
-//	gmRepo := h.gitModel.GetRepo()
-//	gmStatus := h.gitModel.GetStatus()
-//	h.LoadBranches([]string{}, gmRepo, gmStatus)
-//	log.Infof("Load time %v", time.Since(t))
-//}
-
 func (h *Model) loadBranches(branchIds []string) {
 	t := time.Now()
 	repo := h.getRepoModel(branchIds)

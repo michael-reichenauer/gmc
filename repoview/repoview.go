@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -26,7 +25,7 @@ func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsV
 }
 
 func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
-	log.Infof("repo viewData ...")
+	// log.Infof("repo viewData ...")
 	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
 		return ui.ViewData{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
@@ -44,12 +43,11 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 		return ui.ViewData{Lines: []string{"  Reading repo, please wait ..."}}
 	}
 
-	log.Infof("repo view data %d lines", len(repoPage.lines))
+	// log.Infof("repo view data %d lines", len(repoPage.lines))
 	return ui.ViewData{Lines: repoPage.lines, FirstIndex: repoPage.firstIndex, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {
-	log.Infof("repo onload ...")
 	h.vm.Load()
 	h.setWindowTitle("", "", 0)
 
@@ -87,7 +85,7 @@ func (h *RepoView) onRefresh() {
 func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 	changesText := ""
 	if changes > 0 {
-		changesText = fmt.Sprintf(" {%d}", changes)
+		changesText = fmt.Sprintf(" (*%d)", changes)
 	}
-	ui.SetWindowTitle(fmt.Sprintf("gmc: %s%s - %s", path, changesText, branch))
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
 }

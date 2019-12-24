@@ -3,7 +3,6 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -41,7 +40,6 @@ func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
 }
 
 func (h *repoVM) Load() {
-	log.Infof("repovm viewData ...")
 	h.model.Start()
 	h.model.TriggerRefresh()
 	go h.monitorModelRoutine()
