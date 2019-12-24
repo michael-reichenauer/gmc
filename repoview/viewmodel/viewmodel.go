@@ -48,7 +48,7 @@ func (h *Model) monitorGitModelRoutine() {
 	for {
 		select {
 		case gmRepo := <-h.gitModel.RepoEvents:
-			log.Infof("Detected status change")
+			log.Infof("Detected repo change")
 			h.lock.Lock()
 			h.gmRepo = gmRepo
 			h.gmStatus = gmRepo.Status
