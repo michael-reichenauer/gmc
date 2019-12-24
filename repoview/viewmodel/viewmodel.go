@@ -48,16 +48,19 @@ func (h *Model) monitorGitModelRoutine() {
 	for {
 		select {
 		case gmRepo := <-h.gitModel.RepoEvents:
+			log.Infof("Detected status change")
 			h.lock.Lock()
 			h.gmRepo = gmRepo
 			h.gmStatus = gmRepo.Status
 			h.lock.Unlock()
 
 		case gmStatus := <-h.gitModel.StatusEvents:
+			log.Infof("Detected status change")
 			h.lock.Lock()
 			h.gmStatus = gmStatus
 			h.lock.Unlock()
 		}
+		log.Infof("Detected change, refresh model")
 		var branchIds []string
 		h.lock.Lock()
 		for _, b := range h.currentRepox.Branches {

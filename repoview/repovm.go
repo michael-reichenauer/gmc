@@ -3,6 +3,7 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -47,6 +48,7 @@ func (h *repoVM) Load() {
 
 func (h *repoVM) monitorModelRoutine() {
 	for range h.model.ChangedEvents {
+		log.Infof("Detected model change")
 		h.notifier.NotifyChanged()
 	}
 }
