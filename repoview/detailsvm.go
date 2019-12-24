@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
-	"strings"
 )
 
 type detailsVM struct {
@@ -13,7 +12,7 @@ type detailsVM struct {
 }
 
 type commitDetails struct {
-	Text string
+	lines []string
 }
 
 func newDetailsVM(model *viewmodel.Model) *detailsVM {
@@ -25,23 +24,23 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPort, index int) (commitDeta
 	if err != nil {
 		return commitDetails{}, err
 	}
-	return commitDetails{Text: toDetailsText(commit)}, nil
+	return commitDetails{lines: toDetailsText(commit)}, nil
 }
 
-func toDetailsText(c viewmodel.Commit) string {
+func toDetailsText(c viewmodel.Commit) []string {
 
-	var sb strings.Builder
-	sb.WriteString(toHeader("Id:") + ui.Gray(c.ID))
-	sb.WriteString("\n")
-	sb.WriteString(toHeader("Branch:") + toBranchText(c))
-	sb.WriteString("\n")
+	var lines []string
+	lines = append(lines, toHeader("Id:")+ui.Gray(c.ID))
+
+	lines = append(lines, toHeader("Branch:")+toBranchText(c))
+
 	if c.ID == viewmodel.StatusID {
-		sb.WriteString(ui.YellowDk(" " + c.Message))
+		lines = append(lines, ui.YellowDk(" "+c.Message))
 	} else {
-		sb.WriteString(ui.Gray(" " + c.Message))
+		lines = append(lines, ui.Gray(" "+c.Message))
 	}
-	sb.WriteString("\n")
-	return sb.String()
+
+	return lines
 }
 
 func toHeader(text string) string {

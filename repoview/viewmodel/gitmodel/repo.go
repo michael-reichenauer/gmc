@@ -7,40 +7,38 @@ import (
 
 type Repo struct {
 	Commits    []*Commit
-	commitById map[string]*Commit
+	CommitById map[string]*Commit
 	Branches   []*Branch
-	//	Status               Status
-	branchNameFromCommit map[string]string
-	RepoPath             string
+	Status     Status
+	RepoPath   string
 }
 
 func newRepo() *Repo {
 	r := &Repo{
-		Commits:              []*Commit{},
-		commitById:           make(map[string]*Commit),
-		Branches:             []*Branch{},
-		branchNameFromCommit: make(map[string]string),
+		//Commits:              []*Commit{},
+		CommitById: make(map[string]*Commit),
+		//Branches:             []*Branch{},
 	}
 	return r
 }
 
-func (r *Repo) CommitById(id string) *Commit {
-	return r.commitById[id]
-}
+//func (r *Repo) CommitById(id string) *Commit {
+//	return r.commitById[id]
+//}
 func (r *Repo) setGitCommits(gitCommits []git.Commit) {
-	r.Commits = []*Commit{}
-	r.commitById = make(map[string]*Commit)
+	//r.Commits = []*Commit{}
+	//r.CommitById = make(map[string]*Commit)
 
 	for _, gc := range gitCommits {
 		commit := newCommit(gc)
 		r.Commits = append(r.Commits, commit)
-		r.commitById[commit.Id] = commit
+		r.CommitById[commit.Id] = commit
 	}
 
 	// Set current commit if there is a current branch
 	currentBranch, ok := r.CurrentBranch()
 	if ok {
-		currentCommit := r.CommitById(currentBranch.TipID)
+		currentCommit := r.CommitById[currentBranch.TipID]
 		currentCommit.IsCurrent = true
 	}
 }
@@ -89,7 +87,7 @@ func (r *Repo) Parent(commit *Commit, index int) (*Commit, bool) {
 	if index >= len(commit.ParentIDs) {
 		return nil, false
 	}
-	c, ok := r.commitById[commit.ParentIDs[index]]
+	c, ok := r.CommitById[commit.ParentIDs[index]]
 	return c, ok
 }
 

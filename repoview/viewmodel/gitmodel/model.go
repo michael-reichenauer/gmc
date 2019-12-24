@@ -37,8 +37,8 @@ func (h *Handler) Start() {
 
 func (h *Handler) TriggerRefresh() {
 	go func() {
+		log.Infof("trigger refresh")
 		h.refreshRepo()
-		h.refreshStatus()
 	}()
 }
 
@@ -60,7 +60,6 @@ func (h *Handler) monitorRepoChangesRoutine() {
 			ticker = nil
 			// refreshing both status and repo on repo changes, since repo change often do change status
 			// without changing files
-			h.refreshStatus()
 			h.refreshRepo()
 		}
 	}
@@ -87,23 +86,34 @@ func (h *Handler) monitorStatusChangesRoutine() {
 	}
 }
 func (h *Handler) refreshRepo() {
+	t := time.Now()
 	repo := newRepo()
 	repo.RepoPath = h.gitRepo.RepoPath
+
 	gitCommits, err := h.gitRepo.GetLog()
 	if err != nil {
 		h.ErrorEvents <- err
 		return
 	}
+	log.Infof("Git log %v", time.Since(t))
 	gitBranches, err := h.gitRepo.GetBranches()
 	if err != nil {
 		h.ErrorEvents <- err
 		return
 	}
-
+	log.Infof("Git branches %v", time.Since(t))
+	gitStatus, err := h.gitRepo.GetStatus()
+	if err != nil {
+		h.ErrorEvents <- err
+		return
+	}
+	log.Infof("Git status %v", time.Since(t))
+	repo.Status = newStatus(gitStatus)
 	repo.setGitBranches(gitBranches)
 	repo.setGitCommits(gitCommits)
 
 	h.branches.setBranchForAllCommits(repo)
+	log.Infof("Git repo %v", time.Since(t))
 	h.RepoEvents <- *repo
 }
 

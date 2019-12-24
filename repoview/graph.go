@@ -10,7 +10,6 @@ import (
 
 var (
 	currentCommitMarker = ui.White("●")
-	selectedMarker      = '│'
 	moreMarker          = ui.Dark(">")
 )
 

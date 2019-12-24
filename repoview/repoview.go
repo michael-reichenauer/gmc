@@ -4,17 +4,15 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 //
 type RepoView struct {
 	ui.View
-	detailsView   *DetailsView
-	vm            *repoVM
-	repoPath      string
-	isSelected    bool
-	currentBranch string
+	detailsView *DetailsView
+	vm          *repoVM
 }
 
 func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView) *RepoView {
@@ -28,31 +26,32 @@ func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsV
 }
 
 func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
-	repoPage, err := h.vm.GetRepoPage(viewPort.Width, viewPort.First, viewPort.Last, viewPort.Current)
+	log.Infof("repo viewData ...")
+	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
+		return ui.ViewData{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
 
-	if !h.isSelected && repoPage.currentCommitIndex != -1 {
-		h.isSelected = true
-		//h.SetCursor(repoPage.currentCommitIndex)
+	//if !h.isSelected && repoPage.currentCommitIndex != -1 {
+	//	h.isSelected = true
+	//	//h.SetCursor(repoPage.currentCommitIndex)
+	//}
+	if len(repoPage.lines) > 0 {
+		h.detailsView.SetCurrent(repoPage.currentIndex)
+	} else {
+		return ui.ViewData{Lines: []string{"  Reading repo, please wait ..."}}
 	}
-	h.detailsView.SetCurrent(repoPage.current)
 
-	return ui.ViewData{
-		Text:     repoPage.text,
-		MaxLines: repoPage.lines,
-		First:    repoPage.first,
-		Last:     repoPage.last,
-		Current:  repoPage.current,
-	}
+	log.Infof("repo view data %d lines", len(repoPage.lines))
+	return ui.ViewData{Lines: repoPage.lines, FirstIndex: repoPage.firstIndex, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {
+	log.Infof("repo onload ...")
 	h.vm.Load()
-	h.setWindowTitle(h.repoPath, "", 0)
+	h.setWindowTitle("", "", 0)
 
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
