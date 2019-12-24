@@ -1,7 +1,14 @@
 package gitmodel
 
 import (
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"regexp"
 	"strings"
+)
+
+var (
+	nameRegExp = regexp.MustCompile(`Merge branch '([a-z]+)' into master"`)
+	r          = regexp.MustCompile("[Mm]erge (branch)? '([0-9A-Za-z_]+)'\\s?(into)?([0-9A-Za-z_]+)")
 )
 
 type fromInto struct {
@@ -46,6 +53,11 @@ func (h *branchNames) branchName(id string) string {
 
 func (h *branchNames) parseMergeBranchNames(subject string) fromInto {
 	var fi fromInto
+	v := r.FindAllStringSubmatch(subject, -1)
+	for _, m := range v {
+		log.Infof("m:%q", m)
+	}
+
 	if strings.HasPrefix(subject, "Merge branch '") {
 		ei := strings.LastIndex(subject, "'")
 		if ei > 14 {

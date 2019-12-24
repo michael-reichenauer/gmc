@@ -61,13 +61,13 @@ func (h *monitor) monitorFolderRoutine() {
 			if h.isIgnore(event.Name) {
 				//fmt.Printf("ignoring: %s\n", event.Name)
 			} else if h.isRepoChange(event.Name) {
-				// log.Infof("Repo change: %s", event.Name)
+				//log.Infof("Repo change: %s", event.Name)
 				select {
 				case h.RepoChange <- nil:
 				default:
 				}
 			} else if h.isStatusChange(event.Name) {
-				// log.Infof("Status change: %s", event.Name)
+				//log.Infof("Status change: %s", event.Name)
 				select {
 				case h.StatusChange <- nil:
 				default:
@@ -78,7 +78,7 @@ func (h *monitor) monitorFolderRoutine() {
 		case err = <-h.watcher.Errors:
 			log.Warnf("ERROR %v", err)
 		case closed := <-h.quit:
-			close(h.StatusChange)
+			close(h.RepoChange)
 			close(h.StatusChange)
 			close(closed)
 			return

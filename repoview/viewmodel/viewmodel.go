@@ -60,7 +60,7 @@ func (h *Model) monitorGitModelRoutine() {
 			h.gmStatus = gmStatus
 			h.lock.Unlock()
 		}
-		log.Infof("Detected change, refresh model")
+		log.Infof("Detected change, refreshing model")
 		var branchIds []string
 		h.lock.Lock()
 		for _, b := range h.currentRepo.Branches {
