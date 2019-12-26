@@ -2,7 +2,7 @@ package viewmodel
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"sync"
@@ -21,17 +21,17 @@ type Status struct {
 
 type Model struct {
 	ChangedEvents chan interface{}
-	gitModel      *gitmodel.Handler
+	gitModel      *gitrepo.Handler
 
 	lock        sync.Mutex
 	currentRepo *repo
-	gmRepo      gitmodel.Repo
-	gmStatus    gitmodel.Status
+	gmRepo      gitrepo.Repo
+	gmStatus    gitrepo.Status
 	err         error
 }
 
 func NewModel(repoPath string) *Model {
-	gm := gitmodel.NewModel(repoPath)
+	gm := gitrepo.NewModel(repoPath)
 	return &Model{
 		ChangedEvents: make(chan interface{}),
 		gitModel:      gm,

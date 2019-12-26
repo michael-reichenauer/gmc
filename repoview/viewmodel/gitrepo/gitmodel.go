@@ -1,4 +1,4 @@
-package gitmodel
+package gitrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/utils/gitlib"

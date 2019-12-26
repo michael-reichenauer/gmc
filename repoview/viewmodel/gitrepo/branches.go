@@ -1,4 +1,4 @@
-package gitmodel
+package gitrepo
 
 // Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
