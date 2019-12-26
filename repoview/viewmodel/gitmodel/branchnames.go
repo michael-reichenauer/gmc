@@ -1,7 +1,18 @@
 package gitmodel
 
 import (
-	"strings"
+	"regexp"
+)
+
+var (
+	nameRegExp = regexp.MustCompile( // "Merge branch 'develop' into master"
+		`[Mm]erged?\s+` + // Merge or merged
+			`(remote-tracking\s+)?` + //      remote-tracking when merging remote branches
+			`((branch|commit|from)\s+)?` + //   branch|commit|from
+			`'?(?P<from>[0-9A-Za-z_]+)'?` + // the from branch name
+			`(\s+(?P<direction>into|to|of|from)\s+` + // into|of|from
+			`(?P<into>[0-9A-Za-z_]+)?)?`) // the into  branch name
+	from, into, direction = indexes()
 )
 
 type fromInto struct {
@@ -45,15 +56,31 @@ func (h *branchNames) branchName(id string) string {
 }
 
 func (h *branchNames) parseMergeBranchNames(subject string) fromInto {
-	var fi fromInto
-	if strings.HasPrefix(subject, "Merge branch '") {
-		ei := strings.LastIndex(subject, "'")
-		if ei > 14 {
-			fi.from = subject[14:ei]
-			if strings.HasPrefix(subject[ei:], "' into ") {
-				fi.into = subject[ei+7:]
-			}
+	matches := nameRegExp.FindAllStringSubmatch(subject, -1)
+	if len(matches) == 0 {
+		return fromInto{}
+	}
+
+	if matches[0][from] != "" && matches[0][direction] == "of" {
+		// Subject is a pull merge (same source and target branch)
+		return fromInto{from: matches[0][from], into: matches[0][from]}
+	}
+	return fromInto{from: matches[0][from], into: matches[0][into]}
+}
+
+// indexes returns the named group indexes to be used in parse
+func indexes() (fromIndex, intoIndex, directionIndex int) {
+	n1 := nameRegExp.SubexpNames()
+	for i, v := range n1 {
+		if v == "from" {
+			fromIndex = i
+		}
+		if v == "into" {
+			intoIndex = i
+		}
+		if v == "direction" {
+			directionIndex = i
 		}
 	}
-	return fi
+	return
 }

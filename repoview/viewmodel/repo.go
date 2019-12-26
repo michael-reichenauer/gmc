@@ -57,6 +57,9 @@ func (r *repo) addVirtualStatusCommit() {
 	}
 	allChanges := r.gmStatus.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
+	if r.gmStatus.IsMerging && r.gmStatus.MergeMessage != "" {
+		statusText = statusText + ", " + r.gmStatus.MergeMessage
+	}
 
 	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))
 	r.Commits = append(r.Commits, c)

@@ -41,7 +41,6 @@ func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
 }
 
 func (h *repoVM) Load() {
-	log.Infof("repovm viewData ...")
 	h.model.Start()
 	h.model.TriggerRefresh()
 	go h.monitorModelRoutine()
@@ -49,6 +48,7 @@ func (h *repoVM) Load() {
 
 func (h *repoVM) monitorModelRoutine() {
 	for range h.model.ChangedEvents {
+		log.Infof("Detected model change")
 		h.notifier.NotifyChanged()
 	}
 }

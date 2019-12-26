@@ -9,11 +9,8 @@ import (
 )
 
 var (
-	selectedMarker   = '│'
-	scrollBarHandle  = "▐"
-	scrollBarHandle2 = "┃"
-	scrollBarHandle3 = "│"
-	scrollBarBase    = '░'
+	currentLineMarker = '│'
+	scrollBarHandle   = "▐"
 )
 
 type Properties struct {
@@ -145,36 +142,36 @@ func (h *view) NotifyChanged() {
 		}
 
 		// Show the new view data for the view port
-		if _, err := h.guiView.Write(h.toViewBytes(viewData.Lines, isCurrent)); err != nil {
+		if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
 			log.Fatal(err)
 		}
 		return nil
 	})
 }
 
-func (h *view) toViewBytes(lines []string, idCurrent bool) []byte {
-	scrollbarSize := float64(h.linesCount) / float64(h.total)
-	scrollbarStart := int(math.Floor(float64(h.firstIndex) * scrollbarSize))
-	scrollbarEnd := int(math.Ceil(float64(h.linesCount) * scrollbarSize))
-	if h.linesCount == h.total {
-		scrollbarStart = -1
-		scrollbarEnd = -1
-	}
+func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
+	sbStart, sbEnd := h.getScrollbarIndexes()
 
 	var sb strings.Builder
 	for i, line := range lines {
+		// Draw the current line marker
 		if idCurrent && i+h.firstIndex == h.currentIndex {
-			sb.WriteString(ColorRune(CWhite, selectedMarker))
+			sb.WriteString(ColorRune(CWhite, currentLineMarker))
 		} else {
 			sb.WriteString(" ")
 		}
+
+		// Draw the actual text line
 		sb.WriteString(line)
 
-		if i >= scrollbarStart && i <= scrollbarStart+scrollbarEnd {
+		// Draw the scrollbar
+		if i >= sbStart && i <= sbEnd {
+			// Within scrollbar, draw the scrollbar handle
 			sb.WriteString(MagentaDk(scrollBarHandle))
 		} else {
 			sb.WriteString(" ")
 		}
+
 		sb.WriteString("\n")
 	}
 	return []byte(sb.String())
@@ -326,22 +323,20 @@ func (h *view) scroll(move int) {
 	h.NotifyChanged()
 }
 
-//func (h *UI) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
-//	log.Infof("Set line %d", line)
-//
-//	if line >= h.view.viewData.MaxLines {
-//		return nil
-//	}
-//	cx, _ := view.Cursor()
-//	_ = view.SetCursor(cx, line)
-//
-//	h.view.CurrentLine = line
-//	if h.view.CurrentLine > h.view.lastLine {
-//		move := h.view.CurrentLine - h.view.lastLine
-//		h.view.firstLine = h.view.firstLine + move
-//		h.view.lastLine = h.view.lastLine + move
-//	}
-//	h.view.NotifyChanged()
-//
-//	return nil
-//}
+func (h *view) getScrollbarIndexes() (start, end int) {
+	scrollbarFactor := float64(h.linesCount) / float64(h.total)
+	sbStart := int(math.Floor(float64(h.firstIndex) * scrollbarFactor))
+	sbSize := int(math.Ceil(float64(h.linesCount) * scrollbarFactor))
+	if sbStart+sbSize+1 > h.linesCount {
+		sbStart = h.linesCount - sbSize - 1
+		if sbStart < 0 {
+			sbStart = 0
+		}
+	}
+	if h.linesCount == h.total {
+		sbStart = -1
+		sbSize = -1
+	}
+	// log.Infof("sb1: %d, sb2: %d, lines: %d", sbStart, sbSize, h.linesCount)
+	return sbStart, sbStart + sbSize
+}

@@ -44,7 +44,6 @@ func main() {
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		log.Infof("running ...")
 		mainWindow := repoview.NewMainWindow(uiHandler, path)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
