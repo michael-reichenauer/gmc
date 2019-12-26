@@ -181,6 +181,10 @@ func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmo
 	if c.Branch.Name == selectedCommit.Branch.Name ||
 		c.Branch.Name == selectedCommit.Branch.RemoteName ||
 		c.Branch.RemoteName == selectedCommit.Branch.Name {
+		if c.Branch.RemoteName != "" {
+			//
+			color = ui.CGreenDk
+		}
 	} else {
 		color = ui.CDark
 	}
