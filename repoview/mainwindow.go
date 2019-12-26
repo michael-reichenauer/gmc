@@ -36,8 +36,8 @@ func (h *MainWindow) Show() {
 
 func (h *MainWindow) OnResizeWindow() {
 	width, height := h.uiHandler.WindowSize()
-	h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - 5})
-	h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - 4, W: width, H: 4})
+	h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - 8})
+	h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - 7, W: width, H: 7})
 
 	h.repoView.NotifyChanged()
 	h.detailsView.NotifyChanged()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"strings"
 )
 
 type detailsVM struct {
@@ -30,14 +31,15 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPort, index int) (commitDeta
 func toDetailsText(c viewmodel.Commit) []string {
 
 	var lines []string
-	lines = append(lines, toHeader("Id:")+ui.Gray(c.ID))
+	lines = append(lines, toHeader("Id:")+ui.Dark(c.ID))
 
 	lines = append(lines, toHeader("Branch:")+toBranchText(c))
 
+	message := strings.TrimSuffix(strings.Join(strings.Split(c.Message, "\n"), "\n     "), " ")
 	if c.ID == viewmodel.StatusID {
-		lines = append(lines, ui.YellowDk(" "+c.Message))
+		lines = append(lines, toHeader("Message:")+ui.YellowDk(message))
 	} else {
-		lines = append(lines, ui.Gray(" "+c.Message))
+		lines = append(lines, toHeader("Message:")+ui.Dark(message))
 	}
 
 	return lines
