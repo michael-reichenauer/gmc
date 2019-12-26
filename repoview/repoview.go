@@ -10,13 +10,15 @@ import (
 //
 type RepoView struct {
 	ui.View
-	detailsView *DetailsView
-	vm          *repoVM
+	mainController mainController
+	detailsView    *DetailsView
+	vm             *repoVM
 }
 
-func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView) *RepoView {
+func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
-		detailsView: detailsView,
+		detailsView:    detailsView,
+		mainController: mainController,
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -60,7 +62,7 @@ func (h *RepoView) onLoad() {
 }
 
 func (h *RepoView) onEnter() {
-	h.NotifyChanged()
+	h.mainController.ToggleDetails()
 }
 
 func (h *RepoView) onRight() {

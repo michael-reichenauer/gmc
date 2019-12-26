@@ -5,40 +5,66 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
+type showMode int
+
+const (
+	repo showMode = iota
+	details
+	detailsCurrent
+)
+
+type mainController interface {
+	ToggleDetails()
+}
+
 type MainWindow struct {
 	uiHandler   *ui.UI
 	model       *viewmodel.Model
 	repoView    *RepoView
 	detailsView *DetailsView
+	mode        showMode
 }
 
 func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 	m := viewmodel.NewModel(repoPath)
-	detailsView := newDetailsView(uiHandler, m)
-	repoView := newRepoView(uiHandler, m, detailsView)
-	return &MainWindow{
-		uiHandler:   uiHandler,
-		model:       m,
-		repoView:    repoView,
-		detailsView: detailsView,
+	h := &MainWindow{
+		uiHandler: uiHandler,
+		model:     m,
 	}
+	h.detailsView = newDetailsView(uiHandler, m)
+	h.repoView = newRepoView(uiHandler, m, h.detailsView, h)
+	return h
 }
 
 func (h *MainWindow) Show() {
 	r := ui.Rect{0, 0, 1, 1}
 	h.repoView.Properties().HasFrame = true
-	h.repoView.Show(r)
 	h.detailsView.Show(r)
+	h.repoView.Show(r)
 	h.repoView.SetCurrentView()
 
 	h.OnResizeWindow()
 }
 
+func (h *MainWindow) ToggleDetails() {
+	if h.mode == repo {
+		h.mode = details
+	} else {
+		h.mode = repo
+	}
+	h.OnResizeWindow()
+}
+
 func (h *MainWindow) OnResizeWindow() {
 	width, height := h.uiHandler.WindowSize()
-	h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - 8})
-	h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - 7, W: width, H: 7})
-
+	if h.mode == repo {
+		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
+		h.detailsView.SetBounds(ui.Rect{X: -1, Y: -1, W: 1, H: 1})
+	} else if h.mode == details {
+		dh := 7
+		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - dh - 1})
+		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - dh, W: width, H: dh})
+	}
 	h.repoView.NotifyChanged()
 	h.detailsView.NotifyChanged()
 }

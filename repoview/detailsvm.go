@@ -33,8 +33,8 @@ func toDetailsText(c viewmodel.Commit, width int) []string {
 	width = width - 14
 	var lines []string
 	lines = append(lines, toHeader("Id:")+ui.Dark(utils.Text(c.ID, width)))
-
 	lines = append(lines, toHeader("Branch:")+toBranchText(c, width))
+	lines = append(lines, toHeader("Files:")+ui.Dark(utils.Text("... >", width)))
 
 	color := ui.CDark
 	if c.ID == viewmodel.StatusID {
