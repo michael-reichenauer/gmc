@@ -3,6 +3,7 @@ package repoview
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -25,21 +26,28 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPort, index int) (commitDeta
 	if err != nil {
 		return commitDetails{}, err
 	}
-	return commitDetails{lines: toDetailsText(commit)}, nil
+	return commitDetails{lines: toDetailsText(commit, viewPort.Width)}, nil
 }
 
-func toDetailsText(c viewmodel.Commit) []string {
-
+func toDetailsText(c viewmodel.Commit, width int) []string {
+	width = width - 14
 	var lines []string
-	lines = append(lines, toHeader("Id:")+ui.Dark(c.ID))
+	lines = append(lines, toHeader("Id:")+ui.Dark(utils.Text(c.ID, width)))
 
-	lines = append(lines, toHeader("Branch:")+toBranchText(c))
+	lines = append(lines, toHeader("Branch:")+toBranchText(c, width))
 
-	message := strings.TrimSuffix(strings.Join(strings.Split(c.Message, "\n"), "\n     "), " ")
+	color := ui.CDark
 	if c.ID == viewmodel.StatusID {
-		lines = append(lines, toHeader("Message:")+ui.YellowDk(message))
-	} else {
-		lines = append(lines, toHeader("Message:")+ui.Dark(message))
+		color = ui.CYellowDk
+	}
+
+	for i, line := range strings.Split(c.Message, "\n") {
+		line = utils.Text(line, width)
+		if i == 0 {
+			lines = append(lines, toHeader("Message:")+ui.ColorText(color, line))
+		} else {
+			lines = append(lines, "           "+ui.ColorText(color, line))
+		}
 	}
 
 	return lines
@@ -48,7 +56,8 @@ func toDetailsText(c viewmodel.Commit) []string {
 func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-10s", text))
 }
-func toBranchText(c viewmodel.Commit) string {
+
+func toBranchText(c viewmodel.Commit, width int) string {
 	bColor := branchColor(c.Branch.DisplayName)
 	typeText := ""
 	//if c.Branch.IsRemote {
@@ -56,5 +65,5 @@ func toBranchText(c viewmodel.Commit) string {
 	//} else {
 	//	typeText = ui.Dark("local: ")
 	//}
-	return typeText + ui.ColorText(bColor, c.Branch.DisplayName)
+	return typeText + ui.ColorText(bColor, utils.Text(c.Branch.DisplayName, width))
 }

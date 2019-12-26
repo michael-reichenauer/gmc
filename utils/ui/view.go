@@ -118,14 +118,14 @@ func (h *view) NotifyChanged() {
 		h.firstIndex = viewData.FirstIndex
 		h.total = viewData.Total
 		h.linesCount = len(viewData.Lines)
+		if h.total < len(viewData.Lines) {
+			// total was probably not specified (or wrong), lets adjust
+			h.total = len(viewData.Lines)
+		}
 		if h.linesCount > height {
 			// view data lines are more than view height, lets skip some lines
 			h.linesCount = height
 			viewData.Lines = viewData.Lines[:height]
-		}
-		if h.total < h.linesCount {
-			// total was probably not specified (or wrong), lets adjust
-			h.total = h.linesCount
 		}
 
 		// Adjust current line to be in the visible area

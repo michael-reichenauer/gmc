@@ -7,8 +7,8 @@ import (
 
 type DetailsView struct {
 	ui.View
-	vm            *detailsVM
-	selectedIndex int
+	vm           *detailsVM
+	currentIndex int
 }
 
 func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
@@ -20,7 +20,7 @@ func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
 }
 
 func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
-	details, err := h.vm.getCommitDetails(viewPort, h.selectedIndex)
+	details, err := h.vm.getCommitDetails(viewPort, h.currentIndex)
 	if err != nil {
 		return ui.ViewData{}
 	}
@@ -28,6 +28,6 @@ func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
 }
 
 func (h *DetailsView) SetCurrent(selectedIndex int) {
-	h.selectedIndex = selectedIndex
+	h.currentIndex = selectedIndex
 	h.NotifyChanged()
 }
