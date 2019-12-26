@@ -40,7 +40,7 @@ func NewModel(repoPath string) *Model {
 }
 
 func (h *Model) Start() {
-	h.gitModel.Start()
+	h.gitModel.StartRepoMonitor()
 	go h.monitorGitModelRoutine()
 }
 
@@ -59,15 +59,12 @@ func (h *Model) monitorGitModelRoutine() {
 			h.lock.Lock()
 			h.gmStatus = gmStatus
 			h.lock.Unlock()
+		case err := <-h.gitModel.ErrorEvents:
+			log.Infof("Detected repo error: %v", err)
 		}
-		log.Infof("Detected change, refreshing model")
-		var branchIds []string
-		h.lock.Lock()
-		for _, b := range h.currentRepo.Branches {
-			branchIds = append(branchIds, b.name)
-		}
-		h.lock.Unlock()
-		h.loadBranches(branchIds)
+
+		// Refresh model
+		h.loadBranches(h.currentBranchNames())
 	}
 }
 
@@ -83,6 +80,15 @@ func (h *Model) loadBranches(branchIds []string) {
 	h.currentRepo = repo
 	h.lock.Unlock()
 	h.ChangedEvents <- nil
+}
+func (h *Model) currentBranchNames() []string {
+	var branchNames []string
+	h.lock.Lock()
+	for _, b := range h.currentRepo.Branches {
+		branchNames = append(branchNames, b.name)
+	}
+	h.lock.Unlock()
+	return branchNames
 }
 
 func (h *Model) GetCommitByIndex(index int) (Commit, error) {

@@ -111,6 +111,7 @@ func (r *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 		isRemote:       b.IsRemote,
 		isMultiBranch:  b.IsMultiBranch,
 		remoteName:     b.RemoteName,
+		localName:      b.LocalName,
 	}
 }
 

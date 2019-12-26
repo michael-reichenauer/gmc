@@ -11,16 +11,16 @@ type Handler struct {
 	StatusEvents chan Status
 	ErrorEvents  chan error
 
-	gitRepo  *gitlib.Repo
+	gitLib   *gitlib.Repo
 	monitor  *monitor
 	branches *branches
 }
 
 func NewModel(repoPath string) *Handler {
-	gitRepo := gitlib.NewRepo(repoPath)
+	gitLib := gitlib.NewRepo(repoPath)
 	return &Handler{
-		gitRepo:      gitRepo,
-		monitor:      newMonitor(gitRepo.RepoPath),
+		gitLib:       gitLib,
+		monitor:      newMonitor(gitLib.RepoPath),
 		branches:     newBranches(),
 		RepoEvents:   make(chan Repo),
 		StatusEvents: make(chan Status),
@@ -28,7 +28,7 @@ func NewModel(repoPath string) *Handler {
 	}
 }
 
-func (h *Handler) Start() {
+func (h *Handler) StartRepoMonitor() {
 	h.monitor.Start()
 	go h.monitorStatusChangesRoutine()
 	go h.monitorRepoChangesRoutine()
@@ -36,26 +36,26 @@ func (h *Handler) Start() {
 
 func (h *Handler) TriggerRefresh() {
 	go func() {
-		h.refreshRepo()
+		h.loadRepo()
 	}()
 }
 
-func (h *Handler) refreshRepo() {
+func (h *Handler) loadRepo() {
 	t := time.Now()
 	repo := newRepo()
-	repo.RepoPath = h.gitRepo.RepoPath
+	repo.RepoPath = h.gitLib.RepoPath
 
-	gitCommits, err := h.gitRepo.GetLog()
+	gitCommits, err := h.gitLib.GetLog()
 	if err != nil {
 		h.ErrorEvents <- err
 		return
 	}
-	gitBranches, err := h.gitRepo.GetBranches()
+	gitBranches, err := h.gitLib.GetBranches()
 	if err != nil {
 		h.ErrorEvents <- err
 		return
 	}
-	gitStatus, err := h.gitRepo.GetStatus()
+	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
 		h.ErrorEvents <- err
 		return
@@ -69,9 +69,9 @@ func (h *Handler) refreshRepo() {
 	h.RepoEvents <- *repo
 }
 
-func (h *Handler) refreshStatus() {
+func (h *Handler) loadStatus() {
 	t := time.Now()
-	gitStatus, err := h.gitRepo.GetStatus()
+	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
 		h.ErrorEvents <- err
 		return
@@ -96,7 +96,7 @@ func (h *Handler) monitorRepoChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("Detected repo change")
 			ticker = nil
-			h.refreshRepo()
+			h.loadRepo()
 		}
 	}
 }
@@ -116,7 +116,7 @@ func (h *Handler) monitorStatusChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("Detected status change")
 			ticker = nil
-			h.refreshStatus()
+			h.loadStatus()
 		}
 	}
 }

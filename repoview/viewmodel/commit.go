@@ -23,14 +23,12 @@ type commit struct {
 	AuthorTime  time.Time
 	Parent      *commit
 	MergeParent *commit
-	//Children        []*commit
-	//Children      []*commit
-	ParentIDs []string
-	ChildIDs  []string
-	IsCurrent bool
-	IsMore    bool
-	Branch    *branch
-	graph     []GraphColumn
+	ParentIDs   []string
+	ChildIDs    []string
+	IsCurrent   bool
+	IsMore      bool
+	Branch      *branch
+	graph       []GraphColumn
 }
 
 func (c *commit) String() string {

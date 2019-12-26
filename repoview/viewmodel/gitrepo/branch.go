@@ -12,6 +12,7 @@ type Branch struct {
 	ParentBranch  *Branch
 	IsRemote      bool
 	RemoteName    string
+	LocalName     string
 	IsCurrent     bool
 	IsGitBranch   bool
 	IsMultiBranch bool

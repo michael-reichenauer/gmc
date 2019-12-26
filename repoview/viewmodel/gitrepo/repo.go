@@ -14,21 +14,45 @@ type Repo struct {
 }
 
 func newRepo() *Repo {
-	r := &Repo{
-		//Commits:              []*Commit{},
-		CommitById: make(map[string]*Commit),
-		//Branches:             []*Branch{},
-	}
-	return r
+	return &Repo{CommitById: make(map[string]*Commit)}
 }
 
-//func (r *Repo) CommitById(id string) *Commit {
-//	return r.commitById[id]
-//}
-func (r *Repo) setGitCommits(gitCommits []gitlib.Commit) {
-	//r.Commits = []*Commit{}
-	//r.CommitById = make(map[string]*Commit)
+func (r *Repo) BranchByName(name string) (*Branch, bool) {
+	for _, br := range r.Branches {
+		if br.Name == name {
+			return br, true
+		}
+	}
+	return nil, false
+}
 
+func (r *Repo) Parent(commit *Commit, index int) (*Commit, bool) {
+	if index >= len(commit.ParentIDs) {
+		return nil, false
+	}
+	c, ok := r.CommitById[commit.ParentIDs[index]]
+	return c, ok
+}
+
+func (r *Repo) CurrentBranch() (*Branch, bool) {
+	for _, br := range r.Branches {
+		if br.IsCurrent {
+			return br, true
+		}
+	}
+	return nil, false
+}
+
+//func (r *Repo) LocalBranchByRemoteName(remoteName string) (*Branch, bool) {
+//	for _, br := range r.Branches {
+//		if br.RemoteName == remoteName {
+//			return br, true
+//		}
+//	}
+//	return nil, false
+//}
+
+func (r *Repo) setGitCommits(gitCommits []gitlib.Commit) {
 	for _, gc := range gitCommits {
 		commit := newCommit(gc)
 		r.Commits = append(r.Commits, commit)
@@ -47,51 +71,21 @@ func (r *Repo) setGitBranches(gitBranches []gitlib.Branch) {
 	for _, gb := range gitBranches {
 		r.Branches = append(r.Branches, newBranch(gb))
 	}
-}
-
-func (r *Repo) BranchByName(name string) (*Branch, bool) {
-	for _, br := range r.Branches {
-		if br.Name == name {
-			return br, true
+	// Set local name of all remote branches, that have a local branch as well
+	for _, b := range r.Branches {
+		if b.RemoteName != "" {
+			// A local branch, try locate corresponding remote branch and set its local name property
+			for _, rb := range r.Branches {
+				if rb.Name == b.RemoteName {
+					rb.LocalName = b.Name
+					break
+				}
+			}
 		}
 	}
-	return nil, false
-}
-func (r *Repo) LocalBranchByRemoteName(remoteName string) (*Branch, bool) {
-	for _, br := range r.Branches {
-		if br.RemoteName == remoteName {
-			return br, true
-		}
-	}
-	return nil, false
-}
-func (r *Repo) BranchByID(id string) (*Branch, bool) {
-	for _, br := range r.Branches {
-		if br.Name == id {
-			return br, true
-		}
-	}
-	return nil, false
 }
 
-func (r *Repo) CurrentBranch() (*Branch, bool) {
-	for _, br := range r.Branches {
-		if br.IsCurrent {
-			return br, true
-		}
-	}
-	return nil, false
-}
-
-func (r *Repo) Parent(commit *Commit, index int) (*Commit, bool) {
-	if index >= len(commit.ParentIDs) {
-		return nil, false
-	}
-	c, ok := r.CommitById[commit.ParentIDs[index]]
-	return c, ok
-}
-
-func (r *Repo) AddMultiBranch(c *Commit) *Branch {
+func (r *Repo) addMultiBranch(c *Commit) *Branch {
 	b := &Branch{
 		Name:          fmt.Sprintf("multi:%s", c.Sid),
 		DisplayName:   fmt.Sprintf("multi:%s", c.Sid),
@@ -105,7 +99,7 @@ func (r *Repo) AddMultiBranch(c *Commit) *Branch {
 	return b
 }
 
-func (r *Repo) AddNamedBranch(c *Commit, branchName string) *Branch {
+func (r *Repo) addNamedBranch(c *Commit, branchName string) *Branch {
 	b := &Branch{
 		Name:          fmt.Sprintf("%s:%s", branchName, c.Sid),
 		DisplayName:   branchName,
@@ -118,7 +112,7 @@ func (r *Repo) AddNamedBranch(c *Commit, branchName string) *Branch {
 	r.Branches = append(r.Branches, b)
 	return b
 }
-func (r *Repo) AddIdNamedBranch(c *Commit) *Branch {
+func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
 	b := &Branch{
 		Name:          fmt.Sprintf("branch:%s", c.Sid),
 		DisplayName:   fmt.Sprintf("branch:%s", c.Sid),

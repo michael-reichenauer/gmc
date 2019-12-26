@@ -33,6 +33,7 @@ type Branch struct {
 	Index         int
 	IsMultiBranch bool
 	RemoteName    string
+	LocalName     string
 	IsRemote      bool
 }
 
@@ -78,6 +79,7 @@ func toBranch(b *branch) Branch {
 		Index:         b.index,
 		IsMultiBranch: b.isMultiBranch,
 		RemoteName:    b.remoteName,
+		LocalName:     b.localName,
 		IsRemote:      b.isRemote,
 	}
 }

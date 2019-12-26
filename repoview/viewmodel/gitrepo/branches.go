@@ -125,7 +125,7 @@ func (h *branches) determineBranch(repo *Repo, c *Commit) {
 		}
 		branch := h.tryGetBranchFromName(c, name)
 		if branch == nil {
-			branch = repo.AddNamedBranch(current, name)
+			branch = repo.addNamedBranch(current, name)
 		}
 		for ; current != c.Parent; current = current.Parent {
 			current.Branch = branch
@@ -144,7 +144,7 @@ func (h *branches) determineBranch(repo *Repo, c *Commit) {
 	}
 
 	// Commit, has several possible branches, create a new multi branch
-	c.Branch = repo.AddMultiBranch(c)
+	c.Branch = repo.addMultiBranch(c)
 	c.addBranch(c.Branch)
 }
 
@@ -187,11 +187,11 @@ func (h *branches) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
 		name := h.branchNames.branchName(c.Id)
 		if name != "" {
 			// Managed to parse a branch name
-			return repo.AddNamedBranch(c, name)
+			return repo.addNamedBranch(c, name)
 		}
 
 		// could not parse a name from any of the merge children, use id named branch
-		return repo.AddIdNamedBranch(c)
+		return repo.addIdNamedBranch(c)
 	}
 	return nil
 }

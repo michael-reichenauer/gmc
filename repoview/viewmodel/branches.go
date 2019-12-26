@@ -6,15 +6,15 @@ import (
 	"sort"
 )
 
-func (h *Model) getGitModelBranches(branchIds []string, gmRepo gitrepo.Repo, gmStatus gitrepo.Status) []*gitrepo.Branch {
-	if len(branchIds) == 0 {
+func (h *Model) getGitModelBranches(branchNames []string, gmRepo gitrepo.Repo, gmStatus gitrepo.Status) []*gitrepo.Branch {
+	if len(branchNames) == 0 {
 		// No specified branches, default to current, or master
-		branchIds = h.getDefaultBranchIDs(gmRepo)
+		branchNames = h.getDefaultBranchIDs(gmRepo)
 	}
 
 	var branches []*gitrepo.Branch
-	for _, id := range branchIds {
-		branch, ok := gmRepo.BranchByID(id)
+	for _, name := range branchNames {
+		branch, ok := gmRepo.BranchByName(name)
 		if ok {
 			branches = append(branches, branch)
 		}
@@ -31,9 +31,9 @@ func (h *Model) addLocalBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo
 	var bs []*gitrepo.Branch
 	for _, branch := range branches {
 		bs = append(bs, branch)
-		if branch.IsRemote {
-			if !h.containsLocalBranch(branches, branch.Name) {
-				b, ok := gmRepo.LocalBranchByRemoteName(branch.Name)
+		if branch.LocalName != "" {
+			if !h.containsBranch(branches, branch.LocalName) {
+				b, ok := gmRepo.BranchByName(branch.LocalName)
 				if ok {
 					bs = append(bs, b)
 				}
@@ -58,6 +58,7 @@ func (h *Model) addRemoteBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Rep
 	}
 	return bs
 }
+
 func (h *Model) containsBranch(branches []*gitrepo.Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
@@ -67,14 +68,14 @@ func (h *Model) containsBranch(branches []*gitrepo.Branch, name string) bool {
 	return false
 }
 
-func (h *Model) containsLocalBranch(branches []*gitrepo.Branch, name string) bool {
-	for _, b := range branches {
-		if name == b.RemoteName {
-			return true
-		}
-	}
-	return false
-}
+//func (h *Model) containsLocalBranch(branches []*gitrepo.Branch, name string) bool {
+//	for _, b := range branches {
+//		if name == b.RemoteName {
+//			return true
+//		}
+//	}
+//	return false
+//}
 func (h *Model) sortBranches(branches []*gitrepo.Branch) {
 	sort.SliceStable(branches, func(l, r int) bool {
 		if branches[l].Name == branches[r].RemoteName {
