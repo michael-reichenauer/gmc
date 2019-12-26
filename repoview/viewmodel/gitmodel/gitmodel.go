@@ -1,7 +1,7 @@
 package gitmodel
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"time"
 )
@@ -11,13 +11,13 @@ type Handler struct {
 	StatusEvents chan Status
 	ErrorEvents  chan error
 
-	gitRepo  *git.Repo
+	gitRepo  *gitlib.Repo
 	monitor  *monitor
 	branches *branches
 }
 
 func NewModel(repoPath string) *Handler {
-	gitRepo := git.NewRepo(repoPath)
+	gitRepo := gitlib.NewRepo(repoPath)
 	return &Handler{
 		gitRepo:      gitRepo,
 		monitor:      newMonitor(gitRepo.RepoPath),

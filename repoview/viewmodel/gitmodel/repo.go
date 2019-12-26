@@ -2,7 +2,7 @@ package gitmodel
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 )
 
 type Repo struct {
@@ -25,7 +25,7 @@ func newRepo() *Repo {
 //func (r *Repo) CommitById(id string) *Commit {
 //	return r.commitById[id]
 //}
-func (r *Repo) setGitCommits(gitCommits []git.Commit) {
+func (r *Repo) setGitCommits(gitCommits []gitlib.Commit) {
 	//r.Commits = []*Commit{}
 	//r.CommitById = make(map[string]*Commit)
 
@@ -43,7 +43,7 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 	}
 }
 
-func (r *Repo) setGitBranches(gitBranches []git.Branch) {
+func (r *Repo) setGitBranches(gitBranches []gitlib.Branch) {
 	for _, gb := range gitBranches {
 		r.Branches = append(r.Branches, newBranch(gb))
 	}

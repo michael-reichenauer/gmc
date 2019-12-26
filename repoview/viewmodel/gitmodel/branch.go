@@ -1,7 +1,7 @@
 package gitmodel
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 )
 
 type Branch struct {
@@ -18,7 +18,7 @@ type Branch struct {
 	IsNamedBranch bool
 }
 
-func newBranch(gb git.Branch) *Branch {
+func newBranch(gb gitlib.Branch) *Branch {
 	return &Branch{
 		Name:        gb.Name,
 		DisplayName: gb.DisplayName,

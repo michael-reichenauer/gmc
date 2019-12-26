@@ -5,7 +5,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"os"
@@ -37,7 +37,7 @@ func main() {
 		*repoPath = utils.CurrentDir()
 	}
 
-	path, err := git.WorkingFolderRoot(*repoPath)
+	path, err := gitlib.WorkingFolderRoot(*repoPath)
 	if err != nil {
 		log.Fatal(err)
 	}

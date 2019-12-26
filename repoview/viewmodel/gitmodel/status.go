@@ -2,7 +2,7 @@ package gitmodel
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 )
 
 type Status struct {
@@ -14,7 +14,7 @@ type Status struct {
 	MergeMessage string
 }
 
-func newStatus(gs git.Status) Status {
+func newStatus(gs gitlib.Status) Status {
 	return Status{
 		Modified:     gs.Modified,
 		Added:        gs.Added,

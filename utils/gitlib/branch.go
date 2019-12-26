@@ -1,4 +1,4 @@
-package git
+package gitlib
 
 type Branch struct {
 	Name             string

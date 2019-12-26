@@ -3,7 +3,7 @@ package gitmodel
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
@@ -12,7 +12,7 @@ import (
 // test.d vv
 func TestMonitor(t *testing.T) {
 	current := utils.CurrentDir()
-	rootPath, err := git.WorkingFolderRoot(current)
+	rootPath, err := gitlib.WorkingFolderRoot(current)
 	assert.NoError(t, err)
 	mon := newMonitor(rootPath)
 	assert.NoError(t, mon.Start())
