@@ -3,8 +3,10 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"path/filepath"
 	"strings"
 )
 
@@ -29,6 +31,11 @@ type repoVM struct {
 	viewPort viewmodel.ViewPort
 }
 
+type trace struct {
+	FirstIndex  int
+	BranchNames []string
+}
+
 type notifier interface {
 	NotifyChanged()
 }
@@ -42,7 +49,13 @@ func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
 
 func (h *repoVM) Load() {
 	h.model.Start()
-	h.model.TriggerRefresh()
+	h.model.TriggerRefreshModel()
+	go h.monitorModelRoutine()
+}
+
+func (h *repoVM) LoadWitBranches() {
+	h.model.Start()
+	h.model.TriggerRefreshModel()
 	go h.monitorModelRoutine()
 }
 
@@ -104,7 +117,15 @@ func (h *repoVM) CloseBranch(index int) {
 }
 
 func (h *repoVM) Refresh() {
-	//h.viewmodel.Refresh(h.viewPort)
+	h.model.TriggerRefreshModel()
+}
+
+func (h *repoVM) RefreshTrace() {
+	gitlib.EnableTracing("")
+	traceBytes := utils.MustJsonMarshal(trace{FirstIndex: h.viewPort.FirstIndex, BranchNames: h.model.CurrentBranchNames()})
+	utils.MustFileWrite(filepath.Join(gitlib.TracePath(), "repovm"), traceBytes)
+
+	h.model.TriggerRefreshModel()
 }
 
 func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {

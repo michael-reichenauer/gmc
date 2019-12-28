@@ -64,15 +64,15 @@ func (h *Model) monitorGitModelRoutine() {
 		}
 
 		// Refresh model
-		h.loadBranches(h.currentBranchNames())
+		h.LoadBranches(h.CurrentBranchNames())
 	}
 }
 
-func (h *Model) TriggerRefresh() {
-	h.gitModel.TriggerRefresh()
+func (h *Model) TriggerRefreshModel() {
+	h.gitModel.TriggerRefreshRepo()
 }
 
-func (h *Model) loadBranches(branchIds []string) {
+func (h *Model) LoadBranches(branchIds []string) {
 	t := time.Now()
 	repo := h.getRepoModel(branchIds)
 	log.Infof("LoadBranches time %v", time.Since(t))
@@ -81,13 +81,18 @@ func (h *Model) loadBranches(branchIds []string) {
 	h.lock.Unlock()
 	h.ChangedEvents <- nil
 }
-func (h *Model) currentBranchNames() []string {
-	var branchNames []string
+
+func (h *Model) CurrentBranchNames() []string {
 	h.lock.Lock()
+	defer h.lock.Unlock()
+	if h.currentRepo == nil {
+		return []string{}
+	}
+
+	var branchNames []string
 	for _, b := range h.currentRepo.Branches {
 		branchNames = append(branchNames, b.name)
 	}
-	h.lock.Unlock()
 	return branchNames
 }
 
@@ -166,7 +171,7 @@ func (h *Model) OpenBranch(index int) {
 		}
 	}
 	h.lock.Unlock()
-	h.loadBranches(branchIds)
+	h.LoadBranches(branchIds)
 }
 
 func (h *Model) CloseBranch(index int) {
@@ -189,7 +194,7 @@ func (h *Model) CloseBranch(index int) {
 		}
 	}
 	h.lock.Unlock()
-	h.loadBranches(branchIds)
+	h.LoadBranches(branchIds)
 }
 
 func (h *Model) Refresh(viewPort ViewPort) {

@@ -20,7 +20,7 @@ func NewModel(repoPath string) *Handler {
 	gitLib := gitlib.NewRepo(repoPath)
 	return &Handler{
 		gitLib:       gitLib,
-		monitor:      newMonitor(gitLib.RepoPath),
+		monitor:      newMonitor(gitLib.RepoPath()),
 		branches:     newBranches(),
 		RepoEvents:   make(chan Repo),
 		StatusEvents: make(chan Status),
@@ -34,31 +34,33 @@ func (h *Handler) StartRepoMonitor() {
 	go h.monitorRepoChangesRoutine()
 }
 
-func (h *Handler) TriggerRefresh() {
+func (h *Handler) TriggerRefreshRepo() {
 	go func() {
-		h.loadRepo()
+		repo, err := h.GetFreshRepo()
+		if err != nil {
+			h.ErrorEvents <- err
+			return
+		}
+		h.RepoEvents <- repo
 	}()
 }
 
-func (h *Handler) loadRepo() {
+func (h *Handler) GetFreshRepo() (Repo, error) {
 	t := time.Now()
 	repo := newRepo()
-	repo.RepoPath = h.gitLib.RepoPath
+	repo.RepoPath = h.gitLib.RepoPath()
 
 	gitCommits, err := h.gitLib.GetLog()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+		return Repo{}, err
 	}
 	gitBranches, err := h.gitLib.GetBranches()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+		return Repo{}, err
 	}
 	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+		return Repo{}, err
 	}
 	repo.Status = newStatus(gitStatus)
 	repo.setGitBranches(gitBranches)
@@ -66,19 +68,19 @@ func (h *Handler) loadRepo() {
 
 	h.branches.setBranchForAllCommits(repo)
 	log.Infof("Git repo %v", time.Since(t))
-	h.RepoEvents <- *repo
+	return *repo, nil
 }
 
-func (h *Handler) loadStatus() {
+func (h *Handler) getFreshStatus() (Status, error) {
 	t := time.Now()
 	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+
+		return Status{}, err
 	}
 	status := newStatus(gitStatus)
 	log.Infof("Git status %v", time.Since(t))
-	h.StatusEvents <- status
+	return status, nil
 }
 
 func (h *Handler) monitorRepoChangesRoutine() {
@@ -96,7 +98,14 @@ func (h *Handler) monitorRepoChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("Detected repo change")
 			ticker = nil
-			h.loadRepo()
+
+			// Repo changed, get new fresh repo and report
+			repo, err := h.GetFreshRepo()
+			if err != nil {
+				h.ErrorEvents <- err
+				return
+			}
+			h.RepoEvents <- repo
 		}
 	}
 }
@@ -116,7 +125,13 @@ func (h *Handler) monitorStatusChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("Detected status change")
 			ticker = nil
-			h.loadStatus()
+			// Status changed, get new fresh status and report
+			status, err := h.getFreshStatus()
+			if err != nil {
+				h.ErrorEvents <- err
+				return
+			}
+			h.StatusEvents <- status
 		}
 	}
 }

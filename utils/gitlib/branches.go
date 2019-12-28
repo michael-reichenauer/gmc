@@ -16,15 +16,15 @@ const (
 var branchesRegexp = utils.CompileRegexp(branchesRegexpText)
 
 type branchesHandler struct {
-	cmd *gitCmd
+	cmd GitCommander
 }
 
-func newBranches(cmd *gitCmd) *branchesHandler {
+func newBranches(cmd GitCommander) *branchesHandler {
 	return &branchesHandler{cmd: cmd}
 }
 
 func (h *branchesHandler) getBranches() ([]Branch, error) {
-	branchesText, err := h.cmd.git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
+	branchesText, err := h.cmd.Git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
 	}

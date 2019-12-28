@@ -58,6 +58,7 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
+	h.SetKey(gocui.KeyCtrlT, gocui.ModNone, h.onTrace)
 	h.NotifyChanged()
 }
 
@@ -90,4 +91,13 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 		changesText = fmt.Sprintf(" (*%d)", changes)
 	}
 	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
+}
+
+func (h *RepoView) onTrace() {
+	h.Clear()
+	h.PostOnUIThread(func() {
+		// Posted to allow the clear to show while new data is calculated
+		h.vm.RefreshTrace()
+		h.NotifyChanged()
+	})
 }

@@ -11,15 +11,15 @@ const (
 )
 
 type logHandler struct {
-	cmd *gitCmd
+	cmd GitCommander
 }
 
-func newLog(cmd *gitCmd) *logHandler {
+func newLog(cmd GitCommander) *logHandler {
 	return &logHandler{cmd: cmd}
 }
 
 func (h *logHandler) getLog() ([]Commit, error) {
-	logText, err := h.cmd.git("log", "--all", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
+	logText, err := h.cmd.Git("log", "--all", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git log, %v", err)
 	}
