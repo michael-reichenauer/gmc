@@ -11,6 +11,7 @@ type GraphColumn struct {
 	Branch            utils.Bitmask
 	BranchName        string
 	BranchDisplayName string
+	PassName          string
 }
 
 type commit struct {

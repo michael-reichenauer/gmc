@@ -231,6 +231,14 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 	s.setParentChildRelations(repo)
 
 	// Draw branch lines
+	s.drawBranchLines(repo)
+
+	// Draw branch connector lines
+	s.drawConnectorLines(repo)
+	return repo
+}
+
+func (s *Service) drawBranchLines(repo *repo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
 		c := b.tip
@@ -259,8 +267,9 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 			c = c.Parent
 		}
 	}
+}
 
-	// Draw branch connector lines
+func (s *Service) drawConnectorLines(repo *repo) {
 	for _, c := range repo.Commits {
 		if c.ID == StatusID {
 			continue
@@ -280,13 +289,19 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 						for k := c.MergeParent.Branch.index + 1; k < c.Branch.index; k++ {
 							c.MergeParent.graph[k].Connect.Set(BPass)
 							c.MergeParent.graph[k].Branch.Set(BPass)
+							if c.MergeParent.graph[k].PassName == "" {
+								c.MergeParent.graph[k].PassName = b.displayName
+							} else {
+								c.MergeParent.graph[k].PassName = "-"
+							}
 						}
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
 							cc := repo.Commits[j]
 							cc.graph[i].Connect.Set(BMLine)
 						}
-						c.MergeParent.graph[i].Connect.Set(BBranchRight) //  ╯
+						// Draw ╯
+						c.MergeParent.graph[i].Connect.Set(BBranchRight)
 					} else {
 						// Other branch is right side  ╮
 						// Draw merge in rune
@@ -295,6 +310,11 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 						for k := i + 1; k < c.MergeParent.Branch.index; k++ {
 							c.graph[k].Connect.Set(BPass)
 							c.graph[k].Branch.Set(BPass)
+							if c.graph[k].PassName == "" {
+								c.graph[k].PassName = c.MergeParent.Branch.displayName
+							} else {
+								c.graph[k].PassName = "-"
+							}
 						}
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
@@ -342,13 +362,12 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 						c.graph[k].Branch.Set(BPass)
 					}
 				} else if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {
+					// Other branch, normal branch line (no commit on that branch)
 					c.graph[i].Branch.Set(BLine)
 				}
 			}
-
 		}
 	}
-	return repo
 }
 
 func (s *Service) setParentChildRelations(repo *repo) {

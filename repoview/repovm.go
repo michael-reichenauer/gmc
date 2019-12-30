@@ -143,12 +143,20 @@ func writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 
 		if i != 0 {
 			cColor := bColor
-			if c.Graph[i].Connect.Has(viewmodel.BPass) {
+			if c.Graph[i].Connect == viewmodel.BPass &&
+				c.Graph[i].PassName != "" &&
+				c.Graph[i].PassName != "-" {
+				cColor = branchColor(c.Graph[i].PassName)
+			} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
 				cColor = ui.CWhite
 			}
 			sb.WriteString(ui.ColorRune(cColor, graphConnectRune(c.Graph[i].Connect)))
 		}
-		if c.Graph[i].Branch == viewmodel.BPass {
+		if c.Graph[i].Branch == viewmodel.BPass &&
+			c.Graph[i].PassName != "" &&
+			c.Graph[i].PassName != "-" {
+			bColor = branchColor(c.Graph[i].PassName)
+		} else if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}
 		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
