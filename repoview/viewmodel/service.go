@@ -141,11 +141,13 @@ func (s *Service) OpenBranch(index int) {
 	s.lock.Lock()
 	if index >= len(s.currentViewModel.Commits) {
 		// Repo must just have changed, just ignore
+		s.lock.Unlock()
 		return
 	}
 	c := s.currentViewModel.Commits[index]
 	if !c.IsMore {
 		// Not a point that can be expanded
+		s.lock.Unlock()
 		return
 	}
 
@@ -186,11 +188,13 @@ func (s *Service) CloseBranch(index int) {
 	s.lock.Lock()
 	if index >= len(s.currentViewModel.Commits) {
 		// Repo must just have changed, just ignore
+		s.lock.Unlock()
 		return
 	}
 	c := s.currentViewModel.Commits[index]
 	if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
 		// Cannot close master
+		s.lock.Unlock()
 		return
 	}
 
@@ -295,7 +299,7 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
 							cc := repo.Commits[j]
-							cc.graph[i+1].Connect.Set(BMLine)
+							cc.graph[c.MergeParent.Branch.index].Connect.Set(BMLine)
 						}
 						// Draw branch out rune ╰
 						c.MergeParent.graph[c.MergeParent.Branch.index].Connect.Set(BBranchLeft)
@@ -391,4 +395,10 @@ func (s *Service) toBranchIds(branches []*branch) []string {
 		ids = append(ids, b.name)
 	}
 	return ids
+}
+
+func (s *Service) RepoPath() string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	return s.gmRepo.RepoPath
 }

@@ -56,7 +56,7 @@ func TestViewTraced(t *testing.T) {
 	traceBytes := utils.MustFileRead(filepath.Join(gitlib.TracePath(""), "repovm"))
 	utils.MustJsonUnmarshal(traceBytes, &trace)
 
-	m := viewmodel.NewModel(utils.CurrentDir())
+	m := viewmodel.NewModel(trace.RepoPath)
 	vm := newRepoVM(m, nil)
 	vm.LoadWithBranches(trace.BranchNames)
 	vd, _ := vm.GetRepoPage(trace.ViewPage)

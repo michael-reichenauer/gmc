@@ -31,6 +31,7 @@ type repoVM struct {
 }
 
 type trace struct {
+	RepoPath    string
 	ViewPage    ui.ViewPage
 	BranchNames []string
 }
@@ -118,7 +119,11 @@ func (h *repoVM) Refresh() {
 
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
 	gitlib.EnableTracing("")
-	traceBytes := utils.MustJsonMarshal(trace{ViewPage: viewPage, BranchNames: h.viewModelService.CurrentBranchNames()})
+	traceBytes := utils.MustJsonMarshal(trace{
+		RepoPath:    h.viewModelService.RepoPath(),
+		ViewPage:    viewPage,
+		BranchNames: h.viewModelService.CurrentBranchNames(),
+	})
 	utils.MustFileWrite(filepath.Join(gitlib.CurrentTracePath(), "repovm"), traceBytes)
 
 	h.viewModelService.TriggerRefreshModel()

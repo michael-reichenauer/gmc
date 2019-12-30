@@ -56,7 +56,6 @@ func EnableTracing(name string) {
 		log.Fatal(err)
 	}
 	traceDir = path
-	fmt.Printf("Enabled tracing in %s\n", path)
 }
 
 func DisableTracing(name string) {
@@ -70,7 +69,6 @@ func EnableReplay(name string) {
 	defer lock.Unlock()
 	path := TracePath(name)
 	replayDir = path
-	fmt.Printf("Enabled replay in %s\n", path)
 }
 
 func DisableReplay(name string) {
@@ -112,7 +110,7 @@ func (h *gitCmd) Git(arg ...string) (string, error) {
 func (h *gitCmd) runCommand(cmd command) (string, error) {
 	lock.Lock()
 	if traceDir == "" && replayDir != "" {
-		fileName := fmt.Sprintf("%s_%x", cmd.Name, sha256.Sum256([]byte(fmt.Sprintf("%s %v", cmd.Name, cmd.Args))))
+		fileName := h.fileName(cmd)
 		path := filepath.Join(replayDir, fileName)
 		cmdBytes, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -143,7 +141,7 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 
 	lock.Lock()
 	if replayDir == "" && traceDir != "" {
-		fileName := fmt.Sprintf("%s_%x", cmd.Name, sha256.Sum256([]byte(fmt.Sprintf("%s %v", cmd.Name, cmd.Args))))
+		fileName := h.fileName(cmd)
 		cmdBytes, err := json.Marshal(cmd)
 		if err != nil {
 			log.Fatal(err)
@@ -163,6 +161,9 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 	return cmd.Output, nil
 }
 
+func (h *gitCmd) fileName(cmd command) string {
+	return fmt.Sprintf("%s_%x", cmd.Name, sha256.Sum256([]byte(fmt.Sprintf("%s %v", cmd.Name, cmd.Args))))
+}
 func (h *gitCmd) runGitCommand(cmd command) command {
 	// Get the git cmd output
 	c := exec.Command(cmd.Name, cmd.Args...)
