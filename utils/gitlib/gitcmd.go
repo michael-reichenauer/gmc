@@ -49,7 +49,7 @@ func newGitCmd(repoPath string) *gitCmd {
 func EnableTracing(name string) {
 	lock.Lock()
 	defer lock.Unlock()
-	path := tracePath(name)
+	path := TracePath(name)
 	_ = os.RemoveAll(path)
 	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
@@ -68,7 +68,7 @@ func DisableTracing(name string) {
 func EnableReplay(name string) {
 	lock.Lock()
 	defer lock.Unlock()
-	path := tracePath(name)
+	path := TracePath(name)
 	replayDir = path
 	fmt.Printf("Enabled replay in %s\n", path)
 }
@@ -79,13 +79,13 @@ func DisableReplay(name string) {
 	replayDir = ""
 }
 
-func TracePath() string {
+func CurrentTracePath() string {
 	lock.Lock()
 	defer lock.Unlock()
 	return traceDir
 }
 
-func tracePath(name string) string {
+func TracePath(name string) string {
 	var path string
 	if name == "" {
 		path = filepath.Join(os.TempDir(), "gmctrace")
@@ -94,6 +94,7 @@ func tracePath(name string) string {
 	}
 	return path
 }
+
 func (h *gitCmd) RepoPath() string {
 	return h.repoPath
 }

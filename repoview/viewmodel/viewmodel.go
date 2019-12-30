@@ -19,148 +19,156 @@ type Status struct {
 	GraphWidth int
 }
 
-type Model struct {
-	ChangedEvents chan interface{}
-	gitModel      *gitrepo.Handler
+type Service struct {
+	ChangedEvents  chan interface{}
+	gitRepoService *gitrepo.Service
 
-	lock        sync.Mutex
-	currentRepo *repo
-	gmRepo      gitrepo.Repo
-	gmStatus    gitrepo.Status
-	err         error
+	lock             sync.Mutex
+	currentViewModel *repo
+	gmRepo           gitrepo.Repo
+	gmStatus         gitrepo.Status
 }
 
-func NewModel(repoPath string) *Model {
+func NewModel(repoPath string) *Service {
 	gm := gitrepo.NewModel(repoPath)
-	return &Model{
-		ChangedEvents: make(chan interface{}),
-		gitModel:      gm,
-		currentRepo:   newRepo(),
+	return &Service{
+		ChangedEvents:    make(chan interface{}),
+		gitRepoService:   gm,
+		currentViewModel: newRepo(),
 	}
 }
 
-func (h *Model) Start() {
-	h.gitModel.StartRepoMonitor()
-	go h.monitorGitModelRoutine()
+func (s *Service) Start() {
+	s.gitRepoService.StartRepoMonitor()
+	go s.monitorGitModelRoutine()
 }
 
-func (h *Model) monitorGitModelRoutine() {
+func (s *Service) TriggerRefreshModel() {
+	s.gitRepoService.TriggerRefreshRepo()
+}
+
+func (s *Service) LoadRepo(branchIds []string) {
+	gmRepo, err := s.gitRepoService.GetFreshRepo()
+	if err != nil {
+		log.Infof("Detected repo error: %v", err)
+		return
+	}
+	s.lock.Lock()
+	s.gmRepo = gmRepo
+	s.gmStatus = gmRepo.Status
+	s.lock.Unlock()
+	repo := s.getViewModel(branchIds)
+	s.lock.Lock()
+	s.currentViewModel = repo
+	s.lock.Unlock()
+}
+
+func (s *Service) showBranches(branchIds []string) {
+	t := time.Now()
+	repo := s.getViewModel(branchIds)
+	log.Infof("LoadBranches time %v", time.Since(t))
+	s.lock.Lock()
+	s.currentViewModel = repo
+	s.lock.Unlock()
+	s.ChangedEvents <- nil
+}
+
+func (s *Service) monitorGitModelRoutine() {
 	for {
 		select {
-		case gmRepo := <-h.gitModel.RepoEvents:
+		case gmRepo := <-s.gitRepoService.RepoEvents:
 			log.Infof("Detected repo change")
-			h.lock.Lock()
-			h.gmRepo = gmRepo
-			h.gmStatus = gmRepo.Status
-			h.lock.Unlock()
+			s.lock.Lock()
+			s.gmRepo = gmRepo
+			s.gmStatus = gmRepo.Status
+			s.lock.Unlock()
 
-		case gmStatus := <-h.gitModel.StatusEvents:
+		case gmStatus := <-s.gitRepoService.StatusEvents:
 			log.Infof("Detected status change")
-			h.lock.Lock()
-			h.gmStatus = gmStatus
-			h.lock.Unlock()
-		case err := <-h.gitModel.ErrorEvents:
+			s.lock.Lock()
+			s.gmStatus = gmStatus
+			s.lock.Unlock()
+		case err := <-s.gitRepoService.ErrorEvents:
 			log.Infof("Detected repo error: %v", err)
 		}
 
 		// Refresh model
-		h.LoadBranches(h.CurrentBranchNames())
+		s.showBranches(s.CurrentBranchNames())
 	}
 }
 
-func (h *Model) TriggerRefreshModel() {
-	h.gitModel.TriggerRefreshRepo()
-}
-
-func (h *Model) LoadBranches(branchIds []string) {
-	t := time.Now()
-	repo := h.getRepoModel(branchIds)
-	log.Infof("LoadBranches time %v", time.Since(t))
-	h.lock.Lock()
-	h.currentRepo = repo
-	h.lock.Unlock()
-	h.ChangedEvents <- nil
-}
-
-func (h *Model) CurrentBranchNames() []string {
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	if h.currentRepo == nil {
+func (s *Service) CurrentBranchNames() []string {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if s.currentViewModel == nil {
 		return []string{}
 	}
 
 	var branchNames []string
-	for _, b := range h.currentRepo.Branches {
+	for _, b := range s.currentViewModel.Branches {
 		branchNames = append(branchNames, b.name)
 	}
 	return branchNames
 }
 
-func (h *Model) GetCommitByIndex(index int) (Commit, error) {
-	if h.err != nil {
-		return Commit{}, h.err
-	}
-	h.lock.Lock()
-	defer h.lock.Unlock()
-	if index < 0 || index >= len(h.currentRepo.Commits) {
+func (s *Service) GetCommitByIndex(index int) (Commit, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	if index < 0 || index >= len(s.currentViewModel.Commits) {
 		return Commit{}, fmt.Errorf("no commit")
 	}
-	return toCommit(h.currentRepo.Commits[index]), nil
+	return toCommit(s.currentViewModel.Commits[index]), nil
 }
 
-func (h *Model) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
-	if h.err != nil {
-		return ViewPort{}, h.err
-	}
+func (s *Service) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
 
-	h.lock.Lock()
-	defer h.lock.Unlock()
-
-	if count > len(h.currentRepo.Commits) {
+	if count > len(s.currentViewModel.Commits) {
 		// Requested count larger than available, return just all available commits
-		count = len(h.currentRepo.Commits)
+		count = len(s.currentViewModel.Commits)
 	}
 
-	if firstIndex+count >= len(h.currentRepo.Commits) {
+	if firstIndex+count >= len(s.currentViewModel.Commits) {
 		// Requested commits past available, adjust to return available commits
-		firstIndex = len(h.currentRepo.Commits) - count
+		firstIndex = len(s.currentViewModel.Commits) - count
 	}
 
-	return newViewPort(h.currentRepo, firstIndex, count), nil
+	return newViewPort(s.currentViewModel, firstIndex, count), nil
 }
 
-func (h *Model) OpenBranch(index int) {
-	h.lock.Lock()
-	if index >= len(h.currentRepo.Commits) {
+func (s *Service) OpenBranch(index int) {
+	s.lock.Lock()
+	if index >= len(s.currentViewModel.Commits) {
 		// Repo must just have changed, just ignore
 		return
 	}
-	c := h.currentRepo.Commits[index]
+	c := s.currentViewModel.Commits[index]
 	if !c.IsMore {
 		// Not a point that can be expanded
 		return
 	}
 
-	branchIds := h.toBranchIds(h.currentRepo.Branches)
+	branchIds := s.toBranchIds(s.currentViewModel.Branches)
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it (if not already added
-		mergeParent := h.gmRepo.CommitById[c.ParentIDs[1]]
-		branchIds = h.addBranchWithAncestors(branchIds, mergeParent.Branch)
+		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
+		branchIds = s.addBranchWithAncestors(branchIds, mergeParent.Branch)
 	}
 	for _, ccId := range c.ChildIDs {
-		cc := h.gmRepo.CommitById[ccId]
+		cc := s.gmRepo.CommitById[ccId]
 		if cc.Branch.Name != c.Branch.name {
-			branchIds = h.addBranchWithAncestors(branchIds, cc.Branch)
+			branchIds = s.addBranchWithAncestors(branchIds, cc.Branch)
 		}
 	}
-	for _, b := range h.gmRepo.Branches {
+	for _, b := range s.gmRepo.Branches {
 		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
 			// empty branch with no own branch commit, (branch start)
-			branchIds = h.addBranchWithAncestors(branchIds, b)
+			branchIds = s.addBranchWithAncestors(branchIds, b)
 		}
 	}
-	for _, b := range h.gmRepo.Branches {
+	for _, b := range s.gmRepo.Branches {
 		i1 := utils.StringsIndex(branchIds, b.RemoteName)
 		i2 := utils.StringsIndex(branchIds, b.Name)
 		if i2 == -1 && i1 != -1 {
@@ -170,17 +178,17 @@ func (h *Model) OpenBranch(index int) {
 			branchIds[i1] = b.Name
 		}
 	}
-	h.lock.Unlock()
-	h.LoadBranches(branchIds)
+	s.lock.Unlock()
+	s.showBranches(branchIds)
 }
 
-func (h *Model) CloseBranch(index int) {
-	h.lock.Lock()
-	if index >= len(h.currentRepo.Commits) {
+func (s *Service) CloseBranch(index int) {
+	s.lock.Lock()
+	if index >= len(s.currentViewModel.Commits) {
 		// Repo must just have changed, just ignore
 		return
 	}
-	c := h.currentRepo.Commits[index]
+	c := s.currentViewModel.Commits[index]
 	if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
 		// Cannot close master
 		return
@@ -188,37 +196,25 @@ func (h *Model) CloseBranch(index int) {
 
 	// get branch ids except for the commit branch or decedent branches
 	var branchIds []string
-	for _, b := range h.currentRepo.Branches {
+	for _, b := range s.currentViewModel.Branches {
 		if b.name != c.Branch.name && !c.Branch.isAncestor(b) {
 			branchIds = append(branchIds, b.name)
 		}
 	}
-	h.lock.Unlock()
-	h.LoadBranches(branchIds)
+	s.lock.Unlock()
+	s.showBranches(branchIds)
 }
 
-func (h *Model) Refresh(viewPort ViewPort) {
-	//t := time.Now()
-	//var branchIds []string
-	//for _, b := range viewPort.repo.Branches {
-	//	branchIds = append(branchIds, b.name)
-	//}
-	//h.gitModel.Load()
-	//
-	//h.LoadBranches(branchIds, gmRepo, gmStatus)
-	//log.Infof("Refresh time %v", time.Since(t))
-}
-
-func (h *Model) getRepoModel(branchIds []string) *repo {
+func (s *Service) getViewModel(branchIds []string) *repo {
 	repo := newRepo()
-	repo.gmRepo = h.gmRepo
-	repo.gmStatus = h.gmStatus
+	repo.gmRepo = s.gmRepo
+	repo.gmStatus = s.gmStatus
 
-	branches := h.getGitModelBranches(branchIds, h.gmRepo, h.gmStatus)
+	branches := s.getGitModelBranches(branchIds, s.gmRepo, s.gmStatus)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
-	currentBranch, ok := h.gmRepo.CurrentBranch()
+	currentBranch, ok := s.gmRepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
@@ -228,7 +224,7 @@ func (h *Model) getRepoModel(branchIds []string) *repo {
 		repo.addGitCommit(c)
 	}
 
-	h.setParentChildRelations(repo)
+	s.setParentChildRelations(repo)
 
 	// Draw branch lines
 	for _, b := range repo.Branches {
@@ -351,7 +347,7 @@ func (h *Model) getRepoModel(branchIds []string) *repo {
 	return repo
 }
 
-func (h *Model) setParentChildRelations(repo *repo) {
+func (s *Service) setParentChildRelations(repo *repo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
 		b.bottom = repo.commitById[b.bottomId]
@@ -389,7 +385,7 @@ func (h *Model) setParentChildRelations(repo *repo) {
 	}
 }
 
-func (h *Model) toBranchIds(branches []*branch) []string {
+func (s *Service) toBranchIds(branches []*branch) []string {
 	var ids []string
 	for _, b := range branches {
 		ids = append(ids, b.name)

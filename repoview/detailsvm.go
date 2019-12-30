@@ -9,7 +9,7 @@ import (
 )
 
 type detailsVM struct {
-	model         *viewmodel.Model
+	model         *viewmodel.Service
 	selectedIndex int
 }
 
@@ -17,11 +17,11 @@ type commitDetails struct {
 	lines []string
 }
 
-func newDetailsVM(model *viewmodel.Model) *detailsVM {
+func newDetailsVM(model *viewmodel.Service) *detailsVM {
 	return &detailsVM{model: model}
 }
 
-func (h detailsVM) getCommitDetails(viewPort ui.ViewPort, index int) (commitDetails, error) {
+func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDetails, error) {
 	commit, err := h.model.GetCommitByIndex(index)
 	if err != nil {
 		return commitDetails{}, err

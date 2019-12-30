@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type Handler struct {
+type Service struct {
 	RepoEvents   chan Repo
 	StatusEvents chan Status
 	ErrorEvents  chan error
@@ -16,9 +16,9 @@ type Handler struct {
 	branches *branches
 }
 
-func NewModel(repoPath string) *Handler {
+func NewModel(repoPath string) *Service {
 	gitLib := gitlib.NewRepo(repoPath)
-	return &Handler{
+	return &Service{
 		gitLib:       gitLib,
 		monitor:      newMonitor(gitLib.RepoPath()),
 		branches:     newBranches(),
@@ -28,13 +28,13 @@ func NewModel(repoPath string) *Handler {
 	}
 }
 
-func (h *Handler) StartRepoMonitor() {
+func (h *Service) StartRepoMonitor() {
 	h.monitor.Start()
 	go h.monitorStatusChangesRoutine()
 	go h.monitorRepoChangesRoutine()
 }
 
-func (h *Handler) TriggerRefreshRepo() {
+func (h *Service) TriggerRefreshRepo() {
 	go func() {
 		repo, err := h.GetFreshRepo()
 		if err != nil {
@@ -45,7 +45,7 @@ func (h *Handler) TriggerRefreshRepo() {
 	}()
 }
 
-func (h *Handler) GetFreshRepo() (Repo, error) {
+func (h *Service) GetFreshRepo() (Repo, error) {
 	t := time.Now()
 	repo := newRepo()
 	repo.RepoPath = h.gitLib.RepoPath()
@@ -71,7 +71,7 @@ func (h *Handler) GetFreshRepo() (Repo, error) {
 	return *repo, nil
 }
 
-func (h *Handler) getFreshStatus() (Status, error) {
+func (h *Service) getFreshStatus() (Status, error) {
 	t := time.Now()
 	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
@@ -83,7 +83,7 @@ func (h *Handler) getFreshStatus() (Status, error) {
 	return status, nil
 }
 
-func (h *Handler) monitorRepoChangesRoutine() {
+func (h *Service) monitorRepoChangesRoutine() {
 	var ticker *time.Ticker
 	tickerChan := func() <-chan time.Time {
 		if ticker == nil {
@@ -110,7 +110,7 @@ func (h *Handler) monitorRepoChangesRoutine() {
 	}
 }
 
-func (h *Handler) monitorStatusChangesRoutine() {
+func (h *Service) monitorStatusChangesRoutine() {
 	var ticker *time.Ticker
 	tickerChan := func() <-chan time.Time {
 		if ticker == nil {

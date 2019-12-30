@@ -19,7 +19,7 @@ type mainController interface {
 
 type MainWindow struct {
 	uiHandler   *ui.UI
-	model       *viewmodel.Model
+	model       *viewmodel.Service
 	repoView    *RepoView
 	detailsView *DetailsView
 	mode        showMode

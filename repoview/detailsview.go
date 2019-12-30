@@ -11,7 +11,7 @@ type DetailsView struct {
 	currentIndex int
 }
 
-func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
+func newDetailsView(uiHandler *ui.UI, model *viewmodel.Service) *DetailsView {
 	h := &DetailsView{
 		vm: newDetailsVM(model),
 	}
@@ -19,7 +19,7 @@ func newDetailsView(uiHandler *ui.UI, model *viewmodel.Model) *DetailsView {
 	return h
 }
 
-func (h *DetailsView) viewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *DetailsView) viewData(viewPort ui.ViewPage) ui.ViewData {
 	details, err := h.vm.getCommitDetails(viewPort, h.currentIndex)
 	if err != nil {
 		return ui.ViewData{}

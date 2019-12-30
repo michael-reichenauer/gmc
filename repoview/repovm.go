@@ -26,13 +26,12 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	notifier notifier
-	model    *viewmodel.Model
-	viewPort viewmodel.ViewPort
+	notifier         notifier
+	viewModelService *viewmodel.Service
 }
 
 type trace struct {
-	FirstIndex  int
+	ViewPage    ui.ViewPage
 	BranchNames []string
 }
 
@@ -40,45 +39,42 @@ type notifier interface {
 	NotifyChanged()
 }
 
-func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
+func newRepoVM(model *viewmodel.Service, notifier notifier) *repoVM {
 	return &repoVM{
-		notifier: notifier,
-		model:    model,
+		notifier:         notifier,
+		viewModelService: model,
 	}
 }
 
-func (h *repoVM) Load() {
-	h.model.Start()
-	h.model.TriggerRefreshModel()
+func (h *repoVM) onLoad() {
+	h.viewModelService.Start()
+	h.viewModelService.TriggerRefreshModel()
 	go h.monitorModelRoutine()
 }
 
-func (h *repoVM) LoadWitBranches() {
-	h.model.Start()
-	h.model.TriggerRefreshModel()
-	go h.monitorModelRoutine()
+func (h *repoVM) LoadWithBranches(branchNames []string) {
+	h.viewModelService.LoadRepo(branchNames)
 }
 
 func (h *repoVM) monitorModelRoutine() {
-	for range h.model.ChangedEvents {
+	for range h.viewModelService.ChangedEvents {
 		log.Infof("Detected model change")
 		h.notifier.NotifyChanged()
 	}
 }
 
-func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
-	var err error
-	h.viewPort, err = h.model.GetRepoViewPort(viewPort.FirstIndex, viewPort.Height)
+func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
+	rvp, err := h.viewModelService.GetRepoViewPort(viewPort.FirstLine, viewPort.Height)
 	if err != nil {
 		return repoPage{}, err
 	}
-	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, viewPort.Width)
+	messageLength, authorLength, timeLength := columnWidths(rvp.GraphWidth+markerWidth, viewPort.Width)
 
-	commits := h.viewPort.Commits
+	commits := rvp.Commits
 
 	var currentLineCommit viewmodel.Commit
-	if viewPort.CurrentIndex-viewPort.FirstIndex < len(commits) && viewPort.CurrentIndex-viewPort.FirstIndex >= 0 {
-		currentLineCommit = commits[viewPort.CurrentIndex-viewPort.FirstIndex]
+	if viewPort.CurrentLine-viewPort.FirstLine < len(commits) && viewPort.CurrentLine-viewPort.FirstLine >= 0 {
+		currentLineCommit = commits[viewPort.CurrentLine-viewPort.FirstLine]
 	}
 
 	var lines []string
@@ -98,34 +94,34 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 	}
 
 	return repoPage{
-		repoPath:           h.viewPort.RepoPath,
+		repoPath:           rvp.RepoPath,
 		lines:              lines,
-		total:              h.viewPort.TotalCommits,
-		firstIndex:         h.viewPort.FirstIndex,
-		currentIndex:       viewPort.CurrentIndex,
-		uncommittedChanges: h.viewPort.UncommittedChanges,
-		currentBranchName:  h.viewPort.CurrentBranchName,
+		total:              rvp.TotalCommits,
+		firstIndex:         rvp.FirstIndex,
+		currentIndex:       viewPort.CurrentLine,
+		uncommittedChanges: rvp.UncommittedChanges,
+		currentBranchName:  rvp.CurrentBranchName,
 	}, nil
 }
 
 func (h *repoVM) OpenBranch(index int) {
-	h.model.OpenBranch(index)
+	h.viewModelService.OpenBranch(index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	h.model.CloseBranch(index)
+	h.viewModelService.CloseBranch(index)
 }
 
 func (h *repoVM) Refresh() {
-	h.model.TriggerRefreshModel()
+	h.viewModelService.TriggerRefreshModel()
 }
 
-func (h *repoVM) RefreshTrace() {
+func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
 	gitlib.EnableTracing("")
-	traceBytes := utils.MustJsonMarshal(trace{FirstIndex: h.viewPort.FirstIndex, BranchNames: h.model.CurrentBranchNames()})
-	utils.MustFileWrite(filepath.Join(gitlib.TracePath(), "repovm"), traceBytes)
+	traceBytes := utils.MustJsonMarshal(trace{ViewPage: viewPage, BranchNames: h.viewModelService.CurrentBranchNames()})
+	utils.MustFileWrite(filepath.Join(gitlib.CurrentTracePath(), "repovm"), traceBytes)
 
-	h.model.TriggerRefreshModel()
+	h.viewModelService.TriggerRefreshModel()
 }
 
 func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {

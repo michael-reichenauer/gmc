@@ -21,11 +21,11 @@ type Properties struct {
 	OnClose func()
 }
 
-type ViewPort struct {
-	FirstIndex   int
-	Height       int
-	CurrentIndex int
-	Width        int
+type ViewPage struct {
+	Width       int
+	Height      int
+	FirstLine   int
+	CurrentLine int
 }
 
 type ViewData struct {
@@ -41,7 +41,7 @@ type View interface {
 	SetCurrentView()
 	NotifyChanged()
 	SetKey(key interface{}, modifier gocui.Modifier, handler func())
-	CurrentLine() int
+	ViewPage() ViewPage
 	Clear()
 	PostOnUIThread(func())
 }
@@ -52,7 +52,7 @@ type view struct {
 
 	properties   *Properties
 	viewName     string
-	viewData     func(viewPort ViewPort) ViewData
+	viewData     func(viewPort ViewPage) ViewData
 	firstIndex   int
 	linesCount   int
 	currentIndex int
@@ -60,7 +60,7 @@ type view struct {
 	width        int
 }
 
-func newView(ui *UI, viewData func(viewPort ViewPort) ViewData) *view {
+func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
 	return &view{
 		gui:        ui.Gui(),
 		viewName:   ui.NewViewName(),
@@ -109,7 +109,7 @@ func (h *view) NotifyChanged() {
 			// View is to small (not visible)
 			return nil
 		}
-		viewPort := ViewPort{Width: width + 1, FirstIndex: h.firstIndex, Height: height, CurrentIndex: h.currentIndex}
+		viewPort := h.ViewPage()
 
 		// Get the view data for that view port and get data sizes (could be smaller than view)
 		viewData := h.viewData(viewPort)
@@ -189,8 +189,14 @@ func (h *view) SetCurrentView() {
 	}
 }
 
-func (h view) CurrentLine() int {
-	return h.currentIndex
+func (h view) ViewPage() ViewPage {
+	// Get the view size to calculate the view port
+	width, height := h.guiView.Size()
+	if width <= 1 || height <= 0 {
+		// View is to small (not visible)
+		return ViewPage{Width: 1, FirstLine: 0, Height: 1, CurrentLine: 0}
+	}
+	return ViewPage{Width: width + 1, FirstLine: h.firstIndex, Height: height, CurrentLine: h.currentIndex}
 }
 
 func (h *view) Properties() *Properties {
@@ -224,14 +230,6 @@ func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) 
 
 func (h *view) Clear() {
 	h.guiView.Clear()
-}
-
-func (h *view) Cursor() (int, int) {
-	return h.guiView.Cursor()
-}
-
-func (h *view) SetCursor(x int, y int) error {
-	return h.guiView.SetCursor(x, y)
 }
 
 func (h *view) Size() (int, int) {
