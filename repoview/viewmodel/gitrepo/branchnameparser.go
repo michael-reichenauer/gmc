@@ -5,13 +5,13 @@ import (
 )
 
 var (
-	nameRegExp = regexp.MustCompile( // "Merge branch 'develop' into master"
-		`[Mm]erged?\s+` + // Merge or merged
-			`(remote-tracking\s+)?` + //      remote-tracking when merging remote branches
-			`((branch|commit|from)\s+)?` + //   branch|commit|from
-			`'?(?P<from>[0-9A-Za-z_/]+)'?` + // the from branch name
-			`(\s+(?P<direction>into|to|of|from)\s+` + // into|of|from
-			`(?P<into>[0-9A-Za-z_/]+)?)?`) // the into  branch name
+	nameRegExp = regexp.MustCompile( // parse subject like e.g. "Merge branch 'develop' into master"
+		`[Mm]erged?\s+` + //                              'Merge' or 'merged' word
+			`(remote-tracking\s+)?` + //                  'remote-tracking' optional word when merging remote branches
+			`((branch|commit|from)\s+)?` + //             'branch'|'commit'|'from' word
+			`'?(?P<from>[0-9A-Za-z_/-]+)'?` + //          the <from> branch name
+			`(\s+(?P<direction>into|to|of|from)\s+` + //  'into'|'of'|'from' word
+			`(?P<into>[0-9A-Za-z_/-]+)?)?`) //            the <into> branch name
 	from, into, direction = indexes()
 )
 

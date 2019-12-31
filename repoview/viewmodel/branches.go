@@ -68,14 +68,6 @@ func (s *Service) containsBranch(branches []*gitrepo.Branch, name string) bool {
 	return false
 }
 
-//func (h *Model) containsLocalBranch(branches []*gitrepo.Branch, name string) bool {
-//	for _, b := range branches {
-//		if name == b.RemoteName {
-//			return true
-//		}
-//	}
-//	return false
-//}
 func (s *Service) sortBranches(branches []*gitrepo.Branch) {
 	sort.SliceStable(branches, func(l, r int) bool {
 		if branches[l].Name == branches[r].RemoteName {
