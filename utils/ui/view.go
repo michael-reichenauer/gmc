@@ -164,7 +164,7 @@ func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
 		// Draw the actual text line
 		sb.WriteString(line)
 
-		// Draw the scrollbar
+		// // Draw the scrollbar
 		if i >= sbStart && i <= sbEnd {
 			// Within scrollbar, draw the scrollbar handle
 			sb.WriteString(MagentaDk(scrollBarHandle))

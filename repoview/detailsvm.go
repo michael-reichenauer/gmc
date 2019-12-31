@@ -47,7 +47,11 @@ func toDetailsText(c viewmodel.Commit, width int) []string {
 		color = ui.CYellowDk
 	}
 
-	for i, line := range strings.Split(c.Message, "\n") {
+	messageLines := strings.Split(strings.TrimSpace(c.Message), "\n")
+	for i, line := range messageLines {
+		if i == 0 && len(messageLines) > 1 {
+			line = line + " >"
+		}
 		line = utils.Text(line, width)
 		if i == 0 {
 			lines = append(lines, toHeader("Message:")+ui.ColorText(color, line))
@@ -55,7 +59,6 @@ func toDetailsText(c viewmodel.Commit, width int) []string {
 			lines = append(lines, "           "+ui.ColorText(color, line))
 		}
 	}
-
 	return lines
 }
 
@@ -64,7 +67,7 @@ func toSids(ids []string) string {
 	for _, id := range ids {
 		sids = append(sids, viewmodel.ToSid(id))
 	}
-	return fmt.Sprintf("%v", sids)
+	return fmt.Sprintf("%s", strings.Join(sids, ", "))
 }
 func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-10s", text))
@@ -73,10 +76,12 @@ func toHeader(text string) string {
 func toBranchText(c viewmodel.Commit, width int) string {
 	bColor := branchColor(c.Branch.DisplayName)
 	typeText := ""
-	//if c.Branch.IsRemote {
-	//	typeText = ui.Dark("remote: ")
-	//} else {
-	//	typeText = ui.Dark("local: ")
-	//}
-	return typeText + ui.ColorText(bColor, utils.Text(c.Branch.DisplayName, width))
+	if c.Branch.IsRemote && c.Branch.LocalName != "" {
+		typeText = ui.Dark(" (remote,local)")
+	} else if c.Branch.IsRemote && c.Branch.LocalName == "" {
+		typeText = ui.Dark(" (remote)")
+	} else {
+		typeText = ui.Dark(" (local)")
+	}
+	return ui.ColorText(bColor, c.Branch.DisplayName) + ui.Dark(utils.Text(typeText, width-len(c.Branch.DisplayName)+11))
 }
