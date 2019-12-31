@@ -4,11 +4,11 @@ package gitrepo
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type branches struct {
-	branchNames *branchNames
+	branchNames *branchNameParser
 }
 
 func newBranches() *branches {
-	return &branches{branchNames: newBranchNames()}
+	return &branches{branchNames: newBranchNameParser()}
 }
 
 func (h *branches) setBranchForAllCommits(repo *Repo) {
@@ -32,17 +32,17 @@ func (h *branches) setCommitBranchesAndChildren(repo *Repo) {
 	for _, c := range repo.Commits {
 		parent, ok := repo.Parent(c, 0)
 		if ok {
-			c.Parent = parent
-			c.Parent.Children = append(c.Parent.Children, c)
-			parent.addBranches(c.Branches)
+			parent.Children = append(parent.Children, c)
 			parent.ChildIDs = append(parent.ChildIDs, c.Id)
+			parent.addBranches(c.Branches)
+			c.Parent = parent
 		}
 
 		mergeParent, ok := repo.Parent(c, 1)
 		if ok {
+			mergeParent.MergeChildren = append(mergeParent.MergeChildren, c)
+			mergeParent.ChildIDs = append(mergeParent.ChildIDs, c.Id)
 			c.MergeParent = mergeParent
-			c.MergeParent.MergeChildren = append(c.MergeParent.MergeChildren, c)
-			parent.ChildIDs = append(parent.ChildIDs, c.Id)
 		}
 	}
 }

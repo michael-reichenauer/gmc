@@ -38,6 +38,10 @@ func NewModel(repoPath string) *Service {
 	}
 }
 
+func ToSid(commitID string) string {
+	return gitrepo.ToSid(commitID)
+}
+
 func (s *Service) Start() {
 	s.gitRepoService.StartRepoMonitor()
 	go s.monitorGitModelRoutine()
@@ -329,25 +333,36 @@ func (s *Service) drawConnectorLines(repo *repo) {
 				if c.Parent != nil && c.Parent.Branch != c.Branch {
 					// Commit parent is on other branch (bottom/first commit on this branch)
 					if c.Parent.Branch.index < c.Branch.index {
-						// Other branch is left side e
+						// Other branch is left side  ╭
 						c.graph[i].Connect.Set(BMergeLeft)
 						c.graph[i].Branch.Set(BMergeLeft)
+
+						// ──
 						for k := c.Parent.Branch.index + 1; k < c.Branch.index; k++ {
 							c.Parent.graph[k].Connect.Set(BPass)
 							c.Parent.graph[k].Branch.Set(BPass)
+							if c.Parent.graph[k].PassName == "" {
+								c.Parent.graph[k].PassName = b.displayName
+							} else {
+								c.Parent.graph[k].PassName = "-"
+							}
 						}
+						// │
 						for j := c.Index + 1; j < c.Parent.Index; j++ {
 							cc := repo.Commits[j]
 							cc.graph[i].Connect.Set(BMLine)
 						}
+						// ╯
 						c.Parent.graph[i].Connect.Set(BBranchRight)
 					} else {
-						// Other branch is right side
+						// Other branch is right side ╮
 						c.graph[i+1].Connect.Set(BMergeRight)
+						// │
 						for j := c.Index + 1; j < c.Parent.Index; j++ {
 							cc := repo.Commits[j]
 							cc.graph[i+1].Connect.Set(BMLine)
 						}
+						//  ╰
 						c.Parent.graph[c.Parent.Branch.index].Connect.Set(BBranchLeft)
 						c.Parent.graph[c.Parent.Branch.index].Branch.Set(BBranchLeft)
 					}
@@ -355,14 +370,20 @@ func (s *Service) drawConnectorLines(repo *repo) {
 			} else {
 				// Other branch
 				if b.tip == c {
-					// this branch tip does not have a branch of its own,
+					// this branch tip does not have a branch of its own, ┺
 					c.graph[i].Branch.Set(BBottom | BPass)
+					// ──
 					for k := c.Branch.index + 1; k <= i; k++ {
 						c.graph[k].Connect.Set(BPass)
 						c.graph[k].Branch.Set(BPass)
+						if c.graph[k].PassName == "" {
+							c.graph[k].PassName = b.displayName
+						} else {
+							c.graph[k].PassName = "-"
+						}
 					}
 				} else if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {
-					// Other branch, normal branch line (no commit on that branch)
+					// Other branch, normal branch line (no commit on that branch) ┃
 					c.graph[i].Branch.Set(BLine)
 				}
 			}
@@ -377,24 +398,21 @@ func (s *Service) setParentChildRelations(repo *repo) {
 		if b.parentBranchID != "" {
 			b.parentBranch = repo.BranchById(b.parentBranchID)
 		}
-		//if b.tipId == b.bottomId && b.bottom.Branch != b {
-		//	// an empty branch, with no own branch commit, (branch start)
-		//	b.bottom.IsMore = true
-		//}
 	}
 
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
-			// if a commit has a parent, it is included in the repo viewmodel
+			// if a commit has a parent, it is included in the repo view model
 			c.Parent = repo.commitById[c.ParentIDs[0]]
 			if len(c.ParentIDs) > 1 {
-				// Merge parent can be nil if not the merge parent branch is included in the repo viewmodel as well
+				// Merge parent can be nil if not the merge parent branch is included in the repo view model as well
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]
 			}
 		} else {
 			// No parent, reached initial commit of the repo
 			c.Branch.bottom = c
 		}
+
 		if c.MergeParent == nil && len(c.ParentIDs) > 1 {
 			// commit has a merge parent, that is not visible, mark the commit as expandable
 			c.IsMore = true

@@ -9,9 +9,9 @@ var (
 		`[Mm]erged?\s+` + // Merge or merged
 			`(remote-tracking\s+)?` + //      remote-tracking when merging remote branches
 			`((branch|commit|from)\s+)?` + //   branch|commit|from
-			`'?(?P<from>[0-9A-Za-z_]+)'?` + // the from branch name
+			`'?(?P<from>[0-9A-Za-z_/]+)'?` + // the from branch name
 			`(\s+(?P<direction>into|to|of|from)\s+` + // into|of|from
-			`(?P<into>[0-9A-Za-z_]+)?)?`) // the into  branch name
+			`(?P<into>[0-9A-Za-z_/]+)?)?`) // the into  branch name
 	from, into, direction = indexes()
 )
 
@@ -20,19 +20,19 @@ type fromInto struct {
 	into string
 }
 
-type branchNames struct {
+type branchNameParser struct {
 	parsedCommits map[string]fromInto
 	branchNames   map[string]string
 }
 
-func newBranchNames() *branchNames {
-	return &branchNames{
+func newBranchNameParser() *branchNameParser {
+	return &branchNameParser{
 		parsedCommits: make(map[string]fromInto),
 		branchNames:   make(map[string]string),
 	}
 }
 
-func (h *branchNames) parseCommit(c *Commit) fromInto {
+func (h *branchNameParser) parseCommit(c *Commit) fromInto {
 	if len(c.ParentIDs) != 2 {
 		return fromInto{}
 	}
@@ -51,11 +51,11 @@ func (h *branchNames) parseCommit(c *Commit) fromInto {
 	return fi
 }
 
-func (h *branchNames) branchName(id string) string {
+func (h *branchNameParser) branchName(id string) string {
 	return h.branchNames[id]
 }
 
-func (h *branchNames) parseMergeBranchNames(subject string) fromInto {
+func (h *branchNameParser) parseMergeBranchNames(subject string) fromInto {
 	matches := nameRegExp.FindAllStringSubmatch(subject, -1)
 	if len(matches) == 0 {
 		return fromInto{}

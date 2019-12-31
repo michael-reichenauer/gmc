@@ -32,9 +32,15 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDeta
 func toDetailsText(c viewmodel.Commit, width int) []string {
 	width = width - 14
 	var lines []string
-	lines = append(lines, toHeader("Id:")+ui.Dark(utils.Text(c.ID, width)))
+	id := c.ID
+	if id == viewmodel.StatusID {
+		id = " "
+	}
+	lines = append(lines, toHeader("Id:")+ui.Dark(utils.Text(id, width)))
 	lines = append(lines, toHeader("Branch:")+toBranchText(c, width))
 	lines = append(lines, toHeader("Files:")+ui.Dark(utils.Text("... >", width)))
+	lines = append(lines, toHeader("Parents:")+ui.Dark(utils.Text(toSids(c.ParentIDs), width)))
+	lines = append(lines, toHeader("Children:")+ui.Dark(utils.Text(toSids(c.ChildIDs), width)))
 
 	color := ui.CDark
 	if c.ID == viewmodel.StatusID {
@@ -53,6 +59,13 @@ func toDetailsText(c viewmodel.Commit, width int) []string {
 	return lines
 }
 
+func toSids(ids []string) string {
+	var sids []string
+	for _, id := range ids {
+		sids = append(sids, viewmodel.ToSid(id))
+	}
+	return fmt.Sprintf("%v", sids)
+}
 func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-10s", text))
 }

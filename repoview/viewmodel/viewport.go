@@ -25,6 +25,8 @@ type Commit struct {
 	Branch     Branch
 	Graph      []GraphColumn
 	IsMore     bool
+	ParentIDs  []string
+	ChildIDs   []string
 }
 
 type Branch struct {
@@ -63,6 +65,8 @@ func toCommit(c *commit) Commit {
 		SID:        c.SID,
 		Subject:    c.Subject,
 		Message:    c.Message,
+		ParentIDs:  c.ParentIDs,
+		ChildIDs:   c.ChildIDs,
 		Author:     c.Author,
 		AuthorTime: c.AuthorTime,
 		IsCurrent:  c.IsCurrent,

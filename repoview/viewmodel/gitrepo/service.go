@@ -16,6 +16,10 @@ type Service struct {
 	branches *branches
 }
 
+func ToSid(commitID string) string {
+	return gitlib.ToSid(commitID)
+}
+
 func NewModel(repoPath string) *Service {
 	gitLib := gitlib.NewRepo(repoPath)
 	return &Service{

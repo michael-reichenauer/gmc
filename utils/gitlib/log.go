@@ -14,6 +14,10 @@ type logHandler struct {
 	cmd GitCommander
 }
 
+func ToSid(commitID string) string {
+	return commitID[:6]
+}
+
 func newLog(cmd GitCommander) *logHandler {
 	return &logHandler{cmd: cmd}
 }
@@ -58,7 +62,7 @@ func (h *logHandler) parseCommit(line string) (Commit, error) {
 	if err != nil {
 		return Commit{}, fmt.Errorf("failed to parse commit times from commit %q, %v", line, err)
 	}
-	return Commit{ID: id, SID: id[:6], ParentIDs: parentIDs, Subject: subject,
+	return Commit{ID: id, SID: ToSid(id), ParentIDs: parentIDs, Subject: subject,
 		Message: message, Author: author, AuthorTime: authorTime, CommitTime: commitTime}, nil
 }
 

@@ -125,6 +125,9 @@ func branchColor(name string) ui.Color {
 	if name == "master" {
 		return ui.CMagenta
 	}
+	if name == "develop" {
+		return ui.CRedDk
+	}
 	if strings.HasPrefix(name, "multi:") {
 		return ui.CWhite
 	}

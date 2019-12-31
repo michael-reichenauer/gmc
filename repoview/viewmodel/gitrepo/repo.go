@@ -43,15 +43,6 @@ func (r *Repo) CurrentBranch() (*Branch, bool) {
 	return nil, false
 }
 
-//func (r *Repo) LocalBranchByRemoteName(remoteName string) (*Branch, bool) {
-//	for _, br := range r.Branches {
-//		if br.RemoteName == remoteName {
-//			return br, true
-//		}
-//	}
-//	return nil, false
-//}
-
 func (r *Repo) setGitCommits(gitCommits []gitlib.Commit) {
 	for _, gc := range gitCommits {
 		commit := newCommit(gc)
