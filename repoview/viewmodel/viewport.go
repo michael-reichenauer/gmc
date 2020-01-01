@@ -27,6 +27,7 @@ type Commit struct {
 	IsMore     bool
 	ParentIDs  []string
 	ChildIDs   []string
+	BranchTips []string
 }
 
 type Branch struct {
@@ -73,6 +74,7 @@ func toCommit(c *commit) Commit {
 		Branch:     toBranch(c.Branch),
 		Graph:      c.graph,
 		IsMore:     c.IsMore,
+		BranchTips: c.BranchTips,
 	}
 }
 

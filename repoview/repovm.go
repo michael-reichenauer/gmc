@@ -175,11 +175,11 @@ func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 func columnWidths(graphWidth, viewWidth int) (msgLength, sidLength, authorLength, timeLength int) {
 	width := viewWidth - graphWidth
 	sidLength = 6
-	authorLength = 20
-	timeLength = 16
+	authorLength = 15
+	timeLength = 12
 	if width < 90 {
 		authorLength = 10
-		timeLength = 10
+		timeLength = 6
 	}
 	if width < 60 {
 		sidLength = 0
@@ -210,7 +210,11 @@ func writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
 		sb.WriteString(ui.Dark(utils.Text("", length)))
 		return
 	}
-	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))
+	tt := c.AuthorTime.Format(RFC3339Small)
+	tt = strings.Replace(tt, "-", "", -1)
+
+	tt = tt[2:]
+	sb.WriteString(ui.Dark(utils.Text(tt, length)))
 }
 
 func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmodel.Commit, length int) {

@@ -95,6 +95,15 @@ func (r *repo) containsBranch(branch *gitrepo.Branch) bool {
 	return false
 }
 
+func (r *repo) containsBranchName(name string) bool {
+	for _, b := range r.Branches {
+		if b.name == name {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	parentBranchID := ""
 	if b.ParentBranch != nil {
@@ -133,6 +142,7 @@ func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
 		Branch:     branch,
 		Index:      index,
 		graph:      make([]GraphColumn, len(r.Branches)),
+		BranchTips: c.BranchTips,
 	}
 }
 

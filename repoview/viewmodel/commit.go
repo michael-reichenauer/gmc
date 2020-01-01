@@ -30,6 +30,7 @@ type commit struct {
 	IsMore      bool
 	Branch      *branch
 	graph       []GraphColumn
+	BranchTips  []string
 }
 
 func (c *commit) String() string {

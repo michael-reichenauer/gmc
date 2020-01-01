@@ -61,7 +61,7 @@ func (h *MainWindow) OnResizeWindow() {
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
 		h.detailsView.SetBounds(ui.Rect{X: -1, Y: -1, W: 1, H: 1})
 	} else if h.mode == details {
-		detailsHeight := 6
+		detailsHeight := 7
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
 		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight, W: width, H: detailsHeight})
 	}

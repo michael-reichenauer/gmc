@@ -282,6 +282,15 @@ func (s *Service) setParentChildRelations(repo *repo) {
 				c.IsMore = true
 			}
 		}
+		if !c.IsMore {
+			for _, branchName := range c.BranchTips {
+				if !repo.containsBranchName(branchName) {
+					c.IsMore = true
+					break
+				}
+			}
+
+		}
 	}
 }
 

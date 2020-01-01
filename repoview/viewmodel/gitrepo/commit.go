@@ -23,6 +23,7 @@ type Commit struct {
 	Branch        *Branch
 	Branches      []*Branch
 	IsLikely      bool
+	BranchTips    []string
 }
 
 func newCommit(gc gitlib.Commit) *Commit {

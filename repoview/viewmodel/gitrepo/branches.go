@@ -1,5 +1,9 @@
 package gitrepo
 
+import (
+	"github.com/michael-reichenauer/gmc/utils/log"
+)
+
 // Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
@@ -21,9 +25,11 @@ func (h *branches) setBranchForAllCommits(repo *Repo) {
 
 func (h *branches) setGitBranchTips(repo *Repo) {
 	for _, b := range repo.Branches {
-		repo.CommitById[b.TipID].addBranch(b)
+		tip := repo.CommitById[b.TipID]
+		tip.addBranch(b)
+		tip.BranchTips = append(tip.BranchTips, b.Name)
 		if b.IsCurrent {
-			repo.CommitById[b.TipID].IsCurrent = true
+			tip.IsCurrent = true
 		}
 	}
 }
@@ -65,6 +71,9 @@ func (h *branches) determineBranchHierarchy(repo *Repo) {
 
 func (h *branches) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
+		if c.Id == "6d6b262cf3556f4c434f58dad1efecf220d02333" {
+			log.Infof("")
+		}
 		h.branchNames.parseCommit(c)
 
 		h.determineBranch(repo, c)
@@ -99,20 +108,21 @@ func (h *branches) determineBranch(repo *Repo, c *Commit) {
 	}
 
 	if len(c.Branches) == 0 && len(c.Children) == 1 {
-		// commit has no known branches (middle commit in deleted branch), but has one child, use that branch
+		// commit has no known branches (middle commit in deleted branch), but has one child, use same branch
 		c.Branch = c.Children[0].Branch
 		c.addBranch(c.Branch)
 		return
 	}
 
 	if len(c.Children) == 1 && c.Children[0].IsLikely {
+		// commit has one child, which has a likely known branch, use same branch
 		c.Branch = c.Children[0].Branch
 		c.IsLikely = true
 		return
 	}
 
 	if branch := h.hasPriorityBranch(c); branch != nil {
-		// Commit, has many possible branches, check if one is in the priority list, e.g. master, develop, ...
+		// Commit, has many possible branches, and one is in the priority list, e.g. master, develop, ...
 		c.Branch = branch
 		return
 	}
@@ -120,13 +130,23 @@ func (h *branches) determineBranch(repo *Repo, c *Commit) {
 	if name := h.branchNames.branchName(c.Id); name != "" {
 		// The commit branch name could be parsed form the subject (or a child subject)
 		// Lets use that as a branch and also let children use that branch if they only are multi branch
-		var current *Commit
-		for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsMultiBranch; current = current.Children[0] {
-		}
 		branch := h.tryGetBranchFromName(c, name)
+		var current *Commit
+		if branch != nil && branch.BottomID != "" {
+			current = repo.CommitById[branch.BottomID]
+		}
+		if current == nil {
+			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsMultiBranch; current = current.Children[0] {
+			}
+		}
 		if branch == nil {
 			branch = repo.addNamedBranch(current, name)
 		}
+		// for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsMultiBranch; current = current.Children[0] {
+		// }
+		// if branch == nil {
+		// 	branch = repo.addNamedBranch(current, name)
+		// }
 		for ; current != c.Parent; current = current.Parent {
 			current.Branch = branch
 			current.IsLikely = true
