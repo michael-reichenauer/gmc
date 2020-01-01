@@ -36,6 +36,7 @@ func (h *Service) StartRepoMonitor() {
 	h.monitor.Start()
 	go h.monitorStatusChangesRoutine()
 	go h.monitorRepoChangesRoutine()
+	go h.fetchRoutine()
 }
 
 func (h *Service) TriggerRefreshRepo() {
@@ -46,6 +47,9 @@ func (h *Service) TriggerRefreshRepo() {
 			return
 		}
 		h.RepoEvents <- repo
+		go func() {
+			h.gitLib.Fetch()
+		}()
 	}()
 }
 
@@ -137,5 +141,15 @@ func (h *Service) monitorStatusChangesRoutine() {
 			}
 			h.StatusEvents <- status
 		}
+	}
+}
+
+func (h *Service) fetchRoutine() {
+	time.Sleep(300 * time.Millisecond)
+	for {
+		if err := h.gitLib.Fetch(); err != nil {
+			log.Warnf("Failed to fetch %v", err)
+		}
+		time.Sleep(10 * time.Minute)
 	}
 }
