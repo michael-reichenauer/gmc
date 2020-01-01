@@ -197,7 +197,7 @@ func (h view) ViewPage() ViewPage {
 		// View is to small (not visible)
 		return ViewPage{Width: 1, FirstLine: 0, Height: 1, CurrentLine: 0}
 	}
-	return ViewPage{Width: width + 1, FirstLine: h.firstIndex, Height: height, CurrentLine: h.currentIndex}
+	return ViewPage{Width: width - 2, FirstLine: h.firstIndex, Height: height, CurrentLine: h.currentIndex}
 }
 
 func (h *view) Properties() *Properties {

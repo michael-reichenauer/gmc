@@ -38,7 +38,7 @@ func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 
 func (h *MainWindow) Show() {
 	r := ui.Rect{0, 0, 1, 1}
-	h.repoView.Properties().HasFrame = true
+	h.repoView.Properties().HasFrame = false
 	h.detailsView.Show(r)
 	h.repoView.Show(r)
 	h.repoView.SetCurrentView()
@@ -63,7 +63,7 @@ func (h *MainWindow) OnResizeWindow() {
 	} else if h.mode == details {
 		detailsHeight := 7
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
-		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight, W: width, H: detailsHeight})
+		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight - 1, W: width, H: detailsHeight + 1})
 	}
 	h.repoView.NotifyChanged()
 	h.detailsView.NotifyChanged()

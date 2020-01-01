@@ -12,7 +12,7 @@ import (
 
 const (
 	RFC3339Small = "2006-01-02 15:04"
-	markerWidth  = 9
+	markerWidth  = 6
 )
 
 type repoPage struct {

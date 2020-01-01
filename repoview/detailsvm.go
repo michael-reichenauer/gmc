@@ -8,6 +8,11 @@ import (
 	"strings"
 )
 
+var (
+	lineChar      = "─"
+	branchPointer = "▲"
+)
+
 type detailsVM struct {
 	model         *viewmodel.Service
 	selectedIndex int
@@ -30,8 +35,9 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDeta
 }
 
 func toDetailsText(c viewmodel.Commit, width int) []string {
-	width = width - 17
 	var lines []string
+	lines = append(lines, toViewLine(width, c.Branch))
+	width = width - 14
 	id := c.ID
 	if id == viewmodel.StatusID {
 		id = " "
@@ -63,6 +69,21 @@ func toDetailsText(c viewmodel.Commit, width int) []string {
 	return lines
 }
 
+func toViewLine(width int, branch viewmodel.Branch) string {
+	bColor := branchColor(branch.DisplayName)
+	prefixWidth := branch.Index*2 - 1
+	suffixWidth := width - branch.Index*2 - 2
+	pointer := " " + branchPointer + " "
+	if prefixWidth < 0 {
+		prefixWidth = 0
+		pointer = branchPointer + " "
+		suffixWidth++
+	}
+	return ui.Dark(strings.Repeat(lineChar, prefixWidth) +
+		ui.ColorText(bColor, pointer) +
+		ui.Dark(strings.Repeat(lineChar, suffixWidth)))
+}
+
 func toBranchTips(tips []string) string {
 	return fmt.Sprintf("%s", strings.Join(tips, ", "))
 }
@@ -74,6 +95,7 @@ func toSids(ids []string) string {
 	}
 	return fmt.Sprintf("%s", strings.Join(sids, ", "))
 }
+
 func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-13s", text))
 }
@@ -81,12 +103,19 @@ func toHeader(text string) string {
 func toBranchText(c viewmodel.Commit, width int) string {
 	bColor := branchColor(c.Branch.DisplayName)
 	typeText := ""
-	if c.Branch.IsRemote && c.Branch.LocalName != "" {
+
+	switch {
+	case c.Branch.IsMultiBranch:
+		typeText = ui.Dark(" (multiple) >")
+	case !c.Branch.IsGitBranch:
+		typeText = ui.Dark(" (deleted)")
+	case c.Branch.IsRemote && c.Branch.LocalName != "":
 		typeText = ui.Dark(" (remote,local)")
-	} else if c.Branch.IsRemote && c.Branch.LocalName == "" {
+	case c.Branch.IsRemote && c.Branch.LocalName == "":
 		typeText = ui.Dark(" (remote)")
-	} else {
+	default:
 		typeText = ui.Dark(" (local)")
 	}
-	return ui.ColorText(bColor, c.Branch.DisplayName) + ui.Dark(utils.Text(typeText, width-len(c.Branch.DisplayName)+11))
+	return ui.ColorText(bColor, c.Branch.DisplayName) +
+		ui.Dark(utils.Text(typeText, width-len(c.Branch.DisplayName)+11))
 }
