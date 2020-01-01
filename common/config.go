@@ -1,5 +1,6 @@
 package common
 
+//
 type config struct {
 }
 
