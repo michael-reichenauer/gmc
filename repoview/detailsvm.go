@@ -109,14 +109,24 @@ func toBranchText(c viewmodel.Commit, width int) string {
 		typeText = ui.Dark(" (multiple) >")
 	case !c.Branch.IsGitBranch:
 		typeText = ui.Dark(" (deleted)")
+	case c.ID == viewmodel.StatusID:
+		typeText = ui.Dark(" (local)")
+	case c.IsLocalOnly:
+		typeText = ui.Dark(" (local)")
+	case c.IsRemoteOnly:
+		typeText = ui.Dark(" (remote)")
 	case c.Branch.IsRemote && c.Branch.LocalName != "":
+		typeText = ui.Dark(" (remote,local)")
+	case !c.Branch.IsRemote && c.Branch.RemoteName != "":
 		typeText = ui.Dark(" (remote,local)")
 	case c.Branch.IsRemote && c.Branch.LocalName == "":
 		typeText = ui.Dark(" (remote)")
 	default:
 		typeText = ui.Dark(" (local)")
 	}
-	if c.IsRemoteOnly {
+	if c.ID == viewmodel.StatusID {
+		typeText = typeText + ", changes not yet committed"
+	} else if c.IsRemoteOnly {
 		typeText = typeText + ", commit not yet pulled"
 	} else if c.IsLocalOnly {
 		typeText = typeText + ", commit not yet pushed"
