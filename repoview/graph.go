@@ -92,6 +92,8 @@ func graphConnectRune(bm utils.Bitmask) rune {
 		return '┴'
 	case viewmodel.BBranchRight:
 		return '╯'
+	case viewmodel.BBranchRight | viewmodel.BMLine | viewmodel.BPass:
+		return '┼'
 	case viewmodel.BBranchRight | viewmodel.BPass:
 		return '┴'
 	case viewmodel.BBranchRight | viewmodel.BMLine:
@@ -106,6 +108,8 @@ func graphConnectRune(bm utils.Bitmask) rune {
 		return '╰'
 	case viewmodel.BBranchLeft | viewmodel.BMLine:
 		return '├'
+	case viewmodel.BMLine | viewmodel.BPass:
+		return '┼'
 	case viewmodel.BMLine:
 		return '│'
 	case viewmodel.BPass:
@@ -120,6 +124,9 @@ func graphConnectRune(bm utils.Bitmask) rune {
 func branchColor(name string) ui.Color {
 	if name == "master" {
 		return ui.CMagenta
+	}
+	if name == "develop" {
+		return ui.CRedDk
 	}
 	if strings.HasPrefix(name, "multi:") {
 		return ui.CWhite

@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"log"
 	"math/rand"
 	"os"
@@ -45,12 +47,50 @@ func CompileRegexp(regexpText string) *regexp.Regexp {
 	return exp
 }
 
+func MustJsonMarshal(v interface{}) []byte {
+	bytes, err := json.Marshal(v)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return bytes
+}
+
+func MustJsonUnmarshal(bytes []byte, v interface{}) {
+	err := json.Unmarshal(bytes, v)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		return false
 	}
 	return !info.IsDir()
+}
+func MustFileWrite(filename string, data []byte) {
+	err := FileWrite(filename, data)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+func FileWrite(filename string, data []byte) error {
+	err := ioutil.WriteFile(filename, data, 0644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return err
+}
+func MustFileRead(filename string) []byte {
+	bytes, err := FileRead(filename)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return bytes
+}
+func FileRead(filename string) ([]byte, error) {
+	return ioutil.ReadFile(filename)
 }
 
 func DirExists(filename string) bool {

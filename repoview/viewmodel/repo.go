@@ -2,7 +2,7 @@ package viewmodel
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"time"
 )
@@ -18,8 +18,8 @@ type repo struct {
 	Branches          []*branch
 	CurrentCommit     *commit
 	CurrentBranchName string
-	gmRepo            gitmodel.Repo
-	gmStatus          gitmodel.Status
+	gmRepo            gitrepo.Repo
+	gmStatus          gitrepo.Status
 }
 
 func newRepo() *repo {
@@ -42,7 +42,7 @@ func (r *repo) BranchById(id string) *branch {
 	panic("unknown branch id" + id)
 }
 
-func (r *repo) addBranch(gb *gitmodel.Branch) {
+func (r *repo) addBranch(gb *gitrepo.Branch) {
 	b := r.toBranch(gb, len(r.Branches))
 	r.Branches = append(r.Branches, b)
 }
@@ -66,7 +66,7 @@ func (r *repo) addVirtualStatusCommit() {
 	r.commitById[c.ID] = c
 }
 
-func (r *repo) addGitCommit(gc *gitmodel.Commit) {
+func (r *repo) addGitCommit(gc *gitrepo.Commit) {
 	if !r.containsBranch(gc.Branch) {
 		return
 	}
@@ -78,7 +78,7 @@ func (r *repo) addGitCommit(gc *gitmodel.Commit) {
 	}
 }
 
-func (r *repo) containsOneOfBranches(branches []*gitmodel.Branch) bool {
+func (r *repo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	for _, rb := range r.Branches {
 		for _, b := range branches {
 			if rb.name == b.Name {
@@ -89,7 +89,7 @@ func (r *repo) containsOneOfBranches(branches []*gitmodel.Branch) bool {
 	return false
 }
 
-func (r *repo) containsBranch(branch *gitmodel.Branch) bool {
+func (r *repo) containsBranch(branch *gitrepo.Branch) bool {
 	for _, b := range r.Branches {
 		if b.name == branch.Name {
 			return true
@@ -98,7 +98,16 @@ func (r *repo) containsBranch(branch *gitmodel.Branch) bool {
 	return false
 }
 
-func (r *repo) toBranch(b *gitmodel.Branch, index int) *branch {
+func (r *repo) containsBranchName(name string) bool {
+	for _, b := range r.Branches {
+		if b.name == name {
+			return true
+		}
+	}
+	return false
+}
+
+func (r *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	parentBranchID := ""
 	if b.ParentBranch != nil {
 		parentBranchID = b.ParentBranch.Name
@@ -114,10 +123,11 @@ func (r *repo) toBranch(b *gitmodel.Branch, index int) *branch {
 		isRemote:       b.IsRemote,
 		isMultiBranch:  b.IsMultiBranch,
 		remoteName:     b.RemoteName,
+		localName:      b.LocalName,
 	}
 }
 
-func (r *repo) toCommit(c *gitmodel.Commit, index int) *commit {
+func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
 	var branch *branch
 	if c.Branch != nil {
 		branch = r.BranchById(c.Branch.Name)
@@ -135,6 +145,7 @@ func (r *repo) toCommit(c *gitmodel.Commit, index int) *commit {
 		Branch:     branch,
 		Index:      index,
 		graph:      make([]GraphColumn, len(r.Branches)),
+		BranchTips: c.BranchTips,
 	}
 }
 

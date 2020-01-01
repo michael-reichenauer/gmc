@@ -10,13 +10,15 @@ import (
 //
 type RepoView struct {
 	ui.View
-	detailsView *DetailsView
-	vm          *repoVM
+	mainController mainController
+	detailsView    *DetailsView
+	vm             *repoVM
 }
 
-func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsView) *RepoView {
+func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
-		detailsView: detailsView,
+		detailsView:    detailsView,
+		mainController: mainController,
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -24,7 +26,7 @@ func newRepoView(uiHandler *ui.UI, model *viewmodel.Model, detailsView *DetailsV
 	return h
 }
 
-func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
+func (h *RepoView) viewData(viewPort ui.ViewPage) ui.ViewData {
 	// log.Infof("repo viewData ...")
 	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
@@ -48,7 +50,7 @@ func (h *RepoView) viewData(viewPort ui.ViewPort) ui.ViewData {
 }
 
 func (h *RepoView) onLoad() {
-	h.vm.Load()
+	h.vm.onLoad()
 	h.setWindowTitle("", "", 0)
 
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
@@ -56,20 +58,21 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
+	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.NotifyChanged()
 }
 
 func (h *RepoView) onEnter() {
-	h.NotifyChanged()
+	h.mainController.ToggleDetails()
 }
 
 func (h *RepoView) onRight() {
-	h.vm.OpenBranch(h.CurrentLine())
+	h.vm.OpenBranch(h.ViewPage().CurrentLine)
 	h.NotifyChanged()
 }
 
 func (h *RepoView) onLeft() {
-	h.vm.CloseBranch(h.CurrentLine())
+	h.vm.CloseBranch(h.ViewPage().CurrentLine)
 	h.NotifyChanged()
 }
 
@@ -88,4 +91,13 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 		changesText = fmt.Sprintf(" (*%d)", changes)
 	}
 	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
+}
+
+func (h *RepoView) onTrace() {
+	h.Clear()
+	h.PostOnUIThread(func() {
+		// Posted to allow the clear to show while new data is calculated
+		h.vm.RefreshTrace(h.ViewPage())
+		h.NotifyChanged()
+	})
 }

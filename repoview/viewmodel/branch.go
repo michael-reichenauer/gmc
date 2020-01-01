@@ -8,6 +8,7 @@ type branch struct {
 	bottomId       string
 	parentBranchID string
 	remoteName     string
+	localName      string
 	tip            *commit
 	bottom         *commit
 	parentBranch   *branch

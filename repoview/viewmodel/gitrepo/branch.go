@@ -1,7 +1,7 @@
-package gitmodel
+package gitrepo
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 )
 
 type Branch struct {
@@ -12,13 +12,14 @@ type Branch struct {
 	ParentBranch  *Branch
 	IsRemote      bool
 	RemoteName    string
+	LocalName     string
 	IsCurrent     bool
 	IsGitBranch   bool
 	IsMultiBranch bool
 	IsNamedBranch bool
 }
 
-func newBranch(gb git.Branch) *Branch {
+func newBranch(gb gitlib.Branch) *Branch {
 	return &Branch{
 		Name:        gb.Name,
 		DisplayName: gb.DisplayName,

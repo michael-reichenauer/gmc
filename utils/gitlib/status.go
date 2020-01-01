@@ -1,9 +1,7 @@
-package git
+package gitlib
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
-	"io/ioutil"
 	"path"
 	"strings"
 )
@@ -18,10 +16,10 @@ type Status struct {
 }
 
 type statusHandler struct {
-	cmd *gitCmd
+	cmd GitCommander
 }
 
-func newStatus(cmd *gitCmd) *statusHandler {
+func newStatus(cmd GitCommander) *statusHandler {
 	return &statusHandler{cmd: cmd}
 }
 
@@ -30,7 +28,7 @@ func (s *Status) String() string {
 }
 
 func (h *statusHandler) getStatus() (Status, error) {
-	gitStatus, err := h.cmd.git("status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
+	gitStatus, err := h.cmd.Git("status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
 	if err != nil {
 		return Status{}, err
 	}
@@ -71,15 +69,13 @@ func (h *statusHandler) parseStatus(statusText string) (Status, error) {
 }
 
 func (h *statusHandler) getMergeStatus() (string, bool) {
-	isMergeInProgress := false
 	mergeMessage := ""
-	mergeIpPath := path.Join(h.cmd.workingDir, ".git", "MERGE_HEAD")
-	mergeMsgPath := path.Join(h.cmd.workingDir, ".git", "MERGE_MSG")
-	if utils.FileExists(mergeIpPath) {
-		isMergeInProgress = true
-		msg, _ := ioutil.ReadFile(mergeMsgPath)
-		mergeMessage = strings.TrimSpace(string(msg))
+	//mergeIpPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_HEAD")
+	mergeMsgPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_MSG")
+	msg, err := h.cmd.ReadFile(mergeMsgPath)
+	if err != nil {
+		return "", false
 	}
-
-	return mergeMessage, isMergeInProgress
+	mergeMessage = strings.TrimSpace(msg)
+	return mergeMessage, true
 }

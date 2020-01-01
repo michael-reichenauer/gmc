@@ -3,14 +3,16 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"path/filepath"
 	"strings"
 )
 
 const (
 	RFC3339Small = "2006-01-02 15:04"
-	markerWidth  = 8
+	markerWidth  = 6
 )
 
 type repoPage struct {
@@ -24,48 +26,56 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	notifier notifier
-	model    *viewmodel.Model
-	viewPort viewmodel.ViewPort
+	notifier         notifier
+	viewModelService *viewmodel.Service
+}
+
+type trace struct {
+	RepoPath    string
+	ViewPage    ui.ViewPage
+	BranchNames []string
 }
 
 type notifier interface {
 	NotifyChanged()
 }
 
-func newRepoVM(model *viewmodel.Model, notifier notifier) *repoVM {
+func newRepoVM(model *viewmodel.Service, notifier notifier) *repoVM {
 	return &repoVM{
-		notifier: notifier,
-		model:    model,
+		notifier:         notifier,
+		viewModelService: model,
 	}
 }
 
-func (h *repoVM) Load() {
-	h.model.Start()
-	h.model.TriggerRefresh()
+func (h *repoVM) onLoad() {
+	h.viewModelService.Start()
+	h.viewModelService.TriggerRefreshModel()
 	go h.monitorModelRoutine()
 }
 
+func (h *repoVM) LoadWithBranches(branchNames []string) {
+	h.viewModelService.LoadRepo(branchNames)
+}
+
 func (h *repoVM) monitorModelRoutine() {
-	for range h.model.ChangedEvents {
+	for range h.viewModelService.ChangedEvents {
 		log.Infof("Detected model change")
 		h.notifier.NotifyChanged()
 	}
 }
 
-func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
-	var err error
-	h.viewPort, err = h.model.GetRepoViewPort(viewPort.FirstIndex, viewPort.Height)
+func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
+	rvp, err := h.viewModelService.GetRepoViewPort(viewPort.FirstLine, viewPort.Height)
 	if err != nil {
 		return repoPage{}, err
 	}
-	messageLength, authorLength, timeLength := columnWidths(h.viewPort.GraphWidth+markerWidth, viewPort.Width)
+	messageLength, sidLength, authorLength, timeLength := columnWidths(rvp.GraphWidth+markerWidth, viewPort.Width)
 
-	commits := h.viewPort.Commits
+	commits := rvp.Commits
 
 	var currentLineCommit viewmodel.Commit
-	if viewPort.CurrentIndex-viewPort.FirstIndex < len(commits) && viewPort.CurrentIndex-viewPort.FirstIndex >= 0 {
-		currentLineCommit = commits[viewPort.CurrentIndex-viewPort.FirstIndex]
+	if viewPort.CurrentLine-viewPort.FirstLine < len(commits) && viewPort.CurrentLine-viewPort.FirstLine >= 0 {
+		currentLineCommit = commits[viewPort.CurrentLine-viewPort.FirstLine]
 	}
 
 	var lines []string
@@ -78,6 +88,8 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 		sb.WriteString(" ")
 		writeSubject(&sb, c, currentLineCommit, messageLength)
 		sb.WriteString(" ")
+		writeSid(&sb, c, sidLength)
+		sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)
@@ -85,26 +97,38 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPort) (repoPage, error) {
 	}
 
 	return repoPage{
-		repoPath:           h.viewPort.RepoPath,
+		repoPath:           rvp.RepoPath,
 		lines:              lines,
-		total:              h.viewPort.TotalCommits,
-		firstIndex:         h.viewPort.FirstIndex,
-		currentIndex:       viewPort.CurrentIndex,
-		uncommittedChanges: h.viewPort.UncommittedChanges,
-		currentBranchName:  h.viewPort.CurrentBranchName,
+		total:              rvp.TotalCommits,
+		firstIndex:         rvp.FirstIndex,
+		currentIndex:       viewPort.CurrentLine,
+		uncommittedChanges: rvp.UncommittedChanges,
+		currentBranchName:  rvp.CurrentBranchName,
 	}, nil
 }
 
 func (h *repoVM) OpenBranch(index int) {
-	h.model.OpenBranch(index)
+	h.viewModelService.OpenBranch(index)
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	h.model.CloseBranch(index)
+	h.viewModelService.CloseBranch(index)
 }
 
 func (h *repoVM) Refresh() {
-	//h.viewmodel.Refresh(h.viewPort)
+	h.viewModelService.TriggerRefreshModel()
+}
+
+func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
+	gitlib.EnableTracing("")
+	traceBytes := utils.MustJsonMarshal(trace{
+		RepoPath:    h.viewModelService.RepoPath(),
+		ViewPage:    viewPage,
+		BranchNames: h.viewModelService.CurrentBranchNames(),
+	})
+	utils.MustFileWrite(filepath.Join(gitlib.CurrentTracePath(), "repovm"), traceBytes)
+
+	h.viewModelService.TriggerRefreshModel()
 }
 
 func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
@@ -121,12 +145,20 @@ func writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 
 		if i != 0 {
 			cColor := bColor
-			if c.Graph[i].Connect.Has(viewmodel.BPass) {
+			if c.Graph[i].Connect == viewmodel.BPass &&
+				c.Graph[i].PassName != "" &&
+				c.Graph[i].PassName != "-" {
+				cColor = branchColor(c.Graph[i].PassName)
+			} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
 				cColor = ui.CWhite
 			}
 			sb.WriteString(ui.ColorRune(cColor, graphConnectRune(c.Graph[i].Connect)))
 		}
-		if c.Graph[i].Branch == viewmodel.BPass {
+		if c.Graph[i].Branch == viewmodel.BPass &&
+			c.Graph[i].PassName != "" &&
+			c.Graph[i].PassName != "-" {
+			bColor = branchColor(c.Graph[i].PassName)
+		} else if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}
 		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
@@ -140,23 +172,33 @@ func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 	}
 }
 
-func columnWidths(graphWidth, viewWidth int) (msgLength int, authorLength int, timeLength int) {
+func columnWidths(graphWidth, viewWidth int) (msgLength, sidLength, authorLength, timeLength int) {
 	width := viewWidth - graphWidth
-	authorLength = 20
-	timeLength = 16
+	sidLength = 6
+	authorLength = 15
+	timeLength = 12
 	if width < 90 {
 		authorLength = 10
-		timeLength = 10
+		timeLength = 6
 	}
 	if width < 60 {
+		sidLength = 0
 		authorLength = 0
 		timeLength = 0
 	}
-	msgLength = viewWidth - graphWidth - authorLength - timeLength
+	msgLength = viewWidth - graphWidth - authorLength - timeLength - sidLength
 	if msgLength < 0 {
 		msgLength = 0
 	}
 	return
+}
+
+func writeSid(sb *strings.Builder, commit viewmodel.Commit, length int) {
+	sid := commit.SID
+	if commit.ID == viewmodel.StatusID {
+		sid = " "
+	}
+	sb.WriteString(ui.Dark(utils.Text(sid, length)))
 }
 
 func writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {
@@ -168,7 +210,11 @@ func writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
 		sb.WriteString(ui.Dark(utils.Text("", length)))
 		return
 	}
-	sb.WriteString(ui.Dark(utils.Text(c.AuthorTime.Format(RFC3339Small), length)))
+	tt := c.AuthorTime.Format(RFC3339Small)
+	tt = strings.Replace(tt, "-", "", -1)
+
+	tt = tt[2:]
+	sb.WriteString(ui.Dark(utils.Text(tt, length)))
 }
 
 func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmodel.Commit, length int) {
@@ -177,11 +223,16 @@ func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmo
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}
+	color := ui.CWhite
 	if c.Branch.Name == selectedCommit.Branch.Name ||
 		c.Branch.Name == selectedCommit.Branch.RemoteName ||
 		c.Branch.RemoteName == selectedCommit.Branch.Name {
-		sb.WriteString(ui.White(subject))
+		if c.Branch.RemoteName != "" {
+			//
+			color = ui.CGreenDk
+		}
 	} else {
-		sb.WriteString(ui.Dark(subject))
+		color = ui.CDark
 	}
+	sb.WriteString(ui.ColorText(color, subject))
 }

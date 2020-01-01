@@ -1,26 +1,30 @@
-package gitmodel
+package gitrepo
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"time"
 )
 
-type Handler struct {
+type Service struct {
 	RepoEvents   chan Repo
 	StatusEvents chan Status
 	ErrorEvents  chan error
 
-	gitRepo  *git.Repo
+	gitLib   *gitlib.Repo
 	monitor  *monitor
 	branches *branches
 }
 
-func NewModel(repoPath string) *Handler {
-	gitRepo := git.NewRepo(repoPath)
-	return &Handler{
-		gitRepo:      gitRepo,
-		monitor:      newMonitor(gitRepo.RepoPath),
+func ToSid(commitID string) string {
+	return gitlib.ToSid(commitID)
+}
+
+func NewModel(repoPath string) *Service {
+	gitLib := gitlib.NewRepo(repoPath)
+	return &Service{
+		gitLib:       gitLib,
+		monitor:      newMonitor(gitLib.RepoPath()),
 		branches:     newBranches(),
 		RepoEvents:   make(chan Repo),
 		StatusEvents: make(chan Status),
@@ -28,37 +32,39 @@ func NewModel(repoPath string) *Handler {
 	}
 }
 
-func (h *Handler) Start() {
+func (h *Service) StartRepoMonitor() {
 	h.monitor.Start()
 	go h.monitorStatusChangesRoutine()
 	go h.monitorRepoChangesRoutine()
 }
 
-func (h *Handler) TriggerRefresh() {
+func (h *Service) TriggerRefreshRepo() {
 	go func() {
-		h.refreshRepo()
+		repo, err := h.GetFreshRepo()
+		if err != nil {
+			h.ErrorEvents <- err
+			return
+		}
+		h.RepoEvents <- repo
 	}()
 }
 
-func (h *Handler) refreshRepo() {
+func (h *Service) GetFreshRepo() (Repo, error) {
 	t := time.Now()
 	repo := newRepo()
-	repo.RepoPath = h.gitRepo.RepoPath
+	repo.RepoPath = h.gitLib.RepoPath()
 
-	gitCommits, err := h.gitRepo.GetLog()
+	gitCommits, err := h.gitLib.GetLog()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+		return Repo{}, err
 	}
-	gitBranches, err := h.gitRepo.GetBranches()
+	gitBranches, err := h.gitLib.GetBranches()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+		return Repo{}, err
 	}
-	gitStatus, err := h.gitRepo.GetStatus()
+	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+		return Repo{}, err
 	}
 	repo.Status = newStatus(gitStatus)
 	repo.setGitBranches(gitBranches)
@@ -66,22 +72,22 @@ func (h *Handler) refreshRepo() {
 
 	h.branches.setBranchForAllCommits(repo)
 	log.Infof("Git repo %v", time.Since(t))
-	h.RepoEvents <- *repo
+	return *repo, nil
 }
 
-func (h *Handler) refreshStatus() {
+func (h *Service) getFreshStatus() (Status, error) {
 	t := time.Now()
-	gitStatus, err := h.gitRepo.GetStatus()
+	gitStatus, err := h.gitLib.GetStatus()
 	if err != nil {
-		h.ErrorEvents <- err
-		return
+
+		return Status{}, err
 	}
 	status := newStatus(gitStatus)
 	log.Infof("Git status %v", time.Since(t))
-	h.StatusEvents <- status
+	return status, nil
 }
 
-func (h *Handler) monitorRepoChangesRoutine() {
+func (h *Service) monitorRepoChangesRoutine() {
 	var ticker *time.Ticker
 	tickerChan := func() <-chan time.Time {
 		if ticker == nil {
@@ -96,12 +102,19 @@ func (h *Handler) monitorRepoChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("Detected repo change")
 			ticker = nil
-			h.refreshRepo()
+
+			// Repo changed, get new fresh repo and report
+			repo, err := h.GetFreshRepo()
+			if err != nil {
+				h.ErrorEvents <- err
+				return
+			}
+			h.RepoEvents <- repo
 		}
 	}
 }
 
-func (h *Handler) monitorStatusChangesRoutine() {
+func (h *Service) monitorStatusChangesRoutine() {
 	var ticker *time.Ticker
 	tickerChan := func() <-chan time.Time {
 		if ticker == nil {
@@ -116,7 +129,13 @@ func (h *Handler) monitorStatusChangesRoutine() {
 		case <-tickerChan():
 			log.Infof("Detected status change")
 			ticker = nil
-			h.refreshStatus()
+			// Status changed, get new fresh status and report
+			status, err := h.getFreshStatus()
+			if err != nil {
+				h.ErrorEvents <- err
+				return
+			}
+			h.StatusEvents <- status
 		}
 	}
 }

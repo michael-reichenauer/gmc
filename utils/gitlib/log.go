@@ -1,4 +1,4 @@
-package git
+package gitlib
 
 import (
 	"fmt"
@@ -11,15 +11,19 @@ const (
 )
 
 type logHandler struct {
-	cmd *gitCmd
+	cmd GitCommander
 }
 
-func newLog(cmd *gitCmd) *logHandler {
+func ToSid(commitID string) string {
+	return commitID[:6]
+}
+
+func newLog(cmd GitCommander) *logHandler {
 	return &logHandler{cmd: cmd}
 }
 
 func (h *logHandler) getLog() ([]Commit, error) {
-	logText, err := h.cmd.git("log", "--all", "--pretty=%H|%ai|%ci|%an|%P|%s")
+	logText, err := h.cmd.Git("log", "--all", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git log, %v", err)
 	}
@@ -30,7 +34,7 @@ func (h *logHandler) getLog() ([]Commit, error) {
 
 func (h *logHandler) parseCommits(logText string) ([]Commit, error) {
 	var commits []Commit
-	lines := strings.Split(logText, "\n")
+	lines := strings.Split(logText, "\x00")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
@@ -49,9 +53,8 @@ func (h *logHandler) parseCommit(line string) (Commit, error) {
 	if len(lineParts) < 6 {
 		return Commit{}, fmt.Errorf("failed to parse git commit %q", line)
 	}
-	subject := h.parseSubject(lineParts)
+	subject, message := h.parseMessage(lineParts)
 	id := lineParts[0]
-	message := subject
 	author := lineParts[3]
 	parentIDs := h.parseParentIDs(lineParts)
 
@@ -59,7 +62,7 @@ func (h *logHandler) parseCommit(line string) (Commit, error) {
 	if err != nil {
 		return Commit{}, fmt.Errorf("failed to parse commit times from commit %q, %v", line, err)
 	}
-	return Commit{ID: id, SID: id[:6], ParentIDs: parentIDs, Subject: subject,
+	return Commit{ID: id, SID: ToSid(id), ParentIDs: parentIDs, Subject: subject,
 		Message: message, Author: author, AuthorTime: authorTime, CommitTime: commitTime}, nil
 }
 
@@ -89,10 +92,12 @@ func (h *logHandler) toCustomRFC3339Text(gitTimeText string) string {
 	return strings.Replace(timeText, " +", "+", 1)
 }
 
-func (h *logHandler) parseSubject(lineParts []string) string {
+func (h *logHandler) parseMessage(lineParts []string) (string, string) {
+	message := lineParts[5]
 	if len(lineParts) > 6 {
 		// The subject contains one or more "|", so rejoin these parts into original subject
-		return strings.Join(lineParts[5:], "|")
+		message = strings.Join(lineParts[5:], "|")
 	}
-	return lineParts[5]
+	lines := strings.Split(message, "\n")
+	return lines[0], message
 }

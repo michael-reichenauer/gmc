@@ -11,6 +11,7 @@ type GraphColumn struct {
 	Branch            utils.Bitmask
 	BranchName        string
 	BranchDisplayName string
+	PassName          string
 }
 
 type commit struct {
@@ -23,14 +24,13 @@ type commit struct {
 	AuthorTime  time.Time
 	Parent      *commit
 	MergeParent *commit
-	//Children        []*commit
-	//Children      []*commit
-	ParentIDs []string
-	ChildIDs  []string
-	IsCurrent bool
-	IsMore    bool
-	Branch    *branch
-	graph     []GraphColumn
+	ParentIDs   []string
+	ChildIDs    []string
+	IsCurrent   bool
+	IsMore      bool
+	Branch      *branch
+	graph       []GraphColumn
+	BranchTips  []string
 }
 
 func (c *commit) String() string {

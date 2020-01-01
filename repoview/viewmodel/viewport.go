@@ -25,6 +25,9 @@ type Commit struct {
 	Branch     Branch
 	Graph      []GraphColumn
 	IsMore     bool
+	ParentIDs  []string
+	ChildIDs   []string
+	BranchTips []string
 }
 
 type Branch struct {
@@ -33,7 +36,9 @@ type Branch struct {
 	Index         int
 	IsMultiBranch bool
 	RemoteName    string
+	LocalName     string
 	IsRemote      bool
+	IsGitBranch   bool
 }
 
 func newViewPort(repo *repo, firstIndex, count int) ViewPort {
@@ -62,12 +67,15 @@ func toCommit(c *commit) Commit {
 		SID:        c.SID,
 		Subject:    c.Subject,
 		Message:    c.Message,
+		ParentIDs:  c.ParentIDs,
+		ChildIDs:   c.ChildIDs,
 		Author:     c.Author,
 		AuthorTime: c.AuthorTime,
 		IsCurrent:  c.IsCurrent,
 		Branch:     toBranch(c.Branch),
 		Graph:      c.graph,
 		IsMore:     c.IsMore,
+		BranchTips: c.BranchTips,
 	}
 }
 
@@ -78,6 +86,8 @@ func toBranch(b *branch) Branch {
 		Index:         b.index,
 		IsMultiBranch: b.isMultiBranch,
 		RemoteName:    b.remoteName,
+		LocalName:     b.localName,
 		IsRemote:      b.isRemote,
+		IsGitBranch:   b.isGitBranch,
 	}
 }

@@ -1,8 +1,8 @@
-package gitmodel
+package gitrepo
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"time"
 )
 
@@ -23,9 +23,10 @@ type Commit struct {
 	Branch        *Branch
 	Branches      []*Branch
 	IsLikely      bool
+	BranchTips    []string
 }
 
-func newCommit(gc git.Commit) *Commit {
+func newCommit(gc gitlib.Commit) *Commit {
 	return &Commit{
 		Id:         gc.ID,
 		Sid:        gc.SID,
