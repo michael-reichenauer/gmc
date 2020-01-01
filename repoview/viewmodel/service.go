@@ -239,7 +239,7 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 	for _, c := range repo.gmRepo.Commits {
 		repo.addGitCommit(c)
 	}
-
+	s.setBranchParentChildRelations(repo)
 	s.setParentChildRelations(repo)
 
 	// Draw branch lines
@@ -250,38 +250,38 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 	return repo
 }
 
-func (s *Service) setParentChildRelations(repo *repo) {
+func (s *Service) setBranchParentChildRelations(repo *repo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
 		b.bottom = repo.commitById[b.bottomId]
-		if b.parentBranchID != "" {
-			b.parentBranch = repo.BranchById(b.parentBranchID)
+		if b.parentBranchName != "" {
+			b.parentBranch = repo.BranchByName(b.parentBranchName)
 		}
 	}
+}
 
+func (s *Service) setParentChildRelations(repo *repo) {
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
-			// if a commit has a parent, it is included in the repo view model
+			// Commit has a parent
 			c.Parent = repo.commitById[c.ParentIDs[0]]
 			if len(c.ParentIDs) > 1 {
 				// Merge parent can be nil if not the merge parent branch is included in the repo view model as well
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]
+				if c.MergeParent == nil {
+					// commit has a merge parent, that is not visible, mark the commit as expandable
+					c.IsMore = true
+				}
 			}
-		} else {
-			// No parent, reached initial commit of the repo
-			c.Branch.bottom = c
 		}
 
-		if c.MergeParent == nil && len(c.ParentIDs) > 1 {
-			// commit has a merge parent, that is not visible, mark the commit as expandable
-			c.IsMore = true
-		}
-		for _, ccId := range c.ChildIDs {
-			if _, ok := repo.commitById[ccId]; !ok {
+		for _, childID := range c.ChildIDs {
+			if _, ok := repo.commitById[childID]; !ok {
 				// commit has a child, that is not visible, mark the commit as expandable
 				c.IsMore = true
 			}
 		}
+
 		if !c.IsMore {
 			for _, branchName := range c.BranchTips {
 				if !repo.containsBranchName(branchName) {

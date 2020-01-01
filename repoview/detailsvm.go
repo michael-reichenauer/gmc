@@ -116,6 +116,11 @@ func toBranchText(c viewmodel.Commit, width int) string {
 	default:
 		typeText = ui.Dark(" (local)")
 	}
+	if c.IsRemoteOnly {
+		typeText = typeText + ", commit not yet pulled"
+	} else if c.IsLocalOnly {
+		typeText = typeText + ", commit not yet pushed"
+	}
 	return ui.ColorText(bColor, c.Branch.DisplayName) +
 		ui.Dark(utils.Text(typeText, width-len(c.Branch.DisplayName)+11))
 }
