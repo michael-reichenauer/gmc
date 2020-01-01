@@ -1,20 +1,20 @@
 package viewmodel
 
 type branch struct {
-	name           string
-	displayName    string
-	index          int
-	tipId          string
-	bottomId       string
-	parentBranchID string
-	remoteName     string
-	localName      string
-	tip            *commit
-	bottom         *commit
-	parentBranch   *branch
-	isGitBranch    bool
-	isMultiBranch  bool
-	isRemote       bool
+	name             string
+	displayName      string
+	index            int
+	tipId            string
+	bottomId         string
+	parentBranchName string
+	remoteName       string
+	localName        string
+	tip              *commit
+	bottom           *commit
+	parentBranch     *branch
+	isGitBranch      bool
+	isMultiBranch    bool
+	isRemote         bool
 }
 
 func (b *branch) String() string {

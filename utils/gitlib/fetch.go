@@ -1,5 +1,6 @@
 package gitlib
 
+// fetches from remote origin
 type fetchService struct {
 	cmd GitCommander
 }

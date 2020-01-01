@@ -1,9 +1,5 @@
 package gitrepo
 
-import (
-	"github.com/michael-reichenauer/gmc/utils/log"
-)
-
 // Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
@@ -71,9 +67,6 @@ func (h *branches) determineBranchHierarchy(repo *Repo) {
 
 func (h *branches) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
-		if c.Id == "6d6b262cf3556f4c434f58dad1efecf220d02333" {
-			log.Infof("")
-		}
 		h.branchNames.parseCommit(c)
 
 		h.determineBranch(repo, c)

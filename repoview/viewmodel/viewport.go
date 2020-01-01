@@ -15,19 +15,21 @@ type ViewPort struct {
 }
 
 type Commit struct {
-	ID         string
-	SID        string
-	Subject    string
-	Message    string
-	Author     string
-	AuthorTime time.Time
-	IsCurrent  bool
-	Branch     Branch
-	Graph      []GraphColumn
-	IsMore     bool
-	ParentIDs  []string
-	ChildIDs   []string
-	BranchTips []string
+	ID           string
+	SID          string
+	Subject      string
+	Message      string
+	Author       string
+	AuthorTime   time.Time
+	IsCurrent    bool
+	Branch       Branch
+	Graph        []GraphColumn
+	IsMore       bool
+	ParentIDs    []string
+	ChildIDs     []string
+	BranchTips   []string
+	IsLocalOnly  bool
+	IsRemoteOnly bool
 }
 
 type Branch struct {
@@ -63,19 +65,21 @@ func toCommits(repo *repo, firstIndex int, count int) []Commit {
 
 func toCommit(c *commit) Commit {
 	return Commit{
-		ID:         c.ID,
-		SID:        c.SID,
-		Subject:    c.Subject,
-		Message:    c.Message,
-		ParentIDs:  c.ParentIDs,
-		ChildIDs:   c.ChildIDs,
-		Author:     c.Author,
-		AuthorTime: c.AuthorTime,
-		IsCurrent:  c.IsCurrent,
-		Branch:     toBranch(c.Branch),
-		Graph:      c.graph,
-		IsMore:     c.IsMore,
-		BranchTips: c.BranchTips,
+		ID:           c.ID,
+		SID:          c.SID,
+		Subject:      c.Subject,
+		Message:      c.Message,
+		ParentIDs:    c.ParentIDs,
+		ChildIDs:     c.ChildIDs,
+		Author:       c.Author,
+		AuthorTime:   c.AuthorTime,
+		IsCurrent:    c.IsCurrent,
+		Branch:       toBranch(c.Branch),
+		Graph:        c.graph,
+		IsMore:       c.IsMore,
+		BranchTips:   c.BranchTips,
+		IsLocalOnly:  c.IsLocalOnly,
+		IsRemoteOnly: c.IsRemoteOnly,
 	}
 }
 

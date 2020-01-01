@@ -33,13 +33,14 @@ func (r *repo) CommitById(id string) (*commit, bool) {
 	return c, ok
 }
 
-func (r *repo) BranchById(id string) *branch {
+func (r *repo) BranchByName(name string) *branch {
 	for _, b := range r.Branches {
-		if id == b.name {
+		if name == b.name {
 			return b
 		}
 	}
-	panic("unknown branch id" + id)
+	log.Fatal("unknown branch id" + name)
+	return nil
 }
 
 func (r *repo) addBranch(gb *gitrepo.Branch) {
@@ -57,9 +58,6 @@ func (r *repo) addVirtualStatusCommit() {
 	}
 	allChanges := r.gmStatus.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
-	if r.gmStatus.IsMerging && r.gmStatus.MergeMessage != "" {
-		statusText = statusText + ", " + r.gmStatus.MergeMessage
-	}
 
 	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))
 	r.Commits = append(r.Commits, c)
@@ -108,49 +106,77 @@ func (r *repo) containsBranchName(name string) bool {
 }
 
 func (r *repo) toBranch(b *gitrepo.Branch, index int) *branch {
-	parentBranchID := ""
+	parentBranchName := ""
 	if b.ParentBranch != nil {
-		parentBranchID = b.ParentBranch.Name
+		parentBranchName = b.ParentBranch.Name
 	}
 	return &branch{
-		name:           b.Name,
-		displayName:    b.DisplayName,
-		index:          index,
-		tipId:          b.TipID,
-		bottomId:       b.BottomID,
-		parentBranchID: parentBranchID,
-		isGitBranch:    b.IsGitBranch,
-		isRemote:       b.IsRemote,
-		isMultiBranch:  b.IsMultiBranch,
-		remoteName:     b.RemoteName,
-		localName:      b.LocalName,
+		name:             b.Name,
+		displayName:      b.DisplayName,
+		index:            index,
+		tipId:            b.TipID,
+		bottomId:         b.BottomID,
+		parentBranchName: parentBranchName,
+		isGitBranch:      b.IsGitBranch,
+		isRemote:         b.IsRemote,
+		isMultiBranch:    b.IsMultiBranch,
+		remoteName:       b.RemoteName,
+		localName:        b.LocalName,
 	}
 }
 
 func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
 	var branch *branch
 	if c.Branch != nil {
-		branch = r.BranchById(c.Branch.Name)
+		branch = r.BranchByName(c.Branch.Name)
 	}
+	isLocalOnly := false
+	isRemoteOnly := false
+	if c.Branch.IsGitBranch {
+		if c.Branch.IsRemote && c.Branch.LocalName != "" {
+			if !containsBranchName(c.Branches, c.Branch.LocalName) {
+				isRemoteOnly = true
+				log.Infof("Commit remote only %s", c)
+			}
+		}
+		if !c.Branch.IsRemote && c.Branch.RemoteName != "" {
+			if !containsBranchName(c.Branches, c.Branch.RemoteName) {
+				isLocalOnly = true
+				log.Infof("Commit local only %s", c)
+			}
+		}
+	}
+
 	return &commit{
-		ID:         c.Id,
-		SID:        c.Sid,
-		Subject:    c.Subject,
-		Message:    c.Message,
-		Author:     c.Author,
-		AuthorTime: c.AuthorTime,
-		ParentIDs:  c.ParentIDs,
-		ChildIDs:   c.ChildIDs,
-		IsCurrent:  c.IsCurrent,
-		Branch:     branch,
-		Index:      index,
-		graph:      make([]GraphColumn, len(r.Branches)),
-		BranchTips: c.BranchTips,
+		ID:           c.Id,
+		SID:          c.Sid,
+		Subject:      c.Subject,
+		Message:      c.Message,
+		Author:       c.Author,
+		AuthorTime:   c.AuthorTime,
+		ParentIDs:    c.ParentIDs,
+		ChildIDs:     c.ChildIDs,
+		IsCurrent:    c.IsCurrent,
+		Branch:       branch,
+		Index:        index,
+		graph:        make([]GraphColumn, len(r.Branches)),
+		BranchTips:   c.BranchTips,
+		IsLocalOnly:  isLocalOnly,
+		IsRemoteOnly: isRemoteOnly,
 	}
 }
 
+func containsBranchName(branches []*gitrepo.Branch, name string) bool {
+	for _, b := range branches {
+		if name == b.Name {
+			return true
+		}
+	}
+	return false
+}
+
 func (r *repo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
-	branch := r.BranchById(branchName)
+	branch := r.BranchByName(branchName)
 	return &commit{
 		ID:         StatusID,
 		SID:        StatusSID,
