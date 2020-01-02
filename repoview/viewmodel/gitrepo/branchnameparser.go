@@ -2,9 +2,11 @@ package gitrepo
 
 import (
 	"regexp"
+	"strings"
 )
 
 var (
+	prefixes   = []string{"refs/remotes/origin/", "remotes/origin/", "origin/"}
 	nameRegExp = regexp.MustCompile( // parse subject like e.g. "Merge branch 'develop' into master"
 		`[Mm]erged?` + //                                     'Merge' or 'merged' word
 			`(\s+remote-tracking)?` + //                      'remote-tracking' optional word when merging remote branches
@@ -63,9 +65,13 @@ func (h *branchNameParser) parseMergeBranchNames(subject string) fromInto {
 
 	if matches[0][from] != "" && matches[0][direction] != "" && matches[0][into] == "" {
 		// Subject is a pull merge (same source and target branch)
-		return fromInto{from: matches[0][from], into: matches[0][from]}
+		return fromInto{
+			from: h.trimBranchName(matches[0][from]),
+			into: h.trimBranchName(matches[0][from])}
 	}
-	return fromInto{from: matches[0][from], into: matches[0][into]}
+	return fromInto{
+		from: h.trimBranchName(matches[0][from]),
+		into: h.trimBranchName(matches[0][into])}
 }
 
 // indexes returns the named group indexes to be used in parse
@@ -83,4 +89,13 @@ func indexes() (fromIndex, intoIndex, directionIndex int) {
 		}
 	}
 	return
+}
+
+func (h *branchNameParser) trimBranchName(name string) string {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(name, prefix) {
+			return name[len(prefix):]
+		}
+	}
+	return name
 }
