@@ -31,19 +31,19 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDeta
 	if err != nil {
 		return commitDetails{}, err
 	}
-	return commitDetails{lines: toDetailsText(commit, viewPort.Width)}, nil
+	return commitDetails{lines: h.toDetailsText(commit, viewPort.Width)}, nil
 }
 
-func toDetailsText(c viewmodel.Commit, width int) []string {
+func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) []string {
 	var lines []string
-	lines = append(lines, toViewLine(width, c.Branch))
+	lines = append(lines, h.toViewLine(width, c.Branch))
 	width = width - 14
 	id := c.ID
 	if id == viewmodel.StatusID {
 		id = " "
 	}
 	lines = append(lines, toHeader("Id:")+ui.Dark(utils.Text(id, width)))
-	lines = append(lines, toHeader("Branch:")+toBranchText(c, width))
+	lines = append(lines, toHeader("Branch:")+h.toBranchText(c, width))
 	lines = append(lines, toHeader("Files:")+ui.Dark(utils.Text("... >", width)))
 	lines = append(lines, toHeader("Parents:")+ui.Dark(utils.Text(toSids(c.ParentIDs), width)))
 	lines = append(lines, toHeader("Children:")+ui.Dark(utils.Text(toSids(c.ChildIDs), width)))
@@ -69,8 +69,8 @@ func toDetailsText(c viewmodel.Commit, width int) []string {
 	return lines
 }
 
-func toViewLine(width int, branch viewmodel.Branch) string {
-	bColor := branchColor(branch.DisplayName)
+func (h detailsVM) toViewLine(width int, branch viewmodel.Branch) string {
+	bColor := h.model.BranchColor(branch.DisplayName)
 	prefixWidth := branch.Index*2 - 1
 	suffixWidth := width - branch.Index*2 - 2
 	pointer := " " + branchPointer + " "
@@ -100,8 +100,8 @@ func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-13s", text))
 }
 
-func toBranchText(c viewmodel.Commit, width int) string {
-	bColor := branchColor(c.Branch.DisplayName)
+func (h detailsVM) toBranchText(c viewmodel.Commit, width int) string {
+	bColor := h.model.BranchColor(c.Branch.DisplayName)
 	typeText := ""
 
 	switch {

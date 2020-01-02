@@ -81,7 +81,7 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 	var lines []string
 	for _, c := range commits {
 		var sb strings.Builder
-		writeGraph(&sb, c)
+		h.writeGraph(&sb, c)
 		sb.WriteString(" ")
 		writeMoreMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
@@ -139,16 +139,16 @@ func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
 	}
 }
 
-func writeGraph(sb *strings.Builder, c viewmodel.Commit) {
+func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
-		bColor := branchColor(c.Graph[i].BranchDisplayName)
+		bColor := h.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
 
 		if i != 0 {
 			cColor := bColor
 			if c.Graph[i].Connect == viewmodel.BPass &&
 				c.Graph[i].PassName != "" &&
 				c.Graph[i].PassName != "-" {
-				cColor = branchColor(c.Graph[i].PassName)
+				cColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
 			} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
 				cColor = ui.CWhite
 			}
@@ -157,13 +157,18 @@ func writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 		if c.Graph[i].Branch == viewmodel.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			bColor = branchColor(c.Graph[i].PassName)
+			bColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}
 		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
 	}
 }
+
+func (h *repoVM) ChangeBranchColor(index int) {
+	h.viewModelService.ChangeBranchColor(index)
+}
+
 func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 	if c.IsCurrent {
 		sb.WriteString(currentCommitMarker)

@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
@@ -18,18 +19,20 @@ type mainController interface {
 }
 
 type MainWindow struct {
-	uiHandler   *ui.UI
-	model       *viewmodel.Service
-	repoView    *RepoView
-	detailsView *DetailsView
-	mode        showMode
+	uiHandler     *ui.UI
+	configService *config.Service
+	model         *viewmodel.Service
+	repoView      *RepoView
+	detailsView   *DetailsView
+	mode          showMode
 }
 
-func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
-	m := viewmodel.NewModel(repoPath)
+func NewMainWindow(uiHandler *ui.UI, configService *config.Service, repoPath string) *MainWindow {
+	m := viewmodel.NewModel(configService, repoPath)
 	h := &MainWindow{
-		uiHandler: uiHandler,
-		model:     m,
+		uiHandler:     uiHandler,
+		configService: configService,
+		model:         m,
 	}
 	h.detailsView = newDetailsView(uiHandler, m)
 	h.repoView = newRepoView(uiHandler, m, h.detailsView, h)
@@ -37,7 +40,7 @@ func NewMainWindow(uiHandler *ui.UI, repoPath string) *MainWindow {
 }
 
 func (h *MainWindow) Show() {
-	r := ui.Rect{0, 0, 1, 1}
+	r := ui.Rect{W: 1, H: 1}
 	h.repoView.Properties().HasFrame = false
 	h.detailsView.Show(r)
 	h.repoView.Show(r)

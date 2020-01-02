@@ -59,6 +59,7 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
+	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
 	h.NotifyChanged()
 }
 
@@ -99,4 +100,9 @@ func (h *RepoView) onTrace() {
 		h.vm.RefreshTrace(h.ViewPage())
 		h.NotifyChanged()
 	})
+}
+
+func (h *RepoView) onBranchColor() {
+	h.vm.ChangeBranchColor(h.ViewPage().CurrentLine)
+	h.NotifyChanged()
 }

@@ -2,6 +2,7 @@ package repoview
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
@@ -51,7 +52,9 @@ func (m *mock) NotifyChanged() {
 // }
 
 func TestView(t *testing.T) {
-	m := viewmodel.NewModel(`C:\code\gmc2`)
+	cs := config.NewConfig()
+	cs.Load()
+	m := viewmodel.NewModel(cs, `C:\code\gmc2`)
 	vm := newRepoVM(m, nil)
 	vm.LoadWithBranches([]string{})
 	vd, _ := vm.GetRepoPage(ui.ViewPage{Height: 20, Width: 120})
@@ -59,13 +62,15 @@ func TestView(t *testing.T) {
 }
 
 func TestSavedState(t *testing.T) {
+	cs := config.NewConfig()
+	cs.Load()
 	gitlib.EnableReplay("")
 	var trace trace
 
 	traceBytes := utils.MustFileRead(filepath.Join(gitlib.TracePath(""), "repovm"))
 	utils.MustJsonUnmarshal(traceBytes, &trace)
 
-	m := viewmodel.NewModel(trace.RepoPath)
+	m := viewmodel.NewModel(cs, trace.RepoPath)
 	vm := newRepoVM(m, nil)
 	vm.LoadWithBranches(trace.BranchNames)
 	vd, _ := vm.GetRepoPage(trace.ViewPage)

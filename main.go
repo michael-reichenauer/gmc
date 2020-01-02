@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"github.com/mattn/go-isatty"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
@@ -41,10 +42,12 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	configService := config.NewConfig()
+	configService.Load()
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		mainWindow := repoview.NewMainWindow(uiHandler, path)
+		mainWindow := repoview.NewMainWindow(uiHandler, configService, path)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})

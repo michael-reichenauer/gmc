@@ -2,9 +2,13 @@ package viewmodel
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/ui"
+	"hash/fnv"
+	"strings"
 	"sync"
 	"time"
 )
@@ -14,29 +18,48 @@ const (
 	remoteMasterName = "origin/master"
 )
 
+var branchColors = []ui.Color{
+	ui.CRed,
+	ui.CBlue,
+	ui.CYellow,
+	ui.CGreen,
+	ui.CCyan,
+	ui.CRedDk,
+	ui.CGreenDk,
+	ui.CYellowDk,
+	//ui.CBlueDk,
+	ui.CMagentaDk,
+	ui.CCyanDk,
+}
+
 type Status struct {
 	AllChanges int
 	GraphWidth int
 }
 
 type Service struct {
-	ChangedEvents  chan interface{}
+	ChangedEvents chan interface{}
+
 	gitRepoService *gitrepo.Service
+	configService  *config.Service
 	branchesGraph  *branchesGraph
 
-	lock             sync.Mutex
-	currentViewModel *repo
-	gmRepo           gitrepo.Repo
-	gmStatus         gitrepo.Status
+	lock               sync.Mutex
+	currentViewModel   *repo
+	gmRepo             gitrepo.Repo
+	gmStatus           gitrepo.Status
+	customBranchColors map[string]int
 }
 
-func NewModel(repoPath string) *Service {
-	gm := gitrepo.NewModel(repoPath)
+func NewModel(configService *config.Service, repoPath string) *Service {
+	gitRepoService := gitrepo.NewService(repoPath)
 	return &Service{
-		ChangedEvents:    make(chan interface{}),
-		branchesGraph:    newBranchesGraph(),
-		gitRepoService:   gm,
-		currentViewModel: newRepo(),
+		ChangedEvents:      make(chan interface{}),
+		branchesGraph:      newBranchesGraph(),
+		gitRepoService:     gitRepoService,
+		configService:      configService,
+		currentViewModel:   newRepo(),
+		customBranchColors: make(map[string]int),
 	}
 }
 
@@ -45,6 +68,11 @@ func ToSid(commitID string) string {
 }
 
 func (s *Service) Start() {
+	repo := s.configService.GetRepo(s.gitRepoService.RepoPath())
+	for _, b := range repo.Branches {
+		s.customBranchColors[b.DisplayName] = b.Color
+	}
+
 	s.gitRepoService.StartRepoMonitor()
 	go s.monitorGitModelRoutine()
 }
@@ -300,4 +328,64 @@ func (s *Service) toBranchNames(branches []*branch) []string {
 		ids = append(ids, b.name)
 	}
 	return ids
+}
+
+func (s *Service) ChangeBranchColor(index int) {
+	var branchName string
+	s.lock.Lock()
+	if index >= len(s.currentViewModel.Commits) {
+		// Repo must just have changed, just ignore
+		s.lock.Unlock()
+		return
+	}
+	c := s.currentViewModel.Commits[index]
+	branchName = c.Branch.displayName
+	s.lock.Unlock()
+
+	color := s.BranchColor(branchName)
+	for i, c := range branchColors {
+		if color == c {
+			index := int((i + 1) % len(branchColors))
+			color = branchColors[index]
+			s.customBranchColors[branchName] = int(color)
+			break
+		}
+	}
+
+	s.configService.SetRepo(s.gmRepo.RepoPath, func(r *config.Repo) {
+		isSet := false
+		cb := config.Branch{DisplayName: branchName, Color: int(color)}
+
+		for i, b := range r.Branches {
+			if branchName == b.DisplayName {
+				r.Branches[i] = cb
+				isSet = true
+				break
+			}
+		}
+		if !isSet {
+			r.Branches = append(r.Branches, cb)
+		}
+	})
+}
+
+func (s *Service) BranchColor(name string) ui.Color {
+	if name == "master" {
+		return ui.CMagenta
+	}
+	if name == "develop" {
+		return ui.CRedDk
+	}
+	if strings.HasPrefix(name, "multi:") {
+		return ui.CWhite
+	}
+	color, ok := s.customBranchColors[name]
+	if ok {
+		return ui.Color(color)
+	}
+
+	h := fnv.New32a()
+	h.Write([]byte(name))
+	index := int(h.Sum32()) % len(branchColors)
+	return branchColors[index]
 }

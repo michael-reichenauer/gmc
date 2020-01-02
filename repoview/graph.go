@@ -4,28 +4,12 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
-	"hash/fnv"
-	"strings"
 )
 
 var (
 	currentCommitMarker = ui.White("●")
 	moreMarker          = ui.Dark(">")
 )
-
-var branchColors = []ui.Color{
-	ui.CRed,
-	ui.CBlue,
-	ui.CYellow,
-	ui.CGreen,
-	ui.CCyan,
-	ui.CRedDk,
-	ui.CGreenDk,
-	ui.CYellowDk,
-	//ui.CBlueDk,
-	ui.CMagentaDk,
-	ui.CCyanDk,
-}
 
 func hasLeft(bm utils.Bitmask) bool {
 	return bm.Has(viewmodel.BBranchLeft) ||
@@ -119,20 +103,4 @@ func graphConnectRune(bm utils.Bitmask) rune {
 	default:
 		return '*'
 	}
-}
-
-func branchColor(name string) ui.Color {
-	if name == "master" {
-		return ui.CMagenta
-	}
-	if name == "develop" {
-		return ui.CRedDk
-	}
-	if strings.HasPrefix(name, "multi:") {
-		return ui.CWhite
-	}
-	h := fnv.New32a()
-	h.Write([]byte(name))
-	index := int(h.Sum32()) % len(branchColors)
-	return branchColors[index]
 }

@@ -20,7 +20,7 @@ func ToSid(commitID string) string {
 	return gitlib.ToSid(commitID)
 }
 
-func NewModel(repoPath string) *Service {
+func NewService(repoPath string) *Service {
 	gitLib := gitlib.NewRepo(repoPath)
 	return &Service{
 		gitLib:       gitLib,
@@ -32,41 +32,45 @@ func NewModel(repoPath string) *Service {
 	}
 }
 
-func (h *Service) StartRepoMonitor() {
-	h.monitor.Start()
-	go h.monitorStatusChangesRoutine()
-	go h.monitorRepoChangesRoutine()
-	go h.fetchRoutine()
+func (s *Service) RepoPath() string {
+	return s.gitLib.RepoPath()
 }
 
-func (h *Service) TriggerRefreshRepo() {
+func (s *Service) StartRepoMonitor() {
+	s.monitor.Start()
+	go s.monitorStatusChangesRoutine()
+	go s.monitorRepoChangesRoutine()
+	go s.fetchRoutine()
+}
+
+func (s *Service) TriggerRefreshRepo() {
 	go func() {
-		repo, err := h.GetFreshRepo()
+		repo, err := s.GetFreshRepo()
 		if err != nil {
-			h.ErrorEvents <- err
+			s.ErrorEvents <- err
 			return
 		}
-		h.RepoEvents <- repo
+		s.RepoEvents <- repo
 		go func() {
-			h.gitLib.Fetch()
+			s.gitLib.Fetch()
 		}()
 	}()
 }
 
-func (h *Service) GetFreshRepo() (Repo, error) {
+func (s *Service) GetFreshRepo() (Repo, error) {
 	t := time.Now()
 	repo := newRepo()
-	repo.RepoPath = h.gitLib.RepoPath()
+	repo.RepoPath = s.gitLib.RepoPath()
 
-	gitCommits, err := h.gitLib.GetLog()
+	gitCommits, err := s.gitLib.GetLog()
 	if err != nil {
 		return Repo{}, err
 	}
-	gitBranches, err := h.gitLib.GetBranches()
+	gitBranches, err := s.gitLib.GetBranches()
 	if err != nil {
 		return Repo{}, err
 	}
-	gitStatus, err := h.gitLib.GetStatus()
+	gitStatus, err := s.gitLib.GetStatus()
 	if err != nil {
 		return Repo{}, err
 	}
@@ -74,14 +78,14 @@ func (h *Service) GetFreshRepo() (Repo, error) {
 	repo.setGitBranches(gitBranches)
 	repo.setGitCommits(gitCommits)
 
-	h.branches.setBranchForAllCommits(repo)
+	s.branches.setBranchForAllCommits(repo)
 	log.Infof("Git repo %v", time.Since(t))
 	return *repo, nil
 }
 
-func (h *Service) getFreshStatus() (Status, error) {
+func (s *Service) getFreshStatus() (Status, error) {
 	t := time.Now()
-	gitStatus, err := h.gitLib.GetStatus()
+	gitStatus, err := s.gitLib.GetStatus()
 	if err != nil {
 
 		return Status{}, err
@@ -91,7 +95,7 @@ func (h *Service) getFreshStatus() (Status, error) {
 	return status, nil
 }
 
-func (h *Service) monitorRepoChangesRoutine() {
+func (s *Service) monitorRepoChangesRoutine() {
 	var ticker *time.Ticker
 	tickerChan := func() <-chan time.Time {
 		if ticker == nil {
@@ -101,24 +105,24 @@ func (h *Service) monitorRepoChangesRoutine() {
 	}
 	for {
 		select {
-		case <-h.monitor.RepoChange:
+		case <-s.monitor.RepoChange:
 			ticker = time.NewTicker(1 * time.Second)
 		case <-tickerChan():
 			log.Infof("Detected repo change")
 			ticker = nil
 
 			// Repo changed, get new fresh repo and report
-			repo, err := h.GetFreshRepo()
+			repo, err := s.GetFreshRepo()
 			if err != nil {
-				h.ErrorEvents <- err
+				s.ErrorEvents <- err
 				return
 			}
-			h.RepoEvents <- repo
+			s.RepoEvents <- repo
 		}
 	}
 }
 
-func (h *Service) monitorStatusChangesRoutine() {
+func (s *Service) monitorStatusChangesRoutine() {
 	var ticker *time.Ticker
 	tickerChan := func() <-chan time.Time {
 		if ticker == nil {
@@ -128,26 +132,26 @@ func (h *Service) monitorStatusChangesRoutine() {
 	}
 	for {
 		select {
-		case <-h.monitor.StatusChange:
+		case <-s.monitor.StatusChange:
 			ticker = time.NewTicker(1 * time.Second)
 		case <-tickerChan():
 			log.Infof("Detected status change")
 			ticker = nil
 			// Status changed, get new fresh status and report
-			status, err := h.getFreshStatus()
+			status, err := s.getFreshStatus()
 			if err != nil {
-				h.ErrorEvents <- err
+				s.ErrorEvents <- err
 				return
 			}
-			h.StatusEvents <- status
+			s.StatusEvents <- status
 		}
 	}
 }
 
-func (h *Service) fetchRoutine() {
+func (s *Service) fetchRoutine() {
 	time.Sleep(300 * time.Millisecond)
 	for {
-		if err := h.gitLib.Fetch(); err != nil {
+		if err := s.gitLib.Fetch(); err != nil {
 			log.Warnf("Failed to fetch %v", err)
 		}
 		time.Sleep(10 * time.Minute)
