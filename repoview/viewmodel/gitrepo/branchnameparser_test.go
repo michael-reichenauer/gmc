@@ -20,6 +20,10 @@ func TestParseSubject(t *testing.T) {
 	assert.Equal(t, "develop", fi.from)
 	assert.Equal(t, "master", fi.into)
 
+	fi = h.parseMergeBranchNames("Merge from branch 'develop' into master")
+	assert.Equal(t, "develop", fi.from)
+	assert.Equal(t, "master", fi.into)
+
 	fi = h.parseMergeBranchNames("Merged branch 'develop' into master")
 	assert.Equal(t, "develop", fi.from)
 	assert.Equal(t, "master", fi.into)
@@ -40,10 +44,16 @@ func TestParseSubject(t *testing.T) {
 	assert.Equal(t, "develop", fi.from)
 	assert.Equal(t, "", fi.into)
 
+	// Optional source repo
+	fi = h.parseMergeBranchNames("Merge branch 'develop' of https://github.com/michael-reichenauer/gmc into branches/fetch")
+	assert.Equal(t, "develop", fi.from)
+	assert.Equal(t, "branches/fetch", fi.into)
+
 	// Pull merge
-	fi = h.parseMergeBranchNames("Merge branch 'master' of https://sa-git/git/sa/Products/AcmAcs")
-	assert.Equal(t, "master", fi.from)
-	assert.Equal(t, "master", fi.into)
+	fi = h.parseMergeBranchNames("Merge branch 'branches/fetch' of https://github.com/michael-reichenauer/gmc")
+	assert.Equal(t, "branches/fetch", fi.from)
+	assert.Equal(t, "branches/fetch", fi.into)
+
 }
 
 func c(id, subject string, parents ...string) *Commit {

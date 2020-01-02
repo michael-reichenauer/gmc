@@ -6,12 +6,12 @@ import (
 
 var (
 	nameRegExp = regexp.MustCompile( // parse subject like e.g. "Merge branch 'develop' into master"
-		`[Mm]erged?\s+` + //                              'Merge' or 'merged' word
-			`(remote-tracking\s+)?` + //                  'remote-tracking' optional word when merging remote branches
-			`((branch|commit|from)\s+)?` + //             'branch'|'commit'|'from' word
-			`'?(?P<from>[0-9A-Za-z_/-]+)'?` + //          the <from> branch name
-			`(\s+(?P<direction>into|to|of|from)\s+` + //  'into'|'of'|'from' word
-			`(?P<into>[0-9A-Za-z_/-]+)?)?`) //            the <into> branch name
+		`[Mm]erged?` + //                                     'Merge' or 'merged' word
+			`(\s+remote-tracking)?` + //                      'remote-tracking' optional word when merging remote branches
+			`(\s+(from branch|branch|commit|from))?` + //                 'branch'|'commit'|'from' word
+			`\s+'?(?P<from>[0-9A-Za-z_/-]+)'?` + //           the <from> branch name
+			`(?P<direction>\s+of\s+[^\s]+)?` + //             the optional 'of repo url'
+			`(\s+(into|to)\s+(?P<into>[0-9A-Za-z_/-]+))?`) // the <into> branch name
 	from, into, direction = indexes()
 )
 
@@ -61,7 +61,7 @@ func (h *branchNameParser) parseMergeBranchNames(subject string) fromInto {
 		return fromInto{}
 	}
 
-	if matches[0][from] != "" && matches[0][direction] == "of" {
+	if matches[0][from] != "" && matches[0][direction] != "" && matches[0][into] == "" {
 		// Subject is a pull merge (same source and target branch)
 		return fromInto{from: matches[0][from], into: matches[0][from]}
 	}
