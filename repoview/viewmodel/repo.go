@@ -153,55 +153,74 @@ func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
 }
 
 func (r *repo) isRemoteOnly(c *gitrepo.Commit, branch *branch) bool {
-	if !c.Branch.IsGitBranch {
-		// Only git branches have local/remote commits
+	if !c.Branch.IsGitBranch || !c.Branch.IsRemote || c.Branch.LocalName == "" {
+		// Only remote git branches, with local branch can have remote only remote commits
+		return false
+	}
+	// the commit branch is remote and a local branch exist as well
+	if r.containsGitBranchName(c.Branches, c.Branch.LocalName) {
+		// The commit branches does contain the local branch and thus this commit is pushed
 		return false
 	}
 
-	if c.Branch.IsRemote && c.Branch.LocalName != "" {
-		// the commit branch is remote and a local branch exist as well
-		if !r.containsGitBranchName(c.Branches, c.Branch.LocalName) {
-			// The commit branches do not contain the remote branch and thus this commit is not pushed
-			// But the remote brand may have been pulled/merged into the local, lets iterate all
-			// commits in the remote branch and check if they have been merged into the local
-			tip := r.commitById[branch.tipId]
-			for current := tip; current != nil && len(current.ParentIDs) > 0; current = r.commitById[current.ParentIDs[0]] {
-				for _, cid := range current.ChildIDs {
-					child := r.commitById[cid]
-					if child != nil && child.Branch.name == c.Branch.LocalName {
-						// the commit was merged/pulled into the local branch, thus commit has been pulled
-						return false
-					}
-				}
+	// But the remote branch may have been pulled/merged into the local, lets iterate all
+	// commits in the remote branch and check if they have been merged into the local
+	tip := r.commitById[branch.tipId]
+	for current := tip; current != nil && len(current.ParentIDs) > 0; current = r.commitById[current.ParentIDs[0]] {
+		for _, cid := range current.ChildIDs {
+			child := r.commitById[cid]
+			if child != nil && child.Branch.name == c.Branch.LocalName {
+				// the commit was merged/pulled into the local branch, thus commit has been pulled
+				return false
 			}
-
-			// Since the current commit has not yet been added to the repo, the above iteration did
-			// not cover the current commit, lets do that manually
-			for _, mc := range c.MergeChildren {
-				if mc.Branch.Name == c.Branch.LocalName {
-					// the commit was merged/pulled into the local branch, thus commit has been pulled
-					return false
-				}
-			}
-			return true
 		}
 	}
-	return false
+
+	// Since the current commit has not yet been added to the repo, the above iteration did
+	// not cover the current commit, lets do that manually
+	for _, mc := range c.MergeChildren {
+		if mc.Branch.Name == c.Branch.LocalName {
+			// the commit was merged/pulled into the local branch, thus commit has been pulled
+			return false
+		}
+	}
+	return true
 }
 
 func (r *repo) isLocalOnly(c *gitrepo.Commit, branch *branch) bool {
-	if !c.Branch.IsGitBranch {
-		// Only git branches have local/remote commits
+	if !c.Branch.IsGitBranch || c.Branch.IsRemote || c.Branch.RemoteName == "" {
+		// Only local git branches, with remote branch can have local only remote commits
 		return false
 	}
-	if !c.Branch.IsRemote && c.Branch.RemoteName != "" {
-		// Commit branch is a local git branch and a remote git branch exist as well
-		if !r.containsGitBranchName(c.Branches, c.Branch.RemoteName) {
-			// The commit branches do not contain the remote branch and thus this commit is not pushed
-			return true
+	// Commit branch is a local git branch and a remote git branch exist as well
+	if r.containsGitBranchName(c.Branches, c.Branch.RemoteName) {
+		// The commit branches does contain the remote branch and thus this commit has been pushed
+		return false
+	}
+
+	// But the local branch may have been pulled/merged into the remote, lets iterate all
+	// commits in the local branch and check if they have been merged into the remote
+	tip := r.commitById[branch.tipId]
+	for current := tip; current != nil && len(current.ParentIDs) > 0; current = r.commitById[current.ParentIDs[0]] {
+		for _, cid := range current.ChildIDs {
+			child := r.commitById[cid]
+			if child != nil && child.Branch.name == c.Branch.RemoteName {
+				// the commit was merged into the remote branch, thus commit has been pushed
+				return false
+			}
 		}
 	}
-	return false
+
+	// Since the current commit has not yet been added to the repo, the above iteration did
+	// not cover the current commit, lets do that manually
+	for _, mc := range c.MergeChildren {
+		if mc.Branch.Name == c.Branch.RemoteName {
+			// the commit was merged into the remote branch, thus commit has been pushed
+			return false
+		}
+	}
+
+	return true
 }
 
 func (r *repo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
