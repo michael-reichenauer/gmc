@@ -108,7 +108,7 @@ func toBranchText(c viewmodel.Commit, width int) string {
 	case c.Branch.IsMultiBranch:
 		typeText = ui.Dark(" (multiple) >")
 	case !c.Branch.IsGitBranch:
-		typeText = ui.Dark(" (deleted)")
+		typeText = ui.Dark(" ()")
 	case c.ID == viewmodel.StatusID:
 		typeText = ui.Dark(" (local)")
 	case c.IsLocalOnly:
