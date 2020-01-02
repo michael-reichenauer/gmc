@@ -186,7 +186,9 @@ func (h *gitCmd) runGitCommand(cmd command) command {
 func (h *gitCmd) runReadFileCommand(cmd command) command {
 	bytes, err := ioutil.ReadFile(cmd.Args[0])
 	cmd.Output = string(bytes)
-	cmd.Err = err.Error()
+	if err != nil {
+		cmd.Err = err.Error()
+	}
 	return cmd
 }
 

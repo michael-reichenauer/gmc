@@ -5,6 +5,7 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/ui"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -49,7 +50,15 @@ func (m *mock) NotifyChanged() {
 // 	<-done
 // }
 
-func TestViewTraced(t *testing.T) {
+func TestView(t *testing.T) {
+	m := viewmodel.NewModel(`C:\code\gmc2`)
+	vm := newRepoVM(m, nil)
+	vm.LoadWithBranches([]string{})
+	vd, _ := vm.GetRepoPage(ui.ViewPage{Height: 20, Width: 120})
+	fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
+}
+
+func TestSavedState(t *testing.T) {
 	gitlib.EnableReplay("")
 	var trace trace
 
