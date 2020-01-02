@@ -81,7 +81,6 @@ func (h *RepoView) onRefresh() {
 	h.PostOnUIThread(func() {
 		// Posted to allow the clear to show while new data is calculated
 		h.vm.Refresh()
-		h.NotifyChanged()
 	})
 }
 

@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 )
 
 var (
@@ -165,24 +166,29 @@ func (h *gitCmd) fileName(cmd command) string {
 	return fmt.Sprintf("%s_%x", cmd.Name, sha256.Sum256([]byte(fmt.Sprintf("%s %v", cmd.Name, cmd.Args))))
 }
 func (h *gitCmd) runGitCommand(cmd command) command {
+	log.Infof("Command: %s %s (%s) ...", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
 	// Get the git cmd output
+	t := time.Now()
 	c := exec.Command(cmd.Name, cmd.Args...)
 	c.Dir = h.repoPath
 	out, err := c.Output()
 	if err != nil {
-		msg := fmt.Sprintf("failed to do git %v in %v, %v", cmd.Args, h.repoPath, err)
+		msg := fmt.Sprintf("failed to do cmd: git %s (%v), %v", strings.Join(cmd.Args, " "), h.repoPath, err)
 		log.Warnf(msg)
 		cmd.Err = msg
 		return cmd
 	}
 	cmd.Output = string(out)
+	log.Infof("Command: OK (%v)", time.Since(t))
 	return cmd
 }
 
 func (h *gitCmd) runReadFileCommand(cmd command) command {
 	bytes, err := ioutil.ReadFile(cmd.Args[0])
 	cmd.Output = string(bytes)
-	cmd.Err = err.Error()
+	if err != nil {
+		cmd.Err = err.Error()
+	}
 	return cmd
 }
 

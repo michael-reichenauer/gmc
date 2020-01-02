@@ -1,19 +1,21 @@
 package gitlib
 
 type Repo struct {
-	cmd        GitCommander
-	status     *statusHandler
-	logHandler *logHandler
-	branches   *branchesHandler
+	cmd          GitCommander
+	status       *statusHandler
+	logHandler   *logHandler
+	branches     *branchesHandler
+	fetchService *fetchService
 }
 
 func NewRepo(path string) *Repo {
 	cmd := newGitCmd(path)
 	return &Repo{
-		cmd:        cmd,
-		status:     newStatus(cmd),
-		logHandler: newLog(cmd),
-		branches:   newBranches(cmd),
+		cmd:          cmd,
+		status:       newStatus(cmd),
+		logHandler:   newLog(cmd),
+		branches:     newBranches(cmd),
+		fetchService: newFetch(cmd),
 	}
 }
 func (h *Repo) RepoPath() string {
@@ -29,4 +31,8 @@ func (h *Repo) GetBranches() ([]Branch, error) {
 
 func (h *Repo) GetStatus() (Status, error) {
 	return h.status.getStatus()
+}
+
+func (h *Repo) Fetch() error {
+	return h.fetchService.fetch()
 }

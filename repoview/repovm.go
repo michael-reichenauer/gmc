@@ -224,12 +224,11 @@ func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmo
 		return
 	}
 	color := ui.CWhite
-	if c.Branch.Name == selectedCommit.Branch.Name ||
-		c.Branch.Name == selectedCommit.Branch.RemoteName ||
-		c.Branch.RemoteName == selectedCommit.Branch.Name {
-		if c.Branch.RemoteName != "" {
-			//
+	if c.Branch.DisplayName == selectedCommit.Branch.DisplayName {
+		if c.IsLocalOnly {
 			color = ui.CGreenDk
+		} else if c.IsRemoteOnly {
+			color = ui.CBlue
 		}
 	} else {
 		color = ui.CDark

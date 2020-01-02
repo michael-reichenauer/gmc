@@ -15,22 +15,24 @@ type GraphColumn struct {
 }
 
 type commit struct {
-	Index       int
-	ID          string
-	SID         string
-	Subject     string
-	Message     string
-	Author      string
-	AuthorTime  time.Time
-	Parent      *commit
-	MergeParent *commit
-	ParentIDs   []string
-	ChildIDs    []string
-	IsCurrent   bool
-	IsMore      bool
-	Branch      *branch
-	graph       []GraphColumn
-	BranchTips  []string
+	Index        int
+	ID           string
+	SID          string
+	Subject      string
+	Message      string
+	Author       string
+	AuthorTime   time.Time
+	Parent       *commit
+	MergeParent  *commit
+	ParentIDs    []string
+	ChildIDs     []string
+	IsCurrent    bool
+	IsMore       bool
+	Branch       *branch
+	graph        []GraphColumn
+	BranchTips   []string
+	IsLocalOnly  bool
+	IsRemoteOnly bool
 }
 
 func (c *commit) String() string {
