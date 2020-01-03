@@ -99,7 +99,7 @@ func (s *Service) SetRepo(path string, setFunc func(r *Repo)) {
 func (s *Service) configPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal(err)
+		panic(log.Error(err))
 	}
 	return filepath.Join(home, ".gmc")
 }
