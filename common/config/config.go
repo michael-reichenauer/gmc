@@ -9,9 +9,11 @@ import (
 	"sync"
 )
 
-type Branch struct {
-	DisplayName string
-	Color       int
+type Config struct {
+	ReleasesEtag  string
+	StableRelease Release
+	PreRelease    Release
+	Repos         []Repo
 }
 
 type Repo struct {
@@ -19,8 +21,20 @@ type Repo struct {
 	Branches []Branch
 }
 
-type Config struct {
-	Repos []Repo
+type Branch struct {
+	DisplayName string
+	Color       int
+}
+
+//
+type Release struct {
+	Version string
+	Assets  []Asset
+}
+
+type Asset struct {
+	Name string
+	Url  string
 }
 
 type Service struct {
