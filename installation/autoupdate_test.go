@@ -7,7 +7,6 @@ import (
 
 func TestAutoUpdate_Check(t *testing.T) {
 	c := config.NewConfig()
-	c.Load()
 	au := NewAutoUpdate(c)
 	au.CheckReleases()
 }

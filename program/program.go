@@ -41,8 +41,6 @@ func Main(version string) {
 		panic(log.Error(err))
 	}
 	configService := config.NewConfig()
-	configService.Load()
-
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
 		mainWindow := repoview.NewMainWindow(uiHandler, configService, path)

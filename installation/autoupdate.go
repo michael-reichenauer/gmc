@@ -10,7 +10,6 @@ import (
 )
 
 const (
-	//latestUri   = "https://api.github.com/repos/michael-reichenauer/GitMind/releases/latest"
 	releasesUri = "https://api.github.com/repos/michael-reichenauer/GitMind/releases"
 )
 
@@ -40,16 +39,13 @@ func NewAutoUpdate(config *config.Service) *autoUpdate {
 }
 
 func (h *autoUpdate) CheckReleases() {
-	configInfo := h.config.Get()
+	state := h.config.GetState()
 
-	body, etag, err := h.httpGet(releasesUri, configInfo.ReleasesEtag)
+	body, etag, err := h.httpGet(releasesUri, state.ReleasesEtag)
 	if err != nil {
 		log.Warnf("Failed to get release info %s, %v", releasesUri, err)
 		return
 	}
-	h.config.Set(func(c *config.Config) {
-		c.ReleasesEtag = etag
-	})
 
 	var releases []Release
 	if len(body) > 0 {
@@ -58,18 +54,14 @@ func (h *autoUpdate) CheckReleases() {
 			log.Warnf("Failed to parse release info, %v", err)
 			return
 		}
-		preRelease, ok := h.getPreRelease(releases)
-		if ok {
-			h.config.Set(func(c *config.Config) {
-				c.PreRelease = h.toConfigRelease(preRelease)
-			})
-		}
-		stableRelease, ok := h.getStableRelease(releases)
-		if ok {
-			h.config.Set(func(c *config.Config) {
-				c.StableRelease = h.toConfigRelease(stableRelease)
-			})
-		}
+		preRelease, _ := h.getPreRelease(releases)
+		stableRelease, _ := h.getStableRelease(releases)
+
+		h.config.SetState(func(s *config.State) {
+			s.ReleasesEtag = etag
+			s.PreRelease = h.toConfigRelease(preRelease)
+			s.StableRelease = h.toConfigRelease(stableRelease)
+		})
 	}
 
 	log.Infof("Response: %s, %s", etag, string(body))
@@ -95,7 +87,7 @@ func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string
 	}
 	defer func() { _ = resp.Body.Close() }()
 
-	etagValue := resp.Header["Etag"] // W/"48e707ef72c8aa13423a1116ca40cbdd"
+	etagValue := resp.Header["Etag"]
 	if len(etagValue) > 0 {
 		etag = etagValue[0]
 		if strings.HasPrefix(etag, "W/") {
