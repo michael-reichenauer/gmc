@@ -39,8 +39,7 @@ func (r *repo) BranchByName(name string) *branch {
 			return b
 		}
 	}
-	log.Fatal("unknown branch id" + name)
-	return nil
+	panic(log.Error("unknown branch id" + name))
 }
 
 func (r *repo) addBranch(gb *gitrepo.Branch) {
@@ -260,6 +259,6 @@ func (r *repo) ToBranchIndex(id string) int {
 			return i
 		}
 	}
-	log.Fatalf("unexpected branch %s", id)
-	return 0
+
+	panic(log.Errorf("unexpected branch %s", id))
 }

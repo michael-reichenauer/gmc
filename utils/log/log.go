@@ -19,26 +19,14 @@ func Warnf(format string, v ...interface{}) {
 	std.Output(logger.Warn, fmt.Sprintf(format, v...))
 }
 
-func Fatalf(format string, v ...interface{}) {
+func Errorf(format string, v ...interface{}) string {
 	msg := fmt.Sprintf(format, v...)
 	std.Output(logger.Fatal, msg)
-	panic(msg)
+	return msg
 }
 
-func Fatal(v ...interface{}) {
+func Error(v ...interface{}) string {
 	msg := fmt.Sprint(v...)
 	std.Output(logger.Fatal, msg)
-	panic(msg)
+	return msg
 }
-
-//// Fatal is equivalent to Print() followed by a call to os.Exit(1).
-//func Fatal(v ...interface{}) {
-//	std.Output(2, fmt.Sprint(v...))
-//	os.Exit(1)
-//}
-//
-//// Fatalf is equivalent to Printf() followed by a call to os.Exit(1).
-//func Fatalf(format string, v ...interface{}) {
-//	std.Output(2, fmt.Sprintf(format, v...))
-//	os.Exit(1)
-//}

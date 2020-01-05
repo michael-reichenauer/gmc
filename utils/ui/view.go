@@ -72,7 +72,7 @@ func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
 func (h *view) Show(bounds Rect) {
 	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
-			log.Fatal(err)
+			panic(log.Error(err))
 		}
 
 		h.guiView = guiView
@@ -144,7 +144,7 @@ func (h *view) NotifyChanged() {
 
 		// Show the new view data for the view port
 		if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
-			log.Fatal(err)
+			panic(log.Error(err))
 		}
 		return nil
 	})
@@ -180,13 +180,13 @@ func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
 
 func (h *view) SetBounds(bounds Rect) {
 	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
-		log.Fatal(err)
+		panic(log.Error(err))
 	}
 }
 
 func (h *view) SetCurrentView() {
 	if _, err := h.gui.SetCurrentView(h.viewName); err != nil {
-		log.Fatal(err)
+		panic(log.Error(err))
 	}
 }
 
@@ -216,7 +216,7 @@ func (h *view) Close() {
 		h.properties.OnClose()
 	}
 	if err := h.gui.DeleteView(h.viewName); err != nil {
-		log.Fatal(err)
+		panic(log.Error(err))
 	}
 }
 
@@ -225,7 +225,7 @@ func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) 
 		handler()
 		return nil
 	}); err != nil {
-		log.Fatal(err)
+		panic(log.Error(err))
 	}
 }
 

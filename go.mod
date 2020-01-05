@@ -5,6 +5,7 @@ go 1.13
 require (
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/hashicorp/go-version v1.2.0
 	github.com/jroimartin/gocui v0.4.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.10

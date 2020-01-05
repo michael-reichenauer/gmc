@@ -53,7 +53,6 @@ func (m *mock) NotifyChanged() {
 
 func TestView(t *testing.T) {
 	cs := config.NewConfig()
-	cs.Load()
 	m := viewmodel.NewModel(cs, `C:\code\gmc2`)
 	vm := newRepoVM(m, nil)
 	vm.LoadWithBranches([]string{})
@@ -63,7 +62,6 @@ func TestView(t *testing.T) {
 
 func TestSavedState(t *testing.T) {
 	cs := config.NewConfig()
-	cs.Load()
 	gitlib.EnableReplay("")
 	var trace trace
 
