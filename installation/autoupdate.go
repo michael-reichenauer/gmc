@@ -57,8 +57,7 @@ func (h *autoUpdate) Start() {
 		return
 	}
 	h.cleanTmpFiles()
-	h.updateIfNewer()
-	// go h.periodicCheckForUpdatesRoutine()
+	go h.periodicCheckForUpdatesRoutine()
 }
 
 func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
@@ -165,7 +164,7 @@ func (h *autoUpdate) toConfigRelease(release Release) config.Release {
 	log.Infof("Release info: %+v", release)
 	var assets []config.Asset
 	for _, a := range release.Assets {
-		log.Infof("Release %s, %s downloaded: %d: %+v", release.Tag_name, a.Name, a.Download_count)
+		log.Infof("Release %s, %s, downloaded: %d:", release.Tag_name, a.Name, a.Download_count)
 		assets = append(assets, config.Asset{
 			Name: a.Name,
 			Url:  a.Browser_download_url,

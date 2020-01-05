@@ -6,8 +6,11 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/installation"
+	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/ui"
 	"os"
 	"os/exec"
 	"runtime"
@@ -22,6 +25,7 @@ func Main(version string) {
 	flag.Parse()
 	if *versionFlag {
 		fmt.Printf("%s", version)
+		return
 	}
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && runtime.GOOS == "windows" {
 		// Seems to be not running in a terminal like e.g. in goland,
@@ -35,23 +39,24 @@ func Main(version string) {
 	}
 	log.Infof("Starting gmc version: %s %q ...", version, utils.BinPath())
 	configService := config.NewConfig()
-	au := installation.NewAutoUpdate(configService, version)
-	au.Start()
+	autoUpdate := installation.NewAutoUpdate(configService, version)
+	autoUpdate.Start()
 
-	// if *repoPath == "" {
-	// 	// No specified repo path, use current dir
-	// 	*repoPath = utils.CurrentDir()
-	// }
-	//
-	// path, err := gitlib.WorkingFolderRoot(*repoPath)
-	// if err != nil {
-	// 	panic(log.Error(err))
-	// }
-	//
-	// uiHandler := ui.NewUI()
-	// uiHandler.Run(func() {
-	// 	mainWindow := repoview.NewMainWindow(uiHandler, configService, path)
-	// 	uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
-	// 	mainWindow.Show()
-	//})
+	if *repoPathFlag == "" {
+		// No specified repo path, use current dir
+		*repoPathFlag = utils.CurrentDir()
+	}
+
+	path, err := gitlib.WorkingFolderRoot(*repoPathFlag)
+	if err != nil {
+		panic(log.Error(err))
+	}
+	log.Infof("Working folder: %q", path)
+
+	uiHandler := ui.NewUI()
+	uiHandler.Run(func() {
+		mainWindow := repoview.NewMainWindow(uiHandler, configService, path)
+		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
+		mainWindow.Show()
+	})
 }
