@@ -79,7 +79,6 @@ func (h *autoUpdate) updateIfNewer() {
 	state := h.config.GetState()
 
 	release := h.selectRelease(state, conf)
-	log.Infof("Remote version %s, preview=%v", release.Version, release.Preview)
 	if len(release.Assets) == 0 {
 		log.Warnf("No assets for %s", release.Version)
 		return
@@ -89,6 +88,8 @@ func (h *autoUpdate) updateIfNewer() {
 		log.Infof("No update available, local %s>=%s remote", h.version, release.Version)
 		return
 	}
+	log.Infof("Update available, local %s<%s remote (preview=%v)",
+		h.version, release.Version, release.Preview)
 	if state.InstalledVersion == release.Version {
 		// Already downloaded and installed the newer version
 		log.Infof("Already downloaded and installed the remote version %s", release.Version)
@@ -118,7 +119,6 @@ func (h *autoUpdate) CheckRemoteReleases() {
 		return
 	}
 	if len(body) == 0 {
-		log.Infof("No new release info at %s", releasesUri)
 		return
 	}
 
@@ -332,7 +332,6 @@ func (h *autoUpdate) cleanTmpFiles() {
 }
 
 func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string, err error) {
-	log.Infof("HTTP GET %s ...", url)
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(log.Error(err))
