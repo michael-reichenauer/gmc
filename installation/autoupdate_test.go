@@ -7,6 +7,12 @@ import (
 
 func TestAutoUpdate_Check(t *testing.T) {
 	c := config.NewConfig()
-	au := NewAutoUpdate(c)
-	au.CheckReleases()
+	au := NewAutoUpdate(c, "v0.3")
+	au.CheckRemoteReleases()
+}
+
+func TestAutoUpdate_UpdateIfNewer(t *testing.T) {
+	c := config.NewConfig()
+	au := NewAutoUpdate(c, "v0.2")
+	au.updateIfNewer()
 }

@@ -14,15 +14,16 @@ const (
 )
 
 type Config struct {
-	AutoUpdate      string // auto,ask, none
-	AutoUpdateTrack string // stable,preview
+	DisableAutoUpdate bool
+	Preview           bool
 }
 
 type State struct {
-	ReleasesEtag  string
-	StableRelease Release
-	PreRelease    Release
-	Repos         []Repo
+	InstalledVersion string
+	ReleasesEtag     string
+	StableRelease    Release
+	PreRelease       Release
+	Repos            []Repo
 }
 
 type Repo struct {
@@ -38,6 +39,7 @@ type Branch struct {
 //
 type Release struct {
 	Version string
+	Preview bool
 	Assets  []Asset
 }
 
@@ -172,7 +174,7 @@ func (s *Service) saveConfig(config Config) {
 }
 
 func (s *Service) defaultConfig() Config {
-	return Config{AutoUpdate: "auto", AutoUpdateTrack: "preview"}
+	return Config{Preview: true}
 }
 
 func (s *Service) defaultRepo(path string) Repo {
