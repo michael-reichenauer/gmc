@@ -54,7 +54,7 @@ func EnableTracing(name string) {
 	_ = os.RemoveAll(path)
 	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	traceDir = path
 }
@@ -115,11 +115,11 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 		path := filepath.Join(replayDir, fileName)
 		cmdBytes, err := ioutil.ReadFile(path)
 		if err != nil {
-			panic(log.Error(err))
+			panic(log.Fatal(err))
 		}
 		err = json.Unmarshal(cmdBytes, &cmd)
 		if err != nil {
-			panic(log.Error(err))
+			panic(log.Fatal(err))
 		}
 		log.Infof("Read %d bytes to %s", len(cmdBytes), path)
 		lock.Unlock()
@@ -136,7 +136,7 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 	case "ReadFile":
 		cmd = h.runReadFileCommand(cmd)
 	default:
-		panic(log.Errorf("Unknown command %s", cmd.Name))
+		panic(log.Fatal(fmt.Errorf("unknown command %s", cmd.Name)))
 	}
 
 	lock.Lock()
@@ -144,12 +144,12 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 		fileName := h.fileName(cmd)
 		cmdBytes, err := json.Marshal(cmd)
 		if err != nil {
-			panic(log.Error(err))
+			panic(log.Fatal(err))
 		}
 		path := filepath.Join(traceDir, fileName)
 		err = ioutil.WriteFile(path, cmdBytes, 0644)
 		if err != nil {
-			panic(log.Error(err))
+			panic(log.Fatal(err))
 		}
 		log.Infof("Wrote %d bytes to %s", len(cmdBytes), path)
 	}

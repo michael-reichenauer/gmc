@@ -42,6 +42,7 @@ func (h *Telemetry) SendTrace(level, text string) {
 		h.send(appinsights.NewTraceTelemetry(text, contracts.Warning))
 	case logger.Error:
 		h.send(appinsights.NewTraceTelemetry(text, contracts.Error))
+		h.client.Channel().Flush()
 	}
 }
 
@@ -63,6 +64,16 @@ func (h *Telemetry) SendError(err error) {
 	if h.send(appinsights.NewExceptionTelemetry(err)) {
 		h.client.Channel().Flush()
 	}
+}
+func (h *Telemetry) SendFatalf(err error, message string, v ...interface{}) {
+	log.Warnf("Send fatal: %v", err)
+	t := appinsights.NewExceptionTelemetry(err)
+	t.Frames = appinsights.GetCallstack(4)
+	msg := fmt.Sprintf(message, v...)
+	t.Properties["Message"] = msg
+	log.Warnf("Send error: %q, %v", msg, err)
+	h.send(t)
+	h.Close()
 }
 
 func (h *Telemetry) SendErrorf(err error, message string, v ...interface{}) {
@@ -119,7 +130,7 @@ func (h *Telemetry) send(telemetry appinsights.Telemetry) bool {
 }
 
 func (h *Telemetry) setCommonProperties(properties map[string]string) {
-	properties["User"] = h.getUserID()
+	// properties["User"] = h.getUserID()
 }
 
 func (h *Telemetry) getUserID() string {
@@ -133,7 +144,7 @@ func (h *Telemetry) getUserID() string {
 func (h *Telemetry) getMachineID() string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		panic(log.Errorf("Could not get interfaces, %v", err))
+		panic(log.Fatalf(err, "Could not get interfaces"))
 	}
 	for _, ifx := range interfaces {
 		return strings.ToUpper(strings.Replace(ifx.HardwareAddr.String(), ":", "", -1))

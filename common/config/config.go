@@ -140,7 +140,7 @@ func (s *Service) SetRepo(path string, setFunc func(r *Repo)) {
 func (s *Service) statePath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	return filepath.Join(home, stateName)
 }
@@ -148,7 +148,7 @@ func (s *Service) statePath() string {
 func (s *Service) saveState(state State) {
 	file, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	utils.MustFileWrite(s.statePath(), file)
 }
@@ -160,7 +160,7 @@ func (s *Service) defaultState() State {
 func (s *Service) configPath() string {
 	home, err := os.UserHomeDir()
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	return filepath.Join(home, configName)
 }
@@ -168,7 +168,7 @@ func (s *Service) configPath() string {
 func (s *Service) saveConfig(config Config) {
 	file, err := json.MarshalIndent(config, "", "  ")
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	utils.MustFileWrite(s.configPath(), file)
 }

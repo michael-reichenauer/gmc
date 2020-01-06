@@ -35,7 +35,7 @@ func (h *UI) Run(runFunc func()) {
 
 	gui, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	h.gui = gui
 	defer gui.Close()
@@ -52,7 +52,7 @@ func (h *UI) Run(runFunc func()) {
 	h.SetKeyBinding("", gocui.KeyEsc, gocui.ModNone, quit)
 
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 }
 
@@ -70,7 +70,7 @@ func (h *UI) WindowSize() (width, height int) {
 
 func (h *UI) SetKeyBinding(viewName string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
 	if err := h.gui.SetKeybinding(viewName, key, mod, handler); err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 }
 

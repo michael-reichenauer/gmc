@@ -25,7 +25,7 @@ type monitor struct {
 func newMonitor(repoPath string) *monitor {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	return &monitor{
 		watcher:       watcher,

@@ -41,12 +41,12 @@ func Main(version string) {
 		return
 	}
 	tel := telemetry.NewTelemetry(version)
-	logger.Std.SetTarget(tel.SendTrace)
+	logger.Std.SetTarget(tel)
 	log.Infof("Starting gmc version: %s %q ...", version, utils.BinPath())
 	tel.SendEventf("program-start", "Starting gmc version: %s %q ...", version, utils.BinPath())
 
 	configService := config.NewConfig()
-	autoUpdate := installation.NewAutoUpdate(configService, "0.4")
+	autoUpdate := installation.NewAutoUpdate(configService, tel, version)
 	autoUpdate.Start()
 	//autoUpdate.UpdateIfAvailable()
 
@@ -57,7 +57,7 @@ func Main(version string) {
 
 	path, err := gitlib.WorkingFolderRoot(*repoPathFlag)
 	if err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 	log.Infof("Working folder: %q", path)
 

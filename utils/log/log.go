@@ -17,14 +17,21 @@ func Warnf(format string, v ...interface{}) {
 	logger.Std.Output(logger.Warn, fmt.Sprintf(format, v...))
 }
 
-func Errorf(format string, v ...interface{}) string {
+func Fatalf(err error, format string, v ...interface{}) string {
 	msg := fmt.Sprintf(format, v...)
-	logger.Std.Output(logger.Error, msg)
-	return msg
+	emsg := fmt.Sprintf("%s, %v", msg, err)
+	logger.Std.Output(logger.Fatal, emsg)
+	logger.Std.FatalError(err, msg)
+	return emsg
 }
 
-func Error(v ...interface{}) string {
+func Fatal(err error, v ...interface{}) string {
 	msg := fmt.Sprint(v...)
-	logger.Std.Output(logger.Error, msg)
-	return msg
+	emsg := err.Error()
+	if len(v) > 0 {
+		emsg = fmt.Sprintf("%s, %v", msg, err)
+	}
+	logger.Std.Output(logger.Fatal, emsg)
+	logger.Std.FatalError(err, msg)
+	return emsg
 }

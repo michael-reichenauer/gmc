@@ -75,12 +75,6 @@ func (h *branches) determineCommitBranches(repo *Repo) {
 }
 
 func (h *branches) determineBranch(repo *Repo, c *Commit) {
-	if c.Branch != nil {
-		// Commit already knows its branch
-		panic("Commit already knows its branch") // ##############?????????
-		return
-	}
-
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, use that
 		c.Branch = c.Branches[0]

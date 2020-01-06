@@ -182,7 +182,6 @@ func (s *Service) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
 }
 
 func (s *Service) OpenBranch(index int) {
-
 	s.lock.Lock()
 	if index >= len(s.currentViewModel.Commits) {
 		// Repo must just have changed, just ignore
