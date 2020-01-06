@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"math"
 	"strings"
 )
@@ -50,6 +51,7 @@ type View interface {
 type view struct {
 	gui     *gocui.Gui
 	guiView *gocui.View
+	tel     *telemetry.Telemetry
 
 	properties   *Properties
 	viewName     string
@@ -61,9 +63,10 @@ type view struct {
 	width        int
 }
 
-func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
+func newView(ui *UI, tel *telemetry.Telemetry, viewData func(viewPort ViewPage) ViewData) *view {
 	return &view{
 		gui:        ui.Gui(),
+		tel:        tel,
 		viewName:   ui.NewViewName(),
 		viewData:   viewData,
 		properties: &Properties{}}
@@ -91,6 +94,7 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
 		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
+		h.tel.SendEventf("ui-view-show", h.viewName)
 		if h.properties.OnLoad != nil {
 			// Let the actual view handle load to initialise view data
 			h.properties.OnLoad()
@@ -272,7 +276,7 @@ func (h *view) move(move int) {
 		// No move, reached top or bottom
 		return
 	}
-
+	h.tel.SendEventf("ui-view-move", "move: %d", move)
 	h.currentIndex = newCurrent
 
 	if h.currentIndex < h.firstIndex {
@@ -304,7 +308,7 @@ func (h *view) scroll(move int) {
 		// No move, reached top or bottom
 		return
 	}
-
+	h.tel.SendEventf("ui-view-scroll", "scroll: %d", move)
 	newCurrent := h.currentIndex + (newFirst - h.firstIndex)
 
 	if newCurrent < newFirst {

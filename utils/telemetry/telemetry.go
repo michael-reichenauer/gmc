@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"golang.org/x/time/rate"
 	"net"
-	"os"
 	"os/user"
 	"strings"
 	"time"
@@ -48,16 +46,20 @@ func (h *Telemetry) SendTrace(level, text string) {
 }
 
 func (h *Telemetry) SendEvent(eventName string) {
+	log.Infof("Send event: %q", eventName)
 	h.send(appinsights.NewEventTelemetry(eventName))
 }
 
 func (h *Telemetry) SendEventf(eventName, message string, v ...interface{}) {
 	event := appinsights.NewEventTelemetry(eventName)
-	event.Properties["Message"] = fmt.Sprintf(message, v...)
+	msg := fmt.Sprintf(message, v...)
+	log.Infof("Send event: %q, %q", eventName, msg)
+	event.Properties["Message"] = msg
 	h.send(event)
 }
 
 func (h *Telemetry) SendError(err error) {
+	log.Warnf("Send error: %v", err)
 	if h.send(appinsights.NewExceptionTelemetry(err)) {
 		h.client.Channel().Flush()
 	}
@@ -65,13 +67,16 @@ func (h *Telemetry) SendError(err error) {
 
 func (h *Telemetry) SendErrorf(err error, message string, v ...interface{}) {
 	t := appinsights.NewExceptionTelemetry(err)
-	t.Properties["Message"] = fmt.Sprintf(message, v...)
+	msg := fmt.Sprintf(message, v...)
+	t.Properties["Message"] = msg
+	log.Warnf("Send error: %q, %v", msg, err)
 	if h.send(t) {
 		h.client.Channel().Flush()
 	}
 }
 
 func (h *Telemetry) Close() {
+	log.Infof("Close telemetry")
 	select {
 	case <-h.client.Channel().Close(10 * time.Second):
 		// Ten second timeout for retries.
@@ -92,14 +97,14 @@ func (h *Telemetry) createClient() appinsights.TelemetryClient {
 	client := appinsights.NewTelemetryClientFromConfig(config)
 	client.Context().Tags.User().SetId(h.getUserID())
 	client.Context().Tags.Cloud().SetRoleInstance(h.getMachineID())
-	client.Context().Tags.Session().SetId(strings.ToUpper(utils.RandomString(15)))
+	client.Context().Tags.Session().SetId(startTime.String())
 	client.Context().Tags.Application().SetVer(h.version)
-	setCommonProperties(client.Context().CommonProperties, startTime)
+	h.setCommonProperties(client.Context().CommonProperties)
 
-	appinsights.NewDiagnosticsMessageListener(func(msg string) error {
-		log.Debugf("Telemetry: %s", msg)
-		return nil
-	})
+	// appinsights.NewDiagnosticsMessageListener(func(msg string) error {
+	// 	log.Debugf("Telemetry: %s", msg)
+	// 	return nil
+	// })
 
 	return client
 }
@@ -113,10 +118,8 @@ func (h *Telemetry) send(telemetry appinsights.Telemetry) bool {
 	return true
 }
 
-func setCommonProperties(properties map[string]string, startTime time.Time) {
-	hostname, _ := os.Hostname()
-	properties["Hostname"] = hostname
-	properties["StartTime"] = startTime.String()
+func (h *Telemetry) setCommonProperties(properties map[string]string) {
+	properties["User"] = h.getUserID()
 }
 
 func (h *Telemetry) getUserID() string {

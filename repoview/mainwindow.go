@@ -3,6 +3,7 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -27,8 +28,12 @@ type MainWindow struct {
 	mode          showMode
 }
 
-func NewMainWindow(uiHandler *ui.UI, configService *config.Service, repoPath string) *MainWindow {
-	m := viewmodel.NewModel(configService, repoPath)
+func NewMainWindow(
+	uiHandler *ui.UI,
+	configService *config.Service,
+	tel *telemetry.Telemetry,
+	repoPath string) *MainWindow {
+	m := viewmodel.NewModel(configService, tel, repoPath)
 	h := &MainWindow{
 		uiHandler:     uiHandler,
 		configService: configService,

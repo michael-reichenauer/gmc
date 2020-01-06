@@ -15,7 +15,7 @@ const (
 
 type Config struct {
 	DisableAutoUpdate bool
-	Preview           bool
+	AllowPreview      bool
 }
 
 type State struct {
@@ -174,7 +174,7 @@ func (s *Service) saveConfig(config Config) {
 }
 
 func (s *Service) defaultConfig() Config {
-	return Config{Preview: true}
+	return Config{AllowPreview: true}
 }
 
 func (s *Service) defaultRepo(path string) Repo {

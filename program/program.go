@@ -46,8 +46,9 @@ func Main(version string) {
 	tel.SendEventf("program-start", "Starting gmc version: %s %q ...", version, utils.BinPath())
 
 	configService := config.NewConfig()
-	autoUpdate := installation.NewAutoUpdate(configService, version)
+	autoUpdate := installation.NewAutoUpdate(configService, "0.4")
 	autoUpdate.Start()
+	//autoUpdate.UpdateIfAvailable()
 
 	if *repoPathFlag == "" {
 		// No specified repo path, use current dir
@@ -60,13 +61,13 @@ func Main(version string) {
 	}
 	log.Infof("Working folder: %q", path)
 
-	uiHandler := ui.NewUI()
+	uiHandler := ui.NewUI(tel)
 	uiHandler.Run(func() {
-		mainWindow := repoview.NewMainWindow(uiHandler, configService, path)
+		mainWindow := repoview.NewMainWindow(uiHandler, configService, tel, path)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})
 	tel.SendEvent("program-stop")
 	tel.Close()
-	log.Infof("exit")
+	log.Infof("Exit gmc")
 }
