@@ -3,6 +3,8 @@ module github.com/michael-reichenauer/gmc
 go 1.13
 
 require (
+	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
+	github.com/Microsoft/ApplicationInsights-Go v0.4.2
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/hashicorp/go-version v1.2.0
@@ -16,6 +18,7 @@ require (
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	golang.org/x/sys v0.0.0-20191128015809-6d18c012aee9 // indirect
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gotest.tools v2.2.0+incompatible // indirect
 )

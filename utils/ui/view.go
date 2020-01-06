@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"math"
 	"strings"
 )
@@ -50,6 +51,7 @@ type View interface {
 type view struct {
 	gui     *gocui.Gui
 	guiView *gocui.View
+	tel     *telemetry.Telemetry
 
 	properties   *Properties
 	viewName     string
@@ -61,9 +63,10 @@ type view struct {
 	width        int
 }
 
-func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
+func newView(ui *UI, tel *telemetry.Telemetry, viewData func(viewPort ViewPage) ViewData) *view {
 	return &view{
 		gui:        ui.Gui(),
+		tel:        tel,
 		viewName:   ui.NewViewName(),
 		viewData:   viewData,
 		properties: &Properties{}}
@@ -72,7 +75,7 @@ func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
 func (h *view) Show(bounds Rect) {
 	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
-			panic(log.Error(err))
+			panic(log.Fatal(err))
 		}
 
 		h.guiView = guiView
@@ -91,6 +94,7 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
 		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
+		h.tel.SendEventf("ui-view-show", h.viewName)
 		if h.properties.OnLoad != nil {
 			// Let the actual view handle load to initialise view data
 			h.properties.OnLoad()
@@ -144,7 +148,7 @@ func (h *view) NotifyChanged() {
 
 		// Show the new view data for the view port
 		if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
-			panic(log.Error(err))
+			panic(log.Fatal(err))
 		}
 		return nil
 	})
@@ -180,13 +184,13 @@ func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
 
 func (h *view) SetBounds(bounds Rect) {
 	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 }
 
 func (h *view) SetCurrentView() {
 	if _, err := h.gui.SetCurrentView(h.viewName); err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 }
 
@@ -216,7 +220,7 @@ func (h *view) Close() {
 		h.properties.OnClose()
 	}
 	if err := h.gui.DeleteView(h.viewName); err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 }
 
@@ -225,7 +229,7 @@ func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) 
 		handler()
 		return nil
 	}); err != nil {
-		panic(log.Error(err))
+		panic(log.Fatal(err))
 	}
 }
 
@@ -272,7 +276,7 @@ func (h *view) move(move int) {
 		// No move, reached top or bottom
 		return
 	}
-
+	h.tel.SendEventf("ui-view-move", "move: %d", move)
 	h.currentIndex = newCurrent
 
 	if h.currentIndex < h.firstIndex {
@@ -304,7 +308,7 @@ func (h *view) scroll(move int) {
 		// No move, reached top or bottom
 		return
 	}
-
+	h.tel.SendEventf("ui-view-scroll", "scroll: %d", move)
 	newCurrent := h.currentIndex + (newFirst - h.firstIndex)
 
 	if newCurrent < newFirst {
