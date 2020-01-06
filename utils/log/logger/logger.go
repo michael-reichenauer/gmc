@@ -19,15 +19,21 @@ const (
 
 var (
 	baseFilePathLength = getBaseFileBathLength()
+	Std                = New("")
 )
 
 type Logger struct {
 	prefix    string // prefix to write at beginning of each line
 	isWindows bool
+	target    func(level string, msg string)
 }
 
 func New(prefix string) *Logger {
 	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows"}
+}
+
+func (l *Logger) SetTarget(target func(level string, msg string)) {
+	l.target = target
 }
 
 func (l *Logger) Output(level string, msg string) {
@@ -45,8 +51,11 @@ func (l *Logger) output(level, message string) {
 	if len(file) > baseFilePathLength {
 		file = file[baseFilePathLength:]
 	}
-
-	print(fmt.Sprintf("%s%s %s(%d) %s", l.prefix, level, file, line, message))
+	text := fmt.Sprintf("%s(%d) %s", file, line, message)
+	print(fmt.Sprintf("%s%s %s", l.prefix, level, text))
+	if l.target != nil {
+		l.target(level, text)
+	}
 }
 
 func (l *Logger) getCallerInfo() (string, int) {

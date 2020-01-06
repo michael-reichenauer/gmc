@@ -10,6 +10,8 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"os"
 	"os/exec"
@@ -27,6 +29,7 @@ func Main(version string) {
 		fmt.Printf("%s", version)
 		return
 	}
+
 	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && runtime.GOOS == "windows" {
 		// Seems to be not running in a terminal like e.g. in goland,
 		// termbox requires a terminal, so lets restart as an external command on windows
@@ -37,7 +40,11 @@ func Main(version string) {
 		_ = cmd.Wait()
 		return
 	}
+	tel := telemetry.NewTelemetry(version)
+	logger.Std.SetTarget(tel.SendTrace)
 	log.Infof("Starting gmc version: %s %q ...", version, utils.BinPath())
+	tel.SendEventf("program-start", "Starting gmc version: %s %q ...", version, utils.BinPath())
+
 	configService := config.NewConfig()
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
@@ -59,4 +66,7 @@ func Main(version string) {
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})
+	tel.SendEvent("program-stop")
+	tel.Close()
+	log.Infof("exit")
 }
