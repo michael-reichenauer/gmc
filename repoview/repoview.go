@@ -3,193 +3,106 @@ package repoview
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-type Handler struct {
-	uiHandler          *ui.Handler
-	view               *ui.View
-	vm                 *repoVM
-	repoPath           string
-	isSelected         bool
-	currentBranch      string
-	isShowCommitStatus bool
+//
+type RepoView struct {
+	ui.View
+	mainController mainController
+	detailsView    *DetailsView
+	vm             *repoVM
 }
 
-func New(uiHandler *ui.Handler, repoPath string) *Handler {
-	return &Handler{
-		uiHandler: uiHandler,
-		repoPath:  repoPath,
-		vm:        newRepoVM(repoPath),
+func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
+	h := &RepoView{
+		detailsView:    detailsView,
+		mainController: mainController,
 	}
+	h.View = uiHandler.NewView(h.viewData)
+	h.Properties().OnLoad = h.onLoad
+	h.vm = newRepoVM(model, h)
+	return h
 }
 
-func (h *Handler) Properties() ui.Properties {
-	return ui.Properties{
-		Title:         "",
-		OnLoad:        h.OnLoad,
-		IsCurrentView: true,
-	}
-}
-
-func (h *Handler) GetViewData(width, firstLine, lastLine, selected int) ui.ViewData {
-	repoPage, err := h.vm.GetRepoPage(width, firstLine, lastLine, selected)
+func (h *RepoView) viewData(viewPort ui.ViewPage) ui.ViewData {
+	// log.Infof("repo viewData ...")
+	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewData{Text: ui.Red(fmt.Sprintf("Error: %v", err)), MaxLines: 1}
+		return ui.ViewData{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
-	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.commitStatus)
+	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
 
-	if !h.isSelected && repoPage.currentCommitIndex != -1 {
-		h.isSelected = true
-		h.SetCursor(repoPage.currentCommitIndex)
-	}
-
-	return ui.ViewData{
-		Text:     repoPage.text,
-		MaxLines: repoPage.lines,
-		First:    repoPage.first,
-		Last:     repoPage.last,
-		Current:  repoPage.current,
-	}
-}
-
-func (h *Handler) OnLoad(view *ui.View) {
-	h.view = view
-	h.vm.Load()
-	h.setWindowTitle(h.repoPath, "", "")
-	h.view.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
-	h.view.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
-	h.view.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
-	h.view.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
-	h.view.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
-	h.view.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.cursorDown)
-	h.view.SetKey(gocui.KeySpace, gocui.ModNone, h.pageDown)
-	h.view.SetKey(gocui.KeyPgdn, gocui.ModNone, h.pageDown)
-	h.view.SetKey(gocui.KeyPgup, gocui.ModNone, h.pageUpp)
-	h.view.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.cursorUp)
-	h.view.NotifyChanged()
-}
-
-func (h *Handler) onEnter() {
-	h.isShowCommitStatus = !h.isShowCommitStatus
-	h.view.NotifyChanged()
-}
-
-func (h *Handler) onRight() {
-	h.vm.OpenBranch(h.view.CurrentLine)
-	h.view.NotifyChanged()
-}
-
-func (h *Handler) onLeft() {
-	h.vm.CloseBranch(h.view.CurrentLine)
-	h.view.NotifyChanged()
-}
-
-func (h *Handler) onRefresh() {
-	h.view.View.Clear()
-	h.view.Gui.Update(func(g *gocui.Gui) error {
-		h.vm.Refresh()
-		h.view.NotifyChanged()
-		return nil
-	})
-
-}
-
-func (h *Handler) setWindowTitle(path, branch, status string) {
-	statusTxt := ""
-	//if h.isShowCommitStatus {
-	statusTxt = fmt.Sprintf("  %s", status)
+	//if !h.isSelected && repoPage.currentCommitIndex != -1 {
+	//	h.isSelected = true
+	//	//h.SetCursor(repoPage.currentCommitIndex)
 	//}
-	_, _ = utils.SetConsoleTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, statusTxt))
-}
-func (h *Handler) SetCursor(line int) {
-
-	//	h.setCursor(g, view, line)
-
-}
-
-func (h *Handler) cursorUp() {
-
-	if h.view.CurrentLine <= 0 {
-		return
+	if len(repoPage.lines) > 0 {
+		h.detailsView.SetCurrent(repoPage.currentIndex)
+	} else {
+		return ui.ViewData{Lines: []string{"  Reading repo, please wait ..."}}
 	}
 
-	cx, cy := h.view.View.Cursor()
-	_ = h.view.View.SetCursor(cx, cy-1)
-
-	h.view.CurrentLine = h.view.CurrentLine - 1
-	if h.view.CurrentLine < h.view.FirstLine {
-		move := h.view.FirstLine - h.view.CurrentLine
-		h.view.FirstLine = h.view.FirstLine - move
-		h.view.LastLine = h.view.LastLine - move
-	}
-	h.view.NotifyChanged()
+	// log.Infof("repo view data %d lines", len(repoPage.lines))
+	return ui.ViewData{Lines: repoPage.lines, FirstIndex: repoPage.firstIndex, Total: repoPage.total}
 }
 
-func (h *Handler) cursorDown() {
-	if h.view.CurrentLine >= h.view.ViewData.MaxLines-1 {
-		return
-	}
-	cx, cy := h.view.View.Cursor()
-	_ = h.view.View.SetCursor(cx, cy+1)
+func (h *RepoView) onLoad() {
+	h.vm.onLoad()
+	h.setWindowTitle("", "", 0)
 
-	h.view.CurrentLine = h.view.CurrentLine + 1
-	if h.view.CurrentLine > h.view.LastLine {
-		move := h.view.CurrentLine - h.view.LastLine
-		h.view.FirstLine = h.view.FirstLine + move
-		h.view.LastLine = h.view.LastLine + move
-	}
-	h.view.NotifyChanged()
-}
-func (h *Handler) pageDown() {
-
-	_, y := h.view.View.Size()
-	move := y - 2
-	if h.view.LastLine+move >= h.view.ViewData.MaxLines-1 {
-		move = h.view.ViewData.MaxLines - 1 - h.view.LastLine
-	}
-	if move < 1 {
-		return
-	}
-	h.view.FirstLine = h.view.FirstLine + move
-	h.view.LastLine = h.view.LastLine + move
-	h.view.CurrentLine = h.view.CurrentLine + move
-	h.view.NotifyChanged()
-}
-func (h *Handler) pageUpp() {
-	_, y := h.view.View.Size()
-	move := y - 2
-	if h.view.FirstLine-move < 0 {
-		move = h.view.FirstLine
-	}
-	if move < 1 {
-		return
-	}
-	h.view.FirstLine = h.view.FirstLine - move
-	h.view.LastLine = h.view.LastLine - move
-	h.view.CurrentLine = h.view.CurrentLine - move
-	h.view.NotifyChanged()
+	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.onRefresh)
+	h.SetKey(gocui.KeyF5, gocui.ModNone, h.onRefresh)
+	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
+	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onLeft)
+	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
+	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
+	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
+	h.NotifyChanged()
 }
 
-func (h *Handler) setCursor(gui *gocui.Gui, view *gocui.View, line int) error {
-	log.Infof("Set line %d", line)
+func (h *RepoView) onEnter() {
+	h.mainController.ToggleDetails()
+}
 
-	if line >= h.view.ViewData.MaxLines {
-		return nil
+func (h *RepoView) onRight() {
+	h.vm.OpenBranch(h.ViewPage().CurrentLine)
+	h.NotifyChanged()
+}
+
+func (h *RepoView) onLeft() {
+	h.vm.CloseBranch(h.ViewPage().CurrentLine)
+	h.NotifyChanged()
+}
+
+func (h *RepoView) onRefresh() {
+	h.Clear()
+	h.PostOnUIThread(func() {
+		// Posted to allow the clear to show while new data is calculated
+		h.vm.Refresh()
+	})
+}
+
+func (h *RepoView) setWindowTitle(path, branch string, changes int) {
+	changesText := ""
+	if changes > 0 {
+		changesText = fmt.Sprintf(" (*%d)", changes)
 	}
-	cx, _ := view.Cursor()
-	_ = view.SetCursor(cx, line)
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
+}
 
-	h.view.CurrentLine = line
-	if h.view.CurrentLine > h.view.LastLine {
-		move := h.view.CurrentLine - h.view.LastLine
-		h.view.FirstLine = h.view.FirstLine + move
-		h.view.LastLine = h.view.LastLine + move
-	}
-	h.view.NotifyChanged()
+func (h *RepoView) onTrace() {
+	h.Clear()
+	h.PostOnUIThread(func() {
+		// Posted to allow the clear to show while new data is calculated
+		h.vm.RefreshTrace(h.ViewPage())
+		h.NotifyChanged()
+	})
+}
 
-	return nil
+func (h *RepoView) onBranchColor() {
+	h.vm.ChangeBranchColor(h.ViewPage().CurrentLine)
+	h.NotifyChanged()
 }

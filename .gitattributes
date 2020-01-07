@@ -1,0 +1,11 @@
+# Default behavior, if core.autocrlf is not set.
+* text=auto
+
+# Text always normalized and converted
+*.go text
+*.md text
+*.json text
+*.mod text eol=lf
+*.sum text eol=lf
+*.sh text eol=lf
+*.bat text eol=crlf

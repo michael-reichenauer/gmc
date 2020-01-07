@@ -19,15 +19,25 @@ const (
 
 var (
 	baseFilePathLength = getBaseFileBathLength()
+	Std                = New("")
 )
 
+type telemetry interface {
+	SendTrace(level string, msg string)
+	SendFatalf(err error, message string, v ...interface{})
+}
 type Logger struct {
 	prefix    string // prefix to write at beginning of each line
 	isWindows bool
+	tel       telemetry
 }
 
 func New(prefix string) *Logger {
 	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows"}
+}
+
+func (l *Logger) SetTarget(tel telemetry) {
+	l.tel = tel
 }
 
 func (l *Logger) Output(level string, msg string) {
@@ -45,13 +55,20 @@ func (l *Logger) output(level, message string) {
 	if len(file) > baseFilePathLength {
 		file = file[baseFilePathLength:]
 	}
-
-	print(fmt.Sprintf("%s%s %s(%d) %s", l.prefix, level, file, line, message))
+	text := fmt.Sprintf("%s(%d) %s", file, line, message)
+	print(fmt.Sprintf("%s%s %s", l.prefix, level, text))
+	if l.tel != nil {
+		l.tel.SendTrace(level, text)
+	}
 }
 
 func (l *Logger) getCallerInfo() (string, int) {
 	_, file, line, _ := runtime.Caller(4)
 	return file, line
+}
+
+func (l *Logger) FatalError(err error, msg string) {
+	l.tel.SendFatalf(err, msg)
 }
 
 func getBaseFileBathLength() int {
