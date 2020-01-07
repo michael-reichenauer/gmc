@@ -14,6 +14,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.6 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190817171036-93860e161317
 	github.com/pkg/errors v0.8.1 // indirect
+	github.com/rapid7/go-get-proxied v0.0.0-20181210221417-16249a544090
 	github.com/rivo/uniseg v0.1.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
