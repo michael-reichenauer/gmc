@@ -13,13 +13,9 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/michael-reichenauer/gmc/utils/ui"
-	"github.com/rapid7/go-get-proxied/proxy"
-	"net"
-	"net/http"
 	"os"
 	"os/exec"
 	"runtime"
-	"time"
 )
 
 var (
@@ -38,7 +34,7 @@ func Main(version string) {
 		return
 	}
 
-	proxyURL := setDefaultHTTPProxy()
+	proxyURL := utils.SetDefaultHTTPProxy()
 	tel := telemetry.NewTelemetry(version)
 	logger.Std.SetTelemetry(tel)
 
@@ -87,27 +83,4 @@ func isDebugConsole() bool {
 	_ = cmd.Start()
 	_ = cmd.Wait()
 	return true
-}
-
-func setDefaultHTTPProxy() string {
-	provider := proxy.NewProvider("")
-	proxyURL := provider.GetHTTPProxy("https://api.github.com")
-	if proxyURL == nil {
-		// No proxy needed
-		return ""
-	}
-
-	defaultTransport := &http.Transport{
-		Proxy: http.ProxyURL(proxyURL.URL()),
-		DialContext: (&net.Dialer{
-			Timeout:   15 * time.Second,
-			KeepAlive: 15 * time.Second,
-		}).DialContext,
-		MaxIdleConns:          100,
-		IdleConnTimeout:       90 * time.Second,
-		TLSHandshakeTimeout:   10 * time.Second,
-		ExpectContinueTimeout: 1 * time.Second,
-	}
-	http.DefaultClient.Transport = defaultTransport
-	return proxyURL.String()
 }

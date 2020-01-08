@@ -372,7 +372,7 @@ func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string
 		req.Header.Add("If-None-Match", requestEtag)
 	}
 
-	client := &http.Client{Transport: &http.Transport{Proxy: nil}}
+	client := &http.Client{Transport: &http.Transport{Proxy: utils.GetHTTPProxy()}}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Infof("No contact with %s, %s", url, err)
