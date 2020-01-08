@@ -43,6 +43,9 @@ func Main(version string) {
 	log.Infof("Using default http proxy:%q", proxyURL)
 
 	configService := config.NewConfig()
+	configService.SetState(func(s *config.State) {
+		s.InstalledVersion = version
+	})
 	autoUpdate := installation.NewAutoUpdate(configService, tel, version)
 	autoUpdate.Start()
 	//autoUpdate.UpdateIfAvailable()
