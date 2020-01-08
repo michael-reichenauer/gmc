@@ -22,7 +22,7 @@ func (s *Service) getGitModelBranches(branchNames []string, gmRepo gitrepo.Repo,
 
 	branches = s.addLocalBranches(branches, gmRepo)
 	branches = s.addRemoteBranches(branches, gmRepo)
-	branches = s.removeSameLocalAsRemotes(branches, gmRepo, gmStatus)
+	// branches = s.removeSameLocalAsRemotes(branches, gmRepo, gmStatus)
 	s.sortBranches(branches)
 	return branches
 }

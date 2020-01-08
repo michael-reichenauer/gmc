@@ -51,9 +51,8 @@ func (s *Service) TriggerRefreshRepo() {
 			return
 		}
 		s.RepoEvents <- repo
-		go func() {
-			s.gitLib.Fetch()
-		}()
+
+		s.gitLib.Fetch()
 	}()
 }
 
@@ -149,11 +148,10 @@ func (s *Service) monitorStatusChangesRoutine() {
 }
 
 func (s *Service) fetchRoutine() {
-	time.Sleep(300 * time.Millisecond)
 	for {
+		time.Sleep(10 * time.Minute)
 		if err := s.gitLib.Fetch(); err != nil {
 			log.Warnf("Failed to fetch %v", err)
 		}
-		time.Sleep(10 * time.Minute)
 	}
 }

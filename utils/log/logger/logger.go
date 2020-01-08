@@ -36,7 +36,7 @@ func New(prefix string) *Logger {
 	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows"}
 }
 
-func (l *Logger) SetTarget(tel telemetry) {
+func (l *Logger) SetTelemetry(tel telemetry) {
 	l.tel = tel
 }
 

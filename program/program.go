@@ -30,22 +30,22 @@ func Main(version string) {
 		return
 	}
 
-	if !isatty.IsTerminal(os.Stdout.Fd()) && !isatty.IsCygwinTerminal(os.Stdout.Fd()) && runtime.GOOS == "windows" {
-		// Seems to be not running in a terminal like e.g. in goland,
-		// termbox requires a terminal, so lets restart as an external command on windows
-		args := []string{"/C", "start"}
-		args = append(args, os.Args...)
-		cmd := exec.Command("cmd", args...)
-		_ = cmd.Start()
-		_ = cmd.Wait()
+	if isDebugConsole() {
 		return
 	}
+
+	proxyURL := utils.SetDefaultHTTPProxy()
 	tel := telemetry.NewTelemetry(version)
-	logger.Std.SetTarget(tel)
+	logger.Std.SetTelemetry(tel)
+
 	log.Infof("Starting gmc version: %s %q ...", version, utils.BinPath())
 	tel.SendEventf("program-start", "Starting gmc version: %s %q ...", version, utils.BinPath())
+	log.Infof("Using default http proxy:%q", proxyURL)
 
 	configService := config.NewConfig()
+	configService.SetState(func(s *config.State) {
+		s.InstalledVersion = version
+	})
 	autoUpdate := installation.NewAutoUpdate(configService, tel, version)
 	autoUpdate.Start()
 	//autoUpdate.UpdateIfAvailable()
@@ -70,4 +70,20 @@ func Main(version string) {
 	tel.SendEvent("program-stop")
 	tel.Close()
 	log.Infof("Exit gmc")
+}
+
+func isDebugConsole() bool {
+	if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) ||
+		runtime.GOOS != "windows" {
+		return false
+	}
+
+	// Seems to be not running in a terminal like e.g. in goland,
+	// termbox requires a terminal, so lets restart as an external command on windows
+	args := []string{"/C", "start"}
+	args = append(args, os.Args...)
+	cmd := exec.Command("cmd", args...)
+	_ = cmd.Start()
+	_ = cmd.Wait()
+	return true
 }
