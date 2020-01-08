@@ -13,6 +13,8 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"io/ioutil"
+	stdlog "log"
 	"os"
 	"os/exec"
 	"runtime"
@@ -33,6 +35,7 @@ func Main(version string) {
 	if isDebugConsole() {
 		return
 	}
+	stdlog.SetOutput(ioutil.Discard)
 
 	proxyURL := utils.SetDefaultHTTPProxy()
 	tel := telemetry.NewTelemetry(version)
