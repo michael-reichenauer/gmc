@@ -85,7 +85,8 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 		sb.WriteString(" ")
 		writeMoreMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
-		sb.WriteString(" ")
+		//sb.WriteString(" ")
+		writeAheadBehindMarker(&sb, c)
 		writeSubject(&sb, c, currentLineCommit, messageLength)
 		sb.WriteString(" ")
 		writeSid(&sb, c, sidLength)
@@ -230,13 +231,23 @@ func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmo
 	}
 	color := ui.CWhite
 	if c.Branch.DisplayName == selectedCommit.Branch.DisplayName {
-		if c.IsLocalOnly {
-			color = ui.CGreenDk
-		} else if c.IsRemoteOnly {
-			color = ui.CBlue
-		}
+		// if c.IsLocalOnly {
+		// 	color = ui.CGreenDk
+		// } else if c.IsRemoteOnly {
+		// 	color = ui.CBlue
+		// }
 	} else {
 		color = ui.CDark
 	}
 	sb.WriteString(ui.ColorText(color, subject))
+}
+
+func writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Commit) {
+	if c.IsLocalOnly {
+		sb.WriteString(ui.GreenDk("▲"))
+	} else if c.IsRemoteOnly {
+		sb.WriteString(ui.Blue("▼"))
+	} else {
+		sb.WriteString(" ")
+	}
 }
