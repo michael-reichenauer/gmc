@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -26,6 +27,23 @@ func BinPath() string {
 		panic(log.Fatal(err))
 	}
 	return path
+}
+
+func ExePath() string {
+	name := os.Args[0]
+	var err error
+	if name[0] == '.' {
+		name, err = filepath.Abs(name)
+		if err == nil {
+			name = filepath.Clean(name)
+		}
+	} else {
+		name, err = exec.LookPath(filepath.Clean(name))
+	}
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return name
 }
 
 func Text(text string, length int) string {

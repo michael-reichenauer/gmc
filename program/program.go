@@ -98,7 +98,8 @@ func getWorkingFolder() string {
 
 func logProgramInfo(version string, path string) {
 	log.Infof("Version: %s", version)
-	log.Infof("Binary path: %s", utils.BinPath())
+	log.Infof("Binary path: %q", utils.BinPath())
+	log.Infof("Binary path: %q", utils.ExePath())
 	log.Infof("Http proxy: %s", utils.GetHTTPProxyURL())
 	log.Infof("Working folder: %s", path)
 }
