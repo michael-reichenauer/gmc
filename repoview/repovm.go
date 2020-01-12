@@ -235,17 +235,14 @@ func (h *repoVM) writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedC
 		return
 	}
 	color := ui.CWhite
-
-	if c.Branch.DisplayName == selectedCommit.Branch.DisplayName {
-		if c.IsLocalOnly {
-			color = ui.CGreenDk
-		} else if c.IsRemoteOnly {
-			color = ui.CBlue
-		}
-	} else {
-		if h.isDetails {
-			color = ui.CDark
-		}
+	if c.IsLocalOnly {
+		color = ui.CGreenDk
+	} else if c.IsRemoteOnly {
+		color = ui.CBlue
+	}
+	if h.isDetails &&
+		c.Branch.DisplayName != selectedCommit.Branch.DisplayName {
+		color = ui.CDark
 	}
 	sb.WriteString(ui.ColorText(color, subject))
 }
