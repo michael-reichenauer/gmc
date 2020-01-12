@@ -28,6 +28,7 @@ type repoPage struct {
 type repoVM struct {
 	notifier         notifier
 	viewModelService *viewmodel.Service
+	isDetails        bool
 }
 
 type trace struct {
@@ -87,7 +88,7 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 		writeCurrentMarker(&sb, c)
 		//sb.WriteString(" ")
 		writeAheadBehindMarker(&sb, c)
-		writeSubject(&sb, c, currentLineCommit, messageLength)
+		h.writeSubject(&sb, c, currentLineCommit, messageLength)
 		sb.WriteString(" ")
 		writeSid(&sb, c, sidLength)
 		sb.WriteString(" ")
@@ -170,6 +171,10 @@ func (h *repoVM) ChangeBranchColor(index int) {
 	h.viewModelService.ChangeBranchColor(index)
 }
 
+func (h *repoVM) ToggleDetails() {
+	h.isDetails = !h.isDetails
+}
+
 func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 	if c.IsCurrent {
 		sb.WriteString(currentCommitMarker)
@@ -223,21 +228,24 @@ func writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
 	sb.WriteString(ui.Dark(utils.Text(tt, length)))
 }
 
-func writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmodel.Commit, length int) {
+func (h *repoVM) writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmodel.Commit, length int) {
 	subject := utils.Text(c.Subject, length)
 	if c.ID == viewmodel.StatusID {
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}
 	color := ui.CWhite
+
 	if c.Branch.DisplayName == selectedCommit.Branch.DisplayName {
-		// if c.IsLocalOnly {
-		// 	color = ui.CGreenDk
-		// } else if c.IsRemoteOnly {
-		// 	color = ui.CBlue
-		// }
+		if c.IsLocalOnly {
+			color = ui.CGreenDk
+		} else if c.IsRemoteOnly {
+			color = ui.CBlue
+		}
 	} else {
-		color = ui.CDark
+		if h.isDetails {
+			color = ui.CDark
+		}
 	}
 	sb.WriteString(ui.ColorText(color, subject))
 }

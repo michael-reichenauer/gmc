@@ -66,6 +66,7 @@ func (h *RepoView) onLoad() {
 
 func (h *RepoView) onEnter() {
 	h.mainController.ToggleDetails()
+	h.vm.ToggleDetails()
 }
 
 func (h *RepoView) onRight() {
