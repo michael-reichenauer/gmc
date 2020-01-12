@@ -22,14 +22,6 @@ func CurrentDir() string {
 }
 
 func BinPath() string {
-	path, err := filepath.Abs(os.Args[0])
-	if err != nil {
-		panic(log.Fatal(err))
-	}
-	return path
-}
-
-func ExePath() string {
 	name := os.Args[0]
 	var err error
 	if name[0] == '.' {
