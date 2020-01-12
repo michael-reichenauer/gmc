@@ -28,6 +28,7 @@ var branchColors = []ui.Color{
 	ui.CGreenDk,
 	ui.CYellowDk,
 	//ui.CBlueDk,
+	ui.CMagenta,
 	ui.CMagentaDk,
 	ui.CCyanDk,
 }
@@ -381,18 +382,18 @@ func (s *Service) ChangeBranchColor(index int) {
 }
 
 func (s *Service) BranchColor(name string) ui.Color {
-	if name == "master" {
-		return ui.CMagenta
-	}
-	if name == "develop" {
-		return ui.CRedDk
-	}
 	if strings.HasPrefix(name, "multi:") {
 		return ui.CWhite
 	}
 	color, ok := s.customBranchColors[name]
 	if ok {
 		return ui.Color(color)
+	}
+	if name == "master" {
+		return ui.CMagenta
+	}
+	if name == "develop" {
+		return ui.CRedDk
 	}
 
 	h := fnv.New32a()
