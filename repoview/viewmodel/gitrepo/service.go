@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+//
 type Service struct {
 	RepoEvents   chan Repo
 	StatusEvents chan Status
@@ -21,10 +22,10 @@ func ToSid(commitID string) string {
 }
 
 func NewService(repoPath string) *Service {
-	gitLib := gitlib.NewRepo(repoPath)
+	glr := gitlib.NewRepo(repoPath)
 	return &Service{
-		gitLib:       gitLib,
-		monitor:      newMonitor(gitLib.RepoPath()),
+		gitLib:       glr,
+		monitor:      newMonitor(glr.RepoPath(), glr.IsIgnored),
 		branches:     newBranches(),
 		RepoEvents:   make(chan Repo),
 		StatusEvents: make(chan Status),

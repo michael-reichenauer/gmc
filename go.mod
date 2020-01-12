@@ -5,6 +5,7 @@ go 1.13
 require (
 	code.cloudfoundry.org/clock v0.0.0-20180518195852-02e53af36e6c // indirect
 	github.com/Microsoft/ApplicationInsights-Go v0.4.2
+	github.com/bmatcuk/doublestar v1.2.2
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/hashicorp/go-version v1.2.0
