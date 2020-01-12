@@ -243,7 +243,7 @@ func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath
 	log.Infof("Moving %q to %q ...", currentPath, tmpPath)
 	err := os.Rename(currentPath, tmpPath)
 	if err != nil {
-		log.Warnf("Failed to move running binary to %sq %v", tmpPath, err)
+		log.Warnf("Failed to move running binary %q to %sq %v", currentPath, tmpPath, err)
 		return
 	}
 	log.Infof("Moved %q to %q", currentPath, tmpPath)
@@ -252,7 +252,7 @@ func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath
 	log.Infof("Moving %q to %q ...", downloadedPath, currentPath)
 	err = os.Rename(downloadedPath, currentPath)
 	if err != nil {
-		log.Warnf("Failed to move downloaded binary to %q, %v", currentPath, err)
+		log.Warnf("Failed to move downloaded binary %q to %q, %v", downloadedPath, currentPath, err)
 		return
 	}
 	log.Infof("Moved %s to %s", downloadedPath, currentPath)
