@@ -410,6 +410,10 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
 	current := repo.CurrentCommit
 	statusCommit.Parent = current
 	current.ChildIDs = append([]string{statusCommit.ID}, current.ChildIDs...)
-	current.Branch.tip = statusCommit
-	current.Branch.tipId = statusCommit.ID
+	statusCommit.Branch.tip = statusCommit
+	statusCommit.Branch.tipId = statusCommit.ID
+	if statusCommit.Branch.name != current.Branch.name {
+		statusCommit.Branch.bottom = statusCommit
+		statusCommit.Branch.bottomId = statusCommit.ID
+	}
 }
