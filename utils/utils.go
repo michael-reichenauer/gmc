@@ -2,10 +2,11 @@ package utils
 
 import (
 	"encoding/json"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -14,13 +15,17 @@ import (
 func CurrentDir() string {
 	dir, err := os.Getwd()
 	if err != nil {
-		log.Fatal(err)
+		panic(log.Fatal(err))
 	}
 	return dir
 }
 
 func BinPath() string {
-	return os.Args[0]
+	path, err := filepath.Abs(os.Args[0])
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return path
 }
 
 func Text(text string, length int) string {
@@ -42,7 +47,7 @@ func RunesText(text string, length int) string {
 func CompileRegexp(regexpText string) *regexp.Regexp {
 	exp, err := regexp.Compile(regexpText)
 	if err != nil {
-		log.Fatalf("Failed to compile regexp %q, %v", regexpText, err)
+		panic(log.Fatalf(err, "Failed to compile regexp %q", regexpText))
 	}
 	return exp
 }
