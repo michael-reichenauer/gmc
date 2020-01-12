@@ -34,22 +34,14 @@ func (m *mock) NotifyChanged() {
 // 	<-done
 // }
 //
-// func TestViewCurrent(t *testing.T) {
-// 	gitlib.EnableTracing("")
-// 	m := viewmodel.NewModel(utils.CurrentDir())
-// 	var vm *repoVM
-// 	done := make(chan interface{})
-// 	vm = newRepoVM(m, &mock{func() {
-// 		vd, _ := vm.GetRepoPage(ui.ViewPort{FirstLine: 0, Height: 20, CurrentIndex: 1, Width: 120})
-// 		fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
-// 		//for _, l := range vd.lines {
-// 		//	fmt.Printf("length: %d\n", strings.Count(l, ""))
-// 		//}
-// 		close(done)
-// 	}})
-// 	vm.Load()
-// 	<-done
-// }
+func TestViewCurrent(t *testing.T) {
+	cs := config.NewConfig()
+	m := viewmodel.NewModel(cs, utils.CurrentDir())
+	vm := newRepoVM(m, nil)
+	vm.LoadWithBranches([]string{})
+	vd, _ := vm.GetRepoPage(ui.ViewPage{Height: 20, Width: 120})
+	fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
+}
 
 func TestView(t *testing.T) {
 	cs := config.NewConfig()

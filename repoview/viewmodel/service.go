@@ -276,6 +276,7 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 	for _, c := range repo.gmRepo.Commits {
 		repo.addGitCommit(c)
 	}
+	s.adjustCurrentBranchIfStatus(repo)
 	s.setBranchParentChildRelations(repo)
 	s.setParentChildRelations(repo)
 
@@ -398,4 +399,17 @@ func (s *Service) BranchColor(name string) ui.Color {
 	h.Write([]byte(name))
 	index := int(h.Sum32()) % len(branchColors)
 	return branchColors[index]
+}
+
+func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
+	if len(repo.Commits) < 2 || repo.Commits[0].ID != StatusID || repo.CurrentCommit == nil {
+		return
+	}
+
+	statusCommit := repo.Commits[0]
+	current := repo.CurrentCommit
+	statusCommit.Parent = current
+	current.ChildIDs = append([]string{statusCommit.ID}, current.ChildIDs...)
+	current.Branch.tip = statusCommit
+	current.Branch.tipId = statusCommit.ID
 }
