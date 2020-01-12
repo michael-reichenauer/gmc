@@ -20,9 +20,10 @@ type monitor struct {
 	headPath      string
 	fetchHeadPath string
 	quit          chan chan<- interface{}
+	isIgnoreFunc  func(path string) bool
 }
 
-func newMonitor(repoPath string) *monitor {
+func newMonitor(repoPath string, isIgnore func(path string) bool) *monitor {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		panic(log.Fatal(err))
@@ -37,6 +38,7 @@ func newMonitor(repoPath string) *monitor {
 		StatusChange:  make(chan interface{}),
 		RepoChange:    make(chan interface{}),
 		quit:          make(chan chan<- interface{}),
+		isIgnoreFunc:  isIgnore,
 	}
 }
 
@@ -59,7 +61,7 @@ func (h *monitor) monitorFolderRoutine() {
 		select {
 		case event := <-h.watcher.Events:
 			if h.isIgnore(event.Name) {
-				//fmt.Printf("ignoring: %s\n", event.Name)
+				//log.Infof("ignoring: %s", event.Name)
 			} else if h.isRepoChange(event.Name) {
 				//log.Infof("Repo change: %s", event.Name)
 				select {
@@ -94,6 +96,9 @@ func (h *monitor) watchDir(path string, fi os.FileInfo, err error) error {
 }
 func (h *monitor) isIgnore(path string) bool {
 	if utils.DirExists(path) {
+		return true
+	}
+	if h.isIgnoreFunc != nil && h.isIgnoreFunc(path) {
 		return true
 	}
 	return false

@@ -10,11 +10,11 @@ func newBranchesGraph() *branchesGraph {
 func (s *branchesGraph) drawBranchLines(repo *repo) {
 	for _, branch := range repo.Branches {
 		branch.tip = repo.commitById[branch.tipId]
-		s.drawBranchLine(repo, branch)
+		s.drawBranchLine(branch)
 	}
 }
 
-func (s *branchesGraph) drawBranchLine(repo *repo, branch *branch) {
+func (s *branchesGraph) drawBranchLine(branch *branch) {
 	c := branch.tip
 	for {
 		if c.Branch != branch {
@@ -22,7 +22,7 @@ func (s *branchesGraph) drawBranchLine(repo *repo, branch *branch) {
 			break
 		}
 		if c == c.Branch.tip {
-			c.graph[branch.index].Branch.Set(BTip) // ┏   (deleted branch, no more commits in this branch)
+			c.graph[branch.index].Branch.Set(BTip) //       ┏   (branch tip)
 		}
 		if c == c.Branch.tip && c.Branch.isGitBranch {
 			c.graph[branch.index].Branch.Set(BActiveTip) // ┣   (indicate possible more commits in the future)
@@ -44,9 +44,9 @@ func (s *branchesGraph) drawBranchLine(repo *repo, branch *branch) {
 
 func (s *branchesGraph) drawConnectorLines(repo *repo) {
 	for _, c := range repo.Commits {
-		if c.ID == StatusID {
-			continue
-		}
+		// if c.ID == StatusID {
+		// 	continue
+		// }
 		for i, b := range repo.Branches {
 			c.graph[i].BranchName = b.name
 			c.graph[i].BranchDisplayName = b.displayName

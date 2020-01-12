@@ -4,7 +4,6 @@ import (
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/nsf/termbox-go"
 )
 
@@ -14,7 +13,6 @@ type Rect struct {
 
 type UI struct {
 	gui            *gocui.Gui
-	tel            *telemetry.Telemetry
 	isInitialized  bool
 	runFunc        func()
 	maxX           int
@@ -22,12 +20,12 @@ type UI struct {
 	OnResizeWindow func()
 }
 
-func NewUI(tel *telemetry.Telemetry) *UI {
-	return &UI{tel: tel}
+func NewUI() *UI {
+	return &UI{}
 }
 
 func (h *UI) NewView(viewData func(viewPort ViewPage) ViewData) View {
-	return newView(h, h.tel, viewData)
+	return newView(h, viewData)
 }
 
 func (h *UI) Run(runFunc func()) {

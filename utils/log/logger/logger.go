@@ -19,25 +19,47 @@ const (
 
 var (
 	baseFilePathLength = getBaseFileBathLength()
-	Std                = New("")
+	StdLogger          = NewLogger("")
 )
 
-type telemetry interface {
-	SendTrace(level string, msg string)
-	SendFatalf(err error, message string, v ...interface{})
-}
 type Logger struct {
 	prefix    string // prefix to write at beginning of each line
 	isWindows bool
-	tel       telemetry
 }
 
-func New(prefix string) *Logger {
+func NewLogger(prefix string) *Logger {
 	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows"}
 }
 
-func (l *Logger) SetTelemetry(tel telemetry) {
-	l.tel = tel
+func (l *Logger) Debugf(format string, v ...interface{}) {
+	l.Output(Debug, fmt.Sprintf(format, v...))
+}
+
+func (l *Logger) Infof(format string, v ...interface{}) {
+	l.Output(Info, fmt.Sprintf(format, v...))
+}
+
+func (l *Logger) Warnf(format string, v ...interface{}) {
+	l.Output(Warn, fmt.Sprintf(format, v...))
+}
+
+func (l *Logger) Fatalf(err error, format string, v ...interface{}) string {
+	msg := fmt.Sprintf(format, v...)
+	emsg := fmt.Sprintf("%s, %v", msg, err)
+	l.Output(Fatal, emsg)
+	l.FatalError(err, msg)
+	return emsg
+}
+
+func (l *Logger) Fatal(err error, v ...interface{}) string {
+	msg := fmt.Sprint(v...)
+	emsg := err.Error()
+	if len(v) > 0 {
+		emsg = fmt.Sprintf("%s, %v", msg, err)
+	}
+	l.Output(Fatal, emsg)
+	l.FatalError(err, msg)
+	return emsg
 }
 
 func (l *Logger) Output(level string, msg string) {
@@ -57,18 +79,16 @@ func (l *Logger) output(level, message string) {
 	}
 	text := fmt.Sprintf("%s(%d) %s", file, line, message)
 	print(fmt.Sprintf("%s%s %s", l.prefix, level, text))
-	if l.tel != nil {
-		l.tel.SendTrace(level, text)
-	}
+	StdTelemetry.SendTrace(level, text)
 }
 
 func (l *Logger) getCallerInfo() (string, int) {
-	_, file, line, _ := runtime.Caller(4)
+	_, file, line, _ := runtime.Caller(5)
 	return file, line
 }
 
 func (l *Logger) FatalError(err error, msg string) {
-	l.tel.SendFatalf(err, msg)
+	StdTelemetry.SendFatalf(err, msg)
 }
 
 func getBaseFileBathLength() int {

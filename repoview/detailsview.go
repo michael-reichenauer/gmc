@@ -16,6 +16,7 @@ func newDetailsView(uiHandler *ui.UI, model *viewmodel.Service) *DetailsView {
 		vm: newDetailsVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
+	h.View.Properties().Name = "DetailsView"
 	return h
 }
 

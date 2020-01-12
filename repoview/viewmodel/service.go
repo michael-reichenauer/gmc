@@ -6,7 +6,6 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"hash/fnv"
 	"strings"
@@ -29,6 +28,7 @@ var branchColors = []ui.Color{
 	ui.CGreenDk,
 	ui.CYellowDk,
 	//ui.CBlueDk,
+	ui.CMagenta,
 	ui.CMagentaDk,
 	ui.CCyanDk,
 }
@@ -43,7 +43,6 @@ type Service struct {
 
 	gitRepoService *gitrepo.Service
 	configService  *config.Service
-	tel            *telemetry.Telemetry
 	branchesGraph  *branchesGraph
 
 	lock               sync.Mutex
@@ -53,10 +52,9 @@ type Service struct {
 	customBranchColors map[string]int
 }
 
-func NewModel(configService *config.Service, tel *telemetry.Telemetry, repoPath string) *Service {
+func NewModel(configService *config.Service, repoPath string) *Service {
 	gitRepoService := gitrepo.NewService(repoPath)
 	return &Service{
-		tel:                tel,
 		ChangedEvents:      make(chan interface{}),
 		branchesGraph:      newBranchesGraph(),
 		gitRepoService:     gitRepoService,
@@ -71,7 +69,7 @@ func ToSid(commitID string) string {
 }
 
 func (s *Service) Start() {
-	s.tel.SendEvent("vms-start")
+	log.Event("vms-start")
 	repo := s.configService.GetRepo(s.gitRepoService.RepoPath())
 	for _, b := range repo.Branches {
 		s.customBranchColors[b.DisplayName] = b.Color
@@ -82,12 +80,12 @@ func (s *Service) Start() {
 }
 
 func (s *Service) TriggerRefreshModel() {
-	s.tel.SendEvent("vms-refresh")
+	log.Event("vms-refresh")
 	s.gitRepoService.TriggerRefreshRepo()
 }
 
 func (s *Service) LoadRepo(branchIds []string) {
-	s.tel.SendEvent("vms-load-repo")
+	log.Event("vms-load-repo")
 	gmRepo, err := s.gitRepoService.GetFreshRepo()
 	if err != nil {
 		log.Infof("Detected repo error: %v", err)
@@ -104,7 +102,7 @@ func (s *Service) LoadRepo(branchIds []string) {
 }
 
 func (s *Service) showBranches(branchIds []string) {
-	s.tel.SendEvent("vms-show-branches")
+	log.Event("vms-show-branches")
 	t := time.Now()
 	repo := s.getViewModel(branchIds)
 	log.Infof("LoadBranches time %v", time.Since(t))
@@ -123,17 +121,17 @@ func (s *Service) monitorGitModelRoutine() {
 			s.gmRepo = gmRepo
 			s.gmStatus = gmRepo.Status
 			s.lock.Unlock()
-			s.tel.SendEvent("vms-changed-repo")
+			log.Event("vms-changed-repo")
 
 		case gmStatus := <-s.gitRepoService.StatusEvents:
 			log.Infof("Detected status change")
 			s.lock.Lock()
 			s.gmStatus = gmStatus
 			s.lock.Unlock()
-			s.tel.SendEvent("vms-changed-status")
+			log.Event("vms-changed-status")
 		case err := <-s.gitRepoService.ErrorEvents:
 			log.Infof("Detected repo error: %v", err)
-			s.tel.SendEvent("vms-repo-error")
+			log.Event("vms-repo-error")
 		}
 
 		// Refresh model
@@ -225,7 +223,7 @@ func (s *Service) OpenBranch(index int) {
 		}
 	}
 	s.lock.Unlock()
-	s.tel.SendEvent("vms-branches-open")
+	log.Event("vms-branches-open")
 	s.showBranches(branchIds)
 }
 
@@ -257,7 +255,7 @@ func (s *Service) CloseBranch(index int) {
 		}
 	}
 	s.lock.Unlock()
-	s.tel.SendEvent("vms-branches-close")
+	log.Event("vms-branches-close")
 	s.showBranches(branchIds)
 }
 
@@ -279,6 +277,7 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 	for _, c := range repo.gmRepo.Commits {
 		repo.addGitCommit(c)
 	}
+	s.adjustCurrentBranchIfStatus(repo)
 	s.setBranchParentChildRelations(repo)
 	s.setParentChildRelations(repo)
 
@@ -343,7 +342,7 @@ func (s *Service) toBranchNames(branches []*branch) []string {
 }
 
 func (s *Service) ChangeBranchColor(index int) {
-	s.tel.SendEvent("vms-branches-change-color")
+	log.Event("vms-branches-change-color")
 	var branchName string
 	s.lock.Lock()
 	if index >= len(s.currentViewModel.Commits) {
@@ -383,12 +382,6 @@ func (s *Service) ChangeBranchColor(index int) {
 }
 
 func (s *Service) BranchColor(name string) ui.Color {
-	if name == "master" {
-		return ui.CMagenta
-	}
-	if name == "develop" {
-		return ui.CRedDk
-	}
 	if strings.HasPrefix(name, "multi:") {
 		return ui.CWhite
 	}
@@ -396,9 +389,35 @@ func (s *Service) BranchColor(name string) ui.Color {
 	if ok {
 		return ui.Color(color)
 	}
+	if name == "master" {
+		return ui.CMagenta
+	}
+	if name == "develop" {
+		return ui.CRedDk
+	}
 
 	h := fnv.New32a()
 	h.Write([]byte(name))
 	index := int(h.Sum32()) % len(branchColors)
 	return branchColors[index]
+}
+
+func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
+	if len(repo.Commits) < 2 || repo.Commits[0].ID != StatusID || repo.CurrentCommit == nil {
+		return
+	}
+
+	// Link status commit with current commit and adjust branch
+	statusCommit := repo.Commits[0]
+	current := repo.CurrentCommit
+	statusCommit.Parent = current
+	current.ChildIDs = append([]string{statusCommit.ID}, current.ChildIDs...)
+	statusCommit.Branch.tip = statusCommit
+	statusCommit.Branch.tipId = statusCommit.ID
+
+	if statusCommit.Branch.name != current.Branch.name {
+		// Status commit is first local commit, lets adjust branch
+		statusCommit.Branch.bottom = statusCommit
+		statusCommit.Branch.bottomId = statusCommit.ID
+	}
 }

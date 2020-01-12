@@ -11,7 +11,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
-	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	stdlog "log"
@@ -33,45 +32,39 @@ func Main(version string) {
 	}
 
 	if isDebugConsole() {
+		// Seems program is run within a debugger console, which the termbox does not support
+		// So a new external process has been started and this instance ends
 		return
 	}
+	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
+	// Set default http client proxy to the system proxy (used by e.g. telemetry)
+	utils.SetDefaultHTTPProxy()
+	logger.StdTelemetry.Enable(version)
 
-	proxyURL := utils.SetDefaultHTTPProxy()
-	tel := telemetry.NewTelemetry(version)
-	logger.Std.SetTelemetry(tel)
-
-	log.Infof("Starting gmc version: %s %q ...", version, utils.BinPath())
-	tel.SendEventf("program-start", "Starting gmc version: %s %q ...", version, utils.BinPath())
-	log.Infof("Using default http proxy:%q", proxyURL)
+	log.Eventf("program-start", "Starting gmc %s ...", version)
 
 	configService := config.NewConfig()
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
 	})
-	autoUpdate := installation.NewAutoUpdate(configService, tel, version)
+	workingFolderPath := getWorkingFolder()
+
+	logProgramInfo(version, workingFolderPath)
+
+	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 	//autoUpdate.UpdateIfAvailable()
 
-	if *repoPathFlag == "" {
-		// No specified repo path, use current dir
-		*repoPathFlag = utils.CurrentDir()
-	}
-
-	path, err := gitlib.WorkingFolderRoot(*repoPathFlag)
-	if err != nil {
-		panic(log.Fatal(err))
-	}
-	log.Infof("Working folder: %q", path)
-
-	uiHandler := ui.NewUI(tel)
+	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		mainWindow := repoview.NewMainWindow(uiHandler, configService, tel, path)
+		mainWindow := repoview.NewMainWindow(uiHandler, configService, workingFolderPath)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})
-	tel.SendEvent("program-stop")
-	tel.Close()
+
+	log.Event("program-stop")
+	logger.StdTelemetry.Close()
 	log.Infof("Exit gmc")
 }
 
@@ -89,4 +82,23 @@ func isDebugConsole() bool {
 	_ = cmd.Start()
 	_ = cmd.Wait()
 	return true
+}
+
+func getWorkingFolder() string {
+	if *repoPathFlag == "" {
+		// No specified repo path, use current dir
+		*repoPathFlag = utils.CurrentDir()
+	}
+	path, err := gitlib.WorkingFolderRoot(*repoPathFlag)
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return path
+}
+
+func logProgramInfo(version string, path string) {
+	log.Infof("Version: %s", version)
+	log.Infof("Binary path: %s", utils.BinPath())
+	log.Infof("Http proxy: %s", utils.GetHTTPProxyURL())
+	log.Infof("Working folder: %s", path)
 }
