@@ -56,7 +56,6 @@ func (h *telemetry) SendEvent(eventName string) {
 		// Not enabled
 		return
 	}
-	StdLogger.Infof("Send event: %q", eventName)
 	h.send(appinsights.NewEventTelemetry(eventName))
 }
 
@@ -67,7 +66,6 @@ func (h *telemetry) SendEventf(eventName, message string, v ...interface{}) {
 	}
 	event := appinsights.NewEventTelemetry(eventName)
 	msg := fmt.Sprintf(message, v...)
-	StdLogger.Infof("Send event: %q, %q", eventName, msg)
 	event.Properties["Message"] = msg
 	h.send(event)
 }

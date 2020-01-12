@@ -83,7 +83,7 @@ func (l *Logger) output(level, message string) {
 }
 
 func (l *Logger) getCallerInfo() (string, int) {
-	_, file, line, _ := runtime.Caller(4)
+	_, file, line, _ := runtime.Caller(5)
 	return file, line
 }
 

@@ -173,6 +173,11 @@ func (h *repoVM) ChangeBranchColor(index int) {
 
 func (h *repoVM) ToggleDetails() {
 	h.isDetails = !h.isDetails
+	if h.isDetails {
+		log.Event("details-view-show")
+	} else {
+		log.Event("details-view-hide")
+	}
 }
 
 func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
