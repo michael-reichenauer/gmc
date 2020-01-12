@@ -20,6 +20,7 @@ type Properties struct {
 
 	OnLoad  func()
 	OnClose func()
+	Name    string
 }
 
 type ViewPage struct {
@@ -91,7 +92,7 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
 		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
-		log.Eventf("ui-view-show", h.viewName)
+		log.Eventf("ui-view-show", h.Properties().Name)
 		if h.properties.OnLoad != nil {
 			// Let the actual view handle load to initialise view data
 			h.properties.OnLoad()
@@ -273,7 +274,6 @@ func (h *view) move(move int) {
 		// No move, reached top or bottom
 		return
 	}
-	log.Eventf("ui-view-move", "move: %d", move)
 	h.currentIndex = newCurrent
 
 	if h.currentIndex < h.firstIndex {
@@ -305,7 +305,6 @@ func (h *view) scroll(move int) {
 		// No move, reached top or bottom
 		return
 	}
-	log.Eventf("ui-view-scroll", "scroll: %d", move)
 	newCurrent := h.currentIndex + (newFirst - h.firstIndex)
 
 	if newCurrent < newFirst {

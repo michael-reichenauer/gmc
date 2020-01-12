@@ -22,6 +22,7 @@ func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *Detail
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
+	h.Properties().Name = "RepoView"
 	h.vm = newRepoVM(model, h)
 	return h
 }
