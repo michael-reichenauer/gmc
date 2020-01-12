@@ -215,7 +215,7 @@ func (s *Service) OpenBranch(index int) {
 		i1 := utils.StringsIndex(branchIds, b.RemoteName)
 		i2 := utils.StringsIndex(branchIds, b.Name)
 		if i2 == -1 && i1 != -1 {
-			// a remote branch is included, but not its local branch,
+			// a remote branch is included, but not its local branch
 			branchIds = append(branchIds, "")
 			copy(branchIds[i1+1:], branchIds[i1:])
 			branchIds[i1] = b.Name
@@ -406,13 +406,16 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
 		return
 	}
 
+	// Link status commit with current commit and adjust branch
 	statusCommit := repo.Commits[0]
 	current := repo.CurrentCommit
 	statusCommit.Parent = current
 	current.ChildIDs = append([]string{statusCommit.ID}, current.ChildIDs...)
 	statusCommit.Branch.tip = statusCommit
 	statusCommit.Branch.tipId = statusCommit.ID
+
 	if statusCommit.Branch.name != current.Branch.name {
+		// Status commit is first local commit, lets adjust branch
 		statusCommit.Branch.bottom = statusCommit
 		statusCommit.Branch.bottomId = statusCommit.ID
 	}
