@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-func SetDefaultHTTPProxy() string {
+func SetDefaultHTTPProxy() {
 	provider := proxy.NewProvider("")
 	proxyURL := provider.GetHTTPProxy("https://api.github.com")
 	if proxyURL == nil {
 		// No proxy needed
-		return ""
+		return
 	}
 
 	defaultTransport := &http.Transport{
@@ -28,7 +28,6 @@ func SetDefaultHTTPProxy() string {
 		ExpectContinueTimeout: 1 * time.Second,
 	}
 	http.DefaultClient.Transport = defaultTransport
-	return proxyURL.String()
 }
 
 func GetHTTPProxy() func(*http.Request) (*url.URL, error) {
@@ -40,6 +39,15 @@ func GetHTTPProxy() func(*http.Request) (*url.URL, error) {
 			return nil, nil
 		}
 		return proxyURL.URL(), nil
-
 	}
+}
+
+func GetHTTPProxyURL() string {
+	provider := proxy.NewProvider("")
+	proxyURL := provider.GetHTTPProxy("https://api.github.com")
+	if proxyURL == nil {
+		// No proxy needed
+		return ""
+	}
+	return proxyURL.URL().String()
 }

@@ -7,7 +7,6 @@ import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/telemetry"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -44,19 +43,18 @@ type Asset struct {
 
 type autoUpdate struct {
 	config  *config.Service
-	tel     *telemetry.Telemetry
 	version string
 }
 
-func NewAutoUpdate(config *config.Service, tel *telemetry.Telemetry, version string) *autoUpdate {
-	return &autoUpdate{config: config, tel: tel, version: version}
+func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
+	return &autoUpdate{config: config, version: version}
 }
 
 func (h *autoUpdate) Start() {
 	if runtime.GOOS != "windows" {
 		// Only support for windows
 		log.Infof("Auto update only supported on windows")
-		h.tel.SendEvent("autoupdate-os-not-supported")
+		log.Event("autoupdate-os-not-supported")
 		return
 	}
 	h.cleanTmpFiles()
@@ -64,7 +62,7 @@ func (h *autoUpdate) Start() {
 }
 
 func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
-	h.tel.SendEvent("autoupdate-start-periodic-check")
+	log.Event("autoupdate-start-periodic-check")
 	for {
 		h.UpdateIfAvailable()
 		time.Sleep(5 * time.Minute)
@@ -75,20 +73,20 @@ func (h *autoUpdate) UpdateIfAvailable() {
 	conf := h.config.GetConfig()
 	if conf.DisableAutoUpdate {
 		log.Infof("Auto update disabled")
-		h.tel.SendEvent("autoupdate-disabled")
+		log.Event("autoupdate-disabled")
 		return
 	}
 	log.Infof("Check updates for %s, allow preview=%v ...", h.version, conf.AllowPreview)
-	h.tel.SendEventf("autoupdate-check", "%s, allow preview=%v", h.version, conf.AllowPreview)
+	log.Eventf("autoupdate-check", "%s, allow preview=%v", h.version, conf.AllowPreview)
 
 	h.checkRemoteReleases()
 
 	if !h.isUpdateAvailable(conf.AllowPreview) {
-		h.tel.SendEvent("autoupdate-no-update")
+		log.Event("autoupdate-no-update")
 		return
 	}
 
-	h.tel.SendEvent("autoupdate-update-available")
+	log.Event("autoupdate-update-available")
 	h.update(conf.AllowPreview)
 }
 
@@ -128,7 +126,7 @@ func (h *autoUpdate) update(allowPreview bool) {
 		log.Warnf("Failed to download %s for %s, %v", release.Version, runtime.GOOS, err)
 		return
 	}
-	h.tel.SendEvent("autoupdate-downloaded")
+	log.Event("autoupdate-downloaded")
 
 	h.replaceRunningBinary(release, downloadPath)
 }
@@ -264,7 +262,7 @@ func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath
 		s.InstalledVersion = release.Version
 	})
 	log.Infof("Replaced %s->%s at %q", h.version, release.Version, currentPath)
-	h.tel.SendEvent("autoupdate-replaced")
+	log.Event("autoupdate-replaced")
 }
 
 func (h *autoUpdate) download(release config.Release) (string, error) {
