@@ -1,5 +1,9 @@
 package gitrepo
 
+import (
+	"github.com/michael-reichenauer/gmc/utils/log"
+)
+
 // Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
@@ -75,6 +79,9 @@ func (h *branches) determineCommitBranches(repo *Repo) {
 }
 
 func (h *branches) determineBranch(repo *Repo, c *Commit) {
+	if c.Sid == "6541ab" {
+		log.Infof("")
+	}
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, use that
 		c.Branch = c.Branches[0]
@@ -179,6 +186,22 @@ func (h *branches) isChildMultiBranch(c *Commit) *Branch {
 }
 
 func (h *branches) tryGetBranchFromName(c *Commit, name string) *Branch {
+	// Try find a branch with the name
+	for _, b := range c.Branches {
+		if name == b.Name {
+			// Found a branch, if the branch has a remote branch, try find that
+			if b.RemoteName != "" {
+				for _, b2 := range c.Branches {
+					if b.RemoteName == b2.Name {
+						// Found the remote branch, prefer that
+						return b2
+					}
+				}
+			}
+			// branch b had no remote branch, use local
+			return b
+		}
+	}
 	for _, b := range c.Branches {
 		if name == b.DisplayName {
 			return b
