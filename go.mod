@@ -13,6 +13,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.11
 	github.com/mattn/go-runewidth v0.0.7 // indirect
+	github.com/microsoft/ApplicationInsights-Go v0.4.2
 	github.com/nsf/termbox-go v0.0.0-20191229070316-58d4fcbce2a7
 	github.com/onsi/ginkgo v1.11.0 // indirect
 	github.com/onsi/gomega v1.8.1 // indirect
