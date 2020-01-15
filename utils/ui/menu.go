@@ -1,10 +1,10 @@
 package ui
 
 type Item struct {
-	text     string
-	key      string
-	action   func()
-	subItems []Item
+	Text     string
+	Key      string
+	Action   func()
+	SubItems []Item
 }
 
 type Menu struct {
@@ -13,10 +13,10 @@ type Menu struct {
 	menuView        *menuView
 }
 
-func NewMenu(uiHandler *UI) *Menu {
+func NewMenu(uiHandler *UI, items []Item) *Menu {
 	h := &Menu{
 		uiHandler: uiHandler,
-		menuView:  newMenuView(uiHandler, nil, 5, 5),
+		menuView:  newMenuView(uiHandler, items, 5, 5),
 	}
 	return h
 }

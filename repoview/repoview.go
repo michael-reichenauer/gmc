@@ -114,6 +114,29 @@ func (h *RepoView) onBranchColor() {
 }
 
 func (h *RepoView) onMenu() {
-	menu := ui.NewMenu(h.uiHandler)
+	var items []ui.Item
+	items = append(items, ui.Item{Text: "ttt", Key: "^K"})
+	items = append(items, ui.Item{Text: "adssd", Key: "^Y"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+
+	menu := ui.NewMenu(h.uiHandler, items)
 	menu.Show()
 }

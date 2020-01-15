@@ -1,7 +1,9 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils"
 )
 
 type menuView struct {
@@ -27,9 +29,20 @@ func newMenuView(uiHandler *UI, items []Item, x, y int) *menuView {
 }
 
 func (h *menuView) viewData(viewPort ViewPage) ViewData {
-	return ViewData{Lines: []string{"first line", "second"}}
+	var lines []string
+	for i := 0; i < len(h.items); i++ {
+		lines = append(lines, h.toItemText(viewPort.Width, h.items[i]))
+	}
+	return ViewData{Lines: lines}
 }
 
+func (h *menuView) toItemText(width int, item Item) string {
+	more := " "
+	if len(item.SubItems) > 0 {
+		more = ">"
+	}
+	return fmt.Sprintf("%s %s %s", utils.Text(item.Text, width-5), item.Key, more)
+}
 func (h *menuView) show() {
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
@@ -47,7 +60,7 @@ func (h *menuView) onClose() {
 }
 
 func (h *menuView) onEnter() {
-	mv := newMenuView(h.uiHandler, nil, h.x+3, h.y+3)
+	mv := newMenuView(h.uiHandler, h.items, h.x+3, h.y+3)
 	mv.show()
 
 }
