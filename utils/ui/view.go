@@ -46,6 +46,7 @@ type View interface {
 	ViewPage() ViewPage
 	Clear()
 	PostOnUIThread(func())
+	Close()
 }
 
 type view struct {

@@ -10,6 +10,7 @@ import (
 //
 type RepoView struct {
 	ui.View
+	uiHandler      *ui.UI
 	mainController mainController
 	detailsView    *DetailsView
 	vm             *repoVM
@@ -17,6 +18,7 @@ type RepoView struct {
 
 func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
+		uiHandler:      uiHandler,
 		detailsView:    detailsView,
 		mainController: mainController,
 	}
@@ -61,6 +63,8 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
+	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
+	h.SetKey('m', gocui.ModNone, h.onMenu)
 	h.NotifyChanged()
 }
 
@@ -107,4 +111,9 @@ func (h *RepoView) onTrace() {
 func (h *RepoView) onBranchColor() {
 	h.vm.ChangeBranchColor(h.ViewPage().CurrentLine)
 	h.NotifyChanged()
+}
+
+func (h *RepoView) onMenu() {
+	menu := ui.NewMenu(h.uiHandler)
+	menu.Show()
 }
