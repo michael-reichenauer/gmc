@@ -7,7 +7,7 @@
 *.tmp
 gmc.exe
 gmc_linux
-gmc_darwin
+gmc_mac
 
 # Test binary, build with `go test -c`
 *.test
