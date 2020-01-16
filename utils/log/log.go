@@ -31,6 +31,6 @@ func Event(eventName string) {
 }
 
 func Eventf(eventName, message string, v ...interface{}) {
-	logger.StdLogger.Infof("Telemetry: event: %q", fmt.Sprintf(message, v...))
+	logger.StdLogger.Infof("Telemetry: event: %q %q", eventName, fmt.Sprintf(message, v...))
 	logger.StdTelemetry.SendEventf(eventName, message, v...)
 }

@@ -51,12 +51,6 @@ func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
 }
 
 func (h *autoUpdate) Start() {
-	if runtime.GOOS != "windows" {
-		// Only support for windows
-		log.Infof("Auto update only supported on windows")
-		log.Event("autoupdate-os-not-supported")
-		return
-	}
 	h.cleanTmpFiles()
 	go h.periodicCheckForUpdatesRoutine()
 }
@@ -77,7 +71,7 @@ func (h *autoUpdate) UpdateIfAvailable() {
 		return
 	}
 	log.Infof("Check updates for %s, allow preview=%v ...", h.version, conf.AllowPreview)
-	log.Eventf("autoupdate-check", "%s, allow preview=%v", h.version, conf.AllowPreview)
+	log.Eventf("autoupdate-check", "local: %s, allow preview=%v", h.version, conf.AllowPreview)
 
 	h.checkRemoteReleases()
 
@@ -105,6 +99,7 @@ func (h *autoUpdate) isUpdateAvailable(allowPreview bool) bool {
 	if !h.isNewer(release.Version, h.version) {
 		log.Infof("No update available, local %s>=%s remote, allow preview=%v",
 			h.version, release.Version, allowPreview)
+		log.Eventf("autoupdate-remote-version", "local %s, remote %s, preview=%v", h.version, release.Version, allowPreview)
 		return false
 	}
 	log.Infof("Update available, local %s<%s remote (preview=%v)", h.version, release.Version, release.Preview)
