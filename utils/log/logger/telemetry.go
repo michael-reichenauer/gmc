@@ -2,8 +2,8 @@ package logger
 
 import (
 	"fmt"
-	"github.com/Microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"golang.org/x/time/rate"
 	"net"
 	"os/user"

@@ -5,6 +5,9 @@
 *.so
 *.dylib
 *.tmp
+gmc.exe
+gmc_linux
+gmc_darwin
 
 # Test binary, build with `go test -c`
 *.test
