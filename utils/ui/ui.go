@@ -47,7 +47,6 @@ func (h *UI) Run(runFunc func()) {
 	h.SetKeyBinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
 	h.SetKeyBinding("", 'q', gocui.ModNone, quit)
 	h.SetKeyBinding("", gocui.KeyCtrlQ, gocui.ModNone, quit)
-	h.SetKeyBinding("", gocui.KeyEsc, gocui.ModNone, quit)
 
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		panic(log.Fatal(err))
@@ -76,6 +75,17 @@ func SetWindowTitle(text string) {
 	_, _ = utils.SetConsoleTitle(text)
 }
 
+func (h *UI) CurrentView() string {
+	cv := h.gui.CurrentView()
+	return cv.Name()
+}
+
+func (h *UI) SetCurrentView(name string) {
+	if _, err := h.gui.SetCurrentView(name); err != nil {
+		panic(log.Fatal(err))
+	}
+}
+
 func quit(g *gocui.Gui, v *gocui.View) error {
 	log.Infof("Quiting")
 	return gocui.ErrQuit
@@ -99,4 +109,10 @@ func (h *UI) layout(gui *gocui.Gui) error {
 	h.isInitialized = true
 	go h.runFunc()
 	return nil
+}
+
+func (h *UI) Quit() {
+	h.gui.Update(func(gui *gocui.Gui) error {
+		return gocui.ErrQuit
+	})
 }

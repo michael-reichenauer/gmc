@@ -85,12 +85,11 @@ func (h *telemetry) SendFatalf(err error, message string, v ...interface{}) {
 		// Not enabled
 		return
 	}
-	StdLogger.Warnf("Send fatal: %v", err)
 	t := appinsights.NewExceptionTelemetry(err)
 	t.Frames = appinsights.GetCallstack(4)
 	msg := fmt.Sprintf(message, v...)
 	t.Properties["Message"] = msg
-	StdLogger.Warnf("Send error: %q, %v", msg, err)
+	StdLogger.Warnf("Telemetry: error: %q, %v", msg, err)
 	h.send(t)
 	h.Close()
 }
@@ -103,7 +102,7 @@ func (h *telemetry) SendErrorf(err error, message string, v ...interface{}) {
 	t := appinsights.NewExceptionTelemetry(err)
 	msg := fmt.Sprintf(message, v...)
 	t.Properties["Message"] = msg
-	StdLogger.Warnf("Send error: %q, %v", msg, err)
+	StdLogger.Warnf("Telemetry: error: %q, %v", msg, err)
 	if h.send(t) {
 		h.client.Channel().Flush()
 	}
@@ -116,9 +115,9 @@ func (h *telemetry) Close() {
 	}
 	StdLogger.Infof("Close telemetry")
 	select {
-	case <-h.client.Channel().Close(10 * time.Second):
+	case <-h.client.Channel().Close(3 * time.Second):
 		// Ten second timeout for retries.
-	case <-time.After(20 * time.Second):
+	case <-time.After(5 * time.Second):
 		// Absolute timeout.
 	}
 }
