@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -115,27 +116,26 @@ func (h *RepoView) onBranchColor() {
 
 func (h *RepoView) onMenu() {
 	var items []ui.Item
-	items = append(items, ui.Item{Text: "ttt", Key: "^K"})
-	items = append(items, ui.Item{Text: "adssd", Key: "^Y"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
-	items = append(items, ui.Item{Text: "sdfsdf", Key: "^S"})
+
+	for i := 0; i < 150; i++ {
+		item := ui.Item{Text: fmt.Sprintf("'tasdfasdfsdfsdaft%ddd'", i), Key: "Ctrl-K"}
+		index := i
+		item.Action = func() {
+			log.Infof("Enter on index %d", index)
+		}
+		if i%5 == 0 {
+			for j := 0; j < 150; j++ {
+				subItem := ui.Item{Text: fmt.Sprintf("'sub%dtdaft%ddd'", i, j), Key: "Ctrl-T"}
+				index1 := index
+				index2 := j
+				subItem.Action = func() {
+					log.Infof("Enter on index %d subindex %d", index1, index2)
+				}
+				item.SubItems = append(item.SubItems, subItem)
+			}
+		}
+		items = append(items, item)
+	}
 
 	menu := ui.NewMenu(h.uiHandler, items)
 	menu.Show()

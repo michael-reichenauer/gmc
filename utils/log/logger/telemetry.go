@@ -85,12 +85,11 @@ func (h *telemetry) SendFatalf(err error, message string, v ...interface{}) {
 		// Not enabled
 		return
 	}
-	StdLogger.Warnf("Send fatal: %v", err)
 	t := appinsights.NewExceptionTelemetry(err)
 	t.Frames = appinsights.GetCallstack(4)
 	msg := fmt.Sprintf(message, v...)
 	t.Properties["Message"] = msg
-	StdLogger.Warnf("Send error: %q, %v", msg, err)
+	StdLogger.Warnf("Telemetry: error: %q, %v", msg, err)
 	h.send(t)
 	h.Close()
 }
@@ -103,7 +102,7 @@ func (h *telemetry) SendErrorf(err error, message string, v ...interface{}) {
 	t := appinsights.NewExceptionTelemetry(err)
 	msg := fmt.Sprintf(message, v...)
 	t.Properties["Message"] = msg
-	StdLogger.Warnf("Send error: %q, %v", msg, err)
+	StdLogger.Warnf("Telemetry: error: %q, %v", msg, err)
 	if h.send(t) {
 		h.client.Channel().Flush()
 	}

@@ -8,15 +8,14 @@ type Item struct {
 }
 
 type Menu struct {
-	uiHandler       *UI
-	currentViewName string
-	menuView        *menuView
+	uiHandler *UI
+	menuView  *menuView
 }
 
 func NewMenu(uiHandler *UI, items []Item) *Menu {
 	h := &Menu{
 		uiHandler: uiHandler,
-		menuView:  newMenuView(uiHandler, items, 5, 5),
+		menuView:  newMenuView(uiHandler, nil, items, 5, 5),
 	}
 	return h
 }
