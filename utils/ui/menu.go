@@ -1,17 +1,17 @@
 package ui
 
-type Item struct {
+type MenuItem struct {
 	Text     string
 	Key      string
 	Action   func()
-	SubItems []Item
+	SubItems []MenuItem
 }
 
 type Menu struct {
 	menuView *menuView
 }
 
-func NewMenu(uiHandler *UI, items []Item) *Menu {
+func NewMenu(uiHandler *UI, items []MenuItem) *Menu {
 	return &Menu{menuView: newMenuView(uiHandler, nil, items, 5, 5)}
 }
 

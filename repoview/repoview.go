@@ -74,8 +74,12 @@ func (h *RepoView) onEnter() {
 }
 
 func (h *RepoView) onRight() {
-	h.vm.OpenBranch(h.ViewPage().CurrentLine)
-	h.NotifyChanged()
+	//branches := h.vm.GetOpenBranches(h.ViewPage().CurrentLine)
+	//h.vm.OpenBranch(h.ViewPage().CurrentLine)                               ,
+	items := h.vm.GetOpenBranchItems(h.ViewPage().CurrentLine)
+	menu := ui.NewMenu(h.uiHandler, items)
+	menu.Show()
+	//h.NotifyChanged()
 }
 
 func (h *RepoView) onLeft() {
@@ -114,9 +118,9 @@ func (h *RepoView) onBranchColor() {
 }
 
 func (h *RepoView) onMenu() {
-	var items []ui.Item
+	var items []ui.MenuItem
 
-	items = append(items, ui.Item{Text: "About", Action: h.main.ShowAbout})
+	items = append(items, ui.MenuItem{Text: "About", Action: h.main.ShowAbout})
 	menu := ui.NewMenu(h.uiHandler, items)
 	menu.Show()
 }

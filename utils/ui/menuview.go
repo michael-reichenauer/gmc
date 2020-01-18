@@ -14,14 +14,14 @@ type menuView struct {
 	uiHandler       *UI
 	parent          *menuView
 	currentViewName string
-	items           []Item
+	items           []MenuItem
 	bounds          Rect
 	moreWidth       int
 	keyWidth        int
 	marginsWidth    int
 }
 
-func newMenuView(uiHandler *UI, parent *menuView, items []Item, x, y int) *menuView {
+func newMenuView(uiHandler *UI, parent *menuView, items []MenuItem, x, y int) *menuView {
 	h := &menuView{
 		uiHandler: uiHandler,
 		parent:    parent,
@@ -49,7 +49,7 @@ func (h *menuView) viewData(viewPort ViewPage) ViewData {
 	return ViewData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.items)}
 }
 
-func (h *menuView) getBounds(items []Item, x, y int) Rect {
+func (h *menuView) getBounds(items []MenuItem, x, y int) Rect {
 	width, height := h.getSize(items)
 	x2, y2 := h.getPos(x, y, width, height)
 	return Rect{X: x2, Y: y2, W: width, H: height}
@@ -73,7 +73,7 @@ func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
 	return x1, y1
 }
 
-func (h *menuView) getSize(items []Item) (width, height int) {
+func (h *menuView) getSize(items []MenuItem) (width, height int) {
 	windowWidth, windowHeight := h.uiHandler.WindowSize()
 
 	width, h.keyWidth, h.moreWidth, h.marginsWidth = h.maxWidth(items)
@@ -100,7 +100,7 @@ func (h *menuView) getSize(items []Item) (width, height int) {
 	return width, height
 }
 
-func (h *menuView) maxWidth(items []Item) (maxWidth, maxKeyWidth, maxMoreWidth, marginsWidth int) {
+func (h *menuView) maxWidth(items []MenuItem) (maxWidth, maxKeyWidth, maxMoreWidth, marginsWidth int) {
 	maxTextWidth := h.maxTextWidth(items)
 	maxKeyWidth = h.maxKeyWidth(items)
 	maxMoreWidth = h.maxMoreWidth(items)
@@ -116,7 +116,7 @@ func (h *menuView) maxWidth(items []Item) (maxWidth, maxKeyWidth, maxMoreWidth, 
 	return
 }
 
-func (*menuView) maxKeyWidth(items []Item) int {
+func (*menuView) maxKeyWidth(items []MenuItem) int {
 	maxKeyWidth := 0
 	for _, item := range items {
 		keyWidth := 0
@@ -130,7 +130,7 @@ func (*menuView) maxKeyWidth(items []Item) int {
 	return maxKeyWidth
 }
 
-func (*menuView) maxMoreWidth(items []Item) int {
+func (*menuView) maxMoreWidth(items []MenuItem) int {
 	maxMoreWidth := 0
 	for _, item := range items {
 		moreWidth := 0
@@ -144,7 +144,7 @@ func (*menuView) maxMoreWidth(items []Item) int {
 	return maxMoreWidth
 }
 
-func (*menuView) maxTextWidth(items []Item) int {
+func (*menuView) maxTextWidth(items []MenuItem) int {
 	maxTextWidth := 0
 	for _, item := range items {
 		textWidth := len(item.Text)
@@ -155,7 +155,7 @@ func (*menuView) maxTextWidth(items []Item) int {
 	return maxTextWidth + 2
 }
 
-func (h *menuView) toItemText(width int, item Item) string {
+func (h *menuView) toItemText(width int, item MenuItem) string {
 	key := ""
 	if h.keyWidth > 0 {
 		if item.Key != "" {
@@ -168,7 +168,7 @@ func (h *menuView) toItemText(width int, item Item) string {
 	more := ""
 	if h.moreWidth > 0 {
 		if len(item.SubItems) > 0 {
-			more = " >"
+			more = " ►"
 		} else {
 			more = "  "
 		}

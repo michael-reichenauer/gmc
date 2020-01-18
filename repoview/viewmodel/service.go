@@ -179,6 +179,64 @@ func (s *Service) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
 	return newViewPort(s.currentViewModel, firstIndex, count), nil
 }
 
+func (s *Service) GetOpenBranch(index int) []Branch {
+	s.lock.Lock()
+	if index >= len(s.currentViewModel.Commits) {
+		// Repo must just have changed, just ignore
+		s.lock.Unlock()
+		return nil
+	}
+	c := s.currentViewModel.Commits[index]
+	if !c.IsMore {
+		// Not a point that can be expanded
+		s.lock.Unlock()
+		return nil
+	}
+
+	branchIds := s.toBranchNames(s.currentViewModel.Branches)
+
+	if len(c.ParentIDs) > 1 {
+		// commit has branch merged into this commit add it (if not already added
+		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
+		branchIds = s.addBranchWithAncestors(branchIds, mergeParent.Branch)
+	}
+	for _, ccId := range c.ChildIDs {
+		if ccId == StatusID {
+			continue
+		}
+		cc := s.gmRepo.CommitById[ccId]
+		if cc.Branch.Name != c.Branch.name {
+			branchIds = s.addBranchWithAncestors(branchIds, cc.Branch)
+		}
+	}
+	for _, b := range s.gmRepo.Branches {
+		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
+			// empty branch with no own branch commit, (branch start)
+			branchIds = s.addBranchWithAncestors(branchIds, b)
+		}
+	}
+	for _, b := range s.gmRepo.Branches {
+		i1 := utils.StringsIndex(branchIds, b.RemoteName)
+		i2 := utils.StringsIndex(branchIds, b.Name)
+		if i2 == -1 && i1 != -1 {
+			// a remote branch is included, but not its local branch
+			branchIds = append(branchIds, "")
+			copy(branchIds[i1+1:], branchIds[i1:])
+			branchIds[i1] = b.Name
+		}
+	}
+	var branches []Branch
+	gitBranches := s.getGitModelBranches(branchIds, s.gmRepo)
+	for _, b := range gitBranches {
+		branches = append(branches, toBranch(s.currentViewModel.toBranch(b, 0)))
+	}
+
+	s.lock.Unlock()
+
+	return branches
+
+}
+
 func (s *Service) OpenBranch(index int) {
 	s.lock.Lock()
 	if index >= len(s.currentViewModel.Commits) {
@@ -264,7 +322,7 @@ func (s *Service) getViewModel(branchIds []string) *repo {
 	repo.gmRepo = s.gmRepo
 	repo.gmStatus = s.gmStatus
 
-	branches := s.getGitModelBranches(branchIds, s.gmRepo, s.gmStatus)
+	branches := s.getGitModelBranches(branchIds, s.gmRepo)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
