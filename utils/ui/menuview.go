@@ -87,9 +87,9 @@ func (h *menuView) getSize(items []Item) (width, height int) {
 		width = windowWidth - margin
 	}
 
-	height = len(h.items) + 2
-	if height < 5 {
-		height = 5
+	height = len(h.items)
+	if height < 0 {
+		height = 0
 	}
 	if height > 30 {
 		height = 30
@@ -179,12 +179,12 @@ func (h *menuView) toItemText(width int, item Item) string {
 }
 
 func (h *menuView) show() {
+	h.currentViewName = h.uiHandler.CurrentView()
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onSubItem)
 	h.Show(Rect{X: h.bounds.X, Y: h.bounds.Y, W: h.bounds.X + h.bounds.W, H: h.bounds.Y + h.bounds.H})
-	h.currentViewName = h.uiHandler.CurrentView()
 	h.SetCurrentView()
 	h.NotifyChanged()
 }
@@ -205,12 +205,13 @@ func (h *menuView) closeAll() {
 
 func (h *menuView) onEnter() {
 	vp := h.ViewPage()
+	h.closeAll()
+
 	item := h.items[vp.CurrentLine]
 	if item.Action == nil {
 		return
 	}
 	item.Action()
-	h.closeAll()
 }
 
 func (h *menuView) onSubItem() {

@@ -58,7 +58,7 @@ func Main(version string) {
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
-		mainWindow := repoview.NewMainWindow(uiHandler, configService, workingFolderPath)
+		mainWindow := repoview.NewMainWindow(uiHandler, configService, workingFolderPath, version)
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})

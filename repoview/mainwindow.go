@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
@@ -16,6 +17,7 @@ const (
 
 type mainController interface {
 	ToggleDetails()
+	ShowAbout()
 }
 
 type MainWindow struct {
@@ -25,21 +27,29 @@ type MainWindow struct {
 	repoView      *RepoView
 	detailsView   *DetailsView
 	mode          showMode
+	version       string
 }
 
 func NewMainWindow(
 	uiHandler *ui.UI,
 	configService *config.Service,
-	repoPath string) *MainWindow {
+	repoPath string,
+	version string) *MainWindow {
 	m := viewmodel.NewModel(configService, repoPath)
 	h := &MainWindow{
 		uiHandler:     uiHandler,
 		configService: configService,
 		model:         m,
+		version:       version,
 	}
 	h.detailsView = newDetailsView(uiHandler, m)
 	h.repoView = newRepoView(uiHandler, m, h.detailsView, h)
 	return h
+}
+
+func (h *MainWindow) ShowAbout() {
+	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.version), "About")
+	msgBox.Show()
 }
 
 func (h *MainWindow) Show() {

@@ -4,24 +4,23 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 //
 type RepoView struct {
 	ui.View
-	uiHandler      *ui.UI
-	mainController mainController
-	detailsView    *DetailsView
-	vm             *repoVM
+	uiHandler   *ui.UI
+	main        mainController
+	detailsView *DetailsView
+	vm          *repoVM
 }
 
 func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
-		uiHandler:      uiHandler,
-		detailsView:    detailsView,
-		mainController: mainController,
+		uiHandler:   uiHandler,
+		detailsView: detailsView,
+		main:        mainController,
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -70,7 +69,7 @@ func (h *RepoView) onLoad() {
 }
 
 func (h *RepoView) onEnter() {
-	h.mainController.ToggleDetails()
+	h.main.ToggleDetails()
 	h.vm.ToggleDetails()
 }
 
@@ -117,26 +116,7 @@ func (h *RepoView) onBranchColor() {
 func (h *RepoView) onMenu() {
 	var items []ui.Item
 
-	for i := 0; i < 150; i++ {
-		item := ui.Item{Text: fmt.Sprintf("'tasdfasdfsdfsdaft%ddd'", i), Key: "Ctrl-K"}
-		index := i
-		item.Action = func() {
-			log.Infof("Enter on index %d", index)
-		}
-		if i%5 == 0 {
-			for j := 0; j < 150; j++ {
-				subItem := ui.Item{Text: fmt.Sprintf("'sub%dtdaft%ddd'", i, j), Key: "Ctrl-T"}
-				index1 := index
-				index2 := j
-				subItem.Action = func() {
-					log.Infof("Enter on index %d subindex %d", index1, index2)
-				}
-				item.SubItems = append(item.SubItems, subItem)
-			}
-		}
-		items = append(items, item)
-	}
-
+	items = append(items, ui.Item{Text: "About", Action: h.main.ShowAbout})
 	menu := ui.NewMenu(h.uiHandler, items)
 	menu.Show()
 }
