@@ -15,8 +15,9 @@ var (
 )
 
 type Properties struct {
-	Title    string
-	HasFrame bool
+	Title       string
+	HasFrame    bool
+	HideCurrent bool
 
 	OnLoad  func()
 	OnClose func()
@@ -46,6 +47,7 @@ type View interface {
 	ViewPage() ViewPage
 	Clear()
 	PostOnUIThread(func())
+	Close()
 }
 
 type view struct {
@@ -73,7 +75,7 @@ func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
 func (h *view) Show(bounds Rect) {
 	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
-			panic(log.Fatal(err))
+			panic(log.Fatalf(err, "%s %d,%d,%d,%d", h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H))
 		}
 
 		h.guiView = guiView
@@ -158,7 +160,7 @@ func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
 	var sb strings.Builder
 	for i, line := range lines {
 		// Draw the current line marker
-		if idCurrent && i+h.firstIndex == h.currentIndex {
+		if !h.properties.HideCurrent && idCurrent && i+h.firstIndex == h.currentIndex {
 			sb.WriteString(ColorRune(CWhite, currentLineMarker))
 		} else {
 			sb.WriteString(" ")

@@ -10,15 +10,17 @@ import (
 //
 type RepoView struct {
 	ui.View
-	mainController mainController
-	detailsView    *DetailsView
-	vm             *repoVM
+	uiHandler   *ui.UI
+	main        mainController
+	detailsView *DetailsView
+	vm          *repoVM
 }
 
 func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
-		detailsView:    detailsView,
-		mainController: mainController,
+		uiHandler:   uiHandler,
+		detailsView: detailsView,
+		main:        mainController,
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -61,22 +63,36 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
+	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
+	h.SetKey('m', gocui.ModNone, h.onMenu)
 	h.NotifyChanged()
 }
 
 func (h *RepoView) onEnter() {
-	h.mainController.ToggleDetails()
+	h.main.ToggleDetails()
 	h.vm.ToggleDetails()
 }
 
 func (h *RepoView) onRight() {
-	h.vm.OpenBranch(h.ViewPage().CurrentLine)
-	h.NotifyChanged()
+	items := h.vm.GetOpenBranchItems(h.ViewPage().CurrentLine)
+	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
+	menu := ui.NewMenu(h.uiHandler, "Show Branch")
+	menu.AddItems(items)
+	menu.Show(10, y)
 }
 
 func (h *RepoView) onLeft() {
-	h.vm.CloseBranch(h.ViewPage().CurrentLine)
-	h.NotifyChanged()
+	items := h.vm.GetCloseBranchItems(h.ViewPage().CurrentLine)
+	if len(items) == 0 {
+		return
+	}
+	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
+	menu := ui.NewMenu(h.uiHandler, "Hide Branch")
+	menu.AddItems(items)
+	menu.Show(10, y)
+
+	// h.vm.CloseBranch(h.ViewPage().CurrentLine)
+	// h.NotifyChanged()
 }
 
 func (h *RepoView) onRefresh() {
@@ -107,4 +123,12 @@ func (h *RepoView) onTrace() {
 func (h *RepoView) onBranchColor() {
 	h.vm.ChangeBranchColor(h.ViewPage().CurrentLine)
 	h.NotifyChanged()
+}
+
+func (h *RepoView) onMenu() {
+	menu := ui.NewMenu(h.uiHandler, "Menu")
+	menu.Add(
+		ui.MenuItem{Text: "About", Action: h.main.ShowAbout},
+	)
+	menu.Show(10, 5)
 }

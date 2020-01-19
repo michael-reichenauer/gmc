@@ -79,7 +79,7 @@ func (r *Repo) setGitBranches(gitBranches []gitlib.Branch) {
 func (r *Repo) addMultiBranch(c *Commit) *Branch {
 	b := &Branch{
 		Name:          fmt.Sprintf("multi:%s", c.Sid),
-		DisplayName:   fmt.Sprintf("multi:%s", c.Sid),
+		DisplayName:   fmt.Sprintf("multiple@%s", c.Sid),
 		TipID:         c.Id,
 		IsCurrent:     false,
 		IsGitBranch:   false,
@@ -106,7 +106,7 @@ func (r *Repo) addNamedBranch(c *Commit, branchName string) *Branch {
 func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
 	b := &Branch{
 		Name:          fmt.Sprintf("branch:%s", c.Sid),
-		DisplayName:   fmt.Sprintf("branch:%s", c.Sid),
+		DisplayName:   fmt.Sprintf("branch@%s", c.Sid),
 		TipID:         c.Id,
 		IsCurrent:     false,
 		IsGitBranch:   false,
