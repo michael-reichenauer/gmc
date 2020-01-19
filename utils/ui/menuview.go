@@ -21,11 +21,12 @@ type menuView struct {
 	marginsWidth    int
 }
 
-func newMenuView(uiHandler *UI, parent *menuView) *menuView {
+func newMenuView(uiHandler *UI, title string, parent *menuView) *menuView {
 	h := &menuView{uiHandler: uiHandler, parent: parent}
 	h.View = uiHandler.NewView(h.viewData)
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
+	h.View.Properties().Title = title
 	return h
 }
 
@@ -232,7 +233,7 @@ func (h *menuView) onSubItem() {
 	}
 
 	y := h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
-	mv := newMenuView(h.uiHandler, h)
+	mv := newMenuView(h.uiHandler, "", h)
 	mv.addItems(items)
 	mv.show(x, y)
 }

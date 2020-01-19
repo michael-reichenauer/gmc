@@ -76,7 +76,7 @@ func (h *RepoView) onEnter() {
 func (h *RepoView) onRight() {
 	items := h.vm.GetOpenBranchItems(h.ViewPage().CurrentLine)
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
-	menu := ui.NewMenu(h.uiHandler)
+	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
 	menu.Show(10, y)
 }
@@ -87,7 +87,7 @@ func (h *RepoView) onLeft() {
 		return
 	}
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
-	menu := ui.NewMenu(h.uiHandler)
+	menu := ui.NewMenu(h.uiHandler, "Hide Branch")
 	menu.AddItems(items)
 	menu.Show(10, y)
 
@@ -126,7 +126,7 @@ func (h *RepoView) onBranchColor() {
 }
 
 func (h *RepoView) onMenu() {
-	menu := ui.NewMenu(h.uiHandler)
+	menu := ui.NewMenu(h.uiHandler, "Menu")
 	menu.Add(
 		ui.MenuItem{Text: "About", Action: h.main.ShowAbout},
 	)

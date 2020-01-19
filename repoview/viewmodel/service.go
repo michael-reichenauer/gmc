@@ -313,8 +313,10 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 
 	var branches []*gitrepo.Branch
 
-	commit := s.gmRepo.CommitById[c.ID]
-	branches = append(branches, commit.Branch)
+	if c.ID != StatusID {
+		commit := s.gmRepo.CommitById[c.ID]
+		branches = append(branches, commit.Branch)
+	}
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it
@@ -334,7 +336,8 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 	}
 
 	for _, b := range s.gmRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
+		if b.TipID == b.BottomID && b.BottomID == c.ID &&
+			b.ParentBranch != nil && b.ParentBranch.Name == c.Branch.name {
 			// empty branch with no own branch commit, (branch start)
 			branches = append(branches, b)
 		}
@@ -342,7 +345,7 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 
 	var bs []Branch
 	for _, b := range branches {
-		if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
+		if b.Name == masterName || b.Name == remoteMasterName {
 			continue
 		}
 		if containsDisplayNameBranch(bs, b.DisplayName) {
@@ -360,7 +363,7 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 	}
 
 	for _, b := range s.currentViewModel.Branches {
-		if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
+		if b.name == masterName || b.name == remoteMasterName {
 			continue
 		}
 		if containsDisplayNameBranch(bs, b.displayName) {
