@@ -106,10 +106,14 @@ func (s *Service) showBranches(branchNames []string) {
 	t := time.Now()
 	repo := s.getViewModel(branchNames)
 	log.Infof("LoadBranches time %v", time.Since(t))
+
 	s.lock.Lock()
 	s.currentViewModel = repo
 	s.lock.Unlock()
 	s.ChangedEvents <- nil
+	s.configService.SetRepo(s.RepoPath(), func(r *config.Repo) {
+		r.ShownBranches = s.CurrentBranchNames()
+	})
 }
 
 func (s *Service) monitorGitModelRoutine() {
@@ -454,15 +458,15 @@ func (s *Service) CloseBranch(index int) {
 	}
 
 	// get branch ids except for the commit branch or decedent branches
-	var branchIds []string
+	var branchNames []string
 	for _, b := range s.currentViewModel.Branches {
 		if b.name != c.Branch.name && !c.Branch.isAncestor(b) {
-			branchIds = append(branchIds, b.name)
+			branchNames = append(branchNames, b.name)
 		}
 	}
 	s.lock.Unlock()
 	log.Event("vms-branches-close")
-	s.showBranches(branchIds)
+	s.showBranches(branchNames)
 }
 
 func (s *Service) getViewModel(branchNames []string) *repo {
