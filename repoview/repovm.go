@@ -111,14 +111,30 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) GetOpenBranchItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
-	branches := h.viewModelService.GetCommitBranches(index)
-	for _, b := range branches {
-		name := b.Name
-		items = append(items, ui.MenuItem{Text: b.DisplayName, Action: func() {
-			h.viewModelService.ShowBranch(name)
-		}})
+	commitBranches := h.viewModelService.GetCommitBranches(index)
+	for _, b := range commitBranches {
+		items = append(items, h.toBranchMenuItem(b))
 	}
+
+	var resentSubItems []ui.MenuItem
+	for _, b := range h.viewModelService.GetResentBranches() {
+		resentSubItems = append(resentSubItems, h.toBranchMenuItem(b))
+	}
+	items = append(items, ui.MenuItem{Text: "Resent Branches", SubItems: resentSubItems})
+
+	var allSubItems []ui.MenuItem
+	for _, b := range h.viewModelService.GetAllBranches() {
+		allSubItems = append(allSubItems, h.toBranchMenuItem(b))
+	}
+	items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
+
 	return items
+}
+
+func (h *repoVM) toBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
+	return ui.MenuItem{Text: branch.DisplayName, Action: func() {
+		h.viewModelService.ShowBranch(branch.Name)
+	}}
 }
 
 func (h *repoVM) OpenBranch(index int) {

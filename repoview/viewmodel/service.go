@@ -8,6 +8,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"hash/fnv"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -177,6 +178,55 @@ func (s *Service) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
 	}
 
 	return newViewPort(s.currentViewModel, firstIndex, count), nil
+}
+
+func (s *Service) GetAllBranches() []Branch {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	var branches []Branch
+	for _, b := range s.gmRepo.Branches {
+		if containsDisplayNameBranch(branches, b.DisplayName) {
+			continue
+		}
+		if containsBranch(s.currentViewModel.Branches, b.Name) {
+			continue
+		}
+		branches = append(branches, toBranch(s.currentViewModel.toBranch(b, 0)))
+	}
+	sort.SliceStable(branches, func(i, j int) bool {
+		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+	})
+
+	return branches
+}
+
+func (s *Service) GetResentBranches() []Branch {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	var branches []Branch
+	for _, b := range s.gmRepo.Branches {
+		if containsDisplayNameBranch(branches, b.DisplayName) {
+			continue
+		}
+		if containsBranch(s.currentViewModel.Branches, b.Name) {
+			continue
+		}
+		branches = append(branches, toBranch(s.currentViewModel.toBranch(b, 0)))
+	}
+	sort.SliceStable(branches, func(i, j int) bool {
+		return s.gmRepo.CommitById[branches[i].TipID].AuthorTime.After(s.gmRepo.CommitById[branches[j].TipID].AuthorTime)
+	})
+
+	return branches
+}
+
+func containsDisplayNameBranch(branches []Branch, displayName string) bool {
+	for _, b := range branches {
+		if displayName == b.DisplayName {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *Service) GetCommitBranches(index int) []Branch {
