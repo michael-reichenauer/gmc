@@ -75,15 +75,24 @@ func (h *RepoView) onEnter() {
 
 func (h *RepoView) onRight() {
 	items := h.vm.GetOpenBranchItems(h.ViewPage().CurrentLine)
-	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine
+	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler)
 	menu.AddItems(items)
 	menu.Show(10, y)
 }
 
 func (h *RepoView) onLeft() {
-	h.vm.CloseBranch(h.ViewPage().CurrentLine)
-	h.NotifyChanged()
+	items := h.vm.GetCloseBranchItems(h.ViewPage().CurrentLine)
+	if len(items) == 0 {
+		return
+	}
+	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
+	menu := ui.NewMenu(h.uiHandler)
+	menu.AddItems(items)
+	menu.Show(10, y)
+
+	// h.vm.CloseBranch(h.ViewPage().CurrentLine)
+	// h.NotifyChanged()
 }
 
 func (h *RepoView) onRefresh() {

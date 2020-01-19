@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"hash/fnv"
@@ -180,6 +179,20 @@ func (s *Service) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
 	return newViewPort(s.currentViewModel, firstIndex, count), nil
 }
 
+func (s *Service) CurrentBranch() (Branch, bool) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+	current, ok := s.gmRepo.CurrentBranch()
+	if !ok {
+		return Branch{}, false
+	}
+	if containsBranch(s.currentViewModel.Branches, current.Name) {
+		return Branch{}, false
+	}
+
+	return toBranch(s.currentViewModel.toBranch(current, 0)), true
+}
+
 func (s *Service) GetAllBranches() []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
@@ -229,7 +242,7 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 	return false
 }
 
-func (s *Service) GetCommitBranches(index int) []Branch {
+func (s *Service) GetCommitOpenBranches(index int) []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	if index >= len(s.currentViewModel.Commits) {
@@ -284,6 +297,84 @@ func (s *Service) GetCommitBranches(index int) []Branch {
 	return bs
 }
 
+func (s *Service) GetCommitCloseBranches(index int) []Branch {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	if index >= len(s.currentViewModel.Commits) {
+		// Repo must just have changed, just ignore
+		return nil
+	}
+	c := s.currentViewModel.Commits[index]
+
+	var branches []*gitrepo.Branch
+
+	commit := s.gmRepo.CommitById[c.ID]
+	branches = append(branches, commit.Branch)
+
+	if len(c.ParentIDs) > 1 {
+		// commit has branch merged into this commit add it
+		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
+		branches = append(branches, mergeParent.Branch)
+	}
+
+	for _, ccId := range c.ChildIDs {
+		// commit has children (i.e.), other branches have merged from this branch
+		if ccId == StatusID {
+			continue
+		}
+		cc := s.gmRepo.CommitById[ccId]
+		if cc.Branch.Name != c.Branch.name {
+			branches = append(branches, cc.Branch)
+		}
+	}
+
+	for _, b := range s.gmRepo.Branches {
+		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
+			// empty branch with no own branch commit, (branch start)
+			branches = append(branches, b)
+		}
+	}
+
+	var bs []Branch
+	for _, b := range branches {
+		if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
+			continue
+		}
+		if containsDisplayNameBranch(bs, b.DisplayName) {
+			continue
+		}
+		if containsViewBranch(bs, b.Name) {
+			// Skip duplicates
+			continue
+		}
+		if !containsBranch(s.currentViewModel.Branches, b.Name) {
+			// Skip branches not shown
+			continue
+		}
+		bs = append(bs, toBranch(s.currentViewModel.toBranch(b, 0)))
+	}
+
+	for _, b := range s.currentViewModel.Branches {
+		if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
+			continue
+		}
+		if containsDisplayNameBranch(bs, b.displayName) {
+			continue
+		}
+		if containsViewBranch(bs, b.name) {
+			// Skip duplicates
+			continue
+		}
+		if containsViewBranch(bs, b.name) {
+			// Skip duplicates
+			continue
+		}
+		bs = append(bs, toBranch(b))
+	}
+	return bs
+}
+
 func containsViewBranch(branches []Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
@@ -301,6 +392,7 @@ func containsBranch(branches []*branch, name string) bool {
 	}
 	return false
 }
+
 func (s *Service) ShowBranch(name string) {
 	s.lock.Lock()
 
@@ -319,52 +411,26 @@ func (s *Service) ShowBranch(name string) {
 	s.showBranches(branchNames)
 }
 
-func (s *Service) OpenBranch(index int) {
+func (s *Service) HideBranch(name string) {
 	s.lock.Lock()
-	if index >= len(s.currentViewModel.Commits) {
-		// Repo must just have changed, just ignore
-		s.lock.Unlock()
-		return
-	}
-	c := s.currentViewModel.Commits[index]
-	if !c.IsMore {
-		// Not a point that can be expanded
+
+	branch := s.currentViewModel.BranchByName(name)
+	if branch == nil {
 		s.lock.Unlock()
 		return
 	}
 
-	branchIds := s.toBranchNames(s.currentViewModel.Branches)
+	var branchNames []string
+	for _, b := range s.currentViewModel.Branches {
+		if b.name != branch.name && !branch.isAncestor(b) {
+			branchNames = append(branchNames, b.name)
+		}
+	}
 
-	if len(c.ParentIDs) > 1 {
-		// commit has branch merged into this commit add it (if not already added
-		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
-		branchIds = s.addBranchWithAncestors(branchIds, mergeParent.Branch)
-	}
-	for _, ccId := range c.ChildIDs {
-		cc := s.gmRepo.CommitById[ccId]
-		if cc.Branch.Name != c.Branch.name {
-			branchIds = s.addBranchWithAncestors(branchIds, cc.Branch)
-		}
-	}
-	for _, b := range s.gmRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
-			// empty branch with no own branch commit, (branch start)
-			branchIds = s.addBranchWithAncestors(branchIds, b)
-		}
-	}
-	for _, b := range s.gmRepo.Branches {
-		i1 := utils.StringsIndex(branchIds, b.RemoteName)
-		i2 := utils.StringsIndex(branchIds, b.Name)
-		if i2 == -1 && i1 != -1 {
-			// a remote branch is included, but not its local branch
-			branchIds = append(branchIds, "")
-			copy(branchIds[i1+1:], branchIds[i1:])
-			branchIds[i1] = b.Name
-		}
-	}
 	s.lock.Unlock()
-	log.Event("vms-branches-open")
-	s.showBranches(branchIds)
+
+	log.Event("vms-branches-close")
+	s.showBranches(branchNames)
 }
 
 func (s *Service) RepoPath() string {
