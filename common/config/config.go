@@ -27,8 +27,9 @@ type State struct {
 }
 
 type Repo struct {
-	Path     string
-	Branches []Branch
+	Path          string
+	ShownBranches []string
+	Branches      []Branch
 }
 
 type Branch struct {

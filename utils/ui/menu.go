@@ -1,20 +1,28 @@
 package ui
 
-type Item struct {
+type MenuItem struct {
 	Text     string
 	Key      string
 	Action   func()
-	SubItems []Item
+	SubItems []MenuItem
 }
 
 type Menu struct {
 	menuView *menuView
 }
 
-func NewMenu(uiHandler *UI, items []Item) *Menu {
-	return &Menu{menuView: newMenuView(uiHandler, nil, items, 5, 5)}
+func NewMenu(uiHandler *UI, title string) *Menu {
+	return &Menu{menuView: newMenuView(uiHandler, title, nil)}
 }
 
-func (h *Menu) Show() {
-	h.menuView.show()
+func (h *Menu) Add(items ...MenuItem) {
+	h.menuView.addItems(items)
+}
+
+func (h *Menu) AddItems(items []MenuItem) {
+	h.menuView.addItems(items)
+}
+
+func (h *Menu) Show(x, y int) {
+	h.menuView.show(x, y)
 }

@@ -41,6 +41,7 @@ type Branch struct {
 	LocalName     string
 	IsRemote      bool
 	IsGitBranch   bool
+	TipID         string
 }
 
 func newViewPort(repo *repo, firstIndex, count int) ViewPort {
@@ -93,5 +94,6 @@ func toBranch(b *branch) Branch {
 		LocalName:     b.localName,
 		IsRemote:      b.isRemote,
 		IsGitBranch:   b.isGitBranch,
+		TipID:         b.tipId,
 	}
 }
