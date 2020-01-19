@@ -11,10 +11,18 @@ type Menu struct {
 	menuView *menuView
 }
 
-func NewMenu(uiHandler *UI, items []MenuItem) *Menu {
-	return &Menu{menuView: newMenuView(uiHandler, nil, items, 5, 5)}
+func NewMenu(uiHandler *UI) *Menu {
+	return &Menu{menuView: newMenuView(uiHandler, nil)}
 }
 
-func (h *Menu) Show() {
-	h.menuView.show()
+func (h *Menu) Add(items ...MenuItem) {
+	h.menuView.addItems(items)
+}
+
+func (h *Menu) AddItems(items []MenuItem) {
+	h.menuView.addItems(items)
+}
+
+func (h *Menu) Show(x, y int) {
+	h.menuView.show(x, y)
 }

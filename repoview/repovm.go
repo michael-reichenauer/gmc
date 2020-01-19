@@ -111,9 +111,12 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) GetOpenBranchItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
-	branches := h.viewModelService.GetOpenBranch(index)
+	branches := h.viewModelService.GetCommitBranches(index)
 	for _, b := range branches {
-		items = append(items, ui.MenuItem{Text: b.DisplayName})
+		name := b.Name
+		items = append(items, ui.MenuItem{Text: b.DisplayName, Action: func() {
+			h.viewModelService.ShowBranch(name)
+		}})
 	}
 	return items
 }
