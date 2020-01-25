@@ -37,12 +37,17 @@ func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow 
 	vm := viewmodel.NewModel(configService, workingFolder)
 	h.detailsView = repoview.NewDetailsView(uiHandler, vm)
 	h.repoView = repoview.NewRepoView(uiHandler, vm, h.detailsView, h)
-	return h
-}
 
-func (h *MainWindow) ShowAbout() {
-	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
-	msgBox.Show()
+	h.configService.SetState(func(s *config.State) {
+		if i := utils.StringsIndex(s.RecentFolders, workingFolder); i != -1 {
+			s.RecentFolders = append(s.RecentFolders[:i], s.RecentFolders[i+1:]...)
+		}
+		if len(s.RecentFolders) > 2 {
+			s.RecentFolders = s.RecentFolders[0:1]
+		}
+		s.RecentFolders = append([]string{workingFolder}, s.RecentFolders...)
+	})
+	return h
 }
 
 func (h *MainWindow) Show() {
@@ -89,4 +94,22 @@ func (h *MainWindow) getWorkingFolder() string {
 		panic(log.Fatal(err))
 	}
 	return path
+}
+
+func (h *MainWindow) MainMenuItem() ui.MenuItem {
+	var subItems []ui.MenuItem
+	subItems = append(subItems, h.GetOpenRepoMenuItem())
+	subItems = append(subItems, ui.MenuItem{Text: "About", Action: h.showAbout})
+	menuItem := ui.MenuItem{
+		Text:     "Main Menu",
+		Title:    "Main Menu",
+		SubItems: subItems,
+	}
+
+	return menuItem
+}
+
+func (h *MainWindow) showAbout() {
+	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
+	msgBox.Show()
 }

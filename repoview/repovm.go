@@ -109,7 +109,7 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 	}, nil
 }
 
-func (h *repoVM) GetOpenBranchItems(index int) []ui.MenuItem {
+func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := h.viewModelService.GetCommitOpenBranches(index)
 	for _, b := range commitBranches {
@@ -138,7 +138,7 @@ func (h *repoVM) GetOpenBranchItems(index int) []ui.MenuItem {
 	return items
 }
 
-func (h *repoVM) GetCloseBranchItems(index int) []ui.MenuItem {
+func (h *repoVM) GetCloseBranchMenuItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := h.viewModelService.GetCommitCloseBranches(index)
 	for _, b := range commitBranches {

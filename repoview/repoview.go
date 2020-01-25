@@ -9,7 +9,7 @@ import (
 
 type mainController interface {
 	ToggleDetails()
-	ShowAbout()
+	MainMenuItem() ui.MenuItem
 }
 
 type RepoView struct {
@@ -68,7 +68,6 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlM, gocui.ModNone, h.onMenu)
 	h.NotifyChanged()
 }
 
@@ -78,15 +77,16 @@ func (h *RepoView) onEnter() {
 }
 
 func (h *RepoView) onRight() {
-	items := h.vm.GetOpenBranchItems(h.ViewPage().CurrentLine)
+	items := h.vm.GetOpenBranchMenuItems(h.ViewPage().CurrentLine)
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
+	menu.Add(h.main.MainMenuItem())
 	menu.Show(10, y)
 }
 
 func (h *RepoView) onLeft() {
-	items := h.vm.GetCloseBranchItems(h.ViewPage().CurrentLine)
+	items := h.vm.GetCloseBranchMenuItems(h.ViewPage().CurrentLine)
 	if len(items) == 0 {
 		return
 	}
@@ -124,12 +124,4 @@ func (h *RepoView) onTrace() {
 func (h *RepoView) onBranchColor() {
 	h.vm.ChangeBranchColor(h.ViewPage().CurrentLine)
 	h.NotifyChanged()
-}
-
-func (h *RepoView) onMenu() {
-	menu := ui.NewMenu(h.uiHandler, "Menu")
-	menu.Add(
-		ui.MenuItem{Text: "About", Action: h.main.ShowAbout},
-	)
-	menu.Show(10, 5)
 }

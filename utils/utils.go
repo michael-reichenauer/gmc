@@ -79,7 +79,7 @@ func MustJsonUnmarshal(bytes []byte, v interface{}) {
 
 func FileExists(filename string) bool {
 	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || info == nil {
 		return false
 	}
 	return !info.IsDir()
@@ -110,7 +110,7 @@ func FileRead(filename string) ([]byte, error) {
 
 func DirExists(filename string) bool {
 	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if os.IsNotExist(err) || info == nil {
 		return false
 	}
 	return info.IsDir()

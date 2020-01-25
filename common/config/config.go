@@ -24,6 +24,7 @@ type State struct {
 	StableRelease    Release
 	PreRelease       Release
 	Repos            []Repo
+	RecentFolders    []string
 }
 
 type Repo struct {
