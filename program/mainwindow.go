@@ -1,9 +1,13 @@
-package repoview
+package program
 
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -15,40 +19,29 @@ const (
 	detailsCurrent
 )
 
-type mainController interface {
-	ToggleDetails()
-	ShowAbout()
-}
-
 type MainWindow struct {
 	uiHandler     *ui.UI
 	configService *config.Service
 	model         *viewmodel.Service
-	repoView      *RepoView
-	detailsView   *DetailsView
+	repoView      *repoview.RepoView
+	detailsView   *repoview.DetailsView
 	mode          showMode
-	version       string
 }
 
-func NewMainWindow(
-	uiHandler *ui.UI,
-	configService *config.Service,
-	repoPath string,
-	version string) *MainWindow {
-	m := viewmodel.NewModel(configService, repoPath)
+func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow {
 	h := &MainWindow{
 		uiHandler:     uiHandler,
 		configService: configService,
-		model:         m,
-		version:       version,
 	}
-	h.detailsView = newDetailsView(uiHandler, m)
-	h.repoView = newRepoView(uiHandler, m, h.detailsView, h)
+	workingFolder := h.getWorkingFolder()
+	vm := viewmodel.NewModel(configService, workingFolder)
+	h.detailsView = repoview.NewDetailsView(uiHandler, vm)
+	h.repoView = repoview.NewRepoView(uiHandler, vm, h.detailsView, h)
 	return h
 }
 
 func (h *MainWindow) ShowAbout() {
-	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.version), "About")
+	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
 	msgBox.Show()
 }
 
@@ -83,4 +76,17 @@ func (h *MainWindow) OnResizeWindow() {
 	}
 	h.repoView.NotifyChanged()
 	h.detailsView.NotifyChanged()
+}
+
+func (h *MainWindow) getWorkingFolder() string {
+	folderPath := h.configService.FolderPath
+	if folderPath == "" {
+		// No specified repo path, use current dir
+		folderPath = utils.CurrentDir()
+	}
+	path, err := gitlib.WorkingFolderRoot(folderPath)
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return path
 }

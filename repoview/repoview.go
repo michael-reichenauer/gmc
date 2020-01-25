@@ -7,7 +7,11 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-//
+type mainController interface {
+	ToggleDetails()
+	ShowAbout()
+}
+
 type RepoView struct {
 	ui.View
 	uiHandler   *ui.UI
@@ -16,7 +20,7 @@ type RepoView struct {
 	vm          *repoVM
 }
 
-func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
+func NewRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
 		uiHandler:   uiHandler,
 		detailsView: detailsView,
@@ -64,7 +68,7 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey('m', gocui.ModNone, h.onMenu)
+	h.SetKey(gocui.KeyCtrlM, gocui.ModNone, h.onMenu)
 	h.NotifyChanged()
 }
 
@@ -90,9 +94,6 @@ func (h *RepoView) onLeft() {
 	menu := ui.NewMenu(h.uiHandler, "Hide Branch")
 	menu.AddItems(items)
 	menu.Show(10, y)
-
-	// h.vm.CloseBranch(h.ViewPage().CurrentLine)
-	// h.NotifyChanged()
 }
 
 func (h *RepoView) onRefresh() {

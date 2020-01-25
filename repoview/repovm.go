@@ -156,6 +156,7 @@ func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 		h.viewModelService.ShowBranch(branch.Name)
 	}}
 }
+
 func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 	return ui.MenuItem{Text: branch.DisplayName, Action: func() {
 		h.viewModelService.HideBranch(branch.Name)

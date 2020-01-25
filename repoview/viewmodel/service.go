@@ -313,11 +313,6 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 
 	var branches []*gitrepo.Branch
 
-	if c.ID != StatusID {
-		commit := s.gmRepo.CommitById[c.ID]
-		branches = append(branches, commit.Branch)
-	}
-
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it
 		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
@@ -341,6 +336,11 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 			// empty branch with no own branch commit, (branch start)
 			branches = append(branches, b)
 		}
+	}
+
+	if c.ID != StatusID {
+		commit := s.gmRepo.CommitById[c.ID]
+		branches = append(branches, commit.Branch)
 	}
 
 	var bs []Branch

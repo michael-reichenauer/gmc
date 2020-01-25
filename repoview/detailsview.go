@@ -11,9 +11,9 @@ type DetailsView struct {
 	currentIndex int
 }
 
-func newDetailsView(uiHandler *ui.UI, model *viewmodel.Service) *DetailsView {
+func NewDetailsView(uiHandler *ui.UI, model *viewmodel.Service) *DetailsView {
 	h := &DetailsView{
-		vm: newDetailsVM(model),
+		vm: NewDetailsVM(model),
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.View.Properties().Name = "DetailsView"

@@ -50,10 +50,12 @@ type Asset struct {
 }
 
 type Service struct {
+	ProgramVersion string
+	FolderPath     string
 }
 
-func NewConfig() *Service {
-	return &Service{}
+func NewConfig(programVersion, folderPath string) *Service {
+	return &Service{ProgramVersion: programVersion, FolderPath: folderPath}
 }
 
 func (s *Service) GetState() State {

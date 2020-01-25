@@ -206,3 +206,8 @@ func WorkingFolderRoot(path string) (string, error) {
 	}
 	return "", fmt.Errorf("could not locater working folder root from " + path)
 }
+
+func GitVersion() string {
+	out, _ := exec.Command("git", "version").Output()
+	return string(out)
+}
