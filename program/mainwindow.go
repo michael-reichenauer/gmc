@@ -20,12 +20,13 @@ const (
 )
 
 type MainWindow struct {
-	uiHandler     *ui.UI
-	configService *config.Service
-	model         *viewmodel.Service
-	repoView      *repoview.RepoView
-	detailsView   *repoview.DetailsView
-	mode          showMode
+	uiHandler            *ui.UI
+	configService        *config.Service
+	model                *viewmodel.Service
+	repoView             *repoview.RepoView
+	detailsView          *repoview.DetailsView
+	repoViewModelService *viewmodel.Service
+	mode                 showMode
 }
 
 func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow {
@@ -34,9 +35,9 @@ func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow 
 		configService: configService,
 	}
 	workingFolder := h.getWorkingFolder()
-	vm := viewmodel.NewModel(configService, workingFolder)
-	h.detailsView = repoview.NewDetailsView(uiHandler, vm)
-	h.repoView = repoview.NewRepoView(uiHandler, vm, h.detailsView, h)
+	h.repoViewModelService = viewmodel.NewModel(configService, workingFolder)
+	h.detailsView = repoview.NewDetailsView(uiHandler, h.repoViewModelService)
+	h.repoView = repoview.NewRepoView(uiHandler, h.repoViewModelService, h.detailsView, h)
 
 	h.configService.SetState(func(s *config.State) {
 		if i := utils.StringsIndex(s.RecentFolders, workingFolder); i != -1 {

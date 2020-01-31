@@ -25,7 +25,7 @@ func NewService(repoPath string) *Service {
 	glr := gitlib.NewRepo(repoPath)
 	return &Service{
 		gitLib:       glr,
-		monitor:      newMonitor(glr.RepoPath(), glr.IsIgnored),
+		monitor:      newMonitor(),
 		branches:     newBranches(),
 		RepoEvents:   make(chan Repo),
 		StatusEvents: make(chan Status),
@@ -38,7 +38,7 @@ func (s *Service) RepoPath() string {
 }
 
 func (s *Service) StartRepoMonitor() {
-	s.monitor.Start()
+	s.monitor.Start(s.gitLib.RepoPath(), s.gitLib.IsIgnored)
 	go s.monitorStatusChangesRoutine()
 	go s.monitorRepoChangesRoutine()
 	go s.fetchRoutine()

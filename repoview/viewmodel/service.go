@@ -79,6 +79,10 @@ func (s *Service) Start() {
 	go s.monitorGitModelRoutine()
 }
 
+func OpenRepo(repoPath string) error {
+	return nil
+}
+
 func (s *Service) TriggerRefreshModel() {
 	log.Event("vms-refresh")
 	s.gitRepoService.TriggerRefreshRepo()

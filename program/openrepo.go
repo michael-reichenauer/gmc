@@ -39,26 +39,45 @@ func (h *MainWindow) getOpenMenuItem() ui.MenuItem {
 		panic(log.Fatal(err))
 	}
 
-	return ui.MenuItem{Text: "Open Repo", Title: "Open Repo", SubItemsFunc: func() []ui.MenuItem {
-		return h.getOpenFolderItems(home)
+	return ui.MenuItem{Text: "Open Repo", Title: home, SubItemsFunc: func() []ui.MenuItem {
+		return h.getFolderItems(home, func(folder string) {
+			log.Infof("Open %q", folder)
+		})
 	}}
 }
 
-func (h *MainWindow) getOpenFolderItems(folder string) []ui.MenuItem {
+func (h *MainWindow) getFolderItems(folder string, action func(f string)) []ui.MenuItem {
 	files, err := ioutil.ReadDir(folder)
 	if err != nil {
-		log.Fatal(err)
+		// Folder not readable, might be e.g. access denied
+		return nil
 	}
 
 	var items []ui.MenuItem
+
+	parentFolder := filepath.Dir(folder)
+	if parentFolder != folder {
+		// Have not reached root folder, lets add a ".." item to go upp
+		items = append(items, ui.MenuItem{
+			Text:  "..",
+			Title: parentFolder,
+			SubItemsFunc: func() []ui.MenuItem {
+				return h.getFolderItems(parentFolder, action)
+			}})
+	}
+
 	for _, f := range files {
 		if !f.IsDir() {
 			continue
 		}
 		path := filepath.Join(folder, f.Name())
-		items = append(items, ui.MenuItem{Text: f.Name(), SubItemsFunc: func() []ui.MenuItem {
-			return h.getOpenFolderItems(path)
-		}})
+		items = append(items, ui.MenuItem{
+			Text:   f.Name(),
+			Title:  path,
+			Action: func() { action(path) },
+			SubItemsFunc: func() []ui.MenuItem {
+				return h.getFolderItems(path, action)
+			}})
 	}
 	return items
 }

@@ -14,6 +14,7 @@ type menuView struct {
 	uiHandler       *UI
 	parent          *menuView
 	currentViewName string
+	title           string
 	items           []MenuItem
 	bounds          Rect
 	moreWidth       int
@@ -22,7 +23,7 @@ type menuView struct {
 }
 
 func newMenuView(uiHandler *UI, title string, parent *menuView) *menuView {
-	h := &menuView{uiHandler: uiHandler, parent: parent}
+	h := &menuView{uiHandler: uiHandler, parent: parent, title: title}
 	h.View = uiHandler.NewView(h.viewData)
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
@@ -125,6 +126,10 @@ func (h *menuView) maxWidth(items []MenuItem) (maxWidth, maxKeyWidth, maxMoreWid
 		marginsWidth++
 	}
 	maxWidth = maxTextWidth + maxKeyWidth + maxMoreWidth + marginsWidth
+	titleWidth := len(h.title) + 3
+	if maxWidth < titleWidth {
+		maxWidth = titleWidth
+	}
 	return
 }
 
