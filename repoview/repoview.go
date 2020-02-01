@@ -10,14 +10,16 @@ import (
 type mainController interface {
 	ToggleDetails()
 	MainMenuItem() ui.MenuItem
+	OpenRepoMenuItems() []ui.MenuItem
 }
 
 type RepoView struct {
 	ui.View
-	uiHandler   *ui.UI
-	main        mainController
-	detailsView *DetailsView
-	vm          *repoVM
+	uiHandler    *ui.UI
+	main         mainController
+	detailsView  *DetailsView
+	vm           *repoVM
+	emptyMessage string
 }
 
 func NewRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
@@ -48,8 +50,8 @@ func (h *RepoView) viewData(viewPort ui.ViewPage) ui.ViewData {
 	//}
 	if len(repoPage.lines) > 0 {
 		h.detailsView.SetCurrent(repoPage.currentIndex)
-	} else {
-		return ui.ViewData{Lines: []string{"  Reading repo, please wait ..."}}
+	} else if h.emptyMessage != "" {
+		return ui.ViewData{Lines: []string{h.emptyMessage}}
 	}
 
 	// log.Infof("repo view data %d lines", len(repoPage.lines))
@@ -81,6 +83,7 @@ func (h *RepoView) onRight() {
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
+	menu.Add(h.main.OpenRepoMenuItems()...)
 	menu.Add(h.main.MainMenuItem())
 	menu.Show(10, y)
 }
@@ -124,4 +127,8 @@ func (h *RepoView) onTrace() {
 func (h *RepoView) onBranchColor() {
 	h.vm.ChangeBranchColor(h.ViewPage().CurrentLine)
 	h.NotifyChanged()
+}
+
+func (h *RepoView) SetEmptyMessage(message string) {
+	h.emptyMessage = message
 }

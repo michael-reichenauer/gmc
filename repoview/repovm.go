@@ -50,7 +50,6 @@ func newRepoVM(model *viewmodel.Service, notifier notifier) *repoVM {
 
 func (h *repoVM) onLoad() {
 	h.viewModelService.Start()
-	h.viewModelService.TriggerRefreshModel()
 	go h.monitorModelRoutine()
 }
 

@@ -7,7 +7,6 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -34,25 +33,27 @@ func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow 
 		uiHandler:     uiHandler,
 		configService: configService,
 	}
-	workingFolder := h.getWorkingFolder()
-	h.repoViewModelService = viewmodel.NewModel(configService, workingFolder)
+	h.repoViewModelService = viewmodel.NewModel(configService)
 	h.detailsView = repoview.NewDetailsView(uiHandler, h.repoViewModelService)
 	h.repoView = repoview.NewRepoView(uiHandler, h.repoViewModelService, h.detailsView, h)
-
-	h.configService.SetState(func(s *config.State) {
-		s.RecentFolders = utils.RecentItems(s.RecentFolders, workingFolder, 10)
-	})
 	return h
 }
 
 func (h *MainWindow) Show() {
+	emptyMessage := "  Reading repo, please wait ..."
+	workingFolder, err := h.getWorkingFolder()
+	if err != nil {
+		emptyMessage = ""
+	}
 	r := ui.Rect{W: 1, H: 1}
 	h.repoView.Properties().HasFrame = false
 	h.detailsView.Show(r)
+	h.repoView.SetEmptyMessage(emptyMessage)
 	h.repoView.Show(r)
 	h.repoView.SetCurrentView()
-
 	h.OnResizeWindow()
+
+	h.OpenRepo(workingFolder)
 }
 
 func (h *MainWindow) ToggleDetails() {
@@ -78,7 +79,7 @@ func (h *MainWindow) OnResizeWindow() {
 	h.detailsView.NotifyChanged()
 }
 
-func (h *MainWindow) getWorkingFolder() string {
+func (h *MainWindow) getWorkingFolder() (string, error) {
 	folderPath := h.configService.FolderPath
 	if folderPath == "" {
 		// No specified repo path, use current dir
@@ -86,14 +87,14 @@ func (h *MainWindow) getWorkingFolder() string {
 	}
 	path, err := gitlib.WorkingFolderRoot(folderPath)
 	if err != nil {
-		panic(log.Fatal(err))
+		return "", err
 	}
-	return path
+	return path, nil
 }
 
 func (h *MainWindow) MainMenuItem() ui.MenuItem {
 	var subItems []ui.MenuItem
-	subItems = append(subItems, h.getOpenRepoMenuItems()...)
+	subItems = append(subItems, h.OpenRepoMenuItems()...)
 	subItems = append(subItems, ui.MenuItem{Text: "About", Action: h.showAbout})
 	menuItem := ui.MenuItem{
 		Text:     "Main Menu",

@@ -52,12 +52,11 @@ type Service struct {
 	customBranchColors map[string]int
 }
 
-func NewModel(configService *config.Service, repoPath string) *Service {
-	gitRepoService := gitrepo.NewService(repoPath)
+func NewModel(configService *config.Service) *Service {
 	return &Service{
 		ChangedEvents:      make(chan interface{}),
 		branchesGraph:      newBranchesGraph(),
-		gitRepoService:     gitRepoService,
+		gitRepoService:     gitrepo.NewService(),
 		configService:      configService,
 		currentViewModel:   newRepo(),
 		customBranchColors: make(map[string]int),
@@ -69,19 +68,17 @@ func ToSid(commitID string) string {
 }
 
 func (s *Service) Start() {
-	log.Event("vms-start")
+	go s.monitorGitModelRoutine()
+}
+
+func (s *Service) OpenRepo(workingFolder string) error {
+	log.Eventf("repo-open", "open %q", workingFolder)
+	s.gitRepoService.Open(workingFolder)
 	repo := s.configService.GetRepo(s.gitRepoService.RepoPath())
 	for _, b := range repo.Branches {
 		s.customBranchColors[b.DisplayName] = b.Color
 	}
-
-	s.gitRepoService.StartRepoMonitor()
-	go s.monitorGitModelRoutine()
-}
-
-func (s *Service) OpenRepo(repoPath string) error {
-	log.Eventf("repo-open", "open %q", repoPath)
-
+	s.TriggerRefreshModel()
 	return nil
 }
 
