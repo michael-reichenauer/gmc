@@ -79,7 +79,9 @@ func (s *Service) Start() {
 	go s.monitorGitModelRoutine()
 }
 
-func OpenRepo(repoPath string) error {
+func (s *Service) OpenRepo(repoPath string) error {
+	log.Eventf("repo-open", "open %q", repoPath)
+
 	return nil
 }
 

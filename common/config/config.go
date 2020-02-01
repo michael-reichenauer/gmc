@@ -19,12 +19,13 @@ type Config struct {
 }
 
 type State struct {
-	InstalledVersion string
-	ReleasesEtag     string
-	StableRelease    Release
-	PreRelease       Release
-	Repos            []Repo
-	RecentFolders    []string
+	InstalledVersion    string
+	ReleasesEtag        string
+	StableRelease       Release
+	PreRelease          Release
+	Repos               []Repo
+	RecentFolders       []string
+	RecentParentFolders []string
 }
 
 type Repo struct {

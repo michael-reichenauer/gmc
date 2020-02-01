@@ -40,13 +40,7 @@ func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow 
 	h.repoView = repoview.NewRepoView(uiHandler, h.repoViewModelService, h.detailsView, h)
 
 	h.configService.SetState(func(s *config.State) {
-		if i := utils.StringsIndex(s.RecentFolders, workingFolder); i != -1 {
-			s.RecentFolders = append(s.RecentFolders[:i], s.RecentFolders[i+1:]...)
-		}
-		if len(s.RecentFolders) > 2 {
-			s.RecentFolders = s.RecentFolders[0:1]
-		}
-		s.RecentFolders = append([]string{workingFolder}, s.RecentFolders...)
+		s.RecentFolders = utils.RecentItems(s.RecentFolders, workingFolder, 10)
 	})
 	return h
 }
@@ -99,7 +93,7 @@ func (h *MainWindow) getWorkingFolder() string {
 
 func (h *MainWindow) MainMenuItem() ui.MenuItem {
 	var subItems []ui.MenuItem
-	subItems = append(subItems, h.GetOpenRepoMenuItem())
+	subItems = append(subItems, h.getOpenRepoMenuItems()...)
 	subItems = append(subItems, ui.MenuItem{Text: "About", Action: h.showAbout})
 	menuItem := ui.MenuItem{
 		Text:     "Main Menu",

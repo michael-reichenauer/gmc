@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"time"
 )
@@ -36,6 +37,32 @@ func BinPath() string {
 		panic(log.Fatal(err))
 	}
 	return name
+}
+
+func GetVolumes() []string {
+	var volumes []string
+	if runtime.GOOS == "windows" {
+		for _, drive := range "ABCDEFGHIJKLMNOPQRSTUVWXYZ" {
+			volume := string(drive) + ":\\"
+			f, err := os.Open(string(drive) + ":\\")
+			if err == nil {
+				volumes = append(volumes, volume)
+				f.Close()
+			}
+		}
+		return volumes
+	}
+	return []string{"/"}
+}
+
+func RecentItems(items []string, item string, maxSize int) []string {
+	if i := StringsIndex(items, item); i != -1 {
+		items = append(items[:i], items[i+1:]...)
+	}
+	if len(items) > maxSize {
+		items = items[0:1]
+	}
+	return append([]string{item}, items...)
 }
 
 func Text(text string, length int) string {

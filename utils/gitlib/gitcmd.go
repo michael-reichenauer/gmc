@@ -197,12 +197,17 @@ func WorkingFolderRoot(path string) (string, error) {
 		current = filepath.Dir(path)
 	}
 
-	for current != "" {
+	for {
 		gitRepoPath := filepath.Join(current, ".git")
 		if utils.DirExists(gitRepoPath) {
 			return current, nil
 		}
-		current = filepath.Dir(current)
+		parent := filepath.Dir(current)
+		if parent == current {
+			// Reached top/root volume folder
+			break
+		}
+		current = parent
 	}
 	return "", fmt.Errorf("could not locater working folder root from " + path)
 }
