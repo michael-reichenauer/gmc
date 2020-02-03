@@ -52,12 +52,11 @@ type Service struct {
 	customBranchColors map[string]int
 }
 
-func NewModel(configService *config.Service, repoPath string) *Service {
-	gitRepoService := gitrepo.NewService(repoPath)
+func NewModel(configService *config.Service) *Service {
 	return &Service{
 		ChangedEvents:      make(chan interface{}),
 		branchesGraph:      newBranchesGraph(),
-		gitRepoService:     gitRepoService,
+		gitRepoService:     gitrepo.NewService(),
 		configService:      configService,
 		currentViewModel:   newRepo(),
 		customBranchColors: make(map[string]int),
@@ -69,14 +68,18 @@ func ToSid(commitID string) string {
 }
 
 func (s *Service) Start() {
-	log.Event("vms-start")
+	go s.monitorGitModelRoutine()
+}
+
+func (s *Service) OpenRepo(workingFolder string) error {
+	log.Eventf("repo-open", "open %q", workingFolder)
+	s.gitRepoService.Open(workingFolder)
 	repo := s.configService.GetRepo(s.gitRepoService.RepoPath())
 	for _, b := range repo.Branches {
 		s.customBranchColors[b.DisplayName] = b.Color
 	}
-
-	s.gitRepoService.StartRepoMonitor()
-	go s.monitorGitModelRoutine()
+	s.TriggerRefreshModel()
+	return nil
 }
 
 func (s *Service) TriggerRefreshModel() {
@@ -313,11 +316,6 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 
 	var branches []*gitrepo.Branch
 
-	if c.ID != StatusID {
-		commit := s.gmRepo.CommitById[c.ID]
-		branches = append(branches, commit.Branch)
-	}
-
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it
 		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
@@ -341,6 +339,11 @@ func (s *Service) GetCommitCloseBranches(index int) []Branch {
 			// empty branch with no own branch commit, (branch start)
 			branches = append(branches, b)
 		}
+	}
+
+	if c.ID != StatusID {
+		commit := s.gmRepo.CommitById[c.ID]
+		branches = append(branches, commit.Branch)
 	}
 
 	var bs []Branch

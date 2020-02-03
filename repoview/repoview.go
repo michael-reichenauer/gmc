@@ -7,16 +7,22 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-//
-type RepoView struct {
-	ui.View
-	uiHandler   *ui.UI
-	main        mainController
-	detailsView *DetailsView
-	vm          *repoVM
+type mainController interface {
+	ToggleDetails()
+	MainMenuItem() ui.MenuItem
+	OpenRepoMenuItems() []ui.MenuItem
 }
 
-func newRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
+type RepoView struct {
+	ui.View
+	uiHandler    *ui.UI
+	main         mainController
+	detailsView  *DetailsView
+	vm           *repoVM
+	emptyMessage string
+}
+
+func NewRepoView(uiHandler *ui.UI, model *viewmodel.Service, detailsView *DetailsView, mainController mainController) *RepoView {
 	h := &RepoView{
 		uiHandler:   uiHandler,
 		detailsView: detailsView,
@@ -44,8 +50,8 @@ func (h *RepoView) viewData(viewPort ui.ViewPage) ui.ViewData {
 	//}
 	if len(repoPage.lines) > 0 {
 		h.detailsView.SetCurrent(repoPage.currentIndex)
-	} else {
-		return ui.ViewData{Lines: []string{"  Reading repo, please wait ..."}}
+	} else if h.emptyMessage != "" {
+		return ui.ViewData{Lines: []string{h.emptyMessage}}
 	}
 
 	// log.Infof("repo view data %d lines", len(repoPage.lines))
@@ -64,7 +70,6 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey('m', gocui.ModNone, h.onMenu)
 	h.NotifyChanged()
 }
 
@@ -74,15 +79,17 @@ func (h *RepoView) onEnter() {
 }
 
 func (h *RepoView) onRight() {
-	items := h.vm.GetOpenBranchItems(h.ViewPage().CurrentLine)
+	items := h.vm.GetOpenBranchMenuItems(h.ViewPage().CurrentLine)
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
+	menu.Add(h.main.OpenRepoMenuItems()...)
+	menu.Add(h.main.MainMenuItem())
 	menu.Show(10, y)
 }
 
 func (h *RepoView) onLeft() {
-	items := h.vm.GetCloseBranchItems(h.ViewPage().CurrentLine)
+	items := h.vm.GetCloseBranchMenuItems(h.ViewPage().CurrentLine)
 	if len(items) == 0 {
 		return
 	}
@@ -90,9 +97,6 @@ func (h *RepoView) onLeft() {
 	menu := ui.NewMenu(h.uiHandler, "Hide Branch")
 	menu.AddItems(items)
 	menu.Show(10, y)
-
-	// h.vm.CloseBranch(h.ViewPage().CurrentLine)
-	// h.NotifyChanged()
 }
 
 func (h *RepoView) onRefresh() {
@@ -125,10 +129,6 @@ func (h *RepoView) onBranchColor() {
 	h.NotifyChanged()
 }
 
-func (h *RepoView) onMenu() {
-	menu := ui.NewMenu(h.uiHandler, "Menu")
-	menu.Add(
-		ui.MenuItem{Text: "About", Action: h.main.ShowAbout},
-	)
-	menu.Show(10, 5)
+func (h *RepoView) SetEmptyMessage(message string) {
+	h.emptyMessage = message
 }
