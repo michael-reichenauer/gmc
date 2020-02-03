@@ -14,6 +14,7 @@ type menuView struct {
 	uiHandler       *UI
 	parent          *menuView
 	currentViewName string
+	title           string
 	items           []MenuItem
 	bounds          Rect
 	moreWidth       int
@@ -22,7 +23,7 @@ type menuView struct {
 }
 
 func newMenuView(uiHandler *UI, title string, parent *menuView) *menuView {
-	h := &menuView{uiHandler: uiHandler, parent: parent}
+	h := &menuView{uiHandler: uiHandler, parent: parent, title: title}
 	h.View = uiHandler.NewView(h.viewData)
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
@@ -125,6 +126,10 @@ func (h *menuView) maxWidth(items []MenuItem) (maxWidth, maxKeyWidth, maxMoreWid
 		marginsWidth++
 	}
 	maxWidth = maxTextWidth + maxKeyWidth + maxMoreWidth + marginsWidth
+	titleWidth := len(h.title) + 3
+	if maxWidth < titleWidth {
+		maxWidth = titleWidth
+	}
 	return
 }
 
@@ -146,7 +151,7 @@ func (*menuView) maxMoreWidth(items []MenuItem) int {
 	maxMoreWidth := 0
 	for _, item := range items {
 		moreWidth := 0
-		if len(item.SubItems) > 0 {
+		if len(item.SubItems) > 0 || item.SubItemsFunc != nil && len(item.SubItemsFunc()) > 0 {
 			moreWidth = 1
 			if moreWidth > maxMoreWidth {
 				maxMoreWidth = moreWidth
@@ -179,7 +184,7 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 
 	more := ""
 	if h.moreWidth > 0 {
-		if len(item.SubItems) > 0 {
+		if len(item.SubItems) > 0 || item.SubItemsFunc != nil && len(item.SubItemsFunc()) > 0 {
 			more = " ►"
 		} else {
 			more = "  "
@@ -206,12 +211,11 @@ func (h *menuView) closeAll() {
 
 func (h *menuView) onEnter() {
 	vp := h.ViewPage()
-	h.closeAll()
-
 	item := h.items[vp.CurrentLine]
 	if item.Action == nil {
 		return
 	}
+	h.closeAll()
 	item.Action()
 }
 
@@ -221,19 +225,25 @@ func (h *menuView) onSubItem() {
 		return
 	}
 	item := h.items[vp.CurrentLine]
-	if len(item.SubItems) == 0 {
+
+	var subItems []MenuItem
+	if item.SubItemsFunc != nil {
+		subItems = item.SubItemsFunc()
+	} else {
+		subItems = item.SubItems
+	}
+	if len(subItems) == 0 {
 		return
 	}
-	items := item.SubItems
 	x := h.bounds.X + h.bounds.W
 	windowWidth, _ := h.uiHandler.WindowSize()
-	maxSubWidth, _, _, _ := h.maxWidth(items)
+	maxSubWidth, _, _, _ := h.maxWidth(subItems)
 	if x+maxSubWidth > windowWidth {
 		x = h.bounds.X - maxSubWidth
 	}
 
 	y := h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
-	mv := newMenuView(h.uiHandler, "", h)
-	mv.addItems(items)
+	mv := newMenuView(h.uiHandler, item.Title, h)
+	mv.addItems(subItems)
 	mv.show(x, y)
 }

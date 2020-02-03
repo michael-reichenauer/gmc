@@ -1,10 +1,12 @@
 package ui
 
 type MenuItem struct {
-	Text     string
-	Key      string
-	Action   func()
-	SubItems []MenuItem
+	Text         string
+	Title        string
+	Key          string
+	Action       func()
+	SubItems     []MenuItem
+	SubItemsFunc func() []MenuItem
 }
 
 type Menu struct {

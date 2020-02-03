@@ -50,7 +50,6 @@ func newRepoVM(model *viewmodel.Service, notifier notifier) *repoVM {
 
 func (h *repoVM) onLoad() {
 	h.viewModelService.Start()
-	h.viewModelService.TriggerRefreshModel()
 	go h.monitorModelRoutine()
 }
 
@@ -109,7 +108,7 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 	}, nil
 }
 
-func (h *repoVM) GetOpenBranchItems(index int) []ui.MenuItem {
+func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := h.viewModelService.GetCommitOpenBranches(index)
 	for _, b := range commitBranches {
@@ -138,7 +137,7 @@ func (h *repoVM) GetOpenBranchItems(index int) []ui.MenuItem {
 	return items
 }
 
-func (h *repoVM) GetCloseBranchItems(index int) []ui.MenuItem {
+func (h *repoVM) GetCloseBranchMenuItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := h.viewModelService.GetCommitCloseBranches(index)
 	for _, b := range commitBranches {
@@ -156,6 +155,7 @@ func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 		h.viewModelService.ShowBranch(branch.Name)
 	}}
 }
+
 func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 	return ui.MenuItem{Text: branch.DisplayName, Action: func() {
 		h.viewModelService.HideBranch(branch.Name)

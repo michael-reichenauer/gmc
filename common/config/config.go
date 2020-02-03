@@ -19,11 +19,13 @@ type Config struct {
 }
 
 type State struct {
-	InstalledVersion string
-	ReleasesEtag     string
-	StableRelease    Release
-	PreRelease       Release
-	Repos            []Repo
+	InstalledVersion    string
+	ReleasesEtag        string
+	StableRelease       Release
+	PreRelease          Release
+	Repos               []Repo
+	RecentFolders       []string
+	RecentParentFolders []string
 }
 
 type Repo struct {
@@ -50,10 +52,12 @@ type Asset struct {
 }
 
 type Service struct {
+	ProgramVersion string
+	FolderPath     string
 }
 
-func NewConfig() *Service {
-	return &Service{}
+func NewConfig(programVersion, folderPath string) *Service {
+	return &Service{ProgramVersion: programVersion, FolderPath: folderPath}
 }
 
 func (s *Service) GetState() State {

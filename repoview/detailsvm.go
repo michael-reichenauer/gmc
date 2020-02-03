@@ -22,7 +22,7 @@ type commitDetails struct {
 	lines []string
 }
 
-func newDetailsVM(model *viewmodel.Service) *detailsVM {
+func NewDetailsVM(model *viewmodel.Service) *detailsVM {
 	return &detailsVM{model: model}
 }
 

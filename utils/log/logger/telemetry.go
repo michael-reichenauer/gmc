@@ -113,12 +113,9 @@ func (h *telemetry) Close() {
 		// Not enabled
 		return
 	}
-	StdLogger.Infof("Close telemetry")
 	select {
-	case <-h.client.Channel().Close(3 * time.Second):
-		// Ten second timeout for retries.
-	case <-time.After(5 * time.Second):
-		// Absolute timeout.
+	case <-h.client.Channel().Close(300 * time.Millisecond):
+	case <-time.After(1 * time.Second):
 	}
 }
 
