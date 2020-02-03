@@ -23,12 +23,18 @@ func (h *MainWindow) GetOpenRepoMenu() *ui.Menu {
 	return menu
 }
 
+func (h *MainWindow) GetStartMenu() *ui.Menu {
+	menu := ui.NewMenu(h.uiHandler, "Open repo")
+	menu.AddItems(h.OpenRepoMenuItems2())
+	return menu
+}
+
 func (h *MainWindow) OpenRepo(folderPath string) {
 	log.Infof("Opening %q ...", folderPath)
 	workingFolder, err := gitlib.WorkingFolderRoot(folderPath)
 	if err != nil {
 		log.Warnf("No working folder %q", folderPath)
-		openMenu := h.GetOpenRepoMenu()
+		openMenu := h.GetStartMenu()
 		openMenu.Show(3, 1)
 		return
 	}
@@ -56,13 +62,23 @@ func (h *MainWindow) OpenRepoMenuItems() []ui.MenuItem {
 	}
 }
 
+func (h *MainWindow) OpenRepoMenuItems2() []ui.MenuItem {
+	items := h.getRecentMenuItems()
+	items = append(items, h.getOpenMenuItem())
+	return items
+}
+
 func (h *MainWindow) getRecentMenuItem() ui.MenuItem {
+	return ui.MenuItem{Text: "Recent Repos", Title: "Recent Repos", SubItems: h.getRecentMenuItems()}
+}
+
+func (h *MainWindow) getRecentMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	for _, f := range h.configService.GetState().RecentFolders {
 		path := f
 		items = append(items, ui.MenuItem{Text: path, Action: func() { h.OpenRepo(path) }})
 	}
-	return ui.MenuItem{Text: "Recent Repos", Title: "Recent Repos", SubItems: items}
+	return items
 }
 
 func (h *MainWindow) getOpenMenuItem() ui.MenuItem {
