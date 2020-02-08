@@ -1,5 +1,7 @@
 package ui
 
+var SeparatorMenuItem = MenuItem{isSeparator: true}
+
 type MenuItem struct {
 	Text         string
 	Title        string
@@ -7,6 +9,8 @@ type MenuItem struct {
 	Action       func()
 	SubItems     []MenuItem
 	SubItemsFunc func() []MenuItem
+	isSeparator  bool
+	ReuseBounds  bool
 }
 
 type Menu struct {
@@ -26,5 +30,5 @@ func (h *Menu) AddItems(items []MenuItem) {
 }
 
 func (h *Menu) Show(x, y int) {
-	h.menuView.show(x, y)
+	h.menuView.show(Rect{X: x, Y: y})
 }

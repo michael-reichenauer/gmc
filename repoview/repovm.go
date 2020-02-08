@@ -118,15 +118,18 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 	current, ok := h.viewModelService.CurrentBranch()
 	if ok {
 		item := h.toOpenBranchMenuItem(current)
-		item.Text = item.Text + " (current)"
 		items = append(items, item)
 	}
 
-	var resentSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetResentBranches() {
-		resentSubItems = append(resentSubItems, h.toOpenBranchMenuItem(b))
+	if len(items) > 0 {
+		items = append(items, ui.SeparatorMenuItem)
 	}
-	items = append(items, ui.MenuItem{Text: "Resent Branches", SubItems: resentSubItems})
+
+	var activeSubItems []ui.MenuItem
+	for _, b := range h.viewModelService.GetActiveBranches() {
+		activeSubItems = append(activeSubItems, h.toOpenBranchMenuItem(b))
+	}
+	items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
 
 	var allSubItems []ui.MenuItem
 	for _, b := range h.viewModelService.GetAllBranches() {
@@ -151,15 +154,23 @@ func (h *repoVM) CloseBranch(index int) {
 }
 
 func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: branch.DisplayName, Action: func() {
+	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
 		h.viewModelService.ShowBranch(branch.Name)
 	}}
 }
 
 func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: branch.DisplayName, Action: func() {
+	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
 		h.viewModelService.HideBranch(branch.Name)
 	}}
+}
+
+func (h *repoVM) branchItemText(branch viewmodel.Branch) string {
+	if branch.IsCurrent {
+		return "●" + branch.DisplayName
+	} else {
+		return " " + branch.DisplayName
+	}
 }
 
 func (h *repoVM) Refresh() {

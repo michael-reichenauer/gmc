@@ -220,7 +220,7 @@ func (s *Service) GetAllBranches() []Branch {
 	return branches
 }
 
-func (s *Service) GetResentBranches() []Branch {
+func (s *Service) GetActiveBranches() []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	var branches []Branch
