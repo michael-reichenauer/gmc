@@ -1,5 +1,7 @@
 package ui
 
+var SeparatorMenuItem = MenuItem{isSeparator: true}
+
 type MenuItem struct {
 	Text         string
 	Title        string
@@ -7,6 +9,7 @@ type MenuItem struct {
 	Action       func()
 	SubItems     []MenuItem
 	SubItemsFunc func() []MenuItem
+	isSeparator  bool
 }
 
 type Menu struct {

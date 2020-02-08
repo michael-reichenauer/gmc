@@ -11,6 +11,7 @@ type mainController interface {
 	ToggleDetails()
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
+	RecentReposMenuItem() ui.MenuItem
 }
 
 type RepoView struct {
@@ -83,7 +84,11 @@ func (h *RepoView) onRight() {
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
-	menu.Add(h.main.OpenRepoMenuItems()...)
+	if len(items) > 0 {
+		menu.Add(ui.SeparatorMenuItem)
+	}
+
+	menu.Add(h.main.RecentReposMenuItem())
 	menu.Add(h.main.MainMenuItem())
 	menu.Show(10, y)
 }

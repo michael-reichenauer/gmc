@@ -192,7 +192,11 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 	}
 
 	extraWidth := h.marginsWidth + h.keyWidth + h.moreWidth
-	return fmt.Sprintf("%s%s%s", utils.Text(item.Text, width-extraWidth), key, more)
+	text := utils.Text(item.Text, width-extraWidth)
+	if item.isSeparator {
+		text = strings.Repeat("─", width-extraWidth)
+	}
+	return fmt.Sprintf("%s%s%s", text, key, more)
 }
 
 func (h *menuView) onClose() {
