@@ -10,6 +10,7 @@ type MenuItem struct {
 	SubItems     []MenuItem
 	SubItemsFunc func() []MenuItem
 	isSeparator  bool
+	ReuseBounds  bool
 }
 
 type Menu struct {
@@ -29,5 +30,5 @@ func (h *Menu) AddItems(items []MenuItem) {
 }
 
 func (h *Menu) Show(x, y int) {
-	h.menuView.show(x, y)
+	h.menuView.show(Rect{X: x, Y: y})
 }

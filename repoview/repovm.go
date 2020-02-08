@@ -125,11 +125,11 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 		items = append(items, ui.SeparatorMenuItem)
 	}
 
-	var resentSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetResentBranches() {
-		resentSubItems = append(resentSubItems, h.toOpenBranchMenuItem(b))
+	var activeSubItems []ui.MenuItem
+	for _, b := range h.viewModelService.GetActiveBranches() {
+		activeSubItems = append(activeSubItems, h.toOpenBranchMenuItem(b))
 	}
-	items = append(items, ui.MenuItem{Text: "Resent Branches", SubItems: resentSubItems})
+	items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
 
 	var allSubItems []ui.MenuItem
 	for _, b := range h.viewModelService.GetAllBranches() {
@@ -167,7 +167,7 @@ func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 
 func (h *repoVM) branchItemText(branch viewmodel.Branch) string {
 	if branch.IsCurrent {
-		return ui.White("●") + branch.DisplayName
+		return "●" + branch.DisplayName
 	} else {
 		return " " + branch.DisplayName
 	}

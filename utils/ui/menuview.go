@@ -35,8 +35,8 @@ func (h *menuView) addItems(items []MenuItem) {
 	h.items = append(h.items, items...)
 }
 
-func (h *menuView) show(x, y int) {
-	h.bounds = h.getBounds(h.items, x, y)
+func (h *menuView) show(bounds Rect) {
+	h.bounds = h.getBounds(h.items, bounds)
 
 	h.currentViewName = h.uiHandler.CurrentView()
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
@@ -62,9 +62,20 @@ func (h *menuView) viewData(viewPort ViewPage) ViewData {
 	return ViewData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.items)}
 }
 
-func (h *menuView) getBounds(items []MenuItem, x, y int) Rect {
+func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
 	width, height := h.getSize(items)
-	x2, y2 := h.getPos(x, y, width, height)
+	if bounds.W != 0 {
+		if width < bounds.W {
+			width = bounds.W
+		}
+	}
+	if bounds.H != 0 {
+		if height < bounds.H {
+			height = bounds.H
+		}
+	}
+
+	x2, y2 := h.getPos(bounds.X, bounds.Y, width, height)
 	return Rect{X: x2, Y: y2, W: width, H: height}
 }
 
@@ -239,15 +250,19 @@ func (h *menuView) onSubItem() {
 	if len(subItems) == 0 {
 		return
 	}
-	x := h.bounds.X + h.bounds.W
+	var subBonds Rect
+	subBonds.X = h.bounds.X + h.bounds.W
 	windowWidth, _ := h.uiHandler.WindowSize()
 	maxSubWidth, _, _, _ := h.maxWidth(subItems)
-	if x+maxSubWidth > windowWidth {
-		x = h.bounds.X - maxSubWidth
+	if subBonds.X+maxSubWidth > windowWidth {
+		subBonds.X = h.bounds.X - maxSubWidth
 	}
 
-	y := h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
+	subBonds.Y = h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
 	mv := newMenuView(h.uiHandler, item.Title, h)
 	mv.addItems(subItems)
-	mv.show(x, y)
+	if item.ReuseBounds {
+		subBonds = h.bounds
+	}
+	mv.show(subBonds)
 }
