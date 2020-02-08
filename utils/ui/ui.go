@@ -44,10 +44,6 @@ func (h *UI) Run(runFunc func()) {
 	gui.Cursor = false
 	//g.Mouse = true
 
-	h.SetKeyBinding("", gocui.KeyCtrlC, gocui.ModNone, quit)
-	h.SetKeyBinding("", 'q', gocui.ModNone, quit)
-	h.SetKeyBinding("", gocui.KeyCtrlQ, gocui.ModNone, quit)
-
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		panic(log.Fatal(err))
 	}
