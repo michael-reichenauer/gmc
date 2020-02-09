@@ -9,16 +9,14 @@ import (
 
 type DiffView struct {
 	ui.View
-	vm             *detailsVM
+	vm             *diffVM
 	mainController mainController
-	currentIndex   int
 }
 
 func NewDiffView(uiHandler *ui.UI, model *viewmodel.Service, mainController mainController) *DiffView {
 	h := &DiffView{
-		vm:             NewDetailsVM(model),
+		vm:             NewDiffVM(model),
 		mainController: mainController,
-		currentIndex:   -1,
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -38,17 +36,14 @@ func (h *DiffView) onLoad() {
 }
 
 func (h *DiffView) viewData(viewPort ui.ViewPage) ui.ViewData {
-	if h.currentIndex == -1 {
-		return ui.ViewData{}
-	}
-	diff, err := h.vm.getCommitDiff(viewPort, h.currentIndex)
+	diff, err := h.vm.getCommitDiff(viewPort)
 	if err != nil {
 		return ui.ViewData{}
 	}
 	log.Infof("view data")
-	return ui.ViewData{Lines: diff.lines}
+	return ui.ViewData{Lines: diff.lines, FirstIndex: diff.firstIndex, Total: diff.total}
 }
 
 func (h *DiffView) SetIndex(index int) {
-	h.currentIndex = index
+	h.vm.SetIndex(index)
 }

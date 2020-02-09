@@ -78,6 +78,7 @@ func (h *MainWindow) ShowDiff(index int) {
 }
 
 func (h *MainWindow) HideDiff() {
+	h.diffView.SetIndex(-1)
 	h.diffView.SetBottom()
 	h.repoView.SetCurrentView()
 }

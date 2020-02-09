@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -24,10 +22,6 @@ type commitDetails struct {
 	lines []string
 }
 
-type commitDiff struct {
-	lines []string
-}
-
 func NewDetailsVM(model *viewmodel.Service) *detailsVM {
 	return &detailsVM{model: model}
 }
@@ -38,69 +32,6 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDeta
 		return commitDetails{}, err
 	}
 	return commitDetails{lines: h.toDetailsText(commit, viewPort.Width)}, nil
-}
-
-func (h detailsVM) getCommitDiff(viewPort ui.ViewPage, index int) (commitDiff, error) {
-	log.Infof("geet diff")
-	commit, err := h.model.GetCommitByIndex(index)
-	if err != nil {
-		log.Infof("commit not found")
-		return commitDiff{}, err
-	}
-	diff, err := h.model.GetCommitDiff(commit.ID)
-
-	var lines []string
-	lines = append(lines, utils.Text(fmt.Sprintf("Changed files: %d", len(diff)), viewPort.Width))
-	for _, df := range diff {
-		diffType := toDiffType(df)
-		lines = append(lines, utils.Text(fmt.Sprintf("  %s %s", diffType, df.PathAfter), viewPort.Width))
-	}
-	lines = append(lines, "")
-	lines = append(lines, "")
-	for i, df := range diff {
-		if i != 0 {
-			lines = append(lines, "")
-			lines = append(lines, "")
-		}
-		lines = append(lines, ui.MagentaDk(strings.Repeat("═", viewPort.Width)))
-
-		lines = append(lines, utils.Text(fmt.Sprintf("File:  %s", df.PathAfter), viewPort.Width))
-		if df.IsRenamed {
-			lines = append(lines, ui.Dark(utils.Text(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter), viewPort.Width)))
-		}
-		for j, ds := range df.SectionDiffs {
-			if j != 0 {
-				//lines = append(lines, "")
-				lines = append(lines, ui.Dark(strings.Repeat("─", viewPort.Width)))
-			}
-			linesText := fmt.Sprintf("Lines: %s", ds.ChangedIndexes)
-			lines = append(lines, ui.Dark(utils.Text(linesText, viewPort.Width)))
-			lines = append(lines, ui.Dark(strings.Repeat("─", viewPort.Width)))
-			for _, dl := range ds.LinesDiffs {
-				switch dl.DiffMode {
-				case gitlib.DiffSame:
-					lines = append(lines, utils.Text(fmt.Sprintf("  %s", dl.Line), viewPort.Width))
-				case gitlib.DiffAdded:
-					lines = append(lines, utils.Text(fmt.Sprintf("+ %s", dl.Line), viewPort.Width))
-				case gitlib.DiffRemoved:
-					lines = append(lines, utils.Text(fmt.Sprintf("- %s", dl.Line), viewPort.Width))
-				}
-			}
-		}
-	}
-	return commitDiff{lines: lines}, nil
-}
-
-func toDiffType(df gitlib.FileDiff) string {
-	switch df.DiffMode {
-	case gitlib.DiffModified:
-		return "Modified:"
-	case gitlib.DiffAdded:
-		return "Added:   "
-	case gitlib.DiffRemoved:
-		return "Removed: "
-	}
-	return ""
 }
 
 func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) []string {
