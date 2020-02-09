@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
+	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"hash/fnv"
@@ -636,4 +637,8 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
 		statusCommit.Branch.bottom = statusCommit
 		statusCommit.Branch.bottomId = statusCommit.ID
 	}
+}
+
+func (s *Service) GetCommitDiff(id string) ([]gitlib.FileDiff, error) {
+	return s.gitRepoService.GetCommitDiff(id)
 }

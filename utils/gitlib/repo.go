@@ -7,6 +7,7 @@ type Repo struct {
 	branches      *branchesHandler
 	fetchService  *fetchService
 	ignoreHandler *ignoreHandler
+	diffService   *diffService
 }
 
 func NewRepo(path string) *Repo {
@@ -18,6 +19,7 @@ func NewRepo(path string) *Repo {
 		branches:      newBranches(cmd),
 		fetchService:  newFetch(cmd),
 		ignoreHandler: newIgnoreHandler(path),
+		diffService:   newDiff(cmd),
 	}
 }
 func (h *Repo) RepoPath() string {
@@ -37,6 +39,9 @@ func (h *Repo) GetStatus() (Status, error) {
 
 func (h *Repo) Fetch() error {
 	return h.fetchService.fetch()
+}
+func (h *Repo) CommitDiff(id string) ([]FileDiff, error) {
+	return h.diffService.commitDiff(id)
 }
 
 func (h *Repo) IsIgnored(path string) bool {

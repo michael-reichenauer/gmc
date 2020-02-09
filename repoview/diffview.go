@@ -3,6 +3,7 @@ package repoview
 import (
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -17,6 +18,7 @@ func NewDiffView(uiHandler *ui.UI, model *viewmodel.Service, mainController main
 	h := &DiffView{
 		vm:             NewDetailsVM(model),
 		mainController: mainController,
+		currentIndex:   -1,
 	}
 	h.View = uiHandler.NewView(h.viewData)
 	h.Properties().OnLoad = h.onLoad
@@ -36,10 +38,17 @@ func (h *DiffView) onLoad() {
 }
 
 func (h *DiffView) viewData(viewPort ui.ViewPage) ui.ViewData {
-	//diff, err := h.vm.getCommitDetails(viewPort, h.currentIndex)
-	diff := []string{"diff ..."}
-	// if err != nil {
-	// 	return ui.ViewData{}
-	// }
-	return ui.ViewData{Lines: diff}
+	if h.currentIndex == -1 {
+		return ui.ViewData{}
+	}
+	diff, err := h.vm.getCommitDiff(viewPort, h.currentIndex)
+	if err != nil {
+		return ui.ViewData{}
+	}
+	log.Infof("view data")
+	return ui.ViewData{Lines: diff.lines}
+}
+
+func (h *DiffView) SetIndex(index int) {
+	h.currentIndex = index
 }

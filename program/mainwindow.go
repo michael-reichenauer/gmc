@@ -70,9 +70,11 @@ func (h *MainWindow) ToggleDetails() {
 	h.OnResizeWindow()
 }
 
-func (h *MainWindow) ShowDiff() {
+func (h *MainWindow) ShowDiff(index int) {
 	h.diffView.SetTop()
 	h.diffView.SetCurrentView()
+	h.diffView.SetIndex(index)
+	h.diffView.NotifyChanged()
 }
 
 func (h *MainWindow) HideDiff() {

@@ -12,7 +12,7 @@ type mainController interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
-	ShowDiff()
+	ShowDiff(index int)
 	HideDiff()
 }
 
@@ -72,7 +72,7 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
-	h.SetKey(gocui.KeyCtrlD, gocui.ModNone, h.main.ShowDiff)
+	h.SetKey(gocui.KeyCtrlD, gocui.ModNone, h.showDiff)
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
 	h.SetKey(gocui.KeyCtrlC, gocui.ModNone, h.uiHandler.Quit)
 	h.SetKey('q', gocui.ModNone, h.uiHandler.Quit)
@@ -142,4 +142,8 @@ func (h *RepoView) onBranchColor() {
 
 func (h *RepoView) SetEmptyMessage(message string) {
 	h.emptyMessage = message
+}
+
+func (h *RepoView) showDiff() {
+	h.main.ShowDiff(h.ViewPage().CurrentLine)
 }
