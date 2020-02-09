@@ -44,6 +44,7 @@ type View interface {
 	SetCurrentView()
 	SetTop()
 	SetBottom()
+	SetTitle(title string)
 	NotifyChanged()
 	SetKey(key interface{}, modifier gocui.Modifier, handler func())
 	ViewPage() ViewPage
@@ -188,6 +189,10 @@ func (h *view) SetBounds(bounds Rect) {
 	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
+}
+
+func (h *view) SetTitle(title string) {
+	h.guiView.Title = title
 }
 
 func (h *view) SetCurrentView() {

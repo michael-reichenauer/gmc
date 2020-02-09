@@ -14,6 +14,7 @@ type diffVM struct {
 	model        *viewmodel.Service
 	currentIndex int
 	filesDiff    []gitlib.FileDiff
+	page         int
 }
 
 type diffPage struct {
@@ -24,7 +25,7 @@ type diffPage struct {
 
 func NewDiffVM(model *viewmodel.Service) *diffVM {
 	log.Infof("new vm")
-	return &diffVM{model: model, currentIndex: -1}
+	return &diffVM{model: model, currentIndex: -1, page: 0}
 }
 
 func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
@@ -78,9 +79,13 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 				case gitlib.DiffSame:
 					lines = append(lines, utils.Text(fmt.Sprintf("  %s", dl.Line), viewPort.Width))
 				case gitlib.DiffAdded:
-					lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("+ %s", dl.Line), viewPort.Width)))
+					if h.page != -1 {
+						lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("+ %s", dl.Line), viewPort.Width)))
+					}
 				case gitlib.DiffRemoved:
-					lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("- %s", dl.Line), viewPort.Width)))
+					if h.page != 1 {
+						lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("- %s", dl.Line), viewPort.Width)))
+					}
 				}
 			}
 		}
@@ -108,6 +113,14 @@ func (h *diffVM) SetIndex(index int) {
 	h.currentIndex = index
 	h.filesDiff = nil
 	log.Infof("is %d", h.currentIndex)
+}
+
+func (h *diffVM) SetLeft(page int) {
+	h.page = page
+}
+
+func (h *diffVM) SetRight(page int) {
+	h.page = page
 }
 
 func toDiffType(df gitlib.FileDiff) string {
