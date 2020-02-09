@@ -24,6 +24,7 @@ type MainWindow struct {
 	model                *viewmodel.Service
 	repoView             *repoview.RepoView
 	detailsView          *repoview.DetailsView
+	diffView             *repoview.DiffView
 	repoViewModelService *viewmodel.Service
 	mode                 showMode
 }
@@ -35,6 +36,7 @@ func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow 
 	}
 	h.repoViewModelService = viewmodel.NewModel(configService)
 	h.detailsView = repoview.NewDetailsView(uiHandler, h.repoViewModelService)
+	h.diffView = repoview.NewDiffView(uiHandler, h.repoViewModelService, h)
 	h.repoView = repoview.NewRepoView(uiHandler, h.repoViewModelService, h.detailsView, h)
 	return h
 }
@@ -47,10 +49,13 @@ func (h *MainWindow) Show() {
 	}
 	r := ui.Rect{W: 1, H: 1}
 	h.repoView.Properties().HasFrame = false
+
 	h.detailsView.Show(r)
+	h.diffView.Show(r)
 	h.repoView.SetEmptyMessage(emptyMessage)
 	h.repoView.Show(r)
 	h.repoView.SetCurrentView()
+
 	h.OnResizeWindow()
 
 	h.OpenRepo(workingFolder)
@@ -65,11 +70,25 @@ func (h *MainWindow) ToggleDetails() {
 	h.OnResizeWindow()
 }
 
+func (h *MainWindow) ShowDiff(index int) {
+	h.diffView.SetTop()
+	h.diffView.SetCurrentView()
+	h.diffView.SetIndex(index)
+	h.diffView.NotifyChanged()
+}
+
+func (h *MainWindow) HideDiff() {
+	h.diffView.SetIndex(-1)
+	h.diffView.SetBottom()
+	h.repoView.SetCurrentView()
+}
+
 func (h *MainWindow) OnResizeWindow() {
 	width, height := h.uiHandler.WindowSize()
 	if h.mode == repo {
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
 		h.detailsView.SetBounds(ui.Rect{X: -1, Y: -1, W: 1, H: 1})
+		h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
 	} else if h.mode == details {
 		detailsHeight := 7
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
@@ -77,6 +96,7 @@ func (h *MainWindow) OnResizeWindow() {
 	}
 	h.repoView.NotifyChanged()
 	h.detailsView.NotifyChanged()
+	h.diffView.NotifyChanged()
 }
 
 func (h *MainWindow) getWorkingFolder() (string, error) {

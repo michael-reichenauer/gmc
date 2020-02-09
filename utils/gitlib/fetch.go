@@ -10,7 +10,7 @@ func newFetch(cmd GitCommander) *fetchService {
 }
 
 func (h *fetchService) fetch() error {
-	_, err := h.cmd.Git("fetch", "--prune", "--tags", "origin")
+	_, err := h.cmd.Git("fetch", "--prune", "--tags", "--prune-tags", "origin")
 	if err != nil {
 		return err
 	}

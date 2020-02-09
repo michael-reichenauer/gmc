@@ -57,18 +57,21 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 
 func (h *MainWindow) OpenRepoMenuItems() []ui.MenuItem {
 	return []ui.MenuItem{
-		h.getRecentMenuItem(),
+		h.RecentReposMenuItem(),
 		h.getOpenMenuItem(),
 	}
 }
 
 func (h *MainWindow) OpenRepoMenuItems2() []ui.MenuItem {
 	items := h.getRecentMenuItems()
+	if len(items) > 0 {
+		items = append(items, ui.SeparatorMenuItem)
+	}
 	items = append(items, h.getOpenMenuItem())
 	return items
 }
 
-func (h *MainWindow) getRecentMenuItem() ui.MenuItem {
+func (h *MainWindow) RecentReposMenuItem() ui.MenuItem {
 	return ui.MenuItem{Text: "Recent Repos", Title: "Recent Repos", SubItems: h.getRecentMenuItems()}
 }
 
@@ -84,9 +87,6 @@ func (h *MainWindow) getRecentMenuItems() []ui.MenuItem {
 func (h *MainWindow) getOpenMenuItem() ui.MenuItem {
 	paths := h.configService.GetState().RecentParentFolders
 	paths = append(paths, utils.GetVolumes()...)
-	if len(paths) == 0 {
-		return ui.MenuItem{Text: "Open"}
-	}
 	if len(paths) == 1 {
 		return ui.MenuItem{Text: "Open", Title: paths[0], SubItemsFunc: func() []ui.MenuItem {
 			return h.getFolderItems(paths[0], func(folder string) { h.OpenRepo(folder) })
@@ -124,23 +124,12 @@ func (h *MainWindow) getFolderItems(folder string, action func(f string)) []ui.M
 			Action: func() { action(path) },
 			SubItemsFunc: func() []ui.MenuItem {
 				return h.getFolderItems(path, action)
-			}})
+			},
+			ReuseBounds: true,
+		})
 	}
 	sort.SliceStable(items, func(l, r int) bool {
 		return -1 == strings.Compare(strings.ToLower(items[l].Text), strings.ToLower(items[r].Text))
 	})
-
-	// parentFolder := filepath.Dir(folder)
-	// if parentFolder != folder {
-	// 	// Have not reached root folder, lets prepend a ".." item to go upp
-	// 	items = append([]ui.MenuItem{ui.MenuItem{
-	// 		Text:  "..",
-	// 		Title: parentFolder,
-	// 		SubItemsFunc: func() []ui.MenuItem {
-	// 			return h.getFolderItems(parentFolder, action)
-	// 		}}},
-	// 		items...)
-	// }
-
 	return items
 }

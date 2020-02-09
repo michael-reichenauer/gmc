@@ -41,6 +41,7 @@ type Branch struct {
 	LocalName     string
 	IsRemote      bool
 	IsGitBranch   bool
+	IsCurrent     bool
 	TipID         string
 }
 
@@ -95,5 +96,6 @@ func toBranch(b *branch) Branch {
 		IsRemote:      b.isRemote,
 		IsGitBranch:   b.isGitBranch,
 		TipID:         b.tipId,
+		IsCurrent:     b.isCurrent,
 	}
 }

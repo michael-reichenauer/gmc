@@ -166,6 +166,7 @@ func (h *gitCmd) fileName(cmd command) string {
 }
 func (h *gitCmd) runGitCommand(cmd command) command {
 	log.Infof("Cmd: %s %s (%s) ...", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
+	//fmt.Printf("Cmd: %s %s (%s) ...\n", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
 	// Get the git cmd output
 	t := time.Now()
 	c := exec.Command(cmd.Name, cmd.Args...)

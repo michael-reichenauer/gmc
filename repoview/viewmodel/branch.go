@@ -15,6 +15,7 @@ type branch struct {
 	isGitBranch      bool
 	isMultiBranch    bool
 	isRemote         bool
+	isCurrent        bool
 }
 
 func (b *branch) String() string {
