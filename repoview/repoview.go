@@ -12,6 +12,8 @@ type mainController interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
+	ShowDiff(index int)
+	HideDiff()
 }
 
 type RepoView struct {
@@ -70,7 +72,11 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onRight)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.onTrace)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.onBranchColor)
+	h.SetKey(gocui.KeyCtrlD, gocui.ModNone, h.showDiff)
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
+	h.SetKey(gocui.KeyCtrlC, gocui.ModNone, h.uiHandler.Quit)
+	h.SetKey('q', gocui.ModNone, h.uiHandler.Quit)
+	h.SetKey(gocui.KeyCtrlQ, gocui.ModNone, h.uiHandler.Quit)
 	h.NotifyChanged()
 }
 
@@ -84,10 +90,11 @@ func (h *RepoView) onRight() {
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
-	if len(items) > 0 {
-		menu.Add(ui.SeparatorMenuItem)
-	}
 
+	menu.Add(ui.SeparatorMenuItem)
+	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
+		h.main.ShowDiff(h.ViewPage().CurrentLine)
+	}})
 	menu.Add(h.main.RecentReposMenuItem())
 	menu.Add(h.main.MainMenuItem())
 	menu.Show(10, y)
@@ -136,4 +143,8 @@ func (h *RepoView) onBranchColor() {
 
 func (h *RepoView) SetEmptyMessage(message string) {
 	h.emptyMessage = message
+}
+
+func (h *RepoView) showDiff() {
+	h.main.ShowDiff(h.ViewPage().CurrentLine)
 }
