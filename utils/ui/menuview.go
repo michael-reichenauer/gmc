@@ -189,7 +189,7 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 		if item.Key != "" {
 			key = "   " + utils.Text(item.Key, h.keyWidth)
 		} else {
-			key = strings.Repeat(" ", h.keyWidth+1)
+			key = "  " + strings.Repeat(" ", h.keyWidth+1)
 		}
 	}
 

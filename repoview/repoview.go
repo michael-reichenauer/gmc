@@ -90,10 +90,11 @@ func (h *RepoView) onRight() {
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show Branch")
 	menu.AddItems(items)
-	if len(items) > 0 {
-		menu.Add(ui.SeparatorMenuItem)
-	}
 
+	menu.Add(ui.SeparatorMenuItem)
+	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
+		h.main.ShowDiff(h.ViewPage().CurrentLine)
+	}})
 	menu.Add(h.main.RecentReposMenuItem())
 	menu.Add(h.main.MainMenuItem())
 	menu.Show(10, y)
