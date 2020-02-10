@@ -62,7 +62,7 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 		}
 		lines = append(lines, ui.MagentaDk(strings.Repeat("═", viewPort.Width)))
 
-		lines = append(lines, ui.Cyan(utils.Text(fmt.Sprintf("File:  %s", df.PathAfter), viewPort.Width)))
+		lines = append(lines, ui.Cyan(utils.Text(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter), viewPort.Width)))
 		if df.IsRenamed {
 			lines = append(lines, ui.Dark(utils.Text(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter), viewPort.Width)))
 		}
@@ -80,11 +80,11 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 					lines = append(lines, utils.Text(fmt.Sprintf("  %s", dl.Line), viewPort.Width))
 				case gitlib.DiffAdded:
 					if h.page != -1 {
-						lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("+ %s", dl.Line), viewPort.Width)))
+						lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("> %s", dl.Line), viewPort.Width)))
 					}
 				case gitlib.DiffRemoved:
 					if h.page != 1 {
-						lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("- %s", dl.Line), viewPort.Width)))
+						lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("< %s", dl.Line), viewPort.Width)))
 					}
 				}
 			}
@@ -109,6 +109,7 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 }
 
 func (h *diffVM) SetIndex(index int) {
+	h.page = 0
 	log.Infof("was %d", h.currentIndex)
 	h.currentIndex = index
 	h.filesDiff = nil

@@ -1,5 +1,10 @@
 package gitlib
 
+const (
+	UncommittedID  = "0000000000000000000000000000000000000000"
+	UncommittedSID = "000000"
+)
+
 type Repo struct {
 	cmd           GitCommander
 	status        *statusHandler
@@ -12,14 +17,15 @@ type Repo struct {
 
 func NewRepo(path string) *Repo {
 	cmd := newGitCmd(path)
+	status := newStatus(cmd)
 	return &Repo{
 		cmd:           cmd,
-		status:        newStatus(cmd),
+		status:        status,
 		logHandler:    newLog(cmd),
 		branches:      newBranches(cmd),
 		fetchService:  newFetch(cmd),
 		ignoreHandler: newIgnoreHandler(path),
-		diffService:   newDiff(cmd),
+		diffService:   newDiff(cmd, status),
 	}
 }
 func (h *Repo) RepoPath() string {
