@@ -47,6 +47,7 @@ func (h *DiffView) viewData(viewPort ui.ViewPage) ui.ViewData {
 
 func (h *DiffView) SetIndex(index int) {
 	h.page = 0
+	h.SetTitle(" Diff Unified ")
 	h.vm.SetIndex(index)
 }
 

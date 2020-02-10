@@ -1,6 +1,10 @@
 package gitlib
 
 import (
+	"fmt"
+	"github.com/michael-reichenauer/gmc/utils"
+	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -33,17 +37,19 @@ type LinesDiff struct {
 
 // fetches from remote origin
 type diffService struct {
-	cmd GitCommander
+	cmd           GitCommander
+	statusHandler *statusHandler
 }
 
-func newDiff(cmd GitCommander) *diffService {
-	return &diffService{cmd: cmd}
+func newDiff(cmd GitCommander, statusHandler *statusHandler) *diffService {
+	return &diffService{cmd: cmd, statusHandler: statusHandler}
 }
 
 func (s *diffService) commitDiff(id string) ([]FileDiff, error) {
-	if strings.HasPrefix(id, "000000") {
-		return nil, nil
+	if id == UncommittedID {
+		return s.unCommittedDiff()
 	}
+
 	diffText, err := s.cmd.Git("show",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
@@ -52,6 +58,34 @@ func (s *diffService) commitDiff(id string) ([]FileDiff, error) {
 		return nil, err
 	}
 	return s.parse(diffText)
+}
+
+func (s *diffService) unCommittedDiff() ([]FileDiff, error) {
+	diffText, err := s.cmd.Git("diff",
+		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
+		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
+		"--find-renames", "--unified=6")
+	if err != nil {
+		return nil, err
+	}
+
+	fileDiffs, err := s.parse(diffText)
+	if err != nil {
+		return nil, err
+	}
+
+	status, err := s.statusHandler.getStatus()
+	if err != nil {
+		return nil, err
+	}
+	fileDiffs, err = s.addAddedFiles(fileDiffs, status, s.cmd.RepoPath())
+	if err != nil {
+		return nil, err
+	}
+	sort.SliceStable(fileDiffs, func(i, j int) bool {
+		return -1 == strings.Compare(strings.ToLower(fileDiffs[i].PathAfter), strings.ToLower(fileDiffs[j].PathAfter))
+	})
+	return fileDiffs, err
 }
 
 func (s *diffService) parse(text string) ([]FileDiff, error) {
@@ -86,6 +120,32 @@ func (s *diffService) parse(text string) ([]FileDiff, error) {
 		}
 	}
 	return fileDiffs, nil
+}
+
+func (s *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath string) ([]FileDiff, error) {
+	for _, name := range status.AddedFiles {
+		filePath := filepath.Join(dirPath, name)
+		file, err := utils.FileRead(filePath)
+		if err != nil {
+			return nil, err
+		}
+		lines := strings.Split(string(file), "\n")
+		var lds []LinesDiff
+		for _, line := range lines {
+			line = strings.TrimRight(line, "\r")
+			line = strings.ReplaceAll(line, "\t", "   ")
+			lds = append(lds, LinesDiff{DiffMode: DiffAdded, Line: line})
+		}
+		sd := SectionDiff{ChangedIndexes: fmt.Sprintf("-0,0 +1,%d", len(lines)), LinesDiffs: lds}
+		diffs = append(diffs, FileDiff{
+			PathBefore:   name,
+			PathAfter:    name,
+			IsRenamed:    false,
+			DiffMode:     DiffAdded,
+			SectionDiffs: []SectionDiff{sd},
+		})
+	}
+	return diffs, nil
 }
 
 func tryParseSectionHead(line string) (SectionDiff, bool) {

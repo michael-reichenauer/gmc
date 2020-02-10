@@ -13,6 +13,7 @@ type Status struct {
 	Conflicted   int
 	IsMerging    bool
 	MergeMessage string
+	AddedFiles   []string
 }
 
 type statusHandler struct {
@@ -58,6 +59,7 @@ func (h *statusHandler) parseStatus(statusText string) (Status, error) {
 			status.Conflicted++
 		} else if strings.HasPrefix(line, "?? ") || strings.HasPrefix(line, " A ") {
 			status.Added++
+			status.AddedFiles = append(status.AddedFiles, line[3:])
 		} else if strings.HasPrefix(line, " D ") || strings.HasPrefix(line, "D") {
 			status.Deleted++
 		} else {
