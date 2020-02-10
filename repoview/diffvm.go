@@ -80,11 +80,11 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 					lines = append(lines, utils.Text(fmt.Sprintf("  %s", dl.Line), viewPort.Width))
 				case gitlib.DiffAdded:
 					if h.page != -1 {
-						lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("+ %s", dl.Line), viewPort.Width)))
+						lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("> %s", dl.Line), viewPort.Width)))
 					}
 				case gitlib.DiffRemoved:
 					if h.page != 1 {
-						lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("- %s", dl.Line), viewPort.Width)))
+						lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("< %s", dl.Line), viewPort.Width)))
 					}
 				}
 			}
