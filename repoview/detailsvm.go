@@ -3,7 +3,6 @@ package repoview
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -37,17 +36,16 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDeta
 func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) []string {
 	var lines []string
 	lines = append(lines, h.toViewLine(width, c.Branch))
-	width = width - 14
 	id := c.ID
 	if id == viewmodel.StatusID {
 		id = " "
 	}
-	lines = append(lines, toHeader("Id:")+ui.Dark(utils.Text(id, width)))
-	lines = append(lines, toHeader("Branch:")+h.toBranchText(c, width))
-	lines = append(lines, toHeader("Files:")+ui.Dark(utils.Text("... >", width)))
-	lines = append(lines, toHeader("Parents:")+ui.Dark(utils.Text(toSids(c.ParentIDs), width)))
-	lines = append(lines, toHeader("Children:")+ui.Dark(utils.Text(toSids(c.ChildIDs), width)))
-	lines = append(lines, toHeader("Branch tips:")+ui.Dark(utils.Text(toBranchTips(c.BranchTips), width)))
+	lines = append(lines, toHeader("Id:")+ui.Dark(id))
+	lines = append(lines, toHeader("Branch:")+h.toBranchText(c))
+	lines = append(lines, toHeader("Files:")+ui.Dark("... >"))
+	lines = append(lines, toHeader("Parents:")+ui.Dark(toSids(c.ParentIDs)))
+	lines = append(lines, toHeader("Children:")+ui.Dark(toSids(c.ChildIDs)))
+	lines = append(lines, toHeader("Branch tips:")+ui.Dark(toBranchTips(c.BranchTips)))
 
 	color := ui.CDark
 	if c.ID == viewmodel.StatusID {
@@ -59,7 +57,6 @@ func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) []string {
 		if i == 0 && len(messageLines) > 1 {
 			line = line + " >"
 		}
-		line = utils.Text(line, width)
 		if i == 0 {
 			lines = append(lines, toHeader("Message:")+ui.ColorText(color, line))
 		} else {
@@ -100,7 +97,7 @@ func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-13s", text))
 }
 
-func (h detailsVM) toBranchText(c viewmodel.Commit, width int) string {
+func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 	bColor := h.model.BranchColor(c.Branch.DisplayName)
 	typeText := ""
 
@@ -131,6 +128,5 @@ func (h detailsVM) toBranchText(c viewmodel.Commit, width int) string {
 	} else if c.IsLocalOnly {
 		typeText = typeText + ", commit not yet pushed"
 	}
-	return ui.ColorText(bColor, c.Branch.DisplayName) +
-		ui.Dark(utils.Text(typeText, width-len(c.Branch.DisplayName)+11))
+	return ui.ColorText(bColor, c.Branch.DisplayName) + ui.Dark(typeText)
 }
