@@ -76,7 +76,7 @@ func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
 }
 
 func (h *view) Show(bounds Rect) {
-	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H); err != nil {
+	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
 			panic(log.Fatalf(err, "%s %d,%d,%d,%d", h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H))
 		}

@@ -43,7 +43,7 @@ func (h *menuView) show(bounds Rect) {
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onSubItem)
-	h.Show(Rect{X: h.bounds.X, Y: h.bounds.Y, W: h.bounds.X + h.bounds.W, H: h.bounds.Y + h.bounds.H})
+	h.Show(Rect{X: h.bounds.X, Y: h.bounds.Y, W: h.bounds.W, H: h.bounds.H})
 	h.SetCurrentView()
 	h.NotifyChanged()
 }

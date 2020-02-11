@@ -55,7 +55,7 @@ func (h *MessageBox) getBounds(lines []string) (Rect, error) {
 	x := (windowWidth - width) / 2
 	y := (windowHeight - height) / 2
 
-	return Rect{x, y, x + width, y + height}, nil
+	return Rect{x, y, width, height}, nil
 }
 
 func (h *MessageBox) maxTextWidth(lines []string) int {
