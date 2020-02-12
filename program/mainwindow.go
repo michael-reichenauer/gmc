@@ -64,8 +64,10 @@ func (h *MainWindow) Show() {
 func (h *MainWindow) ToggleDetails() {
 	if h.mode == repo {
 		h.mode = details
+		h.detailsView.SetTop()
 	} else {
 		h.mode = repo
+		h.repoView.SetTop()
 	}
 	h.OnResizeWindow()
 }
