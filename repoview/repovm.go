@@ -12,7 +12,7 @@ import (
 
 const (
 	RFC3339Small = "2006-01-02 15:04"
-	markerWidth  = 6
+	markerWidth  = 5
 )
 
 type repoPage struct {
@@ -69,7 +69,7 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 	if err != nil {
 		return repoPage{}, err
 	}
-	messageLength, sidLength, authorLength, timeLength := columnWidths(rvp.GraphWidth+markerWidth, viewPort.Width)
+	messageLength, _, authorLength, timeLength := columnWidths(rvp.GraphWidth+markerWidth, viewPort.Width)
 
 	commits := rvp.Commits
 
@@ -89,8 +89,8 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 		writeAheadBehindMarker(&sb, c)
 		h.writeSubject(&sb, c, currentLineCommit, messageLength)
 		sb.WriteString(" ")
-		writeSid(&sb, c, sidLength)
-		sb.WriteString(" ")
+		//	writeSid(&sb, c, sidLength)
+		//	sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)
@@ -246,7 +246,7 @@ func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 
 func columnWidths(graphWidth, viewWidth int) (msgLength, sidLength, authorLength, timeLength int) {
 	width := viewWidth - graphWidth
-	sidLength = 6
+	sidLength = 0
 	authorLength = 15
 	timeLength = 12
 	if width < 90 {
