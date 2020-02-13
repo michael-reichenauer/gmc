@@ -131,6 +131,14 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 	}
 	items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
 
+	var allGitSubItems []ui.MenuItem
+	for _, b := range h.viewModelService.GetAllBranches() {
+		if b.IsGitBranch {
+			allGitSubItems = append(allGitSubItems, h.toOpenBranchMenuItem(b))
+		}
+	}
+	items = append(items, ui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
+
 	var allSubItems []ui.MenuItem
 	for _, b := range h.viewModelService.GetAllBranches() {
 		allSubItems = append(allSubItems, h.toOpenBranchMenuItem(b))
