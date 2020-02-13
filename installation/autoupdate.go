@@ -17,11 +17,12 @@ import (
 )
 
 const (
-	releasesUri    = "https://api.github.com/repos/michael-reichenauer/gmc/releases"
-	binNameWindows = "gmc.exe"
-	binNameLinux   = "gmc_linux"
-	binNameMac     = "gmc_mac"
-	tmpSuffix      = ".tmp"
+	checkUpdateInterval = 1 * time.Hour
+	releasesUri         = "https://api.github.com/repos/michael-reichenauer/gmc/releases"
+	binNameWindows      = "gmc.exe"
+	binNameLinux        = "gmc_linux"
+	binNameMac          = "gmc_mac"
+	tmpSuffix           = ".tmp"
 )
 
 // Type used when parsing latest version information json
@@ -59,7 +60,7 @@ func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
 	log.Event("autoupdate-start-periodic-check")
 	for {
 		h.UpdateIfAvailable()
-		time.Sleep(5 * time.Minute)
+		time.Sleep(checkUpdateInterval)
 	}
 }
 

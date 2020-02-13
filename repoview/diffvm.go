@@ -62,9 +62,9 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 		}
 		lines = append(lines, ui.MagentaDk(strings.Repeat("═", viewPort.Width)))
 
-		lines = append(lines, ui.Cyan(utils.Text(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter), viewPort.Width)))
+		lines = append(lines, ui.Cyan(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter)))
 		if df.IsRenamed {
-			lines = append(lines, ui.Dark(utils.Text(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter), viewPort.Width)))
+			lines = append(lines, ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter)))
 		}
 		for j, ds := range df.SectionDiffs {
 			if j != 0 {
@@ -72,19 +72,19 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 				lines = append(lines, ui.Dark(strings.Repeat("─", viewPort.Width)))
 			}
 			linesText := fmt.Sprintf("Lines: %s", ds.ChangedIndexes)
-			lines = append(lines, ui.Dark(utils.Text(linesText, viewPort.Width)))
+			lines = append(lines, ui.Dark(linesText))
 			lines = append(lines, ui.Dark(strings.Repeat("─", viewPort.Width)))
 			for _, dl := range ds.LinesDiffs {
 				switch dl.DiffMode {
 				case gitlib.DiffSame:
-					lines = append(lines, utils.Text(fmt.Sprintf("  %s", dl.Line), viewPort.Width))
+					lines = append(lines, fmt.Sprintf("  %s", dl.Line))
 				case gitlib.DiffAdded:
 					if h.page != -1 {
-						lines = append(lines, ui.Green(utils.Text(fmt.Sprintf("> %s", dl.Line), viewPort.Width)))
+						lines = append(lines, ui.Green(fmt.Sprintf("> %s", dl.Line)))
 					}
 				case gitlib.DiffRemoved:
 					if h.page != 1 {
-						lines = append(lines, ui.Red(utils.Text(fmt.Sprintf("< %s", dl.Line), viewPort.Width)))
+						lines = append(lines, ui.Red(fmt.Sprintf("< %s", dl.Line)))
 					}
 				}
 			}

@@ -95,6 +95,8 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
+		h.SetKey(gocui.KeyHome, gocui.ModNone, h.PageHome)
+		h.SetKey(gocui.KeyEnd, gocui.ModNone, h.PageEnd)
 		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
 		log.Eventf("ui-view-show", h.Properties().Name)
@@ -233,7 +235,7 @@ func (h *view) SetTop() {
 	if _, err := h.gui.SetViewOnTop(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.gui.SetViewOnBottom(h.scrlName()); err != nil {
+	if _, err := h.gui.SetViewOnTop(h.scrlName()); err != nil {
 		panic(log.Fatal(err))
 	}
 }
@@ -310,6 +312,14 @@ func (h *view) PageDown() {
 func (h *view) PageUpp() {
 	_, y := h.Size()
 	h.scroll(-y + 1)
+}
+
+func (h *view) PageHome() {
+	h.scroll(-h.currentIndex)
+}
+
+func (h *view) PageEnd() {
+	h.scroll(h.total)
 }
 
 func (h *view) move(move int) {
