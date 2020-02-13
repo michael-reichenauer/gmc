@@ -233,7 +233,7 @@ func (h *view) SetTop() {
 	if _, err := h.gui.SetViewOnTop(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.gui.SetViewOnBottom(h.scrlName()); err != nil {
+	if _, err := h.gui.SetViewOnTop(h.scrlName()); err != nil {
 		panic(log.Fatal(err))
 	}
 }
