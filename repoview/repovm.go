@@ -166,7 +166,7 @@ func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := h.viewModelService.GetShownBranches()
 	for _, b := range commitBranches {
-		items = append(items, h.toCloseBranchMenuItem(b))
+		items = append(items, h.toSwitchBranchMenuItem(b))
 	}
 	return items
 }
