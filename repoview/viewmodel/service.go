@@ -312,7 +312,7 @@ func (s *Service) GetCommitOpenBranches(index int) []Branch {
 	return bs
 }
 
-func (s *Service) GetCommitCloseBranches() []Branch {
+func (s *Service) GetShownBranches() []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
@@ -322,12 +322,19 @@ func (s *Service) GetCommitCloseBranches() []Branch {
 			// Do not support closing master branch
 			continue
 		}
+		if b.isRemote && nil != funk.Find(s.currentViewModel.Branches, func(bsb *branch) bool {
+			return b.name == bsb.remoteName
+		}) {
+			// Skip remote if local exist
+			continue
+		}
 		if nil != funk.Find(bs, func(bsb Branch) bool {
 			return b.displayName == bsb.DisplayName
 		}) {
 			// Skip duplicates
 			continue
 		}
+
 		bs = append(bs, toBranch(b))
 	}
 	return bs
@@ -587,4 +594,8 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
 
 func (s *Service) GetCommitDiff(id string) ([]git.FileDiff, error) {
 	return s.gitRepoService.GetCommitDiff(id)
+}
+
+func (s *Service) SwitchToBranch(name string) {
+	s.gitRepoService.SwitchToBranch(name)
 }

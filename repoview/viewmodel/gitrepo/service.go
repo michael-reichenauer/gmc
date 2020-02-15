@@ -198,3 +198,7 @@ func (s *Service) fetchRoutine(quit chan struct{}) {
 func (s *Service) GetCommitDiff(id string) ([]git.FileDiff, error) {
 	return s.gitLib().CommitDiff(id)
 }
+
+func (s *Service) SwitchToBranch(name string) {
+	s.gitLib().Checkout(name)
+}

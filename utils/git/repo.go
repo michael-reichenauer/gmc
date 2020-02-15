@@ -53,3 +53,7 @@ func (h *Git) CommitDiff(id string) ([]FileDiff, error) {
 func (h *Git) IsIgnored(path string) bool {
 	return h.ignoreHandler.isIgnored(path)
 }
+
+func (h *Git) Checkout(name string) {
+	h.branches.checkout(name)
+}

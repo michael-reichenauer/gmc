@@ -153,9 +153,18 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 	return items
 }
 
-func (h *repoVM) GetCloseBranchMenuItems(index int) []ui.MenuItem {
+func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetCommitCloseBranches()
+	commitBranches := h.viewModelService.GetShownBranches()
+	for _, b := range commitBranches {
+		items = append(items, h.toCloseBranchMenuItem(b))
+	}
+	return items
+}
+
+func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
+	var items []ui.MenuItem
+	commitBranches := h.viewModelService.GetShownBranches()
 	for _, b := range commitBranches {
 		items = append(items, h.toCloseBranchMenuItem(b))
 	}
@@ -175,6 +184,12 @@ func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
 		h.viewModelService.HideBranch(branch.Name)
+	}}
+}
+
+func (h *repoVM) toSwitchBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
+	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
+		h.viewModelService.SwitchToBranch(branch.Name)
 	}}
 }
 
