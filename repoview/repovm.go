@@ -6,6 +6,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/thoas/go-funk"
 	"path/filepath"
 	"strings"
 )
@@ -117,8 +118,12 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 
 	current, ok := h.viewModelService.CurrentBranch()
 	if ok {
-		item := h.toOpenBranchMenuItem(current)
-		items = append(items, item)
+		if nil == funk.Find(items, func(i ui.MenuItem) bool {
+			return current.Name == i.Text
+		}) {
+			item := h.toOpenBranchMenuItem(current)
+			items = append(items, item)
+		}
 	}
 
 	if len(items) > 0 {
@@ -150,7 +155,7 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 
 func (h *repoVM) GetCloseBranchMenuItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetCommitCloseBranches(index)
+	commitBranches := h.viewModelService.GetCommitCloseBranches()
 	for _, b := range commitBranches {
 		items = append(items, h.toCloseBranchMenuItem(b))
 	}
