@@ -7,6 +7,24 @@ import (
 	"strings"
 )
 
+type Branch struct {
+	Name             string
+	DisplayName      string
+	TipID            string
+	IsCurrent        bool
+	IsRemote         bool
+	RemoteName       string
+	IsDetached       bool
+	AheadCount       int
+	BehindCount      int
+	IsRemoteMissing  bool
+	TipCommitMessage string
+}
+
+func (b *Branch) String() string {
+	return b.Name
+}
+
 const (
 	branchesRegexpText = `(?im)^(\*)?\s+(\(HEAD detached at (\S+)\)|(\S+))\s+(\S+)(\s+)?(\[(\S+)(:\s)?(ahead\s(\d+))?(,\s)?(behind\s(\d+))?(gone)?\])?(\s+)?(.+)?`
 	remotePrefix       = "remotes/"
@@ -23,15 +41,23 @@ func newBranches(cmd GitCommander) *branchesHandler {
 	return &branchesHandler{cmd: cmd}
 }
 
+func (h *branchesHandler) checkout(name string) error {
+	_, err := h.cmd.Git("checkout", name)
+	if err != nil {
+		return fmt.Errorf("failed to get checkout %q, %v", name, err)
+	}
+	return nil
+}
+
 func (h *branchesHandler) getBranches() ([]Branch, error) {
 	branchesText, err := h.cmd.Git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
 	}
-	return h.parseCmdOutput(branchesText)
+	return h.parseBranchesOutput(branchesText)
 }
 
-func (h *branchesHandler) parseCmdOutput(branchesText string) ([]Branch, error) {
+func (h *branchesHandler) parseBranchesOutput(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")
 	for _, line := range lines {

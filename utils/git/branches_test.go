@@ -20,7 +20,7 @@ func Test(t *testing.T) {
 }
 
 func TestParseBranchesText(t *testing.T) {
-	branches, err := newBranches(newGitCmd(utils.CurrentDir())).parseCmdOutput(branchesText)
+	branches, err := newBranches(newGitCmd(utils.CurrentDir())).parseBranchesOutput(branchesText)
 	if err != nil {
 		t.Fatal(err)
 	}
