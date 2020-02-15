@@ -17,7 +17,7 @@ type Service struct {
 	branches *branches
 
 	lock          sync.Mutex
-	gitLibRepo    *git.Repo
+	gitLibRepo    *git.Git
 	folderMonitor *monitor
 	quit          chan struct{}
 }
@@ -34,7 +34,7 @@ func NewService() *Service {
 		ErrorEvents:  make(chan error),
 	}
 }
-func (s *Service) gitLib() *git.Repo {
+func (s *Service) gitLib() *git.Git {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	return s.gitLibRepo
@@ -61,7 +61,7 @@ func (s *Service) Open(workingFolder string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.quit = make(chan struct{})
-	s.gitLibRepo = git.NewRepo(workingFolder)
+	s.gitLibRepo = git.NewGit(workingFolder)
 	s.folderMonitor = newMonitor()
 
 	s.folderMonitor.Start(s.gitLibRepo.RepoPath(), s.gitLibRepo.IsIgnored)
