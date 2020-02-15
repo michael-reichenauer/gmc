@@ -370,7 +370,7 @@ func (s *Service) HideBranch(name string) {
 	}
 	if branch.remoteName != "" {
 		remoteBranch := s.currentViewModel.BranchByName(name)
-		if remoteBranch == nil {
+		if remoteBranch != nil {
 			// The branch to hide has a remote branch, hiding that and the local branch
 			// will be hidden as well
 			branch = remoteBranch
