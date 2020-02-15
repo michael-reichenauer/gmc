@@ -1,4 +1,4 @@
-package gitlib
+package git
 
 const (
 	UncommittedID  = "0000000000000000000000000000000000000000"

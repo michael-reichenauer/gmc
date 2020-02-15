@@ -1,4 +1,4 @@
-package gitlib
+package git
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"

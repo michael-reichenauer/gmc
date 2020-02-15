@@ -3,7 +3,7 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
@@ -191,13 +191,13 @@ func (h *repoVM) Refresh() {
 }
 
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
-	gitlib.EnableTracing("")
+	git.EnableTracing("")
 	traceBytes := utils.MustJsonMarshal(trace{
 		RepoPath:    h.viewModelService.RepoPath(),
 		ViewPage:    viewPage,
 		BranchNames: h.viewModelService.CurrentBranchNames(),
 	})
-	utils.MustFileWrite(filepath.Join(gitlib.CurrentTracePath(), "repovm"), traceBytes)
+	utils.MustFileWrite(filepath.Join(git.CurrentTracePath(), "repovm"), traceBytes)
 
 	h.viewModelService.TriggerRefreshModel()
 }

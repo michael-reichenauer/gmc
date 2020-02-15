@@ -2,7 +2,7 @@ package gitrepo
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
 type Repo struct {
@@ -43,7 +43,7 @@ func (r *Repo) CurrentBranch() (*Branch, bool) {
 	return nil, false
 }
 
-func (r *Repo) setGitCommits(gitCommits []gitlib.Commit) {
+func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 	for _, gc := range gitCommits {
 		commit := newCommit(gc)
 		r.Commits = append(r.Commits, commit)
@@ -58,7 +58,7 @@ func (r *Repo) setGitCommits(gitCommits []gitlib.Commit) {
 	}
 }
 
-func (r *Repo) setGitBranches(gitBranches []gitlib.Branch) {
+func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 	for _, gb := range gitBranches {
 		r.Branches = append(r.Branches, newBranch(gb))
 	}

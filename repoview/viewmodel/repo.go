@@ -3,14 +3,14 @@ package viewmodel
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"time"
 )
 
 const (
-	StatusID  = gitlib.UncommittedID
-	StatusSID = gitlib.UncommittedSID
+	StatusID  = git.UncommittedID
+	StatusSID = git.UncommittedSID
 )
 
 type repo struct {
