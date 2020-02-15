@@ -45,6 +45,17 @@ type Branch struct {
 	TipID         string
 }
 
+type Branches []Branch
+
+func (bs Branches) Contains(predicate func(b Branch) bool) bool {
+	for _, b := range bs {
+		if predicate(b) {
+			return true
+		}
+	}
+	return false
+}
+
 func newViewPort(repo *repo, firstIndex, count int) ViewPort {
 	return ViewPort{
 		Commits:            toCommits(repo, firstIndex, count),

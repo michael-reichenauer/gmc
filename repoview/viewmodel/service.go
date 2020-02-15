@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/gitlib"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/thoas/go-funk"
 	"hash/fnv"
 	"sort"
 	"strings"
@@ -291,7 +292,17 @@ func (s *Service) GetCommitOpenBranches(index int) []Branch {
 
 	var bs []Branch
 	for _, b := range branches {
-		if containsViewBranch(bs, b.Name) {
+		// if Branches(bs).Contains(func(bsb Branch) bool {
+		// 	return b.Name == bsb.Name || b.RemoteName == b.Name ||
+		// 		b.Name == bsb.RemoteName
+		// }) {
+		// 	// Skip duplicates
+		// 	continue
+		// }
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == b.Name ||
+				b.Name == bsb.RemoteName
+		}) {
 			// Skip duplicates
 			continue
 		}
