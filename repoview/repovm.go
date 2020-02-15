@@ -155,7 +155,7 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 
 func (h *repoVM) GetCloseBranchMenuItems(index int) []ui.MenuItem {
 	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetCommitCloseBranches(index)
+	commitBranches := h.viewModelService.GetCommitCloseBranches()
 	for _, b := range commitBranches {
 		items = append(items, h.toCloseBranchMenuItem(b))
 	}

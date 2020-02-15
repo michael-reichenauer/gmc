@@ -88,7 +88,7 @@ func (h *RepoView) onEnter() {
 func (h *RepoView) onRight() {
 	items := h.vm.GetOpenBranchMenuItems(h.ViewPage().CurrentLine)
 	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
-	menu := ui.NewMenu(h.uiHandler, "Show Branch")
+	menu := ui.NewMenu(h.uiHandler, "Show")
 	menu.AddItems(items)
 
 	menu.Add(ui.SeparatorMenuItem)

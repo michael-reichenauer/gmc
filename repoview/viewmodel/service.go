@@ -292,118 +292,45 @@ func (s *Service) GetCommitOpenBranches(index int) []Branch {
 
 	var bs []Branch
 	for _, b := range branches {
-		// if Branches(bs).Contains(func(bsb Branch) bool {
-		// 	return b.Name == bsb.Name || b.RemoteName == b.Name ||
-		// 		b.Name == bsb.RemoteName
-		// }) {
-		// 	// Skip duplicates
-		// 	continue
-		// }
 		if nil != funk.Find(bs, func(bsb Branch) bool {
-			return b.Name == bsb.Name || b.RemoteName == b.Name ||
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
 				b.Name == bsb.RemoteName
 		}) {
 			// Skip duplicates
 			continue
 		}
-		if containsBranch(s.currentViewModel.Branches, b.Name) {
+		if nil != funk.Find(s.currentViewModel.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
 			// Skip branches already shown
 			continue
 		}
+
 		bs = append(bs, toBranch(s.currentViewModel.toBranch(b, 0)))
 	}
 
 	return bs
 }
 
-func (s *Service) GetCommitCloseBranches(index int) []Branch {
+func (s *Service) GetCommitCloseBranches() []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if index >= len(s.currentViewModel.Commits) {
-		// Repo must just have changed, just ignore
-		return nil
-	}
-	c := s.currentViewModel.Commits[index]
-
-	var branches []*gitrepo.Branch
-
-	if len(c.ParentIDs) > 1 {
-		// commit has branch merged into this commit add it
-		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
-		branches = append(branches, mergeParent.Branch)
-	}
-
-	for _, ccId := range c.ChildIDs {
-		// commit has children (i.e.), other branches have merged from this branch
-		if ccId == StatusID {
-			continue
-		}
-		cc := s.gmRepo.CommitById[ccId]
-		if cc.Branch.Name != c.Branch.name {
-			branches = append(branches, cc.Branch)
-		}
-	}
-
-	for _, b := range s.gmRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.ID &&
-			b.ParentBranch != nil && b.ParentBranch.Name == c.Branch.name {
-			// empty branch with no own branch commit, (branch start)
-			branches = append(branches, b)
-		}
-	}
-
-	if c.ID != StatusID {
-		commit := s.gmRepo.CommitById[c.ID]
-		branches = append(branches, commit.Branch)
-	}
-
 	var bs []Branch
-	for _, b := range branches {
-		if b.Name == masterName || b.Name == remoteMasterName {
-			continue
-		}
-		if containsDisplayNameBranch(bs, b.DisplayName) {
-			continue
-		}
-		if containsViewBranch(bs, b.Name) {
-			// Skip duplicates
-			continue
-		}
-		if !containsBranch(s.currentViewModel.Branches, b.Name) {
-			// Skip branches not shown
-			continue
-		}
-		bs = append(bs, toBranch(s.currentViewModel.toBranch(b, 0)))
-	}
-
 	for _, b := range s.currentViewModel.Branches {
 		if b.name == masterName || b.name == remoteMasterName {
+			// Do not support closing master branch
 			continue
 		}
-		if containsDisplayNameBranch(bs, b.displayName) {
-			continue
-		}
-		if containsViewBranch(bs, b.name) {
-			// Skip duplicates
-			continue
-		}
-		if containsViewBranch(bs, b.name) {
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.displayName == bsb.DisplayName
+		}) {
 			// Skip duplicates
 			continue
 		}
 		bs = append(bs, toBranch(b))
 	}
 	return bs
-}
-
-func containsViewBranch(branches []Branch, name string) bool {
-	for _, b := range branches {
-		if name == b.Name {
-			return true
-		}
-	}
-	return false
 }
 
 func containsBranch(branches []*branch, name string) bool {
@@ -440,6 +367,14 @@ func (s *Service) HideBranch(name string) {
 	if branch == nil {
 		s.lock.Unlock()
 		return
+	}
+	if branch.remoteName != "" {
+		remoteBranch := s.currentViewModel.BranchByName(name)
+		if remoteBranch == nil {
+			// The branch to hide has a remote branch, hiding that and the local branch
+			// will be hidden as well
+			branch = remoteBranch
+		}
 	}
 
 	var branchNames []string
