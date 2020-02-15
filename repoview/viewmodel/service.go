@@ -379,7 +379,7 @@ func (s *Service) HideBranch(name string) {
 
 	var branchNames []string
 	for _, b := range s.currentViewModel.Branches {
-		if b.name != branch.name && !branch.isAncestor(b) {
+		if b.name != branch.name && !branch.isAncestor(b) && b.remoteName != branch.name {
 			branchNames = append(branchNames, b.name)
 		}
 	}

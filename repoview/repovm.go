@@ -110,20 +110,20 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 }
 
 func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
-	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetCommitOpenBranches(index)
-	for _, b := range commitBranches {
-		items = append(items, h.toOpenBranchMenuItem(b))
-	}
+	branches := h.viewModelService.GetCommitOpenBranches(index)
 
 	current, ok := h.viewModelService.CurrentBranch()
 	if ok {
-		if nil == funk.Find(items, func(i ui.MenuItem) bool {
-			return current.Name == i.Text
+		if nil == funk.Find(branches, func(b viewmodel.Branch) bool {
+			return current.DisplayName == b.DisplayName
 		}) {
-			item := h.toOpenBranchMenuItem(current)
-			items = append(items, item)
+			branches = append(branches, current)
 		}
+	}
+
+	var items []ui.MenuItem
+	for _, b := range branches {
+		items = append(items, h.toOpenBranchMenuItem(b))
 	}
 
 	if len(items) > 0 {
