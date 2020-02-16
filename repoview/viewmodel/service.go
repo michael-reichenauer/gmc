@@ -597,5 +597,8 @@ func (s *Service) GetCommitDiff(id string) ([]git.FileDiff, error) {
 }
 
 func (s *Service) SwitchToBranch(name string) {
+	if strings.HasPrefix(name, "origin/") {
+		name = name[7:]
+	}
 	s.gitRepoService.SwitchToBranch(name)
 }
