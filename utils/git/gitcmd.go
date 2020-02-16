@@ -173,7 +173,12 @@ func (h *gitCmd) runGitCommand(cmd command) command {
 	c.Dir = h.repoPath
 	out, err := c.Output()
 	if err != nil {
-		msg := fmt.Sprintf("Failed: git %s (%v), %v", strings.Join(cmd.Args, " "), time.Since(t), err)
+		errorText := ""
+		if ee, ok := err.(*exec.ExitError); ok {
+			errorText = string(ee.Stderr)
+			errorText = strings.ReplaceAll(errorText, "\t", "   ")
+		}
+		msg := fmt.Sprintf("Failed: git %s (%v), %v\n%v", strings.Join(cmd.Args, " "), time.Since(t), err, errorText)
 		log.Warnf(msg)
 		cmd.Err = msg
 		return cmd

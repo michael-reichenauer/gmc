@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 const (
@@ -19,7 +20,7 @@ const (
 
 var (
 	baseFilePathLength = getBaseFileBathLength()
-	StdLogger          = NewLogger("")
+	StdLogger          = NewLogger("gmc:")
 )
 
 type Logger struct {
@@ -77,9 +78,12 @@ func (l *Logger) output(level, message string) {
 	if len(file) > baseFilePathLength {
 		file = file[baseFilePathLength:]
 	}
-	text := fmt.Sprintf("%s(%d) %s", file, line, message)
-	print(fmt.Sprintf("%s%s %s", l.prefix, level, text))
-	StdTelemetry.SendTrace(level, text)
+	StdTelemetry.SendTrace(level, fmt.Sprintf("%s(%d) %s", file, line, message))
+
+	lines := strings.Split(message, "\n")
+	for _, ml := range lines {
+		print(fmt.Sprintf("%s%s %s(%d) %s", l.prefix, level, file, line, ml))
+	}
 }
 
 func (l *Logger) getCallerInfo() (string, int) {
