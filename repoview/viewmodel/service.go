@@ -370,23 +370,28 @@ func (s *Service) ShowBranch(name string) {
 func (s *Service) HideBranch(name string) {
 	s.lock.Lock()
 
-	branch := s.currentViewModel.BranchByName(name)
-	if branch == nil {
+	hideBranch, ok := funk.Find(s.currentViewModel.Branches, func(b *branch) bool {
+		return name == b.name
+	}).(*branch)
+	if !ok || hideBranch == nil {
+		// No branch with that name
 		s.lock.Unlock()
 		return
 	}
-	if branch.remoteName != "" {
-		remoteBranch := s.currentViewModel.BranchByName(name)
-		if remoteBranch != nil {
+	if hideBranch.remoteName != "" {
+		remoteBranch, ok := funk.Find(s.currentViewModel.Branches, func(b *branch) bool {
+			return hideBranch.remoteName == b.name
+		}).(*branch)
+		if ok && remoteBranch != nil {
 			// The branch to hide has a remote branch, hiding that and the local branch
 			// will be hidden as well
-			branch = remoteBranch
+			hideBranch = remoteBranch
 		}
 	}
 
 	var branchNames []string
 	for _, b := range s.currentViewModel.Branches {
-		if b.name != branch.name && !branch.isAncestor(b) && b.remoteName != branch.name {
+		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
 			branchNames = append(branchNames, b.name)
 		}
 	}
