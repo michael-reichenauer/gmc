@@ -155,7 +155,7 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 
 func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetShownBranches()
+	commitBranches := h.viewModelService.GetShownBranches(true)
 	for _, b := range commitBranches {
 		items = append(items, h.toCloseBranchMenuItem(b))
 	}
@@ -164,7 +164,7 @@ func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
 
 func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetShownBranches()
+	commitBranches := h.viewModelService.GetShownBranches(false)
 	for _, b := range commitBranches {
 		items = append(items, h.toSwitchBranchMenuItem(b))
 	}

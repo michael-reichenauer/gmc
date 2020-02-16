@@ -312,13 +312,13 @@ func (s *Service) GetCommitOpenBranches(index int) []Branch {
 	return bs
 }
 
-func (s *Service) GetShownBranches() []Branch {
+func (s *Service) GetShownBranches(skipMaster bool) []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
 	var bs []Branch
 	for _, b := range s.currentViewModel.Branches {
-		if b.name == masterName || b.name == remoteMasterName {
+		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
 			// Do not support closing master branch
 			continue
 		}
