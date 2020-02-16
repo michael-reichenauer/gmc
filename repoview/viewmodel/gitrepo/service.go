@@ -14,7 +14,7 @@ type Service struct {
 	StatusEvents chan Status
 	ErrorEvents  chan error
 
-	branches *branches
+	branchesService *branchesService
 
 	lock          sync.Mutex
 	git           *git.Git
@@ -28,10 +28,10 @@ func ToSid(commitID string) string {
 
 func NewService() *Service {
 	return &Service{
-		branches:     newBranches(),
-		RepoEvents:   make(chan Repo),
-		StatusEvents: make(chan Status),
-		ErrorEvents:  make(chan error),
+		branchesService: newBranchesService(),
+		RepoEvents:      make(chan Repo),
+		StatusEvents:    make(chan Status),
+		ErrorEvents:     make(chan error),
 	}
 }
 func (s *Service) gitLib() *git.Git {
@@ -108,7 +108,7 @@ func (s *Service) GetFreshRepo() (Repo, error) {
 	repo.setGitBranches(gitBranches)
 	repo.setGitCommits(gitCommits)
 
-	s.branches.setBranchForAllCommits(repo)
+	s.branchesService.setBranchForAllCommits(repo)
 	log.Infof("Git repo %v", time.Since(t))
 	return *repo, nil
 }

@@ -7,15 +7,15 @@ import (
 // Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
-type branches struct {
+type branchesService struct {
 	branchNames *branchNameParser
 }
 
-func newBranches() *branches {
-	return &branches{branchNames: newBranchNameParser()}
+func newBranchesService() *branchesService {
+	return &branchesService{branchNames: newBranchNameParser()}
 }
 
-func (h *branches) setBranchForAllCommits(repo *Repo) {
+func (h *branchesService) setBranchForAllCommits(repo *Repo) {
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo)
@@ -23,7 +23,7 @@ func (h *branches) setBranchForAllCommits(repo *Repo) {
 
 }
 
-func (h *branches) setGitBranchTips(repo *Repo) {
+func (h *branchesService) setGitBranchTips(repo *Repo) {
 	for _, b := range repo.Branches {
 		tip := repo.CommitById[b.TipID]
 		tip.addBranch(b)
@@ -34,7 +34,7 @@ func (h *branches) setGitBranchTips(repo *Repo) {
 	}
 }
 
-func (h *branches) setCommitBranchesAndChildren(repo *Repo) {
+func (h *branchesService) setCommitBranchesAndChildren(repo *Repo) {
 	for _, c := range repo.Commits {
 		parent, ok := repo.Parent(c, 0)
 		if ok {
@@ -53,7 +53,7 @@ func (h *branches) setCommitBranchesAndChildren(repo *Repo) {
 	}
 }
 
-func (h *branches) determineBranchHierarchy(repo *Repo) {
+func (h *branchesService) determineBranchHierarchy(repo *Repo) {
 	for _, b := range repo.Branches {
 		if b.BottomID == "" {
 			b.BottomID = b.TipID
@@ -69,7 +69,7 @@ func (h *branches) determineBranchHierarchy(repo *Repo) {
 	}
 }
 
-func (h *branches) determineCommitBranches(repo *Repo) {
+func (h *branchesService) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
 		h.branchNames.parseCommit(c)
 
@@ -78,7 +78,7 @@ func (h *branches) determineCommitBranches(repo *Repo) {
 	}
 }
 
-func (h *branches) determineBranch(repo *Repo, c *Commit) {
+func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	if c.Sid == "6541ab" {
 		log.Infof("")
 	}
@@ -162,7 +162,7 @@ func (h *branches) determineBranch(repo *Repo, c *Commit) {
 	c.addBranch(c.Branch)
 }
 
-func (h *branches) hasPriorityBranch(c *Commit) *Branch {
+func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	if len(c.Branches) < 1 {
 		return nil
 	}
@@ -175,7 +175,7 @@ func (h *branches) hasPriorityBranch(c *Commit) *Branch {
 	}
 	return nil
 }
-func (h *branches) isChildMultiBranch(c *Commit) *Branch {
+func (h *branchesService) isChildMultiBranch(c *Commit) *Branch {
 	for _, cc := range c.Children {
 		if cc.Branch.IsMultiBranch {
 			// one of the commit children is a multi branch
@@ -185,7 +185,7 @@ func (h *branches) isChildMultiBranch(c *Commit) *Branch {
 	return nil
 }
 
-func (h *branches) tryGetBranchFromName(c *Commit, name string) *Branch {
+func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
 	// Try find a branch with the name
 	for _, b := range c.Branches {
 		if name == b.Name {
@@ -210,7 +210,7 @@ func (h *branches) tryGetBranchFromName(c *Commit, name string) *Branch {
 	return nil
 }
 
-func (h *branches) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
+func (h *branchesService) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 0 {
 		// Commit has no branch, must be a deleted branch tip merged into some branch or unusual branch
 		// Trying to ues parsed branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
@@ -226,7 +226,7 @@ func (h *branches) isMergedDeletedBranch(repo *Repo, c *Commit) *Branch {
 	return nil
 }
 
-func (h *branches) isLocalRemoteBranch(c *Commit) *Branch {
+func (h *branchesService) isLocalRemoteBranch(c *Commit) *Branch {
 	if len(c.Branches) == 2 {
 		if c.Branches[0].IsRemote && c.Branches[0].Name == c.Branches[1].RemoteName {
 			// remote and local branch, prefer remote
