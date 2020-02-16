@@ -86,28 +86,32 @@ func (h *RepoView) onEnter() {
 }
 
 func (h *RepoView) onRight() {
-	items := h.vm.GetOpenBranchMenuItems(h.ViewPage().CurrentLine)
-	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu := ui.NewMenu(h.uiHandler, "Show")
+	items := h.vm.GetOpenBranchMenuItems(h.ViewPage().CurrentLine)
 	menu.AddItems(items)
 
 	menu.Add(ui.SeparatorMenuItem)
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		h.main.ShowDiff(h.ViewPage().CurrentLine)
 	}})
+	switchItems := h.vm.GetSwitchBranchMenuItems()
+	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
 	menu.Add(h.main.RecentReposMenuItem())
 	menu.Add(h.main.MainMenuItem())
+
+	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu.Show(10, y)
 }
 
 func (h *RepoView) onLeft() {
-	items := h.vm.GetCloseBranchMenuItems(h.ViewPage().CurrentLine)
+	menu := ui.NewMenu(h.uiHandler, "Hide Branch")
+	items := h.vm.GetCloseBranchMenuItems()
 	if len(items) == 0 {
 		return
 	}
-	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
-	menu := ui.NewMenu(h.uiHandler, "Hide Branch")
 	menu.AddItems(items)
+
+	y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
 	menu.Show(10, y)
 }
 

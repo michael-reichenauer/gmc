@@ -1,7 +1,7 @@
 package gitrepo
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
 type Branch struct {
@@ -19,7 +19,7 @@ type Branch struct {
 	IsNamedBranch bool
 }
 
-func newBranch(gb gitlib.Branch) *Branch {
+func newBranch(gb git.Branch) *Branch {
 	return &Branch{
 		Name:        gb.Name,
 		DisplayName: gb.DisplayName,

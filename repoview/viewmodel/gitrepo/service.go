@@ -2,7 +2,7 @@ package gitrepo
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"sync"
 	"time"
@@ -17,13 +17,13 @@ type Service struct {
 	branches *branches
 
 	lock          sync.Mutex
-	gitLibRepo    *gitlib.Repo
+	git           *git.Git
 	folderMonitor *monitor
 	quit          chan struct{}
 }
 
 func ToSid(commitID string) string {
-	return gitlib.ToSid(commitID)
+	return git.ToSid(commitID)
 }
 
 func NewService() *Service {
@@ -34,10 +34,10 @@ func NewService() *Service {
 		ErrorEvents:  make(chan error),
 	}
 }
-func (s *Service) gitLib() *gitlib.Repo {
+func (s *Service) gitLib() *git.Git {
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	return s.gitLibRepo
+	return s.git
 }
 
 func (s *Service) monitor() *monitor {
@@ -61,10 +61,10 @@ func (s *Service) Open(workingFolder string) {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 	s.quit = make(chan struct{})
-	s.gitLibRepo = gitlib.NewRepo(workingFolder)
+	s.git = git.NewGit(workingFolder)
 	s.folderMonitor = newMonitor()
 
-	s.folderMonitor.Start(s.gitLibRepo.RepoPath(), s.gitLibRepo.IsIgnored)
+	s.folderMonitor.Start(s.git.RepoPath(), s.git.IsIgnored)
 	go s.monitorStatusChangesRoutine(s.folderMonitor, s.quit)
 	go s.monitorRepoChangesRoutine(s.folderMonitor, s.quit)
 	go s.fetchRoutine(s.quit)
@@ -195,6 +195,10 @@ func (s *Service) fetchRoutine(quit chan struct{}) {
 	}
 }
 
-func (s *Service) GetCommitDiff(id string) ([]gitlib.FileDiff, error) {
+func (s *Service) GetCommitDiff(id string) ([]git.FileDiff, error) {
 	return s.gitLib().CommitDiff(id)
+}
+
+func (s *Service) SwitchToBranch(name string) {
+	s.gitLib().Checkout(name)
 }

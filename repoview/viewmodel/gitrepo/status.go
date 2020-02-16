@@ -2,7 +2,7 @@ package gitrepo
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
 type Status struct {
@@ -14,7 +14,7 @@ type Status struct {
 	MergeMessage string
 }
 
-func newStatus(gs gitlib.Status) Status {
+func newStatus(gs git.Status) Status {
 	return Status{
 		Modified:     gs.Modified,
 		Added:        gs.Added,

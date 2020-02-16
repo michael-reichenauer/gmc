@@ -1,7 +1,8 @@
-package gitlib
+package git
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -15,17 +16,13 @@ func Test(t *testing.T) {
 	branches, err := newBranches(newGitCmd(utils.CurrentDir())).getBranches()
 	assert.NoError(t, err)
 	for _, b := range branches {
+		log.Infof("%+v", b)
 		t.Logf("%v", b)
 	}
 }
 
 func TestParseBranchesText(t *testing.T) {
-	branches, err := newBranches(newGitCmd(utils.CurrentDir())).parseCmdOutput(branchesText)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(branches) != 2 {
-		t.Fatalf("Unexpeted branches count: %d", len(branches))
-	}
-	t.Logf("branches %d", len(branches))
+	branches, err := newBranches(newGitCmd(utils.CurrentDir())).parseBranchesOutput(branchesText)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(branches))
 }
