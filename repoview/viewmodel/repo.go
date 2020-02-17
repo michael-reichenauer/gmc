@@ -147,7 +147,7 @@ func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
 		Branch:       branch,
 		Index:        index,
 		graph:        make([]GraphColumn, len(r.Branches)),
-		BranchTips:   c.BranchTips,
+		BranchTips:   c.BranchTipNames,
 		IsLocalOnly:  isLocalOnly,
 		IsRemoteOnly: isRemoteOnly,
 	}

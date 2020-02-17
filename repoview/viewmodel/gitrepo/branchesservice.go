@@ -27,7 +27,7 @@ func (h *branchesService) setGitBranchTips(repo *Repo) {
 	for _, b := range repo.Branches {
 		tip := repo.CommitById[b.TipID]
 		tip.addBranch(b)
-		tip.BranchTips = append(tip.BranchTips, b.Name)
+		tip.BranchTipNames = append(tip.BranchTipNames, b.Name)
 		if b.IsCurrent {
 			tip.IsCurrent = true
 		}
@@ -41,7 +41,7 @@ func (h *branchesService) setCommitBranchesAndChildren(repo *Repo) {
 			parent.Children = append(parent.Children, c)
 			parent.ChildIDs = append(parent.ChildIDs, c.Id)
 			parent.addBranches(c.Branches)
-			c.Parent = parent
+			c.FirstParent = parent
 		}
 
 		mergeParent, ok := repo.Parent(c, 1)
@@ -63,8 +63,8 @@ func (h *branchesService) determineBranchHierarchy(repo *Repo) {
 		if bottom.Branch != b {
 			// the tip does not own the tip commit, i.e. a branch pointer to another branch
 			b.ParentBranch = bottom.Branch
-		} else if bottom.Parent != nil {
-			b.ParentBranch = bottom.Parent.Branch
+		} else if bottom.FirstParent != nil {
+			b.ParentBranch = bottom.FirstParent.Branch
 		}
 	}
 }
@@ -108,10 +108,10 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 		return
 	}
 
-	if len(c.Children) == 1 && c.Children[0].IsLikely {
+	if len(c.Children) == 1 && c.Children[0].isLikely {
 		// commit has one child, which has a likely known branch, use same branch
 		c.Branch = c.Children[0].Branch
-		c.IsLikely = true
+		c.isLikely = true
 		return
 	}
 
@@ -141,9 +141,9 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 		// if branch == nil {
 		// 	branch = repo.addNamedBranch(current, name)
 		// }
-		for ; current != c.Parent; current = current.Parent {
+		for ; current != c.FirstParent; current = current.FirstParent {
 			current.Branch = branch
-			current.IsLikely = true
+			current.isLikely = true
 			current.addBranch(branch)
 		}
 		c.Branch.BottomID = c.Id
