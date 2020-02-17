@@ -2,7 +2,7 @@ package gitrepo
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"time"
 )
 
@@ -26,7 +26,7 @@ type Commit struct {
 	BranchTips    []string
 }
 
-func newCommit(gc gitlib.Commit) *Commit {
+func newCommit(gc git.Commit) *Commit {
 	return &Commit{
 		Id:         gc.ID,
 		Sid:        gc.SID,

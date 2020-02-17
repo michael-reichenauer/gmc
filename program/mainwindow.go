@@ -6,7 +6,7 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -107,7 +107,7 @@ func (h *MainWindow) getWorkingFolder() (string, error) {
 		// No specified repo path, use current dir
 		folderPath = utils.CurrentDir()
 	}
-	path, err := gitlib.WorkingFolderRoot(folderPath)
+	path, err := git.WorkingFolderRoot(folderPath)
 	if err != nil {
 		return "", err
 	}

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
@@ -13,7 +13,7 @@ import (
 type diffVM struct {
 	model        *viewmodel.Service
 	currentIndex int
-	filesDiff    []gitlib.FileDiff
+	filesDiff    []git.FileDiff
 	page         int
 }
 
@@ -76,13 +76,13 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 			lines = append(lines, ui.Dark(strings.Repeat("─", viewPort.Width)))
 			for _, dl := range ds.LinesDiffs {
 				switch dl.DiffMode {
-				case gitlib.DiffSame:
+				case git.DiffSame:
 					lines = append(lines, fmt.Sprintf("  %s", dl.Line))
-				case gitlib.DiffAdded:
+				case git.DiffAdded:
 					if h.page != -1 {
 						lines = append(lines, ui.Green(fmt.Sprintf("> %s", dl.Line)))
 					}
-				case gitlib.DiffRemoved:
+				case git.DiffRemoved:
 					if h.page != 1 {
 						lines = append(lines, ui.Red(fmt.Sprintf("< %s", dl.Line)))
 					}
@@ -124,13 +124,13 @@ func (h *diffVM) SetRight(page int) {
 	h.page = page
 }
 
-func toDiffType(df gitlib.FileDiff) string {
+func toDiffType(df git.FileDiff) string {
 	switch df.DiffMode {
-	case gitlib.DiffModified:
+	case git.DiffModified:
 		return "Modified:"
-	case gitlib.DiffAdded:
+	case git.DiffAdded:
 		return "Added:   "
-	case gitlib.DiffRemoved:
+	case git.DiffRemoved:
 		return "Removed: "
 	}
 	return ""

@@ -5,7 +5,7 @@ import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"path/filepath"
 	"strings"
@@ -54,10 +54,10 @@ func TestView(t *testing.T) {
 
 func TestSavedState(t *testing.T) {
 	cs := config.NewConfig()
-	gitlib.EnableReplay("")
+	git.EnableReplay("")
 	var trace trace
 
-	traceBytes := utils.MustFileRead(filepath.Join(gitlib.TracePath(""), "repovm"))
+	traceBytes := utils.MustFileRead(filepath.Join(git.TracePath(""), "repovm"))
 	utils.MustJsonUnmarshal(traceBytes, &trace)
 
 	m := viewmodel.NewModel(cs, trace.RepoPath)

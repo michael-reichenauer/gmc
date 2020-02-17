@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/thoas/go-funk"
 	"hash/fnv"
 	"sort"
 	"strings"
@@ -291,108 +292,52 @@ func (s *Service) GetCommitOpenBranches(index int) []Branch {
 
 	var bs []Branch
 	for _, b := range branches {
-		if containsViewBranch(bs, b.Name) {
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
+				b.Name == bsb.RemoteName
+		}) {
 			// Skip duplicates
 			continue
 		}
-		if containsBranch(s.currentViewModel.Branches, b.Name) {
+		if nil != funk.Find(s.currentViewModel.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
 			// Skip branches already shown
 			continue
 		}
+
 		bs = append(bs, toBranch(s.currentViewModel.toBranch(b, 0)))
 	}
 
 	return bs
 }
 
-func (s *Service) GetCommitCloseBranches(index int) []Branch {
+func (s *Service) GetShownBranches(skipMaster bool) []Branch {
 	s.lock.Lock()
 	defer s.lock.Unlock()
 
-	if index >= len(s.currentViewModel.Commits) {
-		// Repo must just have changed, just ignore
-		return nil
-	}
-	c := s.currentViewModel.Commits[index]
-
-	var branches []*gitrepo.Branch
-
-	if len(c.ParentIDs) > 1 {
-		// commit has branch merged into this commit add it
-		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
-		branches = append(branches, mergeParent.Branch)
-	}
-
-	for _, ccId := range c.ChildIDs {
-		// commit has children (i.e.), other branches have merged from this branch
-		if ccId == StatusID {
-			continue
-		}
-		cc := s.gmRepo.CommitById[ccId]
-		if cc.Branch.Name != c.Branch.name {
-			branches = append(branches, cc.Branch)
-		}
-	}
-
-	for _, b := range s.gmRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.ID &&
-			b.ParentBranch != nil && b.ParentBranch.Name == c.Branch.name {
-			// empty branch with no own branch commit, (branch start)
-			branches = append(branches, b)
-		}
-	}
-
-	if c.ID != StatusID {
-		commit := s.gmRepo.CommitById[c.ID]
-		branches = append(branches, commit.Branch)
-	}
-
 	var bs []Branch
-	for _, b := range branches {
-		if b.Name == masterName || b.Name == remoteMasterName {
-			continue
-		}
-		if containsDisplayNameBranch(bs, b.DisplayName) {
-			continue
-		}
-		if containsViewBranch(bs, b.Name) {
-			// Skip duplicates
-			continue
-		}
-		if !containsBranch(s.currentViewModel.Branches, b.Name) {
-			// Skip branches not shown
-			continue
-		}
-		bs = append(bs, toBranch(s.currentViewModel.toBranch(b, 0)))
-	}
-
 	for _, b := range s.currentViewModel.Branches {
-		if b.name == masterName || b.name == remoteMasterName {
+		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
+			// Do not support closing master branch
 			continue
 		}
-		if containsDisplayNameBranch(bs, b.displayName) {
+		if b.isRemote && nil != funk.Find(s.currentViewModel.Branches, func(bsb *branch) bool {
+			return b.name == bsb.remoteName
+		}) {
+			// Skip remote if local exist
 			continue
 		}
-		if containsViewBranch(bs, b.name) {
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.displayName == bsb.DisplayName
+		}) {
 			// Skip duplicates
 			continue
 		}
-		if containsViewBranch(bs, b.name) {
-			// Skip duplicates
-			continue
-		}
+
 		bs = append(bs, toBranch(b))
 	}
 	return bs
-}
-
-func containsViewBranch(branches []Branch, name string) bool {
-	for _, b := range branches {
-		if name == b.Name {
-			return true
-		}
-	}
-	return false
 }
 
 func containsBranch(branches []*branch, name string) bool {
@@ -425,15 +370,28 @@ func (s *Service) ShowBranch(name string) {
 func (s *Service) HideBranch(name string) {
 	s.lock.Lock()
 
-	branch := s.currentViewModel.BranchByName(name)
-	if branch == nil {
+	hideBranch, ok := funk.Find(s.currentViewModel.Branches, func(b *branch) bool {
+		return name == b.name
+	}).(*branch)
+	if !ok || hideBranch == nil {
+		// No branch with that name
 		s.lock.Unlock()
 		return
+	}
+	if hideBranch.remoteName != "" {
+		remoteBranch, ok := funk.Find(s.currentViewModel.Branches, func(b *branch) bool {
+			return hideBranch.remoteName == b.name
+		}).(*branch)
+		if ok && remoteBranch != nil {
+			// The branch to hide has a remote branch, hiding that and the local branch
+			// will be hidden as well
+			hideBranch = remoteBranch
+		}
 	}
 
 	var branchNames []string
 	for _, b := range s.currentViewModel.Branches {
-		if b.name != branch.name && !branch.isAncestor(b) {
+		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
 			branchNames = append(branchNames, b.name)
 		}
 	}
@@ -639,6 +597,13 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
 	}
 }
 
-func (s *Service) GetCommitDiff(id string) ([]gitlib.FileDiff, error) {
+func (s *Service) GetCommitDiff(id string) ([]git.FileDiff, error) {
 	return s.gitRepoService.GetCommitDiff(id)
+}
+
+func (s *Service) SwitchToBranch(name string) {
+	if strings.HasPrefix(name, "origin/") {
+		name = name[7:]
+	}
+	s.gitRepoService.SwitchToBranch(name)
 }

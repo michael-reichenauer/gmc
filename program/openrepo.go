@@ -3,7 +3,7 @@ package program
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
@@ -31,7 +31,7 @@ func (h *MainWindow) GetStartMenu() *ui.Menu {
 
 func (h *MainWindow) OpenRepo(folderPath string) {
 	log.Infof("Opening %q ...", folderPath)
-	workingFolder, err := gitlib.WorkingFolderRoot(folderPath)
+	workingFolder, err := git.WorkingFolderRoot(folderPath)
 	if err != nil {
 		log.Warnf("No working folder %q", folderPath)
 		openMenu := h.GetStartMenu()

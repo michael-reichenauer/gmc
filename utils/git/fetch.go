@@ -1,4 +1,4 @@
-package gitlib
+package git
 
 // fetches from remote origin
 type fetchService struct {

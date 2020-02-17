@@ -8,7 +8,7 @@ import (
 	"github.com/michael-reichenauer/gmc/installation"
 	"github.com/michael-reichenauer/gmc/program"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"github.com/michael-reichenauer/gmc/utils/ui"
@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	version = "0.22"
+	version = "0.23"
 )
 
 var (
@@ -89,6 +89,6 @@ func logProgramInfo(configService *config.Service) {
 	log.Infof("Version: %s", configService.ProgramVersion)
 	log.Infof("Binary path: %q", utils.BinPath())
 	log.Infof("Folder path: %s", configService.FolderPath)
-	log.Infof("Git version: %s", gitlib.GitVersion())
+	log.Infof("Git version: %s", git.GitVersion())
 	log.Infof("Http proxy: %s", utils.GetHTTPProxyURL())
 }

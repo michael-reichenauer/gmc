@@ -3,9 +3,10 @@ package repoview
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/gitlib"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/thoas/go-funk"
 	"path/filepath"
 	"strings"
 )
@@ -109,16 +110,20 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 }
 
 func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
-	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetCommitOpenBranches(index)
-	for _, b := range commitBranches {
-		items = append(items, h.toOpenBranchMenuItem(b))
-	}
+	branches := h.viewModelService.GetCommitOpenBranches(index)
 
 	current, ok := h.viewModelService.CurrentBranch()
 	if ok {
-		item := h.toOpenBranchMenuItem(current)
-		items = append(items, item)
+		if nil == funk.Find(branches, func(b viewmodel.Branch) bool {
+			return current.DisplayName == b.DisplayName
+		}) {
+			branches = append(branches, current)
+		}
+	}
+
+	var items []ui.MenuItem
+	for _, b := range branches {
+		items = append(items, h.toOpenBranchMenuItem(b))
 	}
 
 	if len(items) > 0 {
@@ -148,11 +153,20 @@ func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
 	return items
 }
 
-func (h *repoVM) GetCloseBranchMenuItems(index int) []ui.MenuItem {
+func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetCommitCloseBranches(index)
+	commitBranches := h.viewModelService.GetShownBranches(true)
 	for _, b := range commitBranches {
 		items = append(items, h.toCloseBranchMenuItem(b))
+	}
+	return items
+}
+
+func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
+	var items []ui.MenuItem
+	commitBranches := h.viewModelService.GetShownBranches(false)
+	for _, b := range commitBranches {
+		items = append(items, h.toSwitchBranchMenuItem(b))
 	}
 	return items
 }
@@ -173,6 +187,12 @@ func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 	}}
 }
 
+func (h *repoVM) toSwitchBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
+	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
+		h.viewModelService.SwitchToBranch(branch.Name)
+	}}
+}
+
 func (h *repoVM) branchItemText(branch viewmodel.Branch) string {
 	if branch.IsCurrent {
 		return "●" + branch.DisplayName
@@ -186,13 +206,13 @@ func (h *repoVM) Refresh() {
 }
 
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
-	gitlib.EnableTracing("")
+	git.EnableTracing("")
 	traceBytes := utils.MustJsonMarshal(trace{
 		RepoPath:    h.viewModelService.RepoPath(),
 		ViewPage:    viewPage,
 		BranchNames: h.viewModelService.CurrentBranchNames(),
 	})
-	utils.MustFileWrite(filepath.Join(gitlib.CurrentTracePath(), "repovm"), traceBytes)
+	utils.MustFileWrite(filepath.Join(git.CurrentTracePath(), "repovm"), traceBytes)
 
 	h.viewModelService.TriggerRefreshModel()
 }
