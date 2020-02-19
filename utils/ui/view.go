@@ -68,12 +68,54 @@ type view struct {
 	width        int
 }
 
-func newView(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
+func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
 	return &view{
 		gui:        ui.Gui(),
 		viewName:   ui.NewViewName(),
 		viewData:   viewData,
 		properties: &Properties{}}
+}
+
+func newViewFromTextFunc(ui *UI, viewText func() string) *view {
+	return &view{
+		gui:        ui.Gui(),
+		viewName:   ui.NewViewName(),
+		viewData:   viewDataFromTextFunc(viewText),
+		properties: &Properties{}}
+}
+
+func newView(ui *UI, text string) *view {
+	return &view{
+		gui:        ui.Gui(),
+		viewName:   ui.NewViewName(),
+		viewData:   viewDataFromText(text),
+		properties: &Properties{}}
+}
+
+func viewDataFromText(viewText string) func(viewPort ViewPage) ViewData {
+	return viewDataFromTextFunc(func() string {
+		return viewText
+	})
+}
+
+func viewDataFromTextFunc(viewText func() string) func(viewPort ViewPage) ViewData {
+	return func(viewPort ViewPage) ViewData {
+		lines := strings.Split(viewText(), "\n")
+		firstIndex := viewPort.FirstLine
+		if firstIndex > len(lines) {
+			firstIndex = len(lines)
+		}
+		height := viewPort.Height
+		if firstIndex+viewPort.Height > len(lines) {
+			height = len(lines) - firstIndex
+		}
+		lines = lines[firstIndex : firstIndex+height]
+		return ViewData{
+			Lines:      lines,
+			FirstIndex: viewPort.FirstLine,
+			Total:      len(lines),
+		}
+	}
 }
 
 func (h *view) Show(bounds Rect) {

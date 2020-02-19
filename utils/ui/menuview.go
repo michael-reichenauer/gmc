@@ -24,7 +24,7 @@ type menuView struct {
 
 func newMenuView(uiHandler *UI, title string, parent *menuView) *menuView {
 	h := &menuView{uiHandler: uiHandler, parent: parent, title: title}
-	h.View = uiHandler.NewView(h.viewData)
+	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
 	h.View.Properties().Title = title

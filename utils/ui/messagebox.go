@@ -77,7 +77,7 @@ type messageBoxView struct {
 
 func newMessageBoxView(uiHandler *UI, title string, hideCurrent bool) *messageBoxView {
 	h := &messageBoxView{uiHandler: uiHandler}
-	h.View = uiHandler.NewView(h.viewData)
+	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
 	h.View.Properties().Name = "AboutView"
 	h.View.Properties().HasFrame = true
 	h.View.Properties().Title = title

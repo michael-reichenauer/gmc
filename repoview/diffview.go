@@ -18,7 +18,7 @@ func NewDiffView(uiHandler *ui.UI, model *viewmodel.Service, mainController main
 		vm:             NewDiffVM(model),
 		mainController: mainController,
 	}
-	h.View = uiHandler.NewView(h.viewData)
+	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
 	h.Properties().OnLoad = h.onLoad
 	h.View.Properties().Name = "DiffView"
 	h.View.Properties().HasFrame = true
