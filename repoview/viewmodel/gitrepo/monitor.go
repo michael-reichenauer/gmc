@@ -20,7 +20,7 @@ type monitor struct {
 	watcher        *fsnotify.Watcher
 	rootFolderPath string
 	ignorer        Ignorer
-	quit           chan chan<- struct{}
+	closed         chan chan<- struct{}
 }
 
 func newMonitor(rootFolderPath string, ignorer Ignorer) *monitor {
@@ -34,7 +34,7 @@ func newMonitor(rootFolderPath string, ignorer Ignorer) *monitor {
 		watcher:        watcher,
 		rootFolderPath: rootFolderPath,
 		ignorer:        ignorer,
-		quit:           make(chan chan<- struct{}),
+		closed:         make(chan chan<- struct{}),
 	}
 }
 
@@ -58,9 +58,7 @@ func (h *monitor) addWatchFoldersRecursively(path string) {
 
 func (h *monitor) Close() {
 	h.watcher.Close()
-	closed := make(chan struct{})
-	h.quit <- closed
-	<-closed
+	<-h.closed
 }
 
 func (h *monitor) monitorFolderRoutine() {
@@ -69,35 +67,28 @@ func (h *monitor) monitorFolderRoutine() {
 	headPath := filepath.Join(gitPath, "HEAD")
 	fetchHeadPath := filepath.Join(gitPath, "FETCH_HEAD")
 
-	var err error
-	for {
-		select {
-		case event := <-h.watcher.Events:
-			if h.isNewFolder(event) {
-				log.Infof("New folder detected: %q", event.Name)
-				go h.addWatchFoldersRecursively(event.Name)
-			}
-			if h.isIgnored(event.Name) {
-				//log.Infof("ignoring: %s", event.Name)
-			} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
-				//log.Infof("Repo change: %s", event.Name)
-				h.postRepoChange()
-			} else if h.isStatusChange(event.Name, gitPath) {
-				//log.Infof("Status change: %s", event.Name)
-				h.postStatusChange()
-			} else {
-				// fmt.Printf("ignoring: %s\n", event.Name)
-			}
-		case err = <-h.watcher.Errors:
-			log.Warnf("ERROR %v", err)
-		case closed := <-h.quit:
-			close(h.RepoChange)
-			close(h.StatusChange)
-			close(closed)
-			return
+	for event := range h.watcher.Events {
+		if h.isNewFolder(event) {
+			log.Infof("New folder detected: %q", event.Name)
+			go h.addWatchFoldersRecursively(event.Name)
+		}
+		if h.isIgnored(event.Name) {
+			//log.Infof("ignoring: %s", event.Name)
+		} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
+			//log.Infof("Repo change: %s", event.Name)
+			h.postRepoChange()
+		} else if h.isStatusChange(event.Name, gitPath) {
+			//log.Infof("Status change: %s", event.Name)
+			h.postStatusChange()
+		} else {
+			// fmt.Printf("ignoring: %s\n", event.Name)
 		}
 	}
+	close(h.RepoChange)
+	close(h.StatusChange)
+	close(h.closed)
 }
+
 func (h *monitor) postRepoChange() {
 	select {
 	case h.RepoChange <- struct{}{}:
