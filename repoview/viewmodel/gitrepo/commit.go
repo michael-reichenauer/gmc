@@ -36,7 +36,6 @@ func newCommit(gc git.Commit) *Commit {
 		Message:    gc.Message,
 		Author:     gc.Author,
 		AuthorTime: gc.AuthorTime,
-		IsCurrent:  false,
 	}
 }
 

@@ -62,9 +62,9 @@ func (s *Service) Open(workingFolder string) {
 	defer s.lock.Unlock()
 	s.quit = make(chan struct{})
 	s.git = git.NewGit(workingFolder)
-	s.folderMonitor = newMonitor()
+	s.folderMonitor = newMonitor(workingFolder, s.git)
 
-	s.folderMonitor.Start(s.git.RepoPath(), s.git.IsIgnored)
+	s.folderMonitor.Start()
 	go s.monitorStatusChangesRoutine(s.folderMonitor, s.quit)
 	go s.monitorRepoChangesRoutine(s.folderMonitor, s.quit)
 	go s.fetchRoutine(s.quit)

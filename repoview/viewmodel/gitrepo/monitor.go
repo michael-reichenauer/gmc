@@ -9,76 +9,82 @@ import (
 	"strings"
 )
 
-// ssk.
-type monitor struct {
-	StatusChange chan interface{}
-	RepoChange   chan interface{}
-	watcher      *fsnotify.Watcher
-	// gitPath       string
-	// refsPath      string
-	// headPath      string
-	// fetchHeadPath string
-	quit chan chan<- interface{}
-	//	isIgnoreFunc  func(path string) bool
+type Ignorer interface {
+	IsIgnored(path string) bool
 }
 
-func newMonitor() *monitor {
+type monitor struct {
+	RepoChange   chan struct{}
+	StatusChange chan struct{}
+
+	watcher        *fsnotify.Watcher
+	rootFolderPath string
+	ignorer        Ignorer
+	quit           chan chan<- struct{}
+}
+
+func newMonitor(rootFolderPath string, ignorer Ignorer) *monitor {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		panic(log.Fatal(err))
 	}
 	return &monitor{
-		watcher: watcher,
-		// gitPath:       filepath.Join(repoPath, ".git"),
-		// refsPath:      filepath.Join(repoPath, ".git", "refs"),
-		// headPath:      filepath.Join(repoPath, ".git", "HEAD"),
-		// fetchHeadPath: filepath.Join(repoPath, ".git", "FETCH_HEAD"),
-		StatusChange: make(chan interface{}),
-		RepoChange:   make(chan interface{}),
-		quit:         make(chan chan<- interface{}),
-		//isIgnoreFunc:  isIgnore,
+		RepoChange:     make(chan struct{}),
+		StatusChange:   make(chan struct{}),
+		watcher:        watcher,
+		rootFolderPath: rootFolderPath,
+		ignorer:        ignorer,
+		quit:           make(chan chan<- struct{}),
 	}
 }
 
-func (h *monitor) Start(repoPath string, isIgnore func(path string) bool) error {
-
-	go h.monitorFolderRoutine(repoPath, isIgnore)
-
-	go filepath.Walk(repoPath, h.watchDir)
+func (h *monitor) Start() error {
+	go h.monitorFolderRoutine()
+	go h.addWatchFoldersRecursively(h.rootFolderPath)
 	return nil
+}
+
+func (h *monitor) addWatchFoldersRecursively(path string) {
+	filepath.Walk(path, func(path string, fi os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if fi.Mode().IsDir() {
+			return h.watcher.Add(path)
+		}
+		return nil
+	})
 }
 
 func (h *monitor) Close() {
 	h.watcher.Close()
-	closed := make(chan interface{})
+	closed := make(chan struct{})
 	h.quit <- closed
 	<-closed
 }
 
-func (h *monitor) monitorFolderRoutine(repoPath string, isIgnore func(path string) bool) {
-	gitPath := filepath.Join(repoPath, ".git")
-	refsPath := filepath.Join(repoPath, ".git", "refs")
-	headPath := filepath.Join(repoPath, ".git", "HEAD")
-	fetchHeadPath := filepath.Join(repoPath, ".git", "FETCH_HEAD")
+func (h *monitor) monitorFolderRoutine() {
+	gitPath := filepath.Join(h.rootFolderPath, ".git")
+	refsPath := filepath.Join(gitPath, "refs")
+	headPath := filepath.Join(gitPath, "HEAD")
+	fetchHeadPath := filepath.Join(gitPath, "FETCH_HEAD")
 
 	var err error
 	for {
 		select {
 		case event := <-h.watcher.Events:
-			if h.isIgnore(event.Name, isIgnore) {
+			if h.isNewFolder(event) {
+				log.Infof("New folder detected: %q", event.Name)
+				go h.addWatchFoldersRecursively(event.Name)
+			}
+			if h.isIgnored(event.Name) {
 				//log.Infof("ignoring: %s", event.Name)
 			} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
 				//log.Infof("Repo change: %s", event.Name)
-				select {
-				case h.RepoChange <- nil:
-				default:
-				}
+				h.postRepoChange()
 			} else if h.isStatusChange(event.Name, gitPath) {
 				//log.Infof("Status change: %s", event.Name)
-				select {
-				case h.StatusChange <- nil:
-				default:
-				}
+				h.postStatusChange()
 			} else {
 				// fmt.Printf("ignoring: %s\n", event.Name)
 			}
@@ -92,22 +98,27 @@ func (h *monitor) monitorFolderRoutine(repoPath string, isIgnore func(path strin
 		}
 	}
 }
-
-func (h *monitor) watchDir(path string, fi os.FileInfo, err error) error {
-	if err != nil {
-		return err
+func (h *monitor) postRepoChange() {
+	select {
+	case h.RepoChange <- struct{}{}:
+	default:
+		// Ignore if no listener
 	}
-	if fi.Mode().IsDir() {
-		return h.watcher.Add(path)
-	}
-	return nil
 }
 
-func (h *monitor) isIgnore(path string, isIgnore func(path string) bool) bool {
+func (h *monitor) postStatusChange() {
+	select {
+	case h.StatusChange <- struct{}{}:
+	default:
+		// Ignore if no listener
+	}
+}
+
+func (h *monitor) isIgnored(path string) bool {
 	if utils.DirExists(path) {
 		return true
 	}
-	if isIgnore != nil && isIgnore(path) {
+	if h.ignorer != nil && h.ignorer.IsIgnored(path) {
 		return true
 	}
 	return false
@@ -131,6 +142,16 @@ func (h *monitor) isRepoChange(path, fetchHeadPath, headPath, refsPath string) b
 		return true
 	}
 	if strings.HasPrefix(path, refsPath) {
+		return true
+	}
+	return false
+}
+
+func (h *monitor) isNewFolder(event fsnotify.Event) bool {
+	if event.Op != fsnotify.Create {
+		return false
+	}
+	if utils.DirExists(event.Name) {
 		return true
 	}
 	return false
