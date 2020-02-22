@@ -76,7 +76,7 @@ func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewData) *vie
 		properties: &Properties{}}
 }
 
-func newViewFromTextFunc(ui *UI, viewText func() string) *view {
+func newViewFromTextFunc(ui *UI, viewText func(viewPort ViewPage) string) *view {
 	return &view{
 		gui:        ui.Gui(),
 		viewName:   ui.NewViewName(),
@@ -93,14 +93,14 @@ func newView(ui *UI, text string) *view {
 }
 
 func viewDataFromText(viewText string) func(viewPort ViewPage) ViewData {
-	return viewDataFromTextFunc(func() string {
+	return viewDataFromTextFunc(func(viewPort ViewPage) string {
 		return viewText
 	})
 }
 
-func viewDataFromTextFunc(viewText func() string) func(viewPort ViewPage) ViewData {
+func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort ViewPage) ViewData {
 	return func(viewPort ViewPage) ViewData {
-		lines := strings.Split(viewText(), "\n")
+		lines := strings.Split(viewText(viewPort), "\n")
 		firstIndex := viewPort.FirstLine
 		if firstIndex > len(lines) {
 			firstIndex = len(lines)

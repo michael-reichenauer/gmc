@@ -15,17 +15,17 @@ func NewDetailsView(uiHandler *ui.UI, model *viewmodel.Service) *DetailsView {
 	h := &DetailsView{
 		vm: NewDetailsVM(model),
 	}
-	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
+	h.View = uiHandler.NewViewFromTextFunc(h.viewData)
 	h.View.Properties().Name = "DetailsView"
 	return h
 }
 
-func (h *DetailsView) viewData(viewPort ui.ViewPage) ui.ViewData {
-	details, err := h.vm.getCommitDetails(viewPort, h.currentIndex)
+func (h *DetailsView) viewData(viewPage ui.ViewPage) string {
+	details, err := h.vm.getCommitDetails(viewPage, h.currentIndex)
 	if err != nil {
-		return ui.ViewData{}
+		return ""
 	}
-	return ui.ViewData{Lines: details.lines}
+	return details
 }
 
 func (h *DetailsView) SetCurrent(selectedIndex int) {

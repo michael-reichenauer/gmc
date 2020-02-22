@@ -32,7 +32,7 @@ func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewData) View
 	return newViewFromPageFunc(h, viewData)
 }
 
-func (h *UI) NewViewFromTextFunc(viewText func() string) View {
+func (h *UI) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
 	return newViewFromTextFunc(h, viewText)
 }
 

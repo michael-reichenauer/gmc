@@ -17,35 +17,31 @@ type detailsVM struct {
 	selectedIndex int
 }
 
-type commitDetails struct {
-	lines []string
-}
-
 func NewDetailsVM(model *viewmodel.Service) *detailsVM {
 	return &detailsVM{model: model}
 }
 
-func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (commitDetails, error) {
+func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (string, error) {
 	commit, err := h.model.GetCommitByIndex(index)
 	if err != nil {
-		return commitDetails{}, err
+		return "", err
 	}
-	return commitDetails{lines: h.toDetailsText(commit, viewPort.Width)}, nil
+	return h.toDetailsText(commit, viewPort.Width), nil
 }
 
-func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) []string {
-	var lines []string
-	lines = append(lines, h.toViewLine(width, c.Branch))
+func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) string {
+	var sb strings.Builder
+	sb.WriteString(h.toViewLine(width, c.Branch) + "\n")
 	id := c.ID
 	if id == viewmodel.StatusID {
 		id = " "
 	}
-	lines = append(lines, toHeader("Id:")+ui.Dark(id))
-	lines = append(lines, toHeader("Branch:")+h.toBranchText(c))
-	lines = append(lines, toHeader("Files:")+ui.Dark("... >"))
-	lines = append(lines, toHeader("Parents:")+ui.Dark(toSids(c.ParentIDs)))
-	lines = append(lines, toHeader("Children:")+ui.Dark(toSids(c.ChildIDs)))
-	lines = append(lines, toHeader("Branch tips:")+ui.Dark(toBranchTips(c.BranchTips)))
+	sb.WriteString(toHeader("Id:") + ui.Dark(id) + "\n")
+	sb.WriteString(toHeader("Branch:") + h.toBranchText(c) + "\n")
+	sb.WriteString(toHeader("Files:") + ui.Dark("... >") + "\n")
+	sb.WriteString(toHeader("Parents:") + ui.Dark(toSids(c.ParentIDs)) + "\n")
+	sb.WriteString(toHeader("Children:") + ui.Dark(toSids(c.ChildIDs)) + "\n")
+	sb.WriteString(toHeader("Branch tips:") + ui.Dark(toBranchTips(c.BranchTips)) + "\n")
 
 	color := ui.CDark
 	if c.ID == viewmodel.StatusID {
@@ -58,12 +54,12 @@ func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) []string {
 			line = line + " >"
 		}
 		if i == 0 {
-			lines = append(lines, toHeader("Message:")+ui.ColorText(color, line))
+			sb.WriteString(toHeader("Message:") + ui.ColorText(color, line) + "\n")
 		} else {
-			lines = append(lines, "           "+ui.ColorText(color, line))
+			sb.WriteString("           " + ui.ColorText(color, line) + "\n")
 		}
 	}
-	return lines
+	return sb.String()
 }
 
 func (h detailsVM) toViewLine(width int, branch viewmodel.Branch) string {
