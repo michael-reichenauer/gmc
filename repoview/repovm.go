@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -68,7 +67,8 @@ func (h *repoVM) close() {
 
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
-	for vr := range h.viewModelService.ChangedEvents {
+
+	for vr := range h.viewModelService.ViewRepos {
 		log.Infof("Detected model change")
 		h.repoViewer.PostOnUIThread(func() {
 			h.repo = vr
@@ -77,26 +77,28 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	}
 }
 
-func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
-	firstIndex := viewPort.FirstLine
-	count := viewPort.Height
-	if count > len(h.repo.Commits) {
-		// Requested count larger than available, return just all available commits
-		count = len(h.repo.Commits)
-	}
+func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
+	firstIndex, lines := h.getLines(viewPage)
 
-	if firstIndex+count >= len(h.repo.Commits) {
-		// Requested commits past available, adjust to return available commits
-		firstIndex = len(h.repo.Commits) - count
-	}
+	return repoPage{
+		repoPath:           h.repo.RepoPath,
+		lines:              lines,
+		total:              len(h.repo.Commits),
+		firstIndex:         firstIndex,
+		currentIndex:       viewPage.CurrentLine,
+		uncommittedChanges: h.repo.UncommittedChanges,
+		currentBranchName:  h.repo.CurrentBranchName,
+	}, nil
+}
 
-	messageLength, _, authorLength, timeLength := columnWidths(h.repo.GraphWidth+markerWidth, viewPort.Width)
+func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
+	firstIndex, commits := h.getCommits(viewPage)
 
-	commits := h.repo.Commits[firstIndex : firstIndex+count]
+	messageLength, _, authorLength, timeLength := columnWidths(h.repo.GraphWidth+markerWidth, viewPage.Width)
 
 	var currentLineCommit viewmodel.Commit
-	if viewPort.CurrentLine-viewPort.FirstLine < len(commits) && viewPort.CurrentLine-viewPort.FirstLine >= 0 {
-		currentLineCommit = commits[viewPort.CurrentLine-viewPort.FirstLine]
+	if len(commits) > 0 {
+		currentLineCommit = commits[viewPage.CurrentLine-viewPage.FirstLine]
 	}
 
 	var lines []string
@@ -114,16 +116,23 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 		writeAuthorTime(&sb, c, timeLength)
 		lines = append(lines, sb.String())
 	}
+	return firstIndex, lines
 
-	return repoPage{
-		repoPath:           h.repo.RepoPath,
-		lines:              lines,
-		total:              len(h.repo.Commits),
-		firstIndex:         firstIndex,
-		currentIndex:       viewPort.CurrentLine,
-		uncommittedChanges: h.repo.UncommittedChanges,
-		currentBranchName:  h.repo.CurrentBranchName,
-	}, nil
+}
+
+func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
+	firstIndex := viewPage.FirstLine
+	count := viewPage.Height
+	if count > len(h.repo.Commits) {
+		// Requested count larger than available, return just all available commits
+		count = len(h.repo.Commits)
+	}
+
+	if firstIndex+count >= len(h.repo.Commits) {
+		// Requested commits past available, adjust to return available commits
+		firstIndex = len(h.repo.Commits) - count
+	}
+	return firstIndex, h.repo.Commits[firstIndex : firstIndex+count]
 }
 
 func (h *repoVM) showOpenMenu() {
@@ -278,18 +287,14 @@ func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
 }
 
 func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
-	color := ui.CWhite
-
 	for i := 0; i < len(c.Graph); i++ {
-		//bColor := h.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
-		bColor := color
+		bColor := h.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
 		if i != 0 {
-			//cColor := bColor
-			cColor := color
+			cColor := bColor
 			if c.Graph[i].Connect == viewmodel.BPass &&
 				c.Graph[i].PassName != "" &&
 				c.Graph[i].PassName != "-" {
-				//cColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
+				cColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
 			} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
 				cColor = ui.CWhite
 			}
@@ -298,7 +303,7 @@ func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 		if c.Graph[i].Branch == viewmodel.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			//bColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
+			bColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}

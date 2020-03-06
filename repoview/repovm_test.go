@@ -9,25 +9,28 @@ import (
 )
 
 type mock struct {
-	notified func()
-	uiThread func(f func())
+	uiWork chan func()
 }
 
 func (m *mock) NotifyChanged() {
-	m.notified()
+	close(m.uiWork)
 }
 func (m *mock) PostOnUIThread(f func()) {
-	m.uiThread(f)
+	select {
+	case m.uiWork <- f:
+	default:
+	}
 }
 
 func TestViewCurrent(t *testing.T) {
 	cs := config.NewConfig("0.0", "")
-	done := make(chan struct{})
-	m := &mock{notified: func() { close(done) }, uiThread: func(f func()) { f() }}
+	m := &mock{uiWork: make(chan func())}
 	vm := newRepoVM(m, nil, cs, "")
 	vm.load()
 	vm.refresh()
-	<-done
+	for f := range m.uiWork {
+		f()
+	}
 	vd, _ := vm.GetRepoPage(ui.ViewPage{Height: 20, Width: 120})
 	fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
 }

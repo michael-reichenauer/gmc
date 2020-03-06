@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"hash/fnv"
 	"strings"
 )
 
@@ -36,7 +37,7 @@ type Status struct {
 }
 
 type Service struct {
-	ChangedEvents chan ViewRepo
+	ViewRepos chan ViewRepo
 
 	gitRepo       *gitrepo.GitRepo
 	configService *config.Service
@@ -49,7 +50,7 @@ type Service struct {
 
 func NewService(configService *config.Service, workingFolder string) *Service {
 	return &Service{
-		ChangedEvents: make(chan ViewRepo),
+		ViewRepos:     make(chan ViewRepo),
 		showRequests:  make(chan []string),
 		branchesGraph: newBranchesGraph(),
 		gitRepo:       gitrepo.NewGitRepo(workingFolder),
@@ -62,9 +63,8 @@ func ToSid(commitID string) string {
 	return gitrepo.ToSid(commitID)
 }
 
-func (s *Service) StartMonitor(ctx context.Context) error {
+func (s *Service) StartMonitor(ctx context.Context) {
 	go s.monitorViewModelRoutine(ctx)
-	return nil
 }
 
 func (s *Service) TriggerRefreshModel() {
@@ -134,7 +134,7 @@ func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, b
 	go func() {
 		vRepo := s.getViewModel(repo, branchNames)
 		select {
-		case s.ChangedEvents <- newViewRepo(vRepo):
+		case s.ViewRepos <- newViewRepo(vRepo):
 			s.configService.SetRepo(s.gitRepo.RepoPath(), func(r *config.Repo) {
 				r.ShownBranches = branchNames
 			})
@@ -194,6 +194,27 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
 		statusCommit.Branch.bottom = statusCommit
 		statusCommit.Branch.bottomId = statusCommit.ID
 	}
+}
+
+func (s *Service) BranchColor(name string) ui.Color {
+	if strings.HasPrefix(name, "multi:") {
+		return ui.CWhite
+	}
+	color, ok := s.customBranchColors[name]
+	if ok {
+		return ui.Color(color)
+	}
+	if name == "master" {
+		return ui.CMagenta
+	}
+	if name == "develop" {
+		return ui.CRedDk
+	}
+
+	h := fnv.New32a()
+	h.Write([]byte(name))
+	index := int(h.Sum32()) % len(branchColors)
+	return branchColors[index]
 }
 
 // func (s *Service) CurrentBranchNames() []string {
@@ -558,23 +579,3 @@ func (s *Service) setParentChildRelations(repo *repo) {
 // 	})
 // }
 //
-// func (s *Service) BranchColor(name string) ui.Color {
-// 	if strings.HasPrefix(name, "multi:") {
-// 		return ui.CWhite
-// 	}
-// 	color, ok := s.customBranchColors[name]
-// 	if ok {
-// 		return ui.Color(color)
-// 	}
-// 	if name == "master" {
-// 		return ui.CMagenta
-// 	}
-// 	if name == "develop" {
-// 		return ui.CRedDk
-// 	}
-//
-// 	h := fnv.New32a()
-// 	h.Write([]byte(name))
-// 	index := int(h.Sum32()) % len(branchColors)
-// 	return branchColors[index]
-// }
