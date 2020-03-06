@@ -148,6 +148,8 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeyHome, gocui.ModNone, h.PageHome)
 		h.SetKey(gocui.KeyEnd, gocui.ModNone, h.PageEnd)
 
+		h.SetKey(gocui.MouseLeft, gocui.ModNone, h.SetLine)
+
 		log.Eventf("ui-view-show", h.Properties().Name)
 		if h.properties.OnLoad != nil {
 			// Let the actual view handle load to initialise view data
@@ -351,6 +353,14 @@ func (h *view) CursorUp() {
 
 func (h *view) CursorDown() {
 	h.move(1)
+}
+
+func (h *view) SetLine() {
+	p := h.ViewPage()
+	_, cy := h.guiView.Cursor()
+
+	log.Infof("%d", cy)
+	h.move(cy - p.CurrentLine)
 }
 
 func (h *view) PageDown() {
