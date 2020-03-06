@@ -95,7 +95,7 @@ func (h *messageBoxView) show(bounds Rect, lines []string) {
 	h.NotifyChanged()
 }
 
-func (h *messageBoxView) viewData(viewPort ViewPage) ViewData {
+func (h *messageBoxView) viewData(viewPort ViewPage) ViewPageData {
 	var lines []string
 	length := viewPort.FirstLine + viewPort.Height
 	if length > len(h.lines) {
@@ -105,7 +105,7 @@ func (h *messageBoxView) viewData(viewPort ViewPage) ViewData {
 	for i := viewPort.FirstLine; i < length; i++ {
 		lines = append(lines, utils.Text(h.lines[i], viewPort.Width))
 	}
-	return ViewData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.lines)}
+	return ViewPageData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.lines)}
 }
 
 func (h *messageBoxView) onClose() {

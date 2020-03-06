@@ -1,13 +1,14 @@
 package repoview
 
 import (
+	"context"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
-	"github.com/thoas/go-funk"
-	"path/filepath"
 	"strings"
 )
 
@@ -27,9 +28,13 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	notifier         notifier
+	repoViewer       ui.Viewer
+	mainService      mainService
 	viewModelService *viewmodel.Service
 	isDetails        bool
+	workingFolder    string
+	repo             viewmodel.ViewRepo
+	cancel           context.CancelFunc
 }
 
 type trace struct {
@@ -38,41 +43,56 @@ type trace struct {
 	BranchNames []string
 }
 
-type notifier interface {
-	NotifyChanged()
-}
-
-func newRepoVM(model *viewmodel.Service, notifier notifier) *repoVM {
+func newRepoVM(
+	repoViewer ui.Viewer,
+	mainService mainService,
+	configService *config.Service,
+	workingFolder string) *repoVM {
 	return &repoVM{
-		notifier:         notifier,
-		viewModelService: model,
+		repoViewer:       repoViewer,
+		mainService:      mainService,
+		viewModelService: viewmodel.NewService(configService, workingFolder),
+		workingFolder:    workingFolder,
 	}
 }
 
-func (h *repoVM) onLoad() {
-	h.viewModelService.Start()
-	go h.monitorModelRoutine()
+func (h *repoVM) load() {
+	ctx, cancel := context.WithCancel(context.Background())
+	h.cancel = cancel
+	go h.monitorModelRoutine(ctx)
 }
 
-func (h *repoVM) LoadWithBranches(branchNames []string) {
-	h.viewModelService.LoadRepo(branchNames)
+func (h *repoVM) close() {
+	h.cancel()
 }
 
-func (h *repoVM) monitorModelRoutine() {
-	for range h.viewModelService.ChangedEvents {
+func (h *repoVM) monitorModelRoutine(ctx context.Context) {
+	h.viewModelService.StartMonitor(ctx)
+	for vr := range h.viewModelService.ChangedEvents {
 		log.Infof("Detected model change")
-		h.notifier.NotifyChanged()
+		h.repoViewer.PostOnUIThread(func() {
+			h.repo = vr
+			h.repoViewer.NotifyChanged()
+		})
 	}
 }
 
 func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
-	rvp, err := h.viewModelService.GetRepoViewPort(viewPort.FirstLine, viewPort.Height)
-	if err != nil {
-		return repoPage{}, err
+	firstIndex := viewPort.FirstLine
+	count := viewPort.Height
+	if count > len(h.repo.Commits) {
+		// Requested count larger than available, return just all available commits
+		count = len(h.repo.Commits)
 	}
-	messageLength, _, authorLength, timeLength := columnWidths(rvp.GraphWidth+markerWidth, viewPort.Width)
 
-	commits := rvp.Commits
+	if firstIndex+count >= len(h.repo.Commits) {
+		// Requested commits past available, adjust to return available commits
+		firstIndex = len(h.repo.Commits) - count
+	}
+
+	messageLength, _, authorLength, timeLength := columnWidths(h.repo.GraphWidth+markerWidth, viewPort.Width)
+
+	commits := h.repo.Commits[firstIndex : firstIndex+count]
 
 	var currentLineCommit viewmodel.Commit
 	if viewPort.CurrentLine-viewPort.FirstLine < len(commits) && viewPort.CurrentLine-viewPort.FirstLine >= 0 {
@@ -86,12 +106,9 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 		sb.WriteString(" ")
 		writeMoreMarker(&sb, c)
 		writeCurrentMarker(&sb, c)
-		//sb.WriteString(" ")
 		writeAheadBehindMarker(&sb, c)
 		h.writeSubject(&sb, c, currentLineCommit, messageLength)
 		sb.WriteString(" ")
-		//	writeSid(&sb, c, sidLength)
-		//	sb.WriteString(" ")
 		writeAuthor(&sb, c, authorLength)
 		sb.WriteString(" ")
 		writeAuthorTime(&sb, c, timeLength)
@@ -99,93 +116,127 @@ func (h *repoVM) GetRepoPage(viewPort ui.ViewPage) (repoPage, error) {
 	}
 
 	return repoPage{
-		repoPath:           rvp.RepoPath,
+		repoPath:           h.repo.RepoPath,
 		lines:              lines,
-		total:              rvp.TotalCommits,
-		firstIndex:         rvp.FirstIndex,
+		total:              len(h.repo.Commits),
+		firstIndex:         firstIndex,
 		currentIndex:       viewPort.CurrentLine,
-		uncommittedChanges: rvp.UncommittedChanges,
-		currentBranchName:  rvp.CurrentBranchName,
+		uncommittedChanges: h.repo.UncommittedChanges,
+		currentBranchName:  h.repo.CurrentBranchName,
 	}, nil
 }
 
+func (h *repoVM) showOpenMenu() {
+	// menu := ui.NewMenu(h.uiHandler, "Show")
+	// items := h.vm.GetOpenBranchMenuItems(h.ViewPage().CurrentLine)
+	// menu.AddItems(items)
+	//
+	// menu.Add(ui.SeparatorMenuItem)
+	// menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
+	// 	h.main.ShowDiff(h.ViewPage().CurrentLine)
+	// }})
+	// switchItems := h.vm.GetSwitchBranchMenuItems()
+	// menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
+	// menu.Add(h.main.RecentReposMenuItem())
+	// menu.Add(h.main.MainMenuItem())
+	//
+	// y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
+	// menu.Show(10, y)
+}
+
+func (h *repoVM) showCloseMenu() {
+	// menu := ui.NewMenu(h.uiHandler, "Hide Branch")
+	// items := h.vm.GetCloseBranchMenuItems()
+	// if len(items) == 0 {
+	// 	return
+	// }
+	// menu.AddItems(items)
+	//
+	// y := h.ViewPage().CurrentLine - h.ViewPage().FirstLine + 2
+	// menu.Show(10, y)
+}
+
 func (h *repoVM) GetOpenBranchMenuItems(index int) []ui.MenuItem {
-	branches := h.viewModelService.GetCommitOpenBranches(index)
+	return nil
+	// branches := h.viewModelService.GetCommitOpenBranches(index)
+	//
+	// current, ok := h.viewModelService.CurrentBranch()
+	// if ok {
+	// 	if nil == funk.Find(branches, func(b viewmodel.Branch) bool {
+	// 		return current.DisplayName == b.DisplayName
+	// 	}) {
+	// 		branches = append(branches, current)
+	// 	}
+	// }
+	//
+	// var items []ui.MenuItem
+	// for _, b := range branches {
+	// 	items = append(items, h.toOpenBranchMenuItem(b))
+	// }
+	//
+	// if len(items) > 0 {
+	// 	items = append(items, ui.SeparatorMenuItem)
+	// }
+	//
+	// var activeSubItems []ui.MenuItem
+	// for _, b := range h.viewModelService.GetActiveBranches() {
+	// 	activeSubItems = append(activeSubItems, h.toOpenBranchMenuItem(b))
+	// }
+	// items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
+	//
+	// var allGitSubItems []ui.MenuItem
+	// for _, b := range h.viewModelService.GetAllBranches() {
+	// 	if b.IsGitBranch {
+	// 		allGitSubItems = append(allGitSubItems, h.toOpenBranchMenuItem(b))
+	// 	}
+	// }
+	// items = append(items, ui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
+	//
+	// var allSubItems []ui.MenuItem
+	// for _, b := range h.viewModelService.GetAllBranches() {
+	// 	allSubItems = append(allSubItems, h.toOpenBranchMenuItem(b))
+	// }
+	// items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
+	//
+	// return items
 
-	current, ok := h.viewModelService.CurrentBranch()
-	if ok {
-		if nil == funk.Find(branches, func(b viewmodel.Branch) bool {
-			return current.DisplayName == b.DisplayName
-		}) {
-			branches = append(branches, current)
-		}
-	}
-
-	var items []ui.MenuItem
-	for _, b := range branches {
-		items = append(items, h.toOpenBranchMenuItem(b))
-	}
-
-	if len(items) > 0 {
-		items = append(items, ui.SeparatorMenuItem)
-	}
-
-	var activeSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetActiveBranches() {
-		activeSubItems = append(activeSubItems, h.toOpenBranchMenuItem(b))
-	}
-	items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
-
-	var allGitSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetAllBranches() {
-		if b.IsGitBranch {
-			allGitSubItems = append(allGitSubItems, h.toOpenBranchMenuItem(b))
-		}
-	}
-	items = append(items, ui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
-
-	var allSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetAllBranches() {
-		allSubItems = append(allSubItems, h.toOpenBranchMenuItem(b))
-	}
-	items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
-
-	return items
 }
 
 func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
-	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetShownBranches(true)
-	for _, b := range commitBranches {
-		items = append(items, h.toCloseBranchMenuItem(b))
-	}
-	return items
+	return nil
+	// var items []ui.MenuItem
+	// commitBranches := h.viewModelService.GetShownBranches(true)
+	// for _, b := range commitBranches {
+	// 	items = append(items, h.toCloseBranchMenuItem(b))
+	// }
+	// return items
 }
 
 func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
-	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetShownBranches(false)
-	for _, b := range commitBranches {
-		items = append(items, h.toSwitchBranchMenuItem(b))
-	}
-	return items
+	return nil
+	// var items []ui.MenuItem
+	// commitBranches := h.viewModelService.GetShownBranches(false)
+	// for _, b := range commitBranches {
+	// 	items = append(items, h.toSwitchBranchMenuItem(b))
+	// }
+	// return items
 }
 
 func (h *repoVM) CloseBranch(index int) {
-	h.viewModelService.CloseBranch(index)
+	//	h.viewModelService.CloseBranch(index)
 }
 
-func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
-		h.viewModelService.ShowBranch(branch.Name)
-	}}
-}
+// func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
+// 	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
+// 		h.viewModelService.ShowBranch(branch.Name)
+// 	}}
+// }
 
-func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
-		h.viewModelService.HideBranch(branch.Name)
-	}}
-}
+// func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
+// 	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
+// 		h.viewModelService.HideBranch(branch.Name)
+// 	}}
+// }
 
 func (h *repoVM) toSwitchBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
@@ -201,20 +252,21 @@ func (h *repoVM) branchItemText(branch viewmodel.Branch) string {
 	}
 }
 
-func (h *repoVM) Refresh() {
+func (h *repoVM) refresh() {
+	log.Infof("refresh")
 	h.viewModelService.TriggerRefreshModel()
 }
 
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
 	git.EnableTracing("")
-	traceBytes := utils.MustJsonMarshal(trace{
-		RepoPath:    h.viewModelService.RepoPath(),
-		ViewPage:    viewPage,
-		BranchNames: h.viewModelService.CurrentBranchNames(),
-	})
-	utils.MustFileWrite(filepath.Join(git.CurrentTracePath(), "repovm"), traceBytes)
+	// traceBytes := utils.MustJsonMarshal(trace{
+	// 	RepoPath:    h.viewModelService.RepoPath(),
+	// 	ViewPage:    viewPage,
+	// 	BranchNames: h.viewModelService.CurrentBranchNames(),
+	// })
+	// utils.MustFileWrite(filepath.Join(git.CurrentTracePath(), "repovm"), traceBytes)
 
-	h.viewModelService.TriggerRefreshModel()
+	//h.viewModelService.TriggerRefreshModel()
 }
 
 func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
@@ -226,15 +278,18 @@ func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
 }
 
 func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
-	for i := 0; i < len(c.Graph); i++ {
-		bColor := h.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
+	color := ui.CWhite
 
+	for i := 0; i < len(c.Graph); i++ {
+		//bColor := h.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
+		bColor := color
 		if i != 0 {
-			cColor := bColor
+			//cColor := bColor
+			cColor := color
 			if c.Graph[i].Connect == viewmodel.BPass &&
 				c.Graph[i].PassName != "" &&
 				c.Graph[i].PassName != "-" {
-				cColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
+				//cColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
 			} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
 				cColor = ui.CWhite
 			}
@@ -243,7 +298,7 @@ func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 		if c.Graph[i].Branch == viewmodel.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			bColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
+			//bColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}
@@ -251,8 +306,8 @@ func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 	}
 }
 
-func (h *repoVM) ChangeBranchColor(index int) {
-	h.viewModelService.ChangeBranchColor(index)
+func (h *repoVM) ChangeBranchColor() {
+	//h.viewModelService.ChangeBranchColor(index)
 }
 
 func (h *repoVM) ToggleDetails() {
@@ -293,14 +348,6 @@ func columnWidths(graphWidth, viewWidth int) (msgLength, sidLength, authorLength
 	return
 }
 
-func writeSid(sb *strings.Builder, commit viewmodel.Commit, length int) {
-	sid := commit.SID
-	if commit.ID == viewmodel.StatusID {
-		sid = " "
-	}
-	sb.WriteString(ui.Dark(utils.Text(sid, length)))
-}
-
 func writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {
 	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
 }
@@ -336,6 +383,14 @@ func (h *repoVM) writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedC
 	sb.WriteString(ui.ColorText(color, subject))
 }
 
+func (h *repoVM) showDiff() {
+
+}
+
+func (h *repoVM) saveTotalDebugState() {
+	//	h.vm.RefreshTrace(h.ViewPage())
+}
+
 func writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Commit) {
 	if c.IsLocalOnly {
 		sb.WriteString(ui.GreenDk("▲"))
@@ -345,3 +400,18 @@ func writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Commit) {
 		sb.WriteString(" ")
 	}
 }
+
+// func (h *repoVM) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
+//
+// 	if count > len(h.repo.Commits) {
+// 		// Requested count larger than available, return just all available commits
+// 		count = len(s.currentViewModel.Commits)
+// 	}
+//
+// 	if firstIndex+count >= len(s.currentViewModel.Commits) {
+// 		// Requested commits past available, adjust to return available commits
+// 		firstIndex = len(s.currentViewModel.Commits) - count
+// 	}
+//
+// 	return newViewPort(s.currentViewModel, firstIndex, count), nil
+// }

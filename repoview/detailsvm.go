@@ -13,23 +13,16 @@ var (
 )
 
 type detailsVM struct {
-	model         *viewmodel.Service
-	selectedIndex int
+	currentCommit viewmodel.Commit
 }
 
-func NewDetailsVM(model *viewmodel.Service) *detailsVM {
-	return &detailsVM{model: model}
+func NewDetailsVM() *detailsVM {
+	return &detailsVM{}
 }
 
-func (h detailsVM) getCommitDetails(viewPort ui.ViewPage, index int) (string, error) {
-	commit, err := h.model.GetCommitByIndex(index)
-	if err != nil {
-		return "", err
-	}
-	return h.toDetailsText(commit, viewPort.Width), nil
-}
-
-func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) string {
+func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
+	width := viewPort.Width
+	c := h.currentCommit
 	var sb strings.Builder
 	sb.WriteString(h.toViewLine(width, c.Branch) + "\n")
 	id := c.ID
@@ -59,11 +52,10 @@ func (h detailsVM) toDetailsText(c viewmodel.Commit, width int) string {
 			sb.WriteString("           " + ui.ColorText(color, line) + "\n")
 		}
 	}
-	return sb.String()
+	return sb.String(), nil
 }
 
 func (h detailsVM) toViewLine(width int, branch viewmodel.Branch) string {
-	bColor := h.model.BranchColor(branch.DisplayName)
 	prefixWidth := branch.Index*2 - 1
 	suffixWidth := width - branch.Index*2 - 2
 	pointer := " " + branchPointer + " "
@@ -73,7 +65,7 @@ func (h detailsVM) toViewLine(width int, branch viewmodel.Branch) string {
 		suffixWidth++
 	}
 	return ui.Dark(strings.Repeat(lineChar, prefixWidth) +
-		ui.ColorText(bColor, pointer) +
+		pointer +
 		ui.Dark(strings.Repeat(lineChar, suffixWidth)))
 }
 
@@ -94,7 +86,6 @@ func toHeader(text string) string {
 }
 
 func (h detailsVM) toBranchText(c viewmodel.Commit) string {
-	bColor := h.model.BranchColor(c.Branch.DisplayName)
 	typeText := ""
 
 	switch {
@@ -124,5 +115,9 @@ func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 	} else if c.IsLocalOnly {
 		typeText = typeText + ", commit not yet pushed"
 	}
-	return ui.ColorText(bColor, c.Branch.DisplayName) + ui.Dark(typeText)
+	return c.Branch.DisplayName + ui.Dark(typeText)
+}
+
+func (h detailsVM) setCurrentCommit(commit viewmodel.Commit) {
+	h.currentCommit = commit
 }

@@ -11,6 +11,14 @@ type Rect struct {
 	X, Y, W, H int
 }
 
+type Notifier interface {
+	NotifyChanged()
+}
+
+type Runner interface {
+	PostOnUIThread(func())
+}
+
 type UI struct {
 	gui            *gocui.Gui
 	isInitialized  bool
@@ -28,7 +36,7 @@ func (h *UI) NewView(text string) View {
 	return newView(h, text)
 }
 
-func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewData) View {
+func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewPageData) View {
 	return newViewFromPageFunc(h, viewData)
 }
 
@@ -55,6 +63,13 @@ func (h *UI) Run(runFunc func()) {
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		panic(log.Fatal(err))
 	}
+}
+
+func (h *UI) PostOnUIThread(f func()) {
+	h.gui.Update(func(g *gocui.Gui) error {
+		f()
+		return nil
+	})
 }
 
 func (h *UI) Gui() *gocui.Gui {

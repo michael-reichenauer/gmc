@@ -2,6 +2,7 @@ package git
 
 import (
 	"os/exec"
+	"strings"
 )
 
 const (
@@ -52,7 +53,7 @@ func (h *Git) Fetch() error {
 	return h.fetchService.fetch()
 }
 
-func (h *Git) CommitDiff(id string) ([]FileDiff, error) {
+func (h *Git) CommitDiff(id string) (CommitDiff, error) {
 	return h.diffService.commitDiff(id)
 }
 
@@ -66,5 +67,5 @@ func (h *Git) Checkout(name string) {
 
 func GitVersion() string {
 	out, _ := exec.Command("git", "version").Output()
-	return string(out)
+	return strings.TrimSpace(string(out))
 }

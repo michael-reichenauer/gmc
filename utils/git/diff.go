@@ -17,6 +17,10 @@ const (
 	DiffSame
 )
 
+type CommitDiff struct {
+	FileDiffs []FileDiff
+}
+
 type FileDiff struct {
 	PathBefore   string
 	PathAfter    string
@@ -45,7 +49,7 @@ func newDiff(cmd GitCommander, statusHandler *statusHandler) *diffService {
 	return &diffService{cmd: cmd, statusHandler: statusHandler}
 }
 
-func (s *diffService) commitDiff(id string) ([]FileDiff, error) {
+func (s *diffService) commitDiff(id string) (CommitDiff, error) {
 	if id == UncommittedID {
 		return s.unCommittedDiff()
 	}
@@ -55,37 +59,41 @@ func (s *diffService) commitDiff(id string) ([]FileDiff, error) {
 		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6", id)
 	if err != nil {
-		return nil, err
+		return CommitDiff{}, err
 	}
-	return s.parse(diffText)
+	diffs, err := s.parse(diffText)
+	if err != nil {
+		return CommitDiff{}, err
+	}
+	return CommitDiff{FileDiffs: diffs}, nil
 }
 
-func (s *diffService) unCommittedDiff() ([]FileDiff, error) {
+func (s *diffService) unCommittedDiff() (CommitDiff, error) {
 	diffText, err := s.cmd.Git("diff",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6")
 	if err != nil {
-		return nil, err
+		return CommitDiff{}, err
 	}
 
 	fileDiffs, err := s.parse(diffText)
 	if err != nil {
-		return nil, err
+		return CommitDiff{}, err
 	}
 
 	status, err := s.statusHandler.getStatus()
 	if err != nil {
-		return nil, err
+		return CommitDiff{}, err
 	}
 	fileDiffs, err = s.addAddedFiles(fileDiffs, status, s.cmd.RepoPath())
 	if err != nil {
-		return nil, err
+		return CommitDiff{}, err
 	}
 	sort.SliceStable(fileDiffs, func(i, j int) bool {
 		return -1 == strings.Compare(strings.ToLower(fileDiffs[i].PathAfter), strings.ToLower(fileDiffs[j].PathAfter))
 	})
-	return fileDiffs, err
+	return CommitDiff{FileDiffs: fileDiffs}, err
 }
 
 func (s *diffService) parse(text string) ([]FileDiff, error) {

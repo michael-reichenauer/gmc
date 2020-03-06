@@ -6,7 +6,7 @@ import (
 )
 
 func Test(t *testing.T) {
-	model := NewModel(`C:\Work Files\GitMind`)
+	model := NewService(`C:\Work Files\GitMind`)
 	model.Load()
 	vp, err := model.GetRepoViewPort(0, 18, 0)
 	assert.NoError(t, err)

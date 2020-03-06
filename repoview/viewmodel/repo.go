@@ -14,13 +14,15 @@ const (
 )
 
 type repo struct {
-	Commits           []*commit
-	commitById        map[string]*commit
-	Branches          []*branch
-	CurrentCommit     *commit
-	CurrentBranchName string
-	gmRepo            gitrepo.Repo
-	gmStatus          gitrepo.Status
+	Commits            []*commit
+	commitById         map[string]*commit
+	Branches           []*branch
+	CurrentCommit      *commit
+	CurrentBranchName  string
+	WorkingFolder      string
+	UncommittedChanges int
+	dgRepo             gitrepo.Repo
+	// gmStatus          gitrepo.Status
 }
 
 func newRepo() *repo {
@@ -48,18 +50,18 @@ func (r *repo) addBranch(gb *gitrepo.Branch) {
 	r.Branches = append(r.Branches, b)
 }
 
-func (r *repo) addVirtualStatusCommit() {
-	if r.gmStatus.OK() {
+func (r *repo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
+	if gRepo.Status.OK() {
 		return
 	}
-	cb, ok := r.gmRepo.CurrentBranch()
+	cb, ok := gRepo.CurrentBranch()
 	if !ok || !r.containsBranch(cb) {
 		return
 	}
-	allChanges := r.gmStatus.AllChanges()
+	allChanges := gRepo.Status.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
-	if r.gmStatus.IsMerging && r.gmStatus.MergeMessage != "" {
-		statusText = statusText + ", " + r.gmStatus.MergeMessage
+	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
+		statusText = statusText + ", " + gRepo.Status.MergeMessage
 	}
 
 	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))

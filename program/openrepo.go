@@ -1,10 +1,7 @@
 package program
 
 import (
-	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	"path/filepath"
@@ -30,29 +27,29 @@ func (h *MainWindow) GetStartMenu() *ui.Menu {
 }
 
 func (h *MainWindow) OpenRepo(folderPath string) {
-	log.Infof("Opening %q ...", folderPath)
-	workingFolder, err := git.WorkingFolderRoot(folderPath)
-	if err != nil {
-		log.Warnf("No working folder %q", folderPath)
-		openMenu := h.GetStartMenu()
-		openMenu.Show(3, 1)
-		return
-	}
-	log.Infof("Got repo %q ...", workingFolder)
-
-	err = h.repoViewModelService.OpenRepo(workingFolder)
-	if err != nil {
-		log.Warnf("Failed to open repo %q", workingFolder)
-		openMenu := h.GetOpenRepoMenu()
-		openMenu.Show(1, 1)
-		return
-	}
-	parent := filepath.Dir(workingFolder)
-
-	h.configService.SetState(func(s *config.State) {
-		s.RecentFolders = utils.RecentItems(s.RecentFolders, workingFolder, 10)
-		s.RecentParentFolders = utils.RecentItems(s.RecentParentFolders, parent, 5)
-	})
+	// log.Infof("Opening %q ...", folderPath)
+	// workingFolder, err := git.WorkingFolderRoot(folderPath)
+	// if err != nil {
+	// 	log.Warnf("No working folder %q", folderPath)
+	// 	openMenu := h.GetStartMenu()
+	// 	openMenu.Show(3, 1)
+	// 	return
+	// }
+	// log.Infof("Got repo %q ...", workingFolder)
+	//
+	// err = h.repoViewModelService.OpenRepo(workingFolder)
+	// if err != nil {
+	// 	log.Warnf("Failed to open repo %q", workingFolder)
+	// 	openMenu := h.GetOpenRepoMenu()
+	// 	openMenu.Show(1, 1)
+	// 	return
+	// }
+	// parent := filepath.Dir(workingFolder)
+	//
+	// h.configService.SetState(func(s *config.State) {
+	// 	s.RecentFolders = utils.RecentItems(s.RecentFolders, workingFolder, 10)
+	// 	s.RecentParentFolders = utils.RecentItems(s.RecentParentFolders, parent, 5)
+	// })
 }
 
 func (h *MainWindow) OpenRepoMenuItems() []ui.MenuItem {

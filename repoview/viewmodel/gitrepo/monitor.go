@@ -1,6 +1,7 @@
 package gitrepo
 
 import (
+	"context"
 	"github.com/fsnotify/fsnotify"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -13,14 +14,20 @@ type Ignorer interface {
 	IsIgnored(path string) bool
 }
 
+type changeType int
+
+const (
+	noChange changeType = iota
+	repoChange
+	statusChange
+)
+
 type monitor struct {
-	RepoChange   chan struct{}
-	StatusChange chan struct{}
+	Changes chan changeType
 
 	watcher        *fsnotify.Watcher
 	rootFolderPath string
 	ignorer        Ignorer
-	closed         chan chan<- struct{}
 }
 
 func newMonitor(rootFolderPath string, ignorer Ignorer) *monitor {
@@ -29,23 +36,30 @@ func newMonitor(rootFolderPath string, ignorer Ignorer) *monitor {
 		panic(log.Fatal(err))
 	}
 	return &monitor{
-		RepoChange:     make(chan struct{}),
-		StatusChange:   make(chan struct{}),
+		Changes:        make(chan changeType),
 		watcher:        watcher,
 		rootFolderPath: rootFolderPath,
 		ignorer:        ignorer,
-		closed:         make(chan chan<- struct{}),
 	}
 }
 
-func (h *monitor) Start() error {
-	go h.monitorFolderRoutine()
-	go h.addWatchFoldersRecursively(h.rootFolderPath)
+func (h *monitor) Start(ctx context.Context) error {
+	go func() {
+		<-ctx.Done()
+		h.watcher.Close()
+	}()
+	go h.monitorFolderRoutine(ctx)
+	go h.addWatchFoldersRecursively(ctx, h.rootFolderPath)
 	return nil
 }
 
-func (h *monitor) addWatchFoldersRecursively(path string) {
+func (h *monitor) addWatchFoldersRecursively(ctx context.Context, path string) {
 	filepath.Walk(path, func(path string, fi os.FileInfo, err error) error {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
 		if err != nil {
 			return err
 		}
@@ -56,52 +70,35 @@ func (h *monitor) addWatchFoldersRecursively(path string) {
 	})
 }
 
-func (h *monitor) Close() {
-	h.watcher.Close()
-	<-h.closed
-}
-
-func (h *monitor) monitorFolderRoutine() {
+func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 	gitPath := filepath.Join(h.rootFolderPath, ".git")
 	refsPath := filepath.Join(gitPath, "refs")
 	headPath := filepath.Join(gitPath, "HEAD")
 	fetchHeadPath := filepath.Join(gitPath, "FETCH_HEAD")
+	defer close(h.Changes)
 
 	for event := range h.watcher.Events {
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
 		if h.isNewFolder(event) {
 			log.Infof("New folder detected: %q", event.Name)
-			go h.addWatchFoldersRecursively(event.Name)
+			go h.addWatchFoldersRecursively(ctx, event.Name)
+			continue
 		}
 		if h.isIgnored(event.Name) {
-			//log.Infof("ignoring: %s", event.Name)
+			// log.Infof("ignoring: %s", event.Name)
 		} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
-			//log.Infof("Repo change: %s", event.Name)
-			h.postRepoChange()
+			// log.Infof("Repo change: %s", event.Name)
+			h.Changes <- repoChange
 		} else if h.isStatusChange(event.Name, gitPath) {
-			//log.Infof("Status change: %s", event.Name)
-			h.postStatusChange()
+			// log.Infof("Status change: %s", event.Name)
+			h.Changes <- statusChange
 		} else {
 			// fmt.Printf("ignoring: %s\n", event.Name)
 		}
-	}
-	close(h.RepoChange)
-	close(h.StatusChange)
-	close(h.closed)
-}
-
-func (h *monitor) postRepoChange() {
-	select {
-	case h.RepoChange <- struct{}{}:
-	default:
-		// Ignore if no listener
-	}
-}
-
-func (h *monitor) postStatusChange() {
-	select {
-	case h.StatusChange <- struct{}{}:
-	default:
-		// Ignore if no listener
 	}
 }
 

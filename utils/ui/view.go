@@ -31,10 +31,15 @@ type ViewPage struct {
 	CurrentLine int
 }
 
-type ViewData struct {
+type ViewPageData struct {
 	Lines      []string
 	FirstIndex int
 	Total      int
+}
+
+type Viewer interface {
+	Notifier
+	Runner
 }
 
 type View interface {
@@ -60,7 +65,7 @@ type view struct {
 
 	properties   *Properties
 	viewName     string
-	viewData     func(viewPort ViewPage) ViewData
+	viewData     func(viewPort ViewPage) ViewPageData
 	firstIndex   int
 	linesCount   int
 	currentIndex int
@@ -68,7 +73,7 @@ type view struct {
 	width        int
 }
 
-func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewData) *view {
+func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
 	return &view{
 		gui:        ui.Gui(),
 		viewName:   ui.NewViewName(),
@@ -92,14 +97,14 @@ func newView(ui *UI, text string) *view {
 		properties: &Properties{}}
 }
 
-func viewDataFromText(viewText string) func(viewPort ViewPage) ViewData {
+func viewDataFromText(viewText string) func(viewPort ViewPage) ViewPageData {
 	return viewDataFromTextFunc(func(viewPort ViewPage) string {
 		return viewText
 	})
 }
 
-func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort ViewPage) ViewData {
-	return func(viewPort ViewPage) ViewData {
+func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort ViewPage) ViewPageData {
+	return func(viewPort ViewPage) ViewPageData {
 		lines := strings.Split(viewText(viewPort), "\n")
 		firstIndex := viewPort.FirstLine
 		if firstIndex > len(lines) {
@@ -110,7 +115,7 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 			height = len(lines) - firstIndex
 		}
 		lines = lines[firstIndex : firstIndex+height]
-		return ViewData{
+		return ViewPageData{
 			Lines:      lines,
 			FirstIndex: viewPort.FirstLine,
 			Total:      len(lines),

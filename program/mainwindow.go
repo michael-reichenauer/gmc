@@ -19,86 +19,80 @@ const (
 )
 
 type MainWindow struct {
-	uiHandler            *ui.UI
-	configService        *config.Service
-	model                *viewmodel.Service
-	repoView             *repoview.RepoView
-	detailsView          *repoview.DetailsView
-	diffView             *repoview.DiffView
-	repoViewModelService *viewmodel.Service
-	mode                 showMode
+	uiHandler     *ui.UI
+	configService *config.Service
+	model         *viewmodel.Service
+	repoView      *repoview.RepoView
+	detailsView   *repoview.DetailsView
+	diffView      *repoview.DiffView
+	mode          showMode
 }
 
 func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow {
-	h := &MainWindow{
+	return &MainWindow{
 		uiHandler:     uiHandler,
 		configService: configService,
 	}
-	h.repoViewModelService = viewmodel.NewModel(configService)
-	h.detailsView = repoview.NewDetailsView(uiHandler, h.repoViewModelService)
-	h.diffView = repoview.NewDiffView(uiHandler, h.repoViewModelService, h)
-	h.repoView = repoview.NewRepoView(uiHandler, h.repoViewModelService, h.detailsView, h)
-	return h
 }
 
 func (h *MainWindow) Show() {
-	emptyMessage := "  Reading repo, please wait ..."
 	workingFolder, err := h.getWorkingFolder()
 	if err != nil {
-		emptyMessage = ""
+		// Handle error
 	}
-	r := ui.Rect{W: 1, H: 1}
+	h.repoView = repoview.NewRepoView(h.uiHandler, h.configService, h, workingFolder)
 	h.repoView.Properties().HasFrame = false
-
-	h.detailsView.Show(r)
-	h.diffView.Show(r)
-	h.repoView.SetEmptyMessage(emptyMessage)
-	h.repoView.Show(r)
+	h.repoView.Show(ui.Rect{W: 1, H: 1})
 	h.repoView.SetCurrentView()
 
 	h.OnResizeWindow()
-
-	h.OpenRepo(workingFolder)
 }
 
-func (h *MainWindow) ToggleDetails() {
+func (h *MainWindow) ToggleShowDetails() {
 	if h.mode == repo {
 		h.mode = details
+		h.detailsView = repoview.NewDetailsView(h.uiHandler)
+		h.detailsView.Show(ui.Rect{W: 1, H: 1})
 		h.detailsView.SetTop()
 	} else {
 		h.mode = repo
+		h.detailsView.Close()
+		h.detailsView = nil
 		h.repoView.SetTop()
 	}
 	h.OnResizeWindow()
 }
 
 func (h *MainWindow) ShowDiff(index int) {
-	h.diffView.SetTop()
-	h.diffView.SetCurrentView()
-	h.diffView.SetIndex(index)
-	h.diffView.NotifyChanged()
+	// h.diffView = repoview.NewDiffView(h.uiHandler, h)
+	// h.diffView.SetTop()
+	// h.diffView.SetCurrentView()
+	// h.diffView.SetIndex(index)
+	// h.diffView.NotifyChanged()
 }
 
 func (h *MainWindow) HideDiff() {
-	h.diffView.SetIndex(-1)
-	h.diffView.SetBottom()
-	h.repoView.SetCurrentView()
+	// h.diffView.SetIndex(-1)
+	// h.diffView.SetBottom()
+	// h.repoView.SetCurrentView()
 }
 
 func (h *MainWindow) OnResizeWindow() {
 	width, height := h.uiHandler.WindowSize()
 	if h.mode == repo {
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
-		h.detailsView.SetBounds(ui.Rect{X: -1, Y: -1, W: 1, H: 1})
-		h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+		h.repoView.NotifyChanged()
+		if h.diffView != nil {
+			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+			h.diffView.NotifyChanged()
+		}
 	} else if h.mode == details {
 		detailsHeight := 7
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
+		h.repoView.NotifyChanged()
 		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight - 1, W: width, H: detailsHeight + 1})
+		h.detailsView.NotifyChanged()
 	}
-	h.repoView.NotifyChanged()
-	h.detailsView.NotifyChanged()
-	h.diffView.NotifyChanged()
 }
 
 func (h *MainWindow) getWorkingFolder() (string, error) {
