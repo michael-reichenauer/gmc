@@ -94,7 +94,8 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
 
-	messageLength, _, authorLength, timeLength := columnWidths(h.repo.GraphWidth+markerWidth, viewPage.Width)
+	graphWidth := h.repo.GraphWidth + markerWidth
+	messageLength, authorLength, timeLength := columnWidths(graphWidth, viewPage.Width)
 
 	var currentLineCommit viewmodel.Commit
 	if len(commits) > 0 {
@@ -332,9 +333,8 @@ func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
 	}
 }
 
-func columnWidths(graphWidth, viewWidth int) (msgLength, sidLength, authorLength, timeLength int) {
+func columnWidths(graphWidth, viewWidth int) (msgLength, authorLength, timeLength int) {
 	width := viewWidth - graphWidth
-	sidLength = 0
 	authorLength = 15
 	timeLength = 12
 	if width < 90 {
@@ -342,11 +342,10 @@ func columnWidths(graphWidth, viewWidth int) (msgLength, sidLength, authorLength
 		timeLength = 6
 	}
 	if width < 60 {
-		sidLength = 0
 		authorLength = 0
 		timeLength = 0
 	}
-	msgLength = viewWidth - graphWidth - authorLength - timeLength - sidLength
+	msgLength = viewWidth - graphWidth - authorLength - timeLength
 	if msgLength < 0 {
 		msgLength = 0
 	}
@@ -405,18 +404,3 @@ func writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Commit) {
 		sb.WriteString(" ")
 	}
 }
-
-// func (h *repoVM) GetRepoViewPort(firstIndex, count int) (ViewPort, error) {
-//
-// 	if count > len(h.repo.Commits) {
-// 		// Requested count larger than available, return just all available commits
-// 		count = len(s.currentViewModel.Commits)
-// 	}
-//
-// 	if firstIndex+count >= len(s.currentViewModel.Commits) {
-// 		// Requested commits past available, adjust to return available commits
-// 		firstIndex = len(s.currentViewModel.Commits) - count
-// 	}
-//
-// 	return newViewPort(s.currentViewModel, firstIndex, count), nil
-// }

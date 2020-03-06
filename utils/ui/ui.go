@@ -58,7 +58,7 @@ func (h *UI) Run(runFunc func()) {
 	gui.InputEsc = true
 	gui.BgColor = gocui.ColorBlack
 	gui.Cursor = false
-	//g.Mouse = true
+	gui.Mouse = true
 
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		panic(log.Fatal(err))

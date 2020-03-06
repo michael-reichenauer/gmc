@@ -138,13 +138,15 @@ func (h *view) Show(bounds Rect) {
 			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 		}
 
+		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 		h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.CursorDown)
+		h.SetKey(gocui.MouseWheelDown, gocui.ModNone, h.LineDown)
+		h.SetKey(gocui.MouseWheelUp, gocui.ModNone, h.LineUp)
 		h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.PageDown)
-		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUpp)
+		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUp)
 		h.SetKey(gocui.KeyHome, gocui.ModNone, h.PageHome)
 		h.SetKey(gocui.KeyEnd, gocui.ModNone, h.PageEnd)
-		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 
 		log.Eventf("ui-view-show", h.Properties().Name)
 		if h.properties.OnLoad != nil {
@@ -356,9 +358,17 @@ func (h *view) PageDown() {
 	h.scroll(y - 1)
 }
 
-func (h *view) PageUpp() {
+func (h *view) PageUp() {
 	_, y := h.Size()
 	h.scroll(-y + 1)
+}
+
+func (h *view) LineDown() {
+	h.scroll(1)
+}
+
+func (h *view) LineUp() {
+	h.scroll(-1)
 }
 
 func (h *view) PageHome() {
