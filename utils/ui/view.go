@@ -19,9 +19,12 @@ type Properties struct {
 	HasFrame    bool
 	HideCurrent bool
 
-	OnLoad  func()
-	OnClose func()
-	Name    string
+	OnLoad         func()
+	OnClose        func()
+	OnMouseLeft    func(x, y int)
+	OnMouseRight   func(x, y int)
+	OnMouseOutside func()
+	Name           string
 }
 
 type ViewPage struct {
@@ -59,7 +62,6 @@ type View interface {
 }
 
 type view struct {
-	gui        *gocui.Gui
 	guiView    *gocui.View
 	scrollView *gocui.View
 
@@ -71,11 +73,12 @@ type view struct {
 	currentIndex int
 	total        int
 	width        int
+	ui           *UI
 }
 
 func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
 	return &view{
-		gui:        ui.Gui(),
+		ui:         ui,
 		viewName:   ui.NewViewName(),
 		viewData:   viewData,
 		properties: &Properties{}}
@@ -83,7 +86,7 @@ func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) 
 
 func newViewFromTextFunc(ui *UI, viewText func(viewPort ViewPage) string) *view {
 	return &view{
-		gui:        ui.Gui(),
+		ui:         ui,
 		viewName:   ui.NewViewName(),
 		viewData:   viewDataFromTextFunc(viewText),
 		properties: &Properties{}}
@@ -91,7 +94,7 @@ func newViewFromTextFunc(ui *UI, viewText func(viewPort ViewPage) string) *view 
 
 func newView(ui *UI, text string) *view {
 	return &view{
-		gui:        ui.Gui(),
+		ui:         ui,
 		viewName:   ui.NewViewName(),
 		viewData:   viewDataFromText(text),
 		properties: &Properties{}}
@@ -124,7 +127,7 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 }
 
 func (h *view) Show(bounds Rect) {
-	if guiView, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
+	if guiView, err := h.ui.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
 			panic(log.Fatalf(err, "%s %d,%d,%d,%d", h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H))
 		}
@@ -148,7 +151,8 @@ func (h *view) Show(bounds Rect) {
 		h.SetKey(gocui.KeyHome, gocui.ModNone, h.PageHome)
 		h.SetKey(gocui.KeyEnd, gocui.ModNone, h.PageEnd)
 
-		h.SetKey(gocui.MouseLeft, gocui.ModNone, h.SetLine)
+		h.SetKey(gocui.MouseLeft, gocui.ModNone, h.MouseLeft)
+		h.SetKey(gocui.MouseRight, gocui.ModNone, h.MouseRight)
 
 		log.Eventf("ui-view-show", h.Properties().Name)
 		if h.properties.OnLoad != nil {
@@ -156,7 +160,7 @@ func (h *view) Show(bounds Rect) {
 			h.properties.OnLoad()
 		}
 	}
-	if scrollView, err := h.gui.SetView(h.scrlName(), bounds.X+bounds.W, bounds.Y-1, bounds.X+bounds.W+1, bounds.Y+bounds.H); err != nil {
+	if scrollView, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W, bounds.Y-1, bounds.X+bounds.W+1, bounds.Y+bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
 			panic(log.Fatalf(err, "%s %d,%d,%d,%d", h.scrlName(), bounds.X-1, bounds.Y-1, bounds.W, bounds.H))
 		}
@@ -174,11 +178,11 @@ func (h *view) scrlName() string {
 }
 
 func (h *view) NotifyChanged() {
-	h.gui.Update(func(g *gocui.Gui) error {
+	h.ui.gui.Update(func(g *gocui.Gui) error {
 		// Clear the view to make room for the new data
 		h.guiView.Clear()
 		h.scrollView.Clear()
-		isCurrent := h.gui.CurrentView() == h.guiView
+		isCurrent := h.ui.gui.CurrentView() == h.guiView
 
 		// Get the view size to calculate the view port
 		width, height := h.guiView.Size()
@@ -264,10 +268,10 @@ func (h *view) toScrollTextBytes(linesCount int) []byte {
 }
 
 func (h *view) SetBounds(bounds Rect) {
-	if _, err := h.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
+	if _, err := h.ui.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W+1, bounds.Y+bounds.H); err != nil {
+	if _, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W+1, bounds.Y+bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
 }
@@ -277,25 +281,23 @@ func (h *view) SetTitle(title string) {
 }
 
 func (h *view) SetCurrentView() {
-	if _, err := h.gui.SetCurrentView(h.viewName); err != nil {
-		panic(log.Fatal(err))
-	}
+	h.ui.SetCurrentView(h)
 }
 
 func (h *view) SetTop() {
-	if _, err := h.gui.SetViewOnTop(h.viewName); err != nil {
+	if _, err := h.ui.gui.SetViewOnTop(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.gui.SetViewOnTop(h.scrlName()); err != nil {
+	if _, err := h.ui.gui.SetViewOnTop(h.scrlName()); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
 func (h *view) SetBottom() {
-	if _, err := h.gui.SetViewOnBottom(h.viewName); err != nil {
+	if _, err := h.ui.gui.SetViewOnBottom(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.gui.SetViewOnBottom(h.scrlName()); err != nil {
+	if _, err := h.ui.gui.SetViewOnBottom(h.scrlName()); err != nil {
 		panic(log.Fatal(err))
 	}
 }
@@ -315,7 +317,7 @@ func (h *view) Properties() *Properties {
 }
 
 func (h *view) PostOnUIThread(f func()) {
-	h.gui.Update(func(g *gocui.Gui) error {
+	h.ui.gui.Update(func(g *gocui.Gui) error {
 		f()
 		return nil
 	})
@@ -325,13 +327,13 @@ func (h *view) Close() {
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}
-	if err := h.gui.DeleteView(h.viewName); err != nil {
+	if err := h.ui.gui.DeleteView(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
 func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
-	if err := h.gui.SetKeybinding(h.viewName, key, modifier, func(gui *gocui.Gui, view *gocui.View) error {
+	if err := h.ui.gui.SetKeybinding(h.viewName, key, modifier, func(gui *gocui.Gui, view *gocui.View) error {
 		handler()
 		return nil
 	}); err != nil {
@@ -355,12 +357,8 @@ func (h *view) CursorDown() {
 	h.move(1)
 }
 
-func (h *view) SetLine() {
-	p := h.ViewPage()
-	_, cy := h.guiView.Cursor()
-
-	log.Infof("%d", cy)
-	h.move(cy - p.CurrentLine)
+func (h *view) MoveLine(line int) {
+	h.move(line)
 }
 
 func (h *view) PageDown() {
@@ -387,6 +385,42 @@ func (h *view) PageHome() {
 
 func (h *view) PageEnd() {
 	h.scroll(h.total)
+}
+
+func (h *view) MouseLeft() {
+	h.mouseDown(h.properties.OnMouseLeft)
+}
+
+func (h *view) MouseRight() {
+	h.mouseDown(h.properties.OnMouseRight)
+}
+
+func (h *view) mouseOutside() {
+	if h.properties.OnMouseOutside != nil {
+		log.Infof("OnMouseOutside handler")
+		h.properties.OnMouseOutside()
+	}
+}
+func (h *view) mouseDown(mouseHandler func(x, y int)) {
+	cx, cy := h.guiView.Cursor()
+	log.Infof("Cursor %d,%d for %q", cx, cy, h.viewName)
+
+	if h != h.ui.currentView {
+		log.Infof("Mouse outside for %s %q", h.viewName, h.ui.currentView.viewName)
+		h.ui.currentView.mouseOutside()
+		return
+	}
+
+	if mouseHandler == nil {
+		p := h.ViewPage()
+		line := cy - p.CurrentLine
+		log.Infof("Mouse move %d lines", line)
+		h.MoveLine(line)
+		return
+	}
+
+	log.Infof("Mouse handler %d, %d", cx, cy)
+	mouseHandler(cx, cy)
 }
 
 func (h *view) move(move int) {

@@ -13,7 +13,7 @@ const (
 	StatusSID = git.UncommittedSID
 )
 
-type repo struct {
+type viewRepo struct {
 	Commits            []*commit
 	commitById         map[string]*commit
 	Branches           []*branch
@@ -21,22 +21,21 @@ type repo struct {
 	CurrentBranchName  string
 	WorkingFolder      string
 	UncommittedChanges int
-	dgRepo             gitrepo.Repo
-	// gmStatus          gitrepo.Status
+	gitRepo            gitrepo.Repo
 }
 
-func newRepo() *repo {
-	return &repo{
+func newRepo() *viewRepo {
+	return &viewRepo{
 		commitById: make(map[string]*commit),
 	}
 }
 
-func (r *repo) CommitById(id string) (*commit, bool) {
+func (r *viewRepo) CommitById(id string) (*commit, bool) {
 	c, ok := r.commitById[id]
 	return c, ok
 }
 
-func (r *repo) BranchByName(name string) *branch {
+func (r *viewRepo) BranchByName(name string) *branch {
 	for _, b := range r.Branches {
 		if name == b.name {
 			return b
@@ -45,12 +44,12 @@ func (r *repo) BranchByName(name string) *branch {
 	panic(log.Fatal(fmt.Errorf("unknown branch id %s", name)))
 }
 
-func (r *repo) addBranch(gb *gitrepo.Branch) {
+func (r *viewRepo) addBranch(gb *gitrepo.Branch) {
 	b := r.toBranch(gb, len(r.Branches))
 	r.Branches = append(r.Branches, b)
 }
 
-func (r *repo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
+func (r *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	if gRepo.Status.OK() {
 		return
 	}
@@ -69,7 +68,7 @@ func (r *repo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	r.commitById[c.ID] = c
 }
 
-func (r *repo) addGitCommit(gc *gitrepo.Commit) {
+func (r *viewRepo) addGitCommit(gc *gitrepo.Commit) {
 	if !r.containsBranch(gc.Branch) {
 		return
 	}
@@ -81,7 +80,7 @@ func (r *repo) addGitCommit(gc *gitrepo.Commit) {
 	}
 }
 
-func (r *repo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
+func (r *viewRepo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	for _, rb := range r.Branches {
 		for _, b := range branches {
 			if rb.name == b.Name {
@@ -92,7 +91,7 @@ func (r *repo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	return false
 }
 
-func (r *repo) containsBranch(branch *gitrepo.Branch) bool {
+func (r *viewRepo) containsBranch(branch *gitrepo.Branch) bool {
 	for _, b := range r.Branches {
 		if b.name == branch.Name {
 			return true
@@ -101,7 +100,7 @@ func (r *repo) containsBranch(branch *gitrepo.Branch) bool {
 	return false
 }
 
-func (r *repo) containsBranchName(name string) bool {
+func (r *viewRepo) containsBranchName(name string) bool {
 	for _, b := range r.Branches {
 		if b.name == name {
 			return true
@@ -110,7 +109,7 @@ func (r *repo) containsBranchName(name string) bool {
 	return false
 }
 
-func (r *repo) toBranch(b *gitrepo.Branch, index int) *branch {
+func (r *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 	parentBranchName := ""
 	if b.ParentBranch != nil {
 		parentBranchName = b.ParentBranch.Name
@@ -131,7 +130,7 @@ func (r *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	}
 }
 
-func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
+func (r *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
 	var branch = r.BranchByName(c.Branch.Name)
 	isLocalOnly := r.isLocalOnly(c, branch)
 	isRemoteOnly := r.isRemoteOnly(c, branch)
@@ -155,7 +154,7 @@ func (r *repo) toCommit(c *gitrepo.Commit, index int) *commit {
 	}
 }
 
-func (r *repo) isRemoteOnly(c *gitrepo.Commit, branch *branch) bool {
+func (r *viewRepo) isRemoteOnly(c *gitrepo.Commit, branch *branch) bool {
 	if !c.Branch.IsGitBranch || !c.Branch.IsRemote || c.Branch.LocalName == "" {
 		// Only remote git branches, with local branch can have remote only remote commits
 		return false
@@ -190,7 +189,7 @@ func (r *repo) isRemoteOnly(c *gitrepo.Commit, branch *branch) bool {
 	return true
 }
 
-func (r *repo) isLocalOnly(c *gitrepo.Commit, branch *branch) bool {
+func (r *viewRepo) isLocalOnly(c *gitrepo.Commit, branch *branch) bool {
 	if !c.Branch.IsGitBranch || c.Branch.IsRemote || c.Branch.RemoteName == "" {
 		// Only local git branches, with remote branch can have local only remote commits
 		return false
@@ -226,7 +225,7 @@ func (r *repo) isLocalOnly(c *gitrepo.Commit, branch *branch) bool {
 	return true
 }
 
-func (r *repo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
+func (r *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
 			return true
@@ -235,7 +234,7 @@ func (r *repo) containsGitBranchName(branches []*gitrepo.Branch, name string) bo
 	return false
 }
 
-func (r *repo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
+func (r *viewRepo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
 	branch := r.BranchByName(branchName)
 	return &commit{
 		ID:         StatusID,
@@ -253,11 +252,11 @@ func (r *repo) toVirtualStatusCommit(branchName string, statusText string, index
 	}
 }
 
-func (r *repo) String() string {
+func (r *viewRepo) String() string {
 	return fmt.Sprintf("b:%d c:%d", len(r.Branches), len(r.Commits))
 }
 
-func (r *repo) ToBranchIndex(id string) int {
+func (r *viewRepo) ToBranchIndex(id string) int {
 	for i, b := range r.Branches {
 		if b.name == id {
 			return i

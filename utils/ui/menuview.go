@@ -11,23 +11,24 @@ const margin = 8
 
 type menuView struct {
 	View
-	uiHandler       *UI
-	parent          *menuView
-	currentViewName string
-	title           string
-	items           []MenuItem
-	bounds          Rect
-	moreWidth       int
-	keyWidth        int
-	marginsWidth    int
+	ui           *UI
+	parent       *menuView
+	title        string
+	items        []MenuItem
+	bounds       Rect
+	moreWidth    int
+	keyWidth     int
+	marginsWidth int
+	currentView  View
 }
 
-func newMenuView(uiHandler *UI, title string, parent *menuView) *menuView {
-	h := &menuView{uiHandler: uiHandler, parent: parent, title: title}
-	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
+func newMenuView(ui *UI, title string, parent *menuView) *menuView {
+	h := &menuView{ui: ui, parent: parent, title: title}
+	h.View = ui.NewViewFromPageFunc(h.viewData)
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
 	h.View.Properties().Title = title
+	h.View.Properties().OnMouseOutside = h.onClose
 	return h
 }
 
@@ -38,7 +39,7 @@ func (h *menuView) addItems(items []MenuItem) {
 func (h *menuView) show(bounds Rect) {
 	h.bounds = h.getBounds(h.items, bounds)
 
-	h.currentViewName = h.uiHandler.CurrentView()
+	h.currentView = h.ui.CurrentView()
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onClose)
@@ -80,7 +81,7 @@ func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
 }
 
 func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
-	windowWidth, windowHeight := h.uiHandler.WindowSize()
+	windowWidth, windowHeight := h.ui.WindowSize()
 	if x1 < 3 {
 		x1 = 1
 	}
@@ -98,7 +99,7 @@ func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
 }
 
 func (h *menuView) getSize(items []MenuItem) (width, height int) {
-	windowWidth, windowHeight := h.uiHandler.WindowSize()
+	windowWidth, windowHeight := h.ui.WindowSize()
 
 	width, h.keyWidth, h.moreWidth, h.marginsWidth = h.maxWidth(items)
 	if width < 10 {
@@ -212,7 +213,7 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 
 func (h *menuView) onClose() {
 	h.Close()
-	h.uiHandler.SetCurrentView(h.currentViewName)
+	h.ui.SetCurrentView(h.currentView)
 }
 
 func (h *menuView) closeAll() {
@@ -252,14 +253,14 @@ func (h *menuView) onSubItem() {
 	}
 	var subBonds Rect
 	subBonds.X = h.bounds.X + h.bounds.W
-	windowWidth, _ := h.uiHandler.WindowSize()
+	windowWidth, _ := h.ui.WindowSize()
 	maxSubWidth, _, _, _ := h.maxWidth(subItems)
 	if subBonds.X+maxSubWidth > windowWidth {
 		subBonds.X = h.bounds.X - maxSubWidth
 	}
 
 	subBonds.Y = h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
-	mv := newMenuView(h.uiHandler, item.Title, h)
+	mv := newMenuView(h.ui, item.Title, h)
 	mv.addItems(subItems)
 	if item.ReuseBounds {
 		subBonds = h.bounds

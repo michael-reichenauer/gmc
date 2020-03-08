@@ -19,7 +19,7 @@ const (
 )
 
 type MainWindow struct {
-	uiHandler     *ui.UI
+	ui            *ui.UI
 	configService *config.Service
 	model         *viewmodel.Service
 	repoView      *repoview.RepoView
@@ -28,19 +28,22 @@ type MainWindow struct {
 	mode          showMode
 }
 
-func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow {
+func NewMainWindow(ui *ui.UI, configService *config.Service) *MainWindow {
 	return &MainWindow{
-		uiHandler:     uiHandler,
+		ui:            ui,
 		configService: configService,
 	}
 }
 
+func (h *MainWindow) NewMenu(title string) *ui.Menu {
+	return h.ui.NewMenu(title)
+}
 func (h *MainWindow) Show() {
 	workingFolder, err := h.getWorkingFolder()
 	if err != nil {
 		// Handle error
 	}
-	h.repoView = repoview.NewRepoView(h.uiHandler, h.configService, h, workingFolder)
+	h.repoView = repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
 	h.repoView.Properties().HasFrame = false
 	h.repoView.Show(ui.Rect{W: 1, H: 1})
 	h.repoView.SetCurrentView()
@@ -51,7 +54,7 @@ func (h *MainWindow) Show() {
 func (h *MainWindow) ToggleShowDetails() {
 	if h.mode == repo {
 		h.mode = details
-		h.detailsView = repoview.NewDetailsView(h.uiHandler)
+		h.detailsView = repoview.NewDetailsView(h.ui)
 		h.detailsView.Show(ui.Rect{W: 1, H: 1})
 		h.detailsView.SetTop()
 	} else {
@@ -78,7 +81,7 @@ func (h *MainWindow) HideDiff() {
 }
 
 func (h *MainWindow) OnResizeWindow() {
-	width, height := h.uiHandler.WindowSize()
+	width, height := h.ui.WindowSize()
 	if h.mode == repo {
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
 		h.repoView.NotifyChanged()
@@ -122,6 +125,6 @@ func (h *MainWindow) MainMenuItem() ui.MenuItem {
 }
 
 func (h *MainWindow) showAbout() {
-	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
+	msgBox := ui.NewMessageBox(h.ui, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
 	msgBox.Show()
 }

@@ -26,6 +26,7 @@ type UI struct {
 	maxX           int
 	maxY           int
 	OnResizeWindow func()
+	currentView    *view
 }
 
 func NewUI() *UI {
@@ -34,6 +35,10 @@ func NewUI() *UI {
 
 func (h *UI) NewView(text string) View {
 	return newView(h, text)
+}
+
+func (h *UI) NewMenu(title string) *Menu {
+	return newMenu(h, title)
 }
 
 func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewPageData) View {
@@ -94,13 +99,13 @@ func SetWindowTitle(text string) {
 	_, _ = utils.SetConsoleTitle(text)
 }
 
-func (h *UI) CurrentView() string {
-	cv := h.gui.CurrentView()
-	return cv.Name()
+func (h *UI) CurrentView() View {
+	return h.currentView
 }
 
-func (h *UI) SetCurrentView(name string) {
-	if _, err := h.gui.SetCurrentView(name); err != nil {
+func (h *UI) SetCurrentView(v View) {
+	h.currentView = v.(*view)
+	if _, err := h.gui.SetCurrentView(h.currentView.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
 }

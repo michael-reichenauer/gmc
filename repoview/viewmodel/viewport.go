@@ -10,6 +10,7 @@ type ViewRepo struct {
 	CurrentBranchName  string
 	RepoPath           string
 	UncommittedChanges int
+	viewRepo           *viewRepo
 }
 
 type Commit struct {
@@ -54,17 +55,18 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 	return false
 }
 
-func newViewRepo(repo *repo) ViewRepo {
+func newViewRepo(repo *viewRepo) ViewRepo {
 	return ViewRepo{
 		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
 		GraphWidth:         len(repo.Branches) * 2,
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
+		viewRepo:           repo,
 	}
 }
 
-func toCommits(repo *repo) []Commit {
+func toCommits(repo *viewRepo) []Commit {
 	commits := make([]Commit, len(repo.Commits))
 	for i, c := range repo.Commits {
 		commits[i] = toCommit(c)

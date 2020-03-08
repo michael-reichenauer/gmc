@@ -70,13 +70,13 @@ func (h *MessageBox) maxTextWidth(lines []string) int {
 
 type messageBoxView struct {
 	View
-	lines           []string
-	uiHandler       *UI
-	currentViewName string
+	lines       []string
+	ui          *UI
+	currentView View
 }
 
 func newMessageBoxView(uiHandler *UI, title string, hideCurrent bool) *messageBoxView {
-	h := &messageBoxView{uiHandler: uiHandler}
+	h := &messageBoxView{ui: uiHandler}
 	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
 	h.View.Properties().Name = "AboutView"
 	h.View.Properties().HasFrame = true
@@ -87,7 +87,7 @@ func newMessageBoxView(uiHandler *UI, title string, hideCurrent bool) *messageBo
 
 func (h *messageBoxView) show(bounds Rect, lines []string) {
 	h.lines = lines
-	h.currentViewName = h.uiHandler.CurrentView()
+	h.currentView = h.ui.CurrentView()
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.Show(bounds)
@@ -110,7 +110,7 @@ func (h *messageBoxView) viewData(viewPort ViewPage) ViewPageData {
 
 func (h *messageBoxView) onClose() {
 	h.Close()
-	h.uiHandler.SetCurrentView(h.currentViewName)
+	h.ui.SetCurrentView(h.currentView)
 }
 
 func (h *messageBoxView) onEnter() {

@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/thoas/go-funk"
 	"hash/fnv"
 	"strings"
 )
@@ -143,10 +144,10 @@ func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, b
 	}()
 }
 
-func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *repo {
+func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {
 	log.Infof("getViewModel")
 	repo := newRepo()
-	//repo.gRepo = grepo
+	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
 	repo.UncommittedChanges = grepo.Status.AllChanges()
 
@@ -176,7 +177,7 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *repo {
 	return repo
 }
 
-func (s *Service) adjustCurrentBranchIfStatus(repo *repo) {
+func (s *Service) adjustCurrentBranchIfStatus(repo *viewRepo) {
 	if len(repo.Commits) < 2 || repo.Commits[0].ID != StatusID || repo.CurrentCommit == nil {
 		return
 	}
@@ -240,19 +241,18 @@ func (s *Service) BranchColor(name string) ui.Color {
 // 	return toCommit(s.currentViewModel.Commits[index]), nil
 // }
 //
-// func (s *Service) CurrentBranch() (Branch, bool) {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	current, ok := s.gmRepo.CurrentBranch()
-// 	if !ok {
-// 		return Branch{}, false
-// 	}
-// 	if containsBranch(s.currentViewModel.Branches, current.Name) {
-// 		return Branch{}, false
-// 	}
-//
-// 	return toBranch(s.currentViewModel.toBranch(current, 0)), true
-// }
+func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
+
+	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
+	if !ok {
+		return Branch{}, false
+	}
+	if containsBranch(viewRepo.viewRepo.Branches, current.Name) {
+		return Branch{}, false
+	}
+
+	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
+}
 
 // func (s *Service) GetAllBranches() []Branch {
 // 	s.lock.Lock()
@@ -303,66 +303,59 @@ func (s *Service) BranchColor(name string) ui.Color {
 // 	return false
 // }
 //
-// func (s *Service) GetCommitOpenBranches(index int) []Branch {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	if index >= len(s.currentViewModel.Commits) {
-// 		// Repo must just have changed, just ignore
-// 		return nil
-// 	}
-// 	c := s.currentViewModel.Commits[index]
-// 	if !c.IsMore {
-// 		// Not a graph point that can be expanded  (no branches at this point)
-// 		return nil
-// 	}
-//
-// 	var branches []*gitrepo.Branch
-//
-// 	if len(c.ParentIDs) > 1 {
-// 		// commit has branch merged into this commit add it
-// 		mergeParent := s.gmRepo.CommitById[c.ParentIDs[1]]
-// 		branches = append(branches, mergeParent.Branch)
-// 	}
-//
-// 	for _, ccId := range c.ChildIDs {
-// 		// commit has children (i.e.), other branches have merged from this branch
-// 		if ccId == StatusID {
-// 			continue
-// 		}
-// 		cc := s.gmRepo.CommitById[ccId]
-// 		if cc.Branch.Name != c.Branch.name {
-// 			branches = append(branches, cc.Branch)
-// 		}
-// 	}
-//
-// 	for _, b := range s.gmRepo.Branches {
-// 		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
-// 			// empty branch with no own branch commit, (branch start)
-// 			branches = append(branches, b)
-// 		}
-// 	}
-//
-// 	var bs []Branch
-// 	for _, b := range branches {
-// 		if nil != funk.Find(bs, func(bsb Branch) bool {
-// 			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
-// 				b.Name == bsb.RemoteName
-// 		}) {
-// 			// Skip duplicates
-// 			continue
-// 		}
-// 		if nil != funk.Find(s.currentViewModel.Branches, func(bsb *branch) bool {
-// 			return b.Name == bsb.name
-// 		}) {
-// 			// Skip branches already shown
-// 			continue
-// 		}
-//
-// 		bs = append(bs, toBranch(s.currentViewModel.toBranch(b, 0)))
-// 	}
-//
-// 	return bs
-// }
+func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Branch {
+	c := viewRepo.viewRepo.Commits[commitIndex]
+	if !c.IsMore {
+		return nil
+	}
+	var branches []*gitrepo.Branch
+
+	if len(c.ParentIDs) > 1 {
+		// commit has branch merged into this commit add it
+		mergeParent := viewRepo.viewRepo.gitRepo.CommitById[c.ParentIDs[1]]
+		branches = append(branches, mergeParent.Branch)
+	}
+
+	for _, ccId := range c.ChildIDs {
+		// commit has children (i.e.), other branches have merged from this branch
+		if ccId == StatusID {
+			continue
+		}
+		cc := viewRepo.viewRepo.gitRepo.CommitById[ccId]
+		if cc.Branch.Name != c.Branch.name {
+			branches = append(branches, cc.Branch)
+		}
+	}
+
+	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
+		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
+			// empty branch with no own branch commit, (branch start)
+			branches = append(branches, b)
+		}
+	}
+
+	var bs []Branch
+	for _, b := range branches {
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
+				b.Name == bsb.RemoteName
+		}) {
+			// Skip duplicates
+			continue
+		}
+		if nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
+			// Skip branches already shown
+			continue
+		}
+
+		bs = append(bs, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+	}
+
+	return bs
+}
+
 //
 // func (s *Service) GetShownBranches(skipMaster bool) []Branch {
 // 	s.lock.Lock()
@@ -392,32 +385,29 @@ func (s *Service) BranchColor(name string) ui.Color {
 // 	return bs
 // }
 //
-// func containsBranch(branches []*branch, name string) bool {
-// 	for _, b := range branches {
-// 		if name == b.name {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-//
-// func (s *Service) ShowBranch(name string) {
-// 	s.lock.Lock()
-//
-// 	branchNames := s.toBranchNames(s.currentViewModel.Branches)
-//
-// 	branch, ok := s.gmRepo.BranchByName(name)
-// 	if !ok {
-// 		s.lock.Unlock()
-// 		return
-// 	}
-//
-// 	branchNames = s.addBranchWithAncestors(branchNames, branch)
-// 	s.lock.Unlock()
-//
-// 	log.Event("vms-branches-open")
-// 	s.showBranches(branchNames)
-// }
+func containsBranch(branches []*branch, name string) bool {
+	for _, b := range branches {
+		if name == b.name {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *Service) ShowBranch(name string, viewRepo ViewRepo) {
+	branchNames := s.toBranchNames(viewRepo.viewRepo.Branches)
+
+	branch, ok := viewRepo.viewRepo.gitRepo.BranchByName(name)
+	if !ok {
+		return
+	}
+
+	branchNames = s.addBranchWithAncestors(branchNames, branch)
+
+	log.Event("vms-branches-open")
+	s.showBranches(branchNames)
+}
+
 //
 // func (s *Service) HideBranch(name string) {
 // 	s.lock.Lock()
@@ -486,7 +476,7 @@ func (s *Service) BranchColor(name string) ui.Color {
 // 	s.showBranches(branchNames)
 // }
 
-func (s *Service) setBranchParentChildRelations(repo *repo) {
+func (s *Service) setBranchParentChildRelations(repo *viewRepo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
 		b.bottom = repo.commitById[b.bottomId]
@@ -496,7 +486,7 @@ func (s *Service) setBranchParentChildRelations(repo *repo) {
 	}
 }
 
-func (s *Service) setParentChildRelations(repo *repo) {
+func (s *Service) setParentChildRelations(repo *viewRepo) {
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
 			// Commit has a parent
@@ -530,14 +520,14 @@ func (s *Service) setParentChildRelations(repo *repo) {
 	}
 }
 
-//
-// func (s *Service) toBranchNames(branches []*branch) []string {
-// 	var ids []string
-// 	for _, b := range branches {
-// 		ids = append(ids, b.name)
-// 	}
-// 	return ids
-// }
+func (s *Service) toBranchNames(branches []*branch) []string {
+	var ids []string
+	for _, b := range branches {
+		ids = append(ids, b.name)
+	}
+	return ids
+}
+
 //
 // func (s *Service) ChangeBranchColor(index int) {
 // 	log.Event("vms-branches-change-color")
