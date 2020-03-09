@@ -404,40 +404,36 @@ func (s *Service) ShowBranch(name string, viewRepo ViewRepo) {
 }
 
 //
-// func (s *Service) HideBranch(name string) {
-// 	s.lock.Lock()
-//
-// 	hideBranch, ok := funk.Find(s.currentViewModel.Branches, func(b *branch) bool {
-// 		return name == b.name
-// 	}).(*branch)
-// 	if !ok || hideBranch == nil {
-// 		// No branch with that name
-// 		s.lock.Unlock()
-// 		return
-// 	}
-// 	if hideBranch.remoteName != "" {
-// 		remoteBranch, ok := funk.Find(s.currentViewModel.Branches, func(b *branch) bool {
-// 			return hideBranch.remoteName == b.name
-// 		}).(*branch)
-// 		if ok && remoteBranch != nil {
-// 			// The branch to hide has a remote branch, hiding that and the local branch
-// 			// will be hidden as well
-// 			hideBranch = remoteBranch
-// 		}
-// 	}
-//
-// 	var branchNames []string
-// 	for _, b := range s.currentViewModel.Branches {
-// 		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
-// 			branchNames = append(branchNames, b.name)
-// 		}
-// 	}
-//
-// 	s.lock.Unlock()
-//
-// 	log.Event("vms-branches-close")
-// 	s.showBranches(branchNames)
-// }
+func (s *Service) HideBranch(viewRepo ViewRepo, name string) {
+	hideBranch, ok := funk.Find(viewRepo.viewRepo.Branches, func(b *branch) bool {
+		return name == b.name
+	}).(*branch)
+	if !ok || hideBranch == nil {
+		// No branch with that name
+		return
+	}
+	if hideBranch.remoteName != "" {
+		remoteBranch, ok := funk.Find(viewRepo.viewRepo.Branches, func(b *branch) bool {
+			return hideBranch.remoteName == b.name
+		}).(*branch)
+		if ok && remoteBranch != nil {
+			// The branch to hide has a remote branch, hiding that and the local branch
+			// will be hidden as well
+			hideBranch = remoteBranch
+		}
+	}
+
+	var branchNames []string
+	for _, b := range viewRepo.viewRepo.Branches {
+		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
+			branchNames = append(branchNames, b.name)
+		}
+	}
+
+	log.Event("vms-branches-close")
+	s.showBranches(branchNames)
+}
+
 //
 // func (s *Service) RepoPath() string {
 // 	s.lock.Lock()

@@ -35,7 +35,7 @@ func NewRepoView(uiHandler *ui.UI, configService *config.Service, mainService ma
 	h.Properties().OnLoad = h.onLoad
 	h.Properties().OnClose = h.vm.close
 	h.Properties().Name = "RepoView"
-	h.Properties().OnMouseRight = h.vm.showOpenMenu
+	h.Properties().OnMouseRight = h.vm.showMenu
 	return h
 }
 
@@ -58,7 +58,6 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
-	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.vm.showCloseMenu)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showOpenMenu)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.vm.saveTotalDebugState)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.vm.ChangeBranchColor)
@@ -83,5 +82,5 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 
 func (h *RepoView) showOpenMenu() {
 	p := h.ViewPage()
-	h.vm.showOpenMenu(10, p.CurrentLine-p.FirstLine)
+	h.vm.showMenu(10, p.CurrentLine-p.FirstLine)
 }
