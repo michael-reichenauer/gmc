@@ -354,33 +354,31 @@ func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Br
 }
 
 //
-// func (s *Service) GetShownBranches(skipMaster bool) []Branch {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-//
-// 	var bs []Branch
-// 	for _, b := range s.currentViewModel.Branches {
-// 		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
-// 			// Do not support closing master branch
-// 			continue
-// 		}
-// 		if b.isRemote && nil != funk.Find(s.currentViewModel.Branches, func(bsb *branch) bool {
-// 			return b.name == bsb.remoteName
-// 		}) {
-// 			// Skip remote if local exist
-// 			continue
-// 		}
-// 		if nil != funk.Find(bs, func(bsb Branch) bool {
-// 			return b.displayName == bsb.DisplayName
-// 		}) {
-// 			// Skip duplicates
-// 			continue
-// 		}
-//
-// 		bs = append(bs, toBranch(b))
-// 	}
-// 	return bs
-// }
+func (s *Service) GetShownBranches(viewRepo ViewRepo, skipMaster bool) []Branch {
+	var bs []Branch
+	for _, b := range viewRepo.viewRepo.Branches {
+		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
+			// Do not support closing master branch
+			continue
+		}
+		if b.isRemote && nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+			return b.name == bsb.remoteName
+		}) {
+			// Skip remote if local exist
+			continue
+		}
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.displayName == bsb.DisplayName
+		}) {
+			// Skip duplicates
+			continue
+		}
+
+		bs = append(bs, toBranch(b))
+	}
+	return bs
+}
+
 //
 func containsBranch(branches []*branch, name string) bool {
 	for _, b := range branches {

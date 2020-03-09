@@ -150,8 +150,8 @@ func (h *repoVM) showOpenMenu(x, y int) {
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		h.mainService.ShowDiff(h.currentIndex)
 	}})
-	// switchItems := h.vm.GetSwitchBranchMenuItems()
-	//	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
+	switchItems := h.GetSwitchBranchMenuItems()
+	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
 	menu.Add(h.mainService.RecentReposMenuItem())
 	menu.Add(h.mainService.MainMenuItem())
 	//
@@ -227,13 +227,12 @@ func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
 }
 
 func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
-	return nil
-	// var items []ui.MenuItem
-	// commitBranches := h.viewModelService.GetShownBranches(false)
-	// for _, b := range commitBranches {
-	// 	items = append(items, h.toSwitchBranchMenuItem(b))
-	// }
-	// return items
+	var items []ui.MenuItem
+	commitBranches := h.viewModelService.GetShownBranches(h.repo, false)
+	for _, b := range commitBranches {
+		items = append(items, h.toSwitchBranchMenuItem(b))
+	}
+	return items
 }
 
 func (h *repoVM) CloseBranch(index int) {
