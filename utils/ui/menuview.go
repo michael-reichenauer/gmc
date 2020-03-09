@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 )
 
@@ -29,6 +30,7 @@ func newMenuView(ui *UI, title string, parent *menuView) *menuView {
 	h.View.Properties().HasFrame = true
 	h.View.Properties().Title = title
 	h.View.Properties().OnMouseOutside = h.onClose
+	h.View.Properties().OnMouseLeft = h.onMouseLeft
 	return h
 }
 
@@ -212,6 +214,7 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 }
 
 func (h *menuView) onClose() {
+	log.Infof("On close")
 	h.Close()
 	h.ui.SetCurrentView(h.currentView)
 }
@@ -227,7 +230,38 @@ func (h *menuView) closeAll() {
 
 func (h *menuView) onEnter() {
 	vp := h.ViewPage()
-	item := h.items[vp.CurrentLine]
+	log.Infof("enter %d", vp.CurrentLine)
+	h.action(vp.FirstLine, vp.CurrentLine, false)
+}
+
+func (h *menuView) onSubItem() {
+	vp := h.ViewPage()
+	h.subItem(vp.FirstLine, vp.CurrentLine)
+}
+
+func (h *menuView) onMouseLeft(x int, y int) {
+	vp := h.ViewPage()
+	log.Infof("mouse %d", vp.FirstLine+y)
+	isMoreClicked := vp.Width-x < 2
+	h.action(vp.FirstLine, vp.FirstLine+y, isMoreClicked)
+}
+
+func (h *menuView) action(firstLine, index int, isMoreClicked bool) {
+	log.Infof("action %d", index)
+	item := h.items[index]
+	log.Infof("action item %d %q, %v", index, item.Text, item.Action == nil)
+
+	var subItems []MenuItem
+	if item.SubItemsFunc != nil {
+		subItems = item.SubItemsFunc()
+	} else {
+		subItems = item.SubItems
+	}
+	if len(subItems) != 0 && isMoreClicked {
+		h.subItem(firstLine, index)
+		return
+	}
+
 	if item.Action == nil {
 		return
 	}
@@ -235,12 +269,12 @@ func (h *menuView) onEnter() {
 	item.Action()
 }
 
-func (h *menuView) onSubItem() {
-	vp := h.ViewPage()
-	if vp.CurrentLine >= len(h.items) {
+func (h *menuView) subItem(firstLine, index int) {
+	if index >= len(h.items) {
 		return
 	}
-	item := h.items[vp.CurrentLine]
+	item := h.items[index]
+	log.Infof("sub item %d %q", index, item.Text)
 
 	var subItems []MenuItem
 	if item.SubItemsFunc != nil {
@@ -259,7 +293,7 @@ func (h *menuView) onSubItem() {
 		subBonds.X = h.bounds.X - maxSubWidth
 	}
 
-	subBonds.Y = h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
+	subBonds.Y = h.bounds.Y + (index - firstLine)
 	mv := newMenuView(h.ui, item.Title, h)
 	mv.addItems(subItems)
 	if item.ReuseBounds {

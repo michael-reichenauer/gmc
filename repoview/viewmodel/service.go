@@ -9,6 +9,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
 	"hash/fnv"
+	"sort"
 	"strings"
 )
 
@@ -254,55 +255,51 @@ func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
 	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
 }
 
-// func (s *Service) GetAllBranches() []Branch {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	var branches []Branch
-// 	for _, b := range s.gmRepo.Branches {
-// 		if containsDisplayNameBranch(branches, b.DisplayName) {
-// 			continue
-// 		}
-// 		if containsBranch(s.currentViewModel.Branches, b.Name) {
-// 			continue
-// 		}
-// 		branches = append(branches, toBranch(s.currentViewModel.toBranch(b, 0)))
-// 	}
-// 	sort.SliceStable(branches, func(i, j int) bool {
-// 		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
-// 	})
-//
-// 	return branches
-// }
-//
-// func (s *Service) GetActiveBranches() []Branch {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	var branches []Branch
-// 	for _, b := range s.gmRepo.Branches {
-// 		if containsDisplayNameBranch(branches, b.DisplayName) {
-// 			continue
-// 		}
-// 		if containsBranch(s.currentViewModel.Branches, b.Name) {
-// 			continue
-// 		}
-// 		branches = append(branches, toBranch(s.currentViewModel.toBranch(b, 0)))
-// 	}
-// 	sort.SliceStable(branches, func(i, j int) bool {
-// 		return s.gmRepo.CommitById[branches[i].TipID].AuthorTime.After(s.gmRepo.CommitById[branches[j].TipID].AuthorTime)
-// 	})
-//
-// 	return branches
-// }
-//
-// func containsDisplayNameBranch(branches []Branch, displayName string) bool {
-// 	for _, b := range branches {
-// 		if displayName == b.DisplayName {
-// 			return true
-// 		}
-// 	}
-// 	return false
-// }
-//
+func (s *Service) GetAllBranches(viewRepo ViewRepo) []Branch {
+	var branches []Branch
+	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
+		if containsDisplayNameBranch(branches, b.DisplayName) {
+			continue
+		}
+		if containsBranch(viewRepo.viewRepo.Branches, b.Name) {
+			continue
+		}
+		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+	}
+	sort.SliceStable(branches, func(i, j int) bool {
+		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+	})
+
+	return branches
+}
+
+func (s *Service) GetActiveBranches(viewRepo ViewRepo) []Branch {
+	var branches []Branch
+	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
+		if containsDisplayNameBranch(branches, b.DisplayName) {
+			continue
+		}
+		if containsBranch(viewRepo.viewRepo.Branches, b.Name) {
+			continue
+		}
+		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+	}
+	sort.SliceStable(branches, func(i, j int) bool {
+		return viewRepo.viewRepo.gitRepo.CommitById[branches[i].TipID].AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitById[branches[j].TipID].AuthorTime)
+	})
+
+	return branches
+}
+
+func containsDisplayNameBranch(branches []Branch, displayName string) bool {
+	for _, b := range branches {
+		if displayName == b.DisplayName {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Branch {
 	c := viewRepo.viewRepo.Commits[commitIndex]
 	if !c.IsMore {
