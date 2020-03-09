@@ -160,9 +160,9 @@ func (h *view) Show(bounds Rect) {
 			h.properties.OnLoad()
 		}
 	}
-	if scrollView, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W, bounds.Y-1, bounds.X+bounds.W+1, bounds.Y+bounds.H); err != nil {
+	if scrollView, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		if err != gocui.ErrUnknownView {
-			panic(log.Fatalf(err, "%s %d,%d,%d,%d", h.scrlName(), bounds.X-1, bounds.Y-1, bounds.W, bounds.H))
+			panic(log.Fatalf(err, "%s", h.scrlName()))
 		}
 		h.scrollView = scrollView
 		h.scrollView.Frame = false
@@ -271,7 +271,7 @@ func (h *view) SetBounds(bounds Rect) {
 	if _, err := h.ui.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W+1, bounds.Y+bounds.H); err != nil {
+	if _, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
 }
@@ -326,6 +326,9 @@ func (h *view) PostOnUIThread(f func()) {
 func (h *view) Close() {
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
+	}
+	if err := h.ui.gui.DeleteView(h.scrlName()); err != nil {
+		panic(log.Fatal(err))
 	}
 	if err := h.ui.gui.DeleteView(h.viewName); err != nil {
 		panic(log.Fatal(err))
@@ -388,11 +391,11 @@ func (h *view) PageEnd() {
 }
 
 func (h *view) MouseLeft() {
-	h.mouseDown(h.properties.OnMouseLeft)
+	h.mouseDown(h.properties.OnMouseLeft, false)
 }
 
 func (h *view) MouseRight() {
-	h.mouseDown(h.properties.OnMouseRight)
+	h.mouseDown(h.properties.OnMouseRight, true)
 }
 
 func (h *view) mouseOutside() {
@@ -401,7 +404,7 @@ func (h *view) mouseOutside() {
 		h.properties.OnMouseOutside()
 	}
 }
-func (h *view) mouseDown(mouseHandler func(x, y int)) {
+func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 	cx, cy := h.guiView.Cursor()
 	log.Infof("Cursor %d,%d for %q", cx, cy, h.viewName)
 
@@ -411,16 +414,21 @@ func (h *view) mouseDown(mouseHandler func(x, y int)) {
 		return
 	}
 
-	if mouseHandler == nil {
+	if isMoveLine || mouseHandler == nil {
 		p := h.ViewPage()
 		line := cy - p.CurrentLine
 		log.Infof("Mouse move %d lines", line)
 		h.MoveLine(line)
+	}
+
+	if mouseHandler == nil {
 		return
 	}
 
-	log.Infof("Mouse handler %d, %d", cx, cy)
-	mouseHandler(cx, cy)
+	h.PostOnUIThread(func() {
+		log.Infof("Mouse handler %d, %d", cx, cy)
+		mouseHandler(cx, cy)
+	})
 }
 
 func (h *view) move(move int) {

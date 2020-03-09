@@ -140,7 +140,7 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 	return firstIndex, h.repo.Commits[firstIndex : firstIndex+count]
 }
 
-func (h *repoVM) showMenu(x, y int) {
+func (h *repoVM) showContextMenu(x, y int) {
 	menu := h.mainService.NewMenu("")
 
 	showItems := h.GetOpenBranchMenuItems()
@@ -150,8 +150,9 @@ func (h *repoVM) showMenu(x, y int) {
 	menu.Add(ui.MenuItem{Text: "Hide Branch", SubItems: hideItems})
 
 	menu.Add(ui.SeparatorMenuItem)
+	c := h.repo.Commits[h.firstIndex+y]
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
-		h.mainService.ShowDiff(h.currentIndex)
+		h.mainService.ShowDiff(h.viewModelService, c.ID)
 	}})
 	switchItems := h.GetSwitchBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
@@ -223,10 +224,6 @@ func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
 	}
 	return items
 }
-
-// func (h *repoVM) CloseBranch(index int) {
-// 		h.viewModelService.CloseBranch(index)
-// }
 
 func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
 	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {

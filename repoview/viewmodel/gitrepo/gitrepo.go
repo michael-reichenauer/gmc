@@ -55,6 +55,7 @@ func (s *GitRepo) StartMonitor(ctx context.Context) {
 }
 
 func (s *GitRepo) GetCommitDiff(id string) (git.CommitDiff, error) {
+	log.Infof("Get diff for %q", id)
 	return s.git.CommitDiff(id)
 }
 

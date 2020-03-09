@@ -13,7 +13,7 @@ type DiffView struct {
 
 func NewDiffView(uiHandler *ui.UI,
 	mainService mainService,
-	diffGetter diffGetter,
+	diffGetter DiffGetter,
 	commitID string,
 ) *DiffView {
 	h := &DiffView{
@@ -37,7 +37,7 @@ func (h *DiffView) onLoad() {
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.vm.onLeft)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.vm.onRight)
 
-	h.NotifyChanged()
+	h.vm.load()
 }
 
 func (h *DiffView) viewData(viewPort ui.ViewPage) ui.ViewPageData {

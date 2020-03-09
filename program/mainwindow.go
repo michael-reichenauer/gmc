@@ -66,18 +66,21 @@ func (h *MainWindow) ToggleShowDetails() {
 	h.OnResizeWindow()
 }
 
-func (h *MainWindow) ShowDiff(index int) {
-	// h.diffView = repoview.NewDiffView(h.uiHandler, h)
-	// h.diffView.SetTop()
-	// h.diffView.SetCurrentView()
-	// h.diffView.SetIndex(index)
-	// h.diffView.NotifyChanged()
+func (h *MainWindow) ShowDiff(diffGetter repoview.DiffGetter, commitID string) {
+	h.diffView = repoview.NewDiffView(h.ui, h, diffGetter, commitID)
+	width, height := h.ui.WindowSize()
+	h.diffView.Show(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+	h.diffView.SetTop()
+	h.diffView.SetCurrentView()
+	h.OnResizeWindow()
 }
 
 func (h *MainWindow) HideDiff() {
-	// h.diffView.SetIndex(-1)
-	// h.diffView.SetBottom()
-	// h.repoView.SetCurrentView()
+	h.diffView.Close()
+	h.diffView = nil
+	h.repoView.SetCurrentView()
+	h.repoView.SetTop()
+	h.OnResizeWindow()
 }
 
 func (h *MainWindow) OnResizeWindow() {
@@ -85,8 +88,10 @@ func (h *MainWindow) OnResizeWindow() {
 	if h.mode == repo {
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
 		h.repoView.NotifyChanged()
+
 		if h.diffView != nil {
 			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+			h.diffView.SetTop()
 			h.diffView.NotifyChanged()
 		}
 	} else if h.mode == details {
@@ -95,6 +100,12 @@ func (h *MainWindow) OnResizeWindow() {
 		h.repoView.NotifyChanged()
 		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight - 1, W: width, H: detailsHeight + 1})
 		h.detailsView.NotifyChanged()
+
+		if h.diffView != nil {
+			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+			h.diffView.SetTop()
+			h.diffView.NotifyChanged()
+		}
 	}
 }
 

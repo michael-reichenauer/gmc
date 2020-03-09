@@ -11,7 +11,7 @@ import (
 
 type diffVM struct {
 	diffViewer  ui.Viewer
-	diffGetter  diffGetter
+	diffGetter  DiffGetter
 	commitDiff  git.CommitDiff
 	commitID    string
 	isDiffReady bool
@@ -25,18 +25,18 @@ type diffPage struct {
 	title      string
 }
 
-type diffGetter interface {
-	GetCommitDiff(id string) git.CommitDiff
+type DiffGetter interface {
+	GetCommitDiff(id string) (git.CommitDiff, error)
 }
 
-func NewDiffVM(diffViewer ui.Viewer, diffGetter diffGetter, commitID string) *diffVM {
+func NewDiffVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
 	log.Infof("new vm")
 	return &diffVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
 }
 
 func (h *diffVM) load() {
 	go func() {
-		diff := h.diffGetter.GetCommitDiff(h.commitID)
+		diff, _ := h.diffGetter.GetCommitDiff(h.commitID)
 		h.diffViewer.PostOnUIThread(func() {
 			h.commitDiff = diff
 			h.isDiffReady = true
@@ -127,7 +127,20 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 		lines:      lines[viewPort.FirstLine : viewPort.FirstLine+viewPort.Height],
 		firstIndex: viewPort.FirstLine,
 		total:      len(lines),
+		title:      h.toDiffTitle(),
 	}, nil
+}
+
+func (h *diffVM) toDiffTitle() string {
+	switch h.page {
+	case 0:
+		return fmt.Sprintf(" Diff %s ", h.commitID[:6])
+	case -1:
+		return fmt.Sprintf(" Before %s ", h.commitID[:6])
+	case 1:
+		return fmt.Sprintf(" After %s ", h.commitID[:6])
+	}
+	return ""
 }
 
 func toDiffType(df git.FileDiff) string {

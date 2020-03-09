@@ -13,7 +13,7 @@ type mainService interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
-	ShowDiff(index int)
+	ShowDiff(diffGetter DiffGetter, commitID string)
 	HideDiff()
 	NewMenu(title string) *ui.Menu
 }
@@ -35,7 +35,7 @@ func NewRepoView(uiHandler *ui.UI, configService *config.Service, mainService ma
 	h.Properties().OnLoad = h.onLoad
 	h.Properties().OnClose = h.vm.close
 	h.Properties().Name = "RepoView"
-	h.Properties().OnMouseRight = h.vm.showMenu
+	h.Properties().OnMouseRight = h.vm.showContextMenu
 	return h
 }
 
@@ -58,7 +58,7 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
-	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showOpenMenu)
+	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showContextMenu)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.vm.saveTotalDebugState)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.vm.ChangeBranchColor)
 	h.SetKey(gocui.KeyCtrlD, gocui.ModNone, h.vm.showDiff)
@@ -80,7 +80,7 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
 }
 
-func (h *RepoView) showOpenMenu() {
+func (h *RepoView) showContextMenu() {
 	p := h.ViewPage()
-	h.vm.showMenu(10, p.CurrentLine-p.FirstLine)
+	h.vm.showContextMenu(10, p.CurrentLine-p.FirstLine)
 }
