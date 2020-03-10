@@ -7,23 +7,24 @@ import (
 )
 
 type Commit struct {
-	Id            string
-	Sid           string
-	Subject       string
-	Message       string
-	Author        string
-	AuthorTime    time.Time
-	IsCurrent     bool
-	ParentIDs     []string
-	ChildIDs      []string
-	Parent        *Commit
-	MergeParent   *Commit
-	Children      []*Commit
-	MergeChildren []*Commit
-	Branch        *Branch
-	Branches      []*Branch
-	IsLikely      bool
-	BranchTips    []string
+	Id         string
+	Sid        string
+	Subject    string
+	Message    string
+	Author     string
+	AuthorTime time.Time
+	ParentIDs  []string
+
+	IsCurrent      bool
+	ChildIDs       []string
+	FirstParent    *Commit
+	MergeParent    *Commit
+	Children       []*Commit
+	MergeChildren  []*Commit
+	Branch         *Branch
+	Branches       []*Branch
+	BranchTipNames []string
+	isLikely       bool
 }
 
 func newCommit(gc git.Commit) *Commit {
@@ -35,7 +36,6 @@ func newCommit(gc git.Commit) *Commit {
 		Message:    gc.Message,
 		Author:     gc.Author,
 		AuthorTime: gc.AuthorTime,
-		IsCurrent:  false,
 	}
 }
 

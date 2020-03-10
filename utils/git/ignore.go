@@ -8,8 +8,6 @@ import (
 	"strings"
 )
 
-//import "github.com/bmatcuk/doublestar"
-
 type ignoreHandler struct {
 	dirPrefixLen int
 	patters      []string

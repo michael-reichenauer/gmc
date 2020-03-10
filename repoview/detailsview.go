@@ -7,28 +7,25 @@ import (
 
 type DetailsView struct {
 	ui.View
-	vm           *detailsVM
-	currentIndex int
+	vm *detailsVM
 }
 
-func NewDetailsView(uiHandler *ui.UI, model *viewmodel.Service) *DetailsView {
-	h := &DetailsView{
-		vm: NewDetailsVM(model),
-	}
-	h.View = uiHandler.NewView(h.viewData)
+func NewDetailsView(uiHandler *ui.UI) *DetailsView {
+	h := &DetailsView{vm: NewDetailsVM()}
+	h.View = uiHandler.NewViewFromTextFunc(h.viewData)
 	h.View.Properties().Name = "DetailsView"
 	return h
 }
 
-func (h *DetailsView) viewData(viewPort ui.ViewPage) ui.ViewData {
-	details, err := h.vm.getCommitDetails(viewPort, h.currentIndex)
+func (h *DetailsView) viewData(viewPage ui.ViewPage) string {
+	details, err := h.vm.getCommitDetails(viewPage)
 	if err != nil {
-		return ui.ViewData{}
+		return ""
 	}
-	return ui.ViewData{Lines: details.lines}
+	return details
 }
 
-func (h *DetailsView) SetCurrent(selectedIndex int) {
-	h.currentIndex = selectedIndex
+func (h *DetailsView) SetCurrent(commit viewmodel.Commit) {
+	h.vm.setCurrentCommit(commit)
 	h.NotifyChanged()
 }

@@ -2,6 +2,7 @@ package program
 
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -18,13 +19,13 @@ func (h *MainWindow) GetOpenRepoMenuItem() ui.MenuItem {
 }
 
 func (h *MainWindow) GetOpenRepoMenu() *ui.Menu {
-	menu := ui.NewMenu(h.uiHandler, "Open repo")
+	menu := h.ui.NewMenu("Open repo")
 	menu.AddItems(h.OpenRepoMenuItems())
 	return menu
 }
 
 func (h *MainWindow) GetStartMenu() *ui.Menu {
-	menu := ui.NewMenu(h.uiHandler, "Open repo")
+	menu := h.ui.NewMenu("Open repo")
 	menu.AddItems(h.OpenRepoMenuItems2())
 	return menu
 }
@@ -40,15 +41,17 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 	}
 	log.Infof("Got repo %q ...", workingFolder)
 
-	err = h.repoViewModelService.OpenRepo(workingFolder)
-	if err != nil {
-		log.Warnf("Failed to open repo %q", workingFolder)
-		openMenu := h.GetOpenRepoMenu()
-		openMenu.Show(1, 1)
-		return
+	if h.repoView != nil {
+		h.repoView.Close()
 	}
-	parent := filepath.Dir(workingFolder)
+	h.repoView = repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
+	h.repoView.Properties().HasFrame = false
+	h.repoView.Show(ui.Rect{W: 1, H: 1})
+	h.repoView.SetTop()
+	h.repoView.SetCurrentView()
+	h.OnResizeWindow()
 
+	parent := filepath.Dir(workingFolder)
 	h.configService.SetState(func(s *config.State) {
 		s.RecentFolders = utils.RecentItems(s.RecentFolders, workingFolder, 10)
 		s.RecentParentFolders = utils.RecentItems(s.RecentParentFolders, parent, 5)

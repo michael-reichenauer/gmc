@@ -17,7 +17,7 @@ type Menu struct {
 	menuView *menuView
 }
 
-func NewMenu(uiHandler *UI, title string) *Menu {
+func newMenu(uiHandler *UI, title string) *Menu {
 	return &Menu{menuView: newMenuView(uiHandler, title, nil)}
 }
 

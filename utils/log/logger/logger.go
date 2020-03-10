@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"net"
 	"runtime"
 	"strings"
 )
@@ -26,10 +27,27 @@ var (
 type Logger struct {
 	prefix    string // prefix to write at beginning of each line
 	isWindows bool
+	udpLogger *net.UDPConn
 }
 
 func NewLogger(prefix string) *Logger {
-	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows"}
+	// fmt.Printf("log target: %s\n", logTarget)
+	remoteAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:6868")
+	if err != nil {
+		panic(err)
+	}
+	localAddr, err := net.ResolveUDPAddr("udp", "0.0.0.0:0")
+	if err != nil {
+		panic(err)
+	}
+	udp, err := net.DialUDP("udp", localAddr, remoteAddr)
+	if err != nil {
+		panic(err)
+	}
+
+	udpLogger := udp
+
+	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows", udpLogger: udpLogger}
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
@@ -82,7 +100,12 @@ func (l *Logger) output(level, message string) {
 
 	lines := strings.Split(message, "\n")
 	for _, ml := range lines {
-		print(fmt.Sprintf("%s%s %s(%d) %s", l.prefix, level, file, line, ml))
+		txt := fmt.Sprintf("%s%s %s(%d) %s", l.prefix, level, file, line, ml)
+		//print(txt)
+		_, err := l.udpLogger.Write([]byte(txt))
+		if err != nil {
+			fmt.Printf("Failed to log %v\n", err)
+		}
 	}
 }
 

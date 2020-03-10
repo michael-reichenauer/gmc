@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 )
 
@@ -11,23 +12,25 @@ const margin = 8
 
 type menuView struct {
 	View
-	uiHandler       *UI
-	parent          *menuView
-	currentViewName string
-	title           string
-	items           []MenuItem
-	bounds          Rect
-	moreWidth       int
-	keyWidth        int
-	marginsWidth    int
+	ui           *UI
+	parent       *menuView
+	title        string
+	items        []MenuItem
+	bounds       Rect
+	moreWidth    int
+	keyWidth     int
+	marginsWidth int
+	currentView  View
 }
 
-func newMenuView(uiHandler *UI, title string, parent *menuView) *menuView {
-	h := &menuView{uiHandler: uiHandler, parent: parent, title: title}
-	h.View = uiHandler.NewView(h.viewData)
+func newMenuView(ui *UI, title string, parent *menuView) *menuView {
+	h := &menuView{ui: ui, parent: parent, title: title}
+	h.View = ui.NewViewFromPageFunc(h.viewData)
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
 	h.View.Properties().Title = title
+	h.View.Properties().OnMouseOutside = h.onClose
+	h.View.Properties().OnMouseLeft = h.onMouseLeft
 	return h
 }
 
@@ -38,7 +41,7 @@ func (h *menuView) addItems(items []MenuItem) {
 func (h *menuView) show(bounds Rect) {
 	h.bounds = h.getBounds(h.items, bounds)
 
-	h.currentViewName = h.uiHandler.CurrentView()
+	h.currentView = h.ui.CurrentView()
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onClose)
@@ -48,7 +51,7 @@ func (h *menuView) show(bounds Rect) {
 	h.NotifyChanged()
 }
 
-func (h *menuView) viewData(viewPort ViewPage) ViewData {
+func (h *menuView) viewData(viewPort ViewPage) ViewPageData {
 	var lines []string
 	length := viewPort.FirstLine + viewPort.Height
 	if length > len(h.items) {
@@ -59,7 +62,7 @@ func (h *menuView) viewData(viewPort ViewPage) ViewData {
 		line := h.toItemText(viewPort.Width, h.items[i])
 		lines = append(lines, line)
 	}
-	return ViewData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.items)}
+	return ViewPageData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.items)}
 }
 
 func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
@@ -80,7 +83,7 @@ func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
 }
 
 func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
-	windowWidth, windowHeight := h.uiHandler.WindowSize()
+	windowWidth, windowHeight := h.ui.WindowSize()
 	if x1 < 3 {
 		x1 = 1
 	}
@@ -98,7 +101,7 @@ func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
 }
 
 func (h *menuView) getSize(items []MenuItem) (width, height int) {
-	windowWidth, windowHeight := h.uiHandler.WindowSize()
+	windowWidth, windowHeight := h.ui.WindowSize()
 
 	width, h.keyWidth, h.moreWidth, h.marginsWidth = h.maxWidth(items)
 	if width < 10 {
@@ -211,8 +214,9 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 }
 
 func (h *menuView) onClose() {
+	log.Infof("On close")
 	h.Close()
-	h.uiHandler.SetCurrentView(h.currentViewName)
+	h.ui.SetCurrentView(h.currentView)
 }
 
 func (h *menuView) closeAll() {
@@ -226,7 +230,38 @@ func (h *menuView) closeAll() {
 
 func (h *menuView) onEnter() {
 	vp := h.ViewPage()
-	item := h.items[vp.CurrentLine]
+	log.Infof("enter %d", vp.CurrentLine)
+	h.action(vp.FirstLine, vp.CurrentLine, false)
+}
+
+func (h *menuView) onSubItem() {
+	vp := h.ViewPage()
+	h.subItem(vp.FirstLine, vp.CurrentLine)
+}
+
+func (h *menuView) onMouseLeft(x int, y int) {
+	vp := h.ViewPage()
+	log.Infof("mouse %d", vp.FirstLine+y)
+	isMoreClicked := vp.Width-x < 2
+	h.action(vp.FirstLine, vp.FirstLine+y, isMoreClicked)
+}
+
+func (h *menuView) action(firstLine, index int, isMoreClicked bool) {
+	log.Infof("action %d", index)
+	item := h.items[index]
+	log.Infof("action item %d %q, %v", index, item.Text, item.Action == nil)
+
+	var subItems []MenuItem
+	if item.SubItemsFunc != nil {
+		subItems = item.SubItemsFunc()
+	} else {
+		subItems = item.SubItems
+	}
+	if len(subItems) != 0 && isMoreClicked {
+		h.subItem(firstLine, index)
+		return
+	}
+
 	if item.Action == nil {
 		return
 	}
@@ -234,12 +269,12 @@ func (h *menuView) onEnter() {
 	item.Action()
 }
 
-func (h *menuView) onSubItem() {
-	vp := h.ViewPage()
-	if vp.CurrentLine >= len(h.items) {
+func (h *menuView) subItem(firstLine, index int) {
+	if index >= len(h.items) {
 		return
 	}
-	item := h.items[vp.CurrentLine]
+	item := h.items[index]
+	log.Infof("sub item %d %q", index, item.Text)
 
 	var subItems []MenuItem
 	if item.SubItemsFunc != nil {
@@ -252,14 +287,14 @@ func (h *menuView) onSubItem() {
 	}
 	var subBonds Rect
 	subBonds.X = h.bounds.X + h.bounds.W
-	windowWidth, _ := h.uiHandler.WindowSize()
+	windowWidth, _ := h.ui.WindowSize()
 	maxSubWidth, _, _, _ := h.maxWidth(subItems)
 	if subBonds.X+maxSubWidth > windowWidth {
 		subBonds.X = h.bounds.X - maxSubWidth
 	}
 
-	subBonds.Y = h.bounds.Y + (vp.CurrentLine - vp.FirstLine)
-	mv := newMenuView(h.uiHandler, item.Title, h)
+	subBonds.Y = h.bounds.Y + (index - firstLine)
+	mv := newMenuView(h.ui, item.Title, h)
 	mv.addItems(subItems)
 	if item.ReuseBounds {
 		subBonds = h.bounds
