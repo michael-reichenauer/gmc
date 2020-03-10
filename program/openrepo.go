@@ -33,7 +33,7 @@ func (h *MainWindow) GetStartMenu() *ui.Menu {
 func (h *MainWindow) OpenRepo(folderPath string) {
 	log.Infof("Opening %q ...", folderPath)
 	workingFolder, err := git.WorkingFolderRoot(folderPath)
-	if err != nil {
+	if folderPath == "" || err != nil {
 		log.Warnf("No working folder %q", folderPath)
 		openMenu := h.GetStartMenu()
 		openMenu.Show(3, 1)
@@ -82,7 +82,9 @@ func (h *MainWindow) getRecentMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	for _, f := range h.configService.GetState().RecentFolders {
 		path := f
-		items = append(items, ui.MenuItem{Text: path, Action: func() { h.OpenRepo(path) }})
+		items = append(items, ui.MenuItem{Text: path, Action: func() {
+			h.OpenRepo(path)
+		}})
 	}
 	return items
 }
