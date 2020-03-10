@@ -46,6 +46,7 @@ func (h *MainWindow) Show() {
 	h.repoView = repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
 	h.repoView.Properties().HasFrame = false
 	h.repoView.Show(ui.Rect{W: 1, H: 1})
+	h.repoView.SetTop()
 	h.repoView.SetCurrentView()
 
 	h.OnResizeWindow()
