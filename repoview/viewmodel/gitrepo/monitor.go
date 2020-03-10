@@ -1,6 +1,7 @@
 package gitrepo
 
 import (
+	"context"
 	"github.com/fsnotify/fsnotify"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -9,105 +10,103 @@ import (
 	"strings"
 )
 
-// ssk.
-type monitor struct {
-	StatusChange chan interface{}
-	RepoChange   chan interface{}
-	watcher      *fsnotify.Watcher
-	// gitPath       string
-	// refsPath      string
-	// headPath      string
-	// fetchHeadPath string
-	quit chan chan<- interface{}
-	//	isIgnoreFunc  func(path string) bool
+type Ignorer interface {
+	IsIgnored(path string) bool
 }
 
-func newMonitor() *monitor {
+type changeType int
+
+const (
+	noChange changeType = iota
+	repoChange
+	statusChange
+)
+
+type monitor struct {
+	Changes chan changeType
+
+	watcher        *fsnotify.Watcher
+	rootFolderPath string
+	ignorer        Ignorer
+}
+
+func newMonitor(rootFolderPath string, ignorer Ignorer) *monitor {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		panic(log.Fatal(err))
 	}
 	return &monitor{
-		watcher: watcher,
-		// gitPath:       filepath.Join(repoPath, ".git"),
-		// refsPath:      filepath.Join(repoPath, ".git", "refs"),
-		// headPath:      filepath.Join(repoPath, ".git", "HEAD"),
-		// fetchHeadPath: filepath.Join(repoPath, ".git", "FETCH_HEAD"),
-		StatusChange: make(chan interface{}),
-		RepoChange:   make(chan interface{}),
-		quit:         make(chan chan<- interface{}),
-		//isIgnoreFunc:  isIgnore,
+		Changes:        make(chan changeType),
+		watcher:        watcher,
+		rootFolderPath: rootFolderPath,
+		ignorer:        ignorer,
 	}
 }
 
-func (h *monitor) Start(repoPath string, isIgnore func(path string) bool) error {
-
-	go h.monitorFolderRoutine(repoPath, isIgnore)
-
-	go filepath.Walk(repoPath, h.watchDir)
+func (h *monitor) Start(ctx context.Context) error {
+	go func() {
+		<-ctx.Done()
+		h.watcher.Close()
+	}()
+	go h.monitorFolderRoutine(ctx)
+	go h.addWatchFoldersRecursively(ctx, h.rootFolderPath)
 	return nil
 }
 
-func (h *monitor) Close() {
-	h.watcher.Close()
-	closed := make(chan interface{})
-	h.quit <- closed
-	<-closed
+func (h *monitor) addWatchFoldersRecursively(ctx context.Context, path string) {
+	filepath.Walk(path, func(path string, fi os.FileInfo, err error) error {
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
+		}
+		if err != nil {
+			return err
+		}
+		if fi.Mode().IsDir() {
+			return h.watcher.Add(path)
+		}
+		return nil
+	})
 }
 
-func (h *monitor) monitorFolderRoutine(repoPath string, isIgnore func(path string) bool) {
-	gitPath := filepath.Join(repoPath, ".git")
-	refsPath := filepath.Join(repoPath, ".git", "refs")
-	headPath := filepath.Join(repoPath, ".git", "HEAD")
-	fetchHeadPath := filepath.Join(repoPath, ".git", "FETCH_HEAD")
+func (h *monitor) monitorFolderRoutine(ctx context.Context) {
+	gitPath := filepath.Join(h.rootFolderPath, ".git")
+	refsPath := filepath.Join(gitPath, "refs")
+	headPath := filepath.Join(gitPath, "HEAD")
+	fetchHeadPath := filepath.Join(gitPath, "FETCH_HEAD")
+	defer close(h.Changes)
 
-	var err error
-	for {
+	for event := range h.watcher.Events {
 		select {
-		case event := <-h.watcher.Events:
-			if h.isIgnore(event.Name, isIgnore) {
-				//log.Infof("ignoring: %s", event.Name)
-			} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
-				//log.Infof("Repo change: %s", event.Name)
-				select {
-				case h.RepoChange <- nil:
-				default:
-				}
-			} else if h.isStatusChange(event.Name, gitPath) {
-				//log.Infof("Status change: %s", event.Name)
-				select {
-				case h.StatusChange <- nil:
-				default:
-				}
-			} else {
-				// fmt.Printf("ignoring: %s\n", event.Name)
-			}
-		case err = <-h.watcher.Errors:
-			log.Warnf("ERROR %v", err)
-		case closed := <-h.quit:
-			close(h.RepoChange)
-			close(h.StatusChange)
-			close(closed)
+		case <-ctx.Done():
 			return
+		default:
+		}
+		if h.isNewFolder(event) {
+			log.Infof("New folder detected: %q", event.Name)
+			go h.addWatchFoldersRecursively(ctx, event.Name)
+			continue
+		}
+		if h.isIgnored(event.Name) {
+			// log.Infof("ignoring: %s", event.Name)
+		} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
+			// log.Infof("Repo change: %s", event.Name)
+			h.Changes <- repoChange
+		} else if h.isStatusChange(event.Name, gitPath) {
+			// log.Infof("Status change: %s", event.Name)
+			h.Changes <- statusChange
+		} else {
+			// fmt.Printf("ignoring: %s\n", event.Name)
 		}
 	}
 }
 
-func (h *monitor) watchDir(path string, fi os.FileInfo, err error) error {
-	if err != nil {
-		return err
-	}
-	if fi.Mode().IsDir() {
-		return h.watcher.Add(path)
-	}
-	return nil
-}
-
-func (h *monitor) isIgnore(path string, isIgnore func(path string) bool) bool {
+func (h *monitor) isIgnored(path string) bool {
 	if utils.DirExists(path) {
 		return true
 	}
-	if isIgnore != nil && isIgnore(path) {
+	if h.ignorer != nil && h.ignorer.IsIgnored(path) {
 		return true
 	}
 	return false
@@ -131,6 +130,16 @@ func (h *monitor) isRepoChange(path, fetchHeadPath, headPath, refsPath string) b
 		return true
 	}
 	if strings.HasPrefix(path, refsPath) {
+		return true
+	}
+	return false
+}
+
+func (h *monitor) isNewFolder(event fsnotify.Event) bool {
+	if event.Op != fsnotify.Create {
+		return false
+	}
+	if utils.DirExists(event.Name) {
 		return true
 	}
 	return false

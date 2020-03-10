@@ -2,7 +2,6 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -11,51 +10,74 @@ import (
 )
 
 type diffVM struct {
-	model        *viewmodel.Service
-	currentIndex int
-	filesDiff    []git.FileDiff
-	page         int
+	diffViewer  ui.Viewer
+	diffGetter  DiffGetter
+	commitDiff  git.CommitDiff
+	commitID    string
+	isDiffReady bool
+	page        int
 }
 
 type diffPage struct {
 	lines      []string
 	firstIndex int
 	total      int
+	title      string
 }
 
-func NewDiffVM(model *viewmodel.Service) *diffVM {
+type DiffGetter interface {
+	GetCommitDiff(id string) (git.CommitDiff, error)
+}
+
+func NewDiffVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
 	log.Infof("new vm")
-	return &diffVM{model: model, currentIndex: -1, page: 0}
+	return &diffVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
+}
+
+func (h *diffVM) load() {
+	go func() {
+		diff, _ := h.diffGetter.GetCommitDiff(h.commitID)
+		h.diffViewer.PostOnUIThread(func() {
+			h.commitDiff = diff
+			h.isDiffReady = true
+			h.diffViewer.NotifyChanged()
+		})
+	}()
+}
+
+func (h *diffVM) onLeft() {
+	if h.page >= 0 {
+		h.page--
+	} else {
+		return
+	}
+	h.diffViewer.NotifyChanged()
+}
+
+func (h *diffVM) onRight() {
+	if h.page <= 0 {
+		h.page++
+	} else {
+		return
+	}
+	h.diffViewer.NotifyChanged()
 }
 
 func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
-	if h.currentIndex == -1 {
+	if !h.isDiffReady {
 		log.Infof("Not set")
-		return diffPage{}, nil
-	}
-
-	if h.filesDiff == nil {
-		commit, err := h.model.GetCommitByIndex(h.currentIndex)
-		if err != nil {
-			log.Infof("commit not found")
-			return diffPage{}, err
-		}
-
-		h.filesDiff, err = h.model.GetCommitDiff(commit.ID)
-		if err != nil {
-			return diffPage{}, err
-		}
+		return diffPage{lines: []string{"Loading diff for " + h.commitID}, firstIndex: 0, total: 1, title: "Diff"}, nil
 	}
 
 	var lines []string
-	lines = append(lines, utils.Text(fmt.Sprintf("Changed files: %d", len(h.filesDiff)), viewPort.Width))
-	for _, df := range h.filesDiff {
+	lines = append(lines, utils.Text(fmt.Sprintf("Changed files: %d", len(h.commitDiff.FileDiffs)), viewPort.Width))
+	for _, df := range h.commitDiff.FileDiffs {
 		diffType := toDiffType(df)
 		lines = append(lines, utils.Text(fmt.Sprintf("  %s %s", diffType, df.PathAfter), viewPort.Width))
 	}
 	lines = append(lines, utils.Text("", viewPort.Width))
 	lines = append(lines, utils.Text("", viewPort.Width))
-	for i, df := range h.filesDiff {
+	for i, df := range h.commitDiff.FileDiffs {
 		if i != 0 {
 			lines = append(lines, utils.Text("", viewPort.Width))
 			lines = append(lines, utils.Text("", viewPort.Width))
@@ -105,23 +127,20 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 		lines:      lines[viewPort.FirstLine : viewPort.FirstLine+viewPort.Height],
 		firstIndex: viewPort.FirstLine,
 		total:      len(lines),
+		title:      h.toDiffTitle(),
 	}, nil
 }
 
-func (h *diffVM) SetIndex(index int) {
-	h.page = 0
-	log.Infof("was %d", h.currentIndex)
-	h.currentIndex = index
-	h.filesDiff = nil
-	log.Infof("is %d", h.currentIndex)
-}
-
-func (h *diffVM) SetLeft(page int) {
-	h.page = page
-}
-
-func (h *diffVM) SetRight(page int) {
-	h.page = page
+func (h *diffVM) toDiffTitle() string {
+	switch h.page {
+	case 0:
+		return fmt.Sprintf(" Diff %s ", h.commitID[:6])
+	case -1:
+		return fmt.Sprintf(" Before %s ", h.commitID[:6])
+	case 1:
+		return fmt.Sprintf(" After %s ", h.commitID[:6])
+	}
+	return ""
 }
 
 func toDiffType(df git.FileDiff) string {

@@ -19,86 +19,95 @@ const (
 )
 
 type MainWindow struct {
-	uiHandler            *ui.UI
-	configService        *config.Service
-	model                *viewmodel.Service
-	repoView             *repoview.RepoView
-	detailsView          *repoview.DetailsView
-	diffView             *repoview.DiffView
-	repoViewModelService *viewmodel.Service
-	mode                 showMode
+	ui            *ui.UI
+	configService *config.Service
+	model         *viewmodel.Service
+	repoView      *repoview.RepoView
+	detailsView   *repoview.DetailsView
+	diffView      *repoview.DiffView
+	mode          showMode
 }
 
-func NewMainWindow(uiHandler *ui.UI, configService *config.Service) *MainWindow {
-	h := &MainWindow{
-		uiHandler:     uiHandler,
+func NewMainWindow(ui *ui.UI, configService *config.Service) *MainWindow {
+	return &MainWindow{
+		ui:            ui,
 		configService: configService,
 	}
-	h.repoViewModelService = viewmodel.NewModel(configService)
-	h.detailsView = repoview.NewDetailsView(uiHandler, h.repoViewModelService)
-	h.diffView = repoview.NewDiffView(uiHandler, h.repoViewModelService, h)
-	h.repoView = repoview.NewRepoView(uiHandler, h.repoViewModelService, h.detailsView, h)
-	return h
 }
 
+func (h *MainWindow) NewMenu(title string) *ui.Menu {
+	return h.ui.NewMenu(title)
+}
 func (h *MainWindow) Show() {
-	emptyMessage := "  Reading repo, please wait ..."
 	workingFolder, err := h.getWorkingFolder()
 	if err != nil {
-		emptyMessage = ""
+		// Handle error
 	}
-	r := ui.Rect{W: 1, H: 1}
+	h.repoView = repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
 	h.repoView.Properties().HasFrame = false
-
-	h.detailsView.Show(r)
-	h.diffView.Show(r)
-	h.repoView.SetEmptyMessage(emptyMessage)
-	h.repoView.Show(r)
+	h.repoView.Show(ui.Rect{W: 1, H: 1})
+	h.repoView.SetTop()
 	h.repoView.SetCurrentView()
 
 	h.OnResizeWindow()
-
-	h.OpenRepo(workingFolder)
 }
 
-func (h *MainWindow) ToggleDetails() {
+func (h *MainWindow) ToggleShowDetails() {
 	if h.mode == repo {
 		h.mode = details
+		h.detailsView = repoview.NewDetailsView(h.ui)
+		h.detailsView.Show(ui.Rect{W: 1, H: 1})
 		h.detailsView.SetTop()
 	} else {
 		h.mode = repo
+		h.detailsView.Close()
+		h.detailsView = nil
 		h.repoView.SetTop()
 	}
 	h.OnResizeWindow()
 }
 
-func (h *MainWindow) ShowDiff(index int) {
+func (h *MainWindow) ShowDiff(diffGetter repoview.DiffGetter, commitID string) {
+	h.diffView = repoview.NewDiffView(h.ui, h, diffGetter, commitID)
+	width, height := h.ui.WindowSize()
+	h.diffView.Show(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
 	h.diffView.SetTop()
 	h.diffView.SetCurrentView()
-	h.diffView.SetIndex(index)
-	h.diffView.NotifyChanged()
+	h.OnResizeWindow()
 }
 
 func (h *MainWindow) HideDiff() {
-	h.diffView.SetIndex(-1)
-	h.diffView.SetBottom()
+	h.diffView.Close()
+	h.diffView = nil
 	h.repoView.SetCurrentView()
+	h.repoView.SetTop()
+	h.OnResizeWindow()
 }
 
 func (h *MainWindow) OnResizeWindow() {
-	width, height := h.uiHandler.WindowSize()
+	width, height := h.ui.WindowSize()
 	if h.mode == repo {
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
-		h.detailsView.SetBounds(ui.Rect{X: -1, Y: -1, W: 1, H: 1})
-		h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+		h.repoView.NotifyChanged()
+
+		if h.diffView != nil {
+			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+			h.diffView.SetTop()
+			h.diffView.NotifyChanged()
+		}
 	} else if h.mode == details {
 		detailsHeight := 7
 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
+		h.repoView.NotifyChanged()
 		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight - 1, W: width, H: detailsHeight + 1})
+		h.detailsView.NotifyChanged()
+
+		if h.diffView != nil {
+			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+			h.diffView.SetTop()
+			h.diffView.NotifyChanged()
+		}
 	}
-	h.repoView.NotifyChanged()
-	h.detailsView.NotifyChanged()
-	h.diffView.NotifyChanged()
 }
 
 func (h *MainWindow) getWorkingFolder() (string, error) {
@@ -128,6 +137,6 @@ func (h *MainWindow) MainMenuItem() ui.MenuItem {
 }
 
 func (h *MainWindow) showAbout() {
-	msgBox := ui.NewMessageBox(h.uiHandler, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
+	msgBox := ui.NewMessageBox(h.ui, fmt.Sprintf("gmc %s", h.configService.ProgramVersion), "About")
 	msgBox.Show()
 }

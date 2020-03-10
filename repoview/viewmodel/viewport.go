@@ -4,14 +4,13 @@ import (
 	"time"
 )
 
-type ViewPort struct {
+type ViewRepo struct {
 	Commits            []Commit
-	FirstIndex         int
-	TotalCommits       int
 	GraphWidth         int
 	CurrentBranchName  string
 	RepoPath           string
 	UncommittedChanges int
+	viewRepo           *viewRepo
 }
 
 type Commit struct {
@@ -56,22 +55,21 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 	return false
 }
 
-func newViewPort(repo *repo, firstIndex, count int) ViewPort {
-	return ViewPort{
-		Commits:            toCommits(repo, firstIndex, count),
-		FirstIndex:         firstIndex,
-		TotalCommits:       len(repo.Commits),
+func newViewRepo(repo *viewRepo) ViewRepo {
+	return ViewRepo{
+		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
 		GraphWidth:         len(repo.Branches) * 2,
-		RepoPath:           repo.gmRepo.RepoPath,
-		UncommittedChanges: repo.gmStatus.AllChanges(),
+		RepoPath:           repo.WorkingFolder,
+		UncommittedChanges: repo.UncommittedChanges,
+		viewRepo:           repo,
 	}
 }
 
-func toCommits(repo *repo, firstIndex int, count int) []Commit {
-	commits := make([]Commit, count)
-	for i := 0; i < count; i++ {
-		commits[i] = toCommit(repo.Commits[i+firstIndex])
+func toCommits(repo *viewRepo) []Commit {
+	commits := make([]Commit, len(repo.Commits))
+	for i, c := range repo.Commits {
+		commits[i] = toCommit(c)
 	}
 	return commits
 }

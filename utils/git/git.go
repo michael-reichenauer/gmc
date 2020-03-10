@@ -1,5 +1,10 @@
 package git
 
+import (
+	"os/exec"
+	"strings"
+)
+
 const (
 	UncommittedID  = "0000000000000000000000000000000000000000"
 	UncommittedSID = "000000"
@@ -31,6 +36,7 @@ func NewGit(path string) *Git {
 func (h *Git) RepoPath() string {
 	return h.cmd.RepoPath()
 }
+
 func (h *Git) GetLog() ([]Commit, error) {
 	return h.logHandler.getLog()
 }
@@ -46,7 +52,8 @@ func (h *Git) GetStatus() (Status, error) {
 func (h *Git) Fetch() error {
 	return h.fetchService.fetch()
 }
-func (h *Git) CommitDiff(id string) ([]FileDiff, error) {
+
+func (h *Git) CommitDiff(id string) (CommitDiff, error) {
 	return h.diffService.commitDiff(id)
 }
 
@@ -56,4 +63,9 @@ func (h *Git) IsIgnored(path string) bool {
 
 func (h *Git) Checkout(name string) {
 	h.branches.checkout(name)
+}
+
+func GitVersion() string {
+	out, _ := exec.Command("git", "version").Output()
+	return strings.TrimSpace(string(out))
 }

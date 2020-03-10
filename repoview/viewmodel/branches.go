@@ -9,7 +9,7 @@ import (
 func (s *Service) getGitModelBranches(branchNames []string, gmRepo gitrepo.Repo) []*gitrepo.Branch {
 	if len(branchNames) == 0 {
 		// No specified branches, default to current, or master
-		rc := s.configService.GetRepo(s.RepoPath())
+		rc := s.configService.GetRepo(s.gitRepo.RepoPath())
 		branchNames = rc.ShownBranches
 		if len(branchNames) == 0 {
 			branchNames = s.getDefaultBranchIDs(gmRepo)

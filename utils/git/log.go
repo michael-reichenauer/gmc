@@ -6,6 +6,21 @@ import (
 	"time"
 )
 
+type Commit struct {
+	ID         string
+	SID        string
+	ParentIDs  []string
+	Subject    string
+	Message    string
+	Author     string
+	AuthorTime time.Time
+	CommitTime time.Time
+}
+
+func (c *Commit) String() string {
+	return fmt.Sprintf("%s %s", c.SID, c.Subject)
+}
+
 const (
 	customRFC3339 = "2006-01-02T15:04:05Z0700" // Almost RFC3339 but no ':' in the last 4 chars
 )

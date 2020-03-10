@@ -11,6 +11,14 @@ type Rect struct {
 	X, Y, W, H int
 }
 
+type Notifier interface {
+	NotifyChanged()
+}
+
+type Runner interface {
+	PostOnUIThread(func())
+}
+
 type UI struct {
 	gui            *gocui.Gui
 	isInitialized  bool
@@ -18,14 +26,27 @@ type UI struct {
 	maxX           int
 	maxY           int
 	OnResizeWindow func()
+	currentView    *view
 }
 
 func NewUI() *UI {
 	return &UI{}
 }
 
-func (h *UI) NewView(viewData func(viewPort ViewPage) ViewData) View {
-	return newView(h, viewData)
+func (h *UI) NewView(text string) View {
+	return newView(h, text)
+}
+
+func (h *UI) NewMenu(title string) *Menu {
+	return newMenu(h, title)
+}
+
+func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewPageData) View {
+	return newViewFromPageFunc(h, viewData)
+}
+
+func (h *UI) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
+	return newViewFromTextFunc(h, viewText)
 }
 
 func (h *UI) Run(runFunc func()) {
@@ -42,11 +63,18 @@ func (h *UI) Run(runFunc func()) {
 	gui.InputEsc = true
 	gui.BgColor = gocui.ColorBlack
 	gui.Cursor = false
-	//g.Mouse = true
+	gui.Mouse = true
 
 	if err = gui.MainLoop(); err != nil && err != gocui.ErrQuit {
 		panic(log.Fatal(err))
 	}
+}
+
+func (h *UI) PostOnUIThread(f func()) {
+	h.gui.Update(func(g *gocui.Gui) error {
+		f()
+		return nil
+	})
 }
 
 func (h *UI) Gui() *gocui.Gui {
@@ -71,13 +99,13 @@ func SetWindowTitle(text string) {
 	_, _ = utils.SetConsoleTitle(text)
 }
 
-func (h *UI) CurrentView() string {
-	cv := h.gui.CurrentView()
-	return cv.Name()
+func (h *UI) CurrentView() View {
+	return h.currentView
 }
 
-func (h *UI) SetCurrentView(name string) {
-	if _, err := h.gui.SetCurrentView(name); err != nil {
+func (h *UI) SetCurrentView(v View) {
+	h.currentView = v.(*view)
+	if _, err := h.gui.SetCurrentView(h.currentView.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
 }
