@@ -88,7 +88,8 @@ func isDebugConsole() bool {
 func logProgramInfo(configService *config.Service) {
 	log.Infof("Version: %s", configService.ProgramVersion)
 	log.Infof("Binary path: %q", utils.BinPath())
-	log.Infof("Folder path: %s", configService.FolderPath)
-	log.Infof("Git version: %s", git.GitVersion())
-	log.Infof("Http proxy: %s", utils.GetHTTPProxyURL())
+	log.Infof("Folder path: %q", configService.FolderPath)
+	log.Infof("Working Folder: %q", utils.CurrentDir())
+	log.Infof("Git version: %q", git.GitVersion())
+	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
 }
