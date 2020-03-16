@@ -105,6 +105,9 @@ func (h *UI) CurrentView() View {
 
 func (h *UI) SetCurrentView(v View) {
 	h.currentView = v.(*view)
+	if h.currentView == nil {
+		return
+	}
 	if _, err := h.gui.SetCurrentView(h.currentView.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
