@@ -335,7 +335,7 @@ func (h *autoUpdate) cleanTmpFiles() {
 	var tmpFiles []string
 	err := filepath.Walk(binDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			return err
+			return nil
 		}
 		if strings.HasPrefix(path, binPath) && filepath.Ext(path) == tmpSuffix {
 			tmpFiles = append(tmpFiles, path)
@@ -343,7 +343,7 @@ func (h *autoUpdate) cleanTmpFiles() {
 		return nil
 	})
 	if err != nil {
-		log.Warnf("Failed to get temp files in bin dir")
+		log.Warnf("Failed to get temp files in bin dir, %v", err)
 		return
 	}
 	for _, tempFile := range tmpFiles {

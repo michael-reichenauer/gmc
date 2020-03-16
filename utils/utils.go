@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"math/rand"
@@ -20,6 +21,11 @@ func CurrentDir() string {
 		panic(log.Fatal(err))
 	}
 	return dir
+}
+
+func DebugWait() {
+	var input string
+	fmt.Scanln(&input)
 }
 
 func BinPath() string {
