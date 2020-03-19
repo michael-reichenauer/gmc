@@ -6,49 +6,52 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-var (
-	currentCommitMarker = ui.White("●")
-	moreMarker          = ui.Dark(">")
-)
-
-func hasLeft(bm utils.Bitmask) bool {
-	return bm.Has(viewmodel.BBranchLeft) ||
-		bm.Has(viewmodel.BMergeLeft) ||
-		bm.Has(viewmodel.BPass)
+type repoGraph struct {
 }
 
-func graphBranchRune(bm utils.Bitmask) rune {
+var (
+	currentCommitMarker = ui.White("●")
+	mergeInMarker       = ui.Dark("╮")
+	branchOurMarker     = ui.Dark("╯")
+	inOutMarker         = ui.Dark("<")
+)
+
+func newRepoGraph() *repoGraph {
+	return &repoGraph{}
+}
+
+func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	switch {
 	// commit of a branch with only one commit (tip==bottom)
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && bm.Has(viewmodel.BActiveTip) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && bm.Has(viewmodel.BActiveTip) && t.hasLeft(bm):
 		return '┺'
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && t.hasLeft(bm):
 		return '╼'
 
 	// commit is tip
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip) && t.hasLeft(bm):
 		return '╊'
 	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip):
 		return '┣'
-	case bm.Has(viewmodel.BTip) && hasLeft(bm):
+	case bm.Has(viewmodel.BTip) && t.hasLeft(bm):
 		return '┲'
 	case bm.Has(viewmodel.BTip):
 		return '┏'
 
 	// commit is bottom
-	case bm.Has(viewmodel.BBottom) && hasLeft(bm):
+	case bm.Has(viewmodel.BBottom) && t.hasLeft(bm):
 		return '┺'
 	case bm.Has(viewmodel.BBottom):
 		return '┚'
 
 	// commit is within branch
-	case bm.Has(viewmodel.BCommit) && hasLeft(bm):
+	case bm.Has(viewmodel.BCommit) && t.hasLeft(bm):
 		return '╊'
 	case bm.Has(viewmodel.BCommit):
 		return '┣'
 
 	// commit is not part of branch
-	case bm.Has(viewmodel.BLine) && hasLeft(bm):
+	case bm.Has(viewmodel.BLine) && t.hasLeft(bm):
 		return '╂'
 	case bm.Has(viewmodel.BLine):
 		return '┃'
@@ -62,7 +65,7 @@ func graphBranchRune(bm utils.Bitmask) rune {
 	}
 }
 
-func graphConnectRune(bm utils.Bitmask) rune {
+func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
 	case viewmodel.BMergeRight:
 		return '╮'
@@ -103,4 +106,10 @@ func graphConnectRune(bm utils.Bitmask) rune {
 	default:
 		return '*'
 	}
+}
+
+func (t *repoGraph) hasLeft(bm utils.Bitmask) bool {
+	return bm.Has(viewmodel.BBranchLeft) ||
+		bm.Has(viewmodel.BMergeLeft) ||
+		bm.Has(viewmodel.BPass)
 }

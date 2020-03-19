@@ -4,17 +4,10 @@ import (
 	"context"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
-	"strings"
-)
-
-const (
-	RFC3339Small = "2006-01-02 15:04"
-	markerWidth  = 5
 )
 
 type repoPage struct {
@@ -31,6 +24,7 @@ type repoVM struct {
 	repoViewer       ui.Viewer
 	mainService      mainService
 	viewModelService *viewmodel.Service
+	repoLayout       *repoLayout
 	isDetails        bool
 	workingFolder    string
 	cancel           context.CancelFunc
@@ -50,10 +44,12 @@ func newRepoVM(
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
+	viewModelService := viewmodel.NewService(configService, workingFolder)
 	return &repoVM{
 		repoViewer:       repoViewer,
 		mainService:      mainService,
-		viewModelService: viewmodel.NewService(configService, workingFolder),
+		viewModelService: viewModelService,
+		repoLayout:       newRepoLayout(viewModelService),
 		workingFolder:    workingFolder,
 	}
 }
@@ -97,32 +93,12 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
+	// var currentLineCommit viewmodel.Commit
+	// if len(commits) > 0 {
+	// 	currentLineCommit = commits[viewPage.CurrentLine-viewPage.FirstLine]
+	// }
 
-	graphWidth := h.repo.GraphWidth + markerWidth
-	messageLength, authorLength, timeLength := columnWidths(graphWidth, viewPage.Width)
-
-	var currentLineCommit viewmodel.Commit
-	if len(commits) > 0 {
-		currentLineCommit = commits[viewPage.CurrentLine-viewPage.FirstLine]
-	}
-
-	var lines []string
-	for _, c := range commits {
-		var sb strings.Builder
-		h.writeGraph(&sb, c)
-		sb.WriteString(" ")
-		writeMoreMarker(&sb, c)
-		writeCurrentMarker(&sb, c)
-		writeAheadBehindMarker(&sb, c)
-		h.writeSubject(&sb, c, currentLineCommit, messageLength)
-		sb.WriteString(" ")
-		writeAuthor(&sb, c, authorLength)
-		sb.WriteString(" ")
-		writeAuthorTime(&sb, c, timeLength)
-		lines = append(lines, sb.String())
-	}
-	return firstIndex, lines
-
+	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "")
 }
 
 func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
@@ -268,39 +244,6 @@ func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
 	//h.viewModelService.TriggerRefreshModel()
 }
 
-func writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
-	if c.IsMore {
-		sb.WriteString(moreMarker)
-	} else {
-		sb.WriteString(" ")
-	}
-}
-
-func (h *repoVM) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
-	for i := 0; i < len(c.Graph); i++ {
-		bColor := h.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
-		if i != 0 {
-			cColor := bColor
-			if c.Graph[i].Connect == viewmodel.BPass &&
-				c.Graph[i].PassName != "" &&
-				c.Graph[i].PassName != "-" {
-				cColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
-			} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
-				cColor = ui.CWhite
-			}
-			sb.WriteString(ui.ColorRune(cColor, graphConnectRune(c.Graph[i].Connect)))
-		}
-		if c.Graph[i].Branch == viewmodel.BPass &&
-			c.Graph[i].PassName != "" &&
-			c.Graph[i].PassName != "-" {
-			bColor = h.viewModelService.BranchColor(c.Graph[i].PassName)
-		} else if c.Graph[i].Branch == viewmodel.BPass {
-			bColor = ui.CWhite
-		}
-		sb.WriteString(ui.ColorRune(bColor, graphBranchRune(c.Graph[i].Branch)))
-	}
-}
-
 func (h *repoVM) ChangeBranchColor() {
 	//h.viewModelService.ChangeBranchColor(index)
 }
@@ -314,82 +257,11 @@ func (h *repoVM) ToggleDetails() {
 	}
 }
 
-func writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
-	if c.IsCurrent {
-		sb.WriteString(currentCommitMarker)
-	} else {
-		sb.WriteString(" ")
-	}
-}
-
-func columnWidths(graphWidth, viewWidth int) (msgLength, authorLength, timeLength int) {
-	width := viewWidth - graphWidth
-	authorLength = 15
-	timeLength = 12
-	if width < 90 {
-		authorLength = 10
-		timeLength = 6
-	}
-	if width < 60 {
-		authorLength = 0
-		timeLength = 0
-	}
-	msgLength = viewWidth - graphWidth - authorLength - timeLength
-	if msgLength < 0 {
-		msgLength = 0
-	}
-	return
-}
-
-func writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {
-	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
-}
-
-func writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
-	if c.ID == viewmodel.StatusID {
-		sb.WriteString(ui.Dark(utils.Text("", length)))
-		return
-	}
-	tt := c.AuthorTime.Format(RFC3339Small)
-	tt = strings.Replace(tt, "-", "", -1)
-
-	tt = tt[2:]
-	sb.WriteString(ui.Dark(utils.Text(tt, length)))
-}
-
-func (h *repoVM) writeSubject(sb *strings.Builder, c viewmodel.Commit, selectedCommit viewmodel.Commit, length int) {
-	subject := utils.Text(c.Subject, length)
-	if c.ID == viewmodel.StatusID {
-		sb.WriteString(ui.YellowDk(subject))
-		return
-	}
-	color := ui.CWhite
-	if c.IsLocalOnly {
-		color = ui.CGreenDk
-	} else if c.IsRemoteOnly {
-		color = ui.CBlue
-	}
-	if h.isDetails &&
-		c.Branch.DisplayName != selectedCommit.Branch.DisplayName {
-		color = ui.CDark
-	}
-	sb.WriteString(ui.ColorText(color, subject))
-}
-
 func (h *repoVM) showDiff() {
-
+	c := h.repo.Commits[h.currentIndex]
+	h.mainService.ShowDiff(h.viewModelService, c.ID)
 }
 
 func (h *repoVM) saveTotalDebugState() {
 	//	h.vm.RefreshTrace(h.ViewPage())
-}
-
-func writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Commit) {
-	if c.IsLocalOnly {
-		sb.WriteString(ui.GreenDk("▲"))
-	} else if c.IsRemoteOnly {
-		sb.WriteString(ui.Blue("▼"))
-	} else {
-		sb.WriteString(" ")
-	}
 }

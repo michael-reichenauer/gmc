@@ -42,6 +42,7 @@ func main() {
 		startAsExternalProcess()
 		return
 	}
+
 	if *pauseFlag {
 		// The process was started with 'pause' flag, e.g. from Goland,
 		// wait until enter is clicked, this can be used for attaching a debugger
@@ -90,7 +91,6 @@ func isDebugConsole() bool {
 func startAsExternalProcess() {
 	args := []string{"/C", "start"}
 	args = append(args, os.Args...)
-	args = append(args, "-pause")
 	cmd := exec.Command("cmd", args...)
 	_ = cmd.Start()
 	_ = cmd.Wait()
