@@ -15,15 +15,17 @@ var (
 )
 
 type Properties struct {
-	Title       string
-	HasFrame    bool
-	HideCurrent bool
+	Title         string
+	HasFrame      bool
+	HideCurrent   bool
+	HideScrollbar bool
 
 	OnLoad         func()
 	OnClose        func()
 	OnMouseLeft    func(x, y int)
 	OnMouseRight   func(x, y int)
 	OnMouseOutside func()
+	OnMoved        func()
 	Name           string
 }
 
@@ -49,6 +51,7 @@ type View interface {
 	Properties() *Properties
 	Show(bounds Rect)
 	SetBounds(bounds Rect)
+	SetPage(firstLine int, currentLine int)
 	SetCurrentView()
 	SetTop()
 	SetBottom()
@@ -181,7 +184,10 @@ func (h *view) NotifyChanged() {
 	h.ui.gui.Update(func(g *gocui.Gui) error {
 		// Clear the view to make room for the new data
 		h.guiView.Clear()
-		h.scrollView.Clear()
+		if !h.properties.HideScrollbar {
+			h.scrollView.Clear()
+		}
+
 		isCurrent := h.ui.gui.CurrentView() == h.guiView
 
 		// Get the view size to calculate the view port
@@ -226,11 +232,21 @@ func (h *view) NotifyChanged() {
 		if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
 			panic(log.Fatal(err))
 		}
-		if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
-			panic(log.Fatal(err))
+		if !h.properties.HideScrollbar {
+			if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
+				panic(log.Fatal(err))
+			}
 		}
 		return nil
 	})
+}
+
+func (h *view) SetPage(firstLine int, currentLine int) {
+	if h.firstIndex != firstLine || h.currentIndex != currentLine {
+		h.firstIndex = firstLine
+		h.currentIndex = currentLine
+		h.NotifyChanged()
+	}
 }
 
 func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
@@ -460,6 +476,9 @@ func (h *view) move(move int) {
 	}
 
 	h.NotifyChanged()
+	if h.properties.OnMoved != nil {
+		h.properties.OnMoved()
+	}
 }
 
 func (h *view) scroll(move int) {
@@ -494,6 +513,9 @@ func (h *view) scroll(move int) {
 	h.currentIndex = newCurrent
 
 	h.NotifyChanged()
+	if h.properties.OnMoved != nil {
+		h.properties.OnMoved()
+	}
 }
 
 func (h *view) getScrollbarIndexes() (start, end int) {

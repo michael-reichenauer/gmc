@@ -5,21 +5,21 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
-type DiffView struct {
+type DiffUniView struct {
 	ui.View
-	vm          *diffVM
+	vm          *diffUniVM
 	mainService mainService
 }
 
-func NewDiffView(uiHandler *ui.UI,
+func NewDiffUniView(uiHandler *ui.UI,
 	mainService mainService,
 	diffGetter DiffGetter,
 	commitID string,
-) *DiffView {
-	h := &DiffView{
+) *DiffUniView {
+	h := &DiffUniView{
 		mainService: mainService,
 	}
-	h.vm = NewDiffVM(h, diffGetter, commitID)
+	h.vm = NewDiffUniVM(h, diffGetter, commitID)
 	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
 	h.Properties().OnLoad = h.onLoad
 	h.View.Properties().Name = "DiffView"
@@ -28,7 +28,7 @@ func NewDiffView(uiHandler *ui.UI,
 	return h
 }
 
-func (h *DiffView) onLoad() {
+func (h *DiffUniView) onLoad() {
 	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.mainService.HideDiff)
 	h.SetKey(gocui.KeyCtrlC, gocui.ModNone, h.mainService.HideDiff)
 	h.SetKey(gocui.KeyCtrlC, gocui.ModNone, h.mainService.HideDiff)
@@ -40,11 +40,10 @@ func (h *DiffView) onLoad() {
 	h.vm.load()
 }
 
-func (h *DiffView) viewData(viewPort ui.ViewPage) ui.ViewPageData {
+func (h *DiffUniView) viewData(viewPort ui.ViewPage) ui.ViewPageData {
 	diff, err := h.vm.getCommitDiff(viewPort)
 	if err != nil {
 		return ui.ViewPageData{}
 	}
-	h.SetTitle(diff.title)
 	return ui.ViewPageData{Lines: diff.lines, FirstIndex: diff.firstIndex, Total: diff.total}
 }

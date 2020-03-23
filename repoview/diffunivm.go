@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-type diffVM struct {
+type diffUniVM struct {
 	diffViewer  ui.Viewer
 	diffGetter  DiffGetter
 	commitDiff  git.CommitDiff
@@ -22,19 +22,17 @@ type diffPage struct {
 	lines      []string
 	firstIndex int
 	total      int
-	title      string
 }
 
 type DiffGetter interface {
 	GetCommitDiff(id string) (git.CommitDiff, error)
 }
 
-func NewDiffVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
-	log.Infof("new vm")
-	return &diffVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
+func NewDiffUniVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffUniVM {
+	return &diffUniVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
 }
 
-func (h *diffVM) load() {
+func (h *diffUniVM) load() {
 	go func() {
 		diff, _ := h.diffGetter.GetCommitDiff(h.commitID)
 		h.diffViewer.PostOnUIThread(func() {
@@ -45,7 +43,7 @@ func (h *diffVM) load() {
 	}()
 }
 
-func (h *diffVM) onLeft() {
+func (h *diffUniVM) onLeft() {
 	if h.page >= 0 {
 		h.page--
 	} else {
@@ -54,7 +52,7 @@ func (h *diffVM) onLeft() {
 	h.diffViewer.NotifyChanged()
 }
 
-func (h *diffVM) onRight() {
+func (h *diffUniVM) onRight() {
 	if h.page <= 0 {
 		h.page++
 	} else {
@@ -63,10 +61,10 @@ func (h *diffVM) onRight() {
 	h.diffViewer.NotifyChanged()
 }
 
-func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
+func (h *diffUniVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 	if !h.isDiffReady {
 		log.Infof("Not set")
-		return diffPage{lines: []string{"Loading diff for " + h.commitID}, firstIndex: 0, total: 1, title: "Diff"}, nil
+		return diffPage{lines: []string{"Loading diff for " + h.commitID}, firstIndex: 0, total: 1}, nil
 	}
 
 	var lines []string
@@ -127,11 +125,10 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage) (diffPage, error) {
 		lines:      lines[viewPort.FirstLine : viewPort.FirstLine+viewPort.Height],
 		firstIndex: viewPort.FirstLine,
 		total:      len(lines),
-		title:      h.toDiffTitle(),
 	}, nil
 }
 
-func (h *diffVM) toDiffTitle() string {
+func (h *diffUniVM) toDiffTitle() string {
 	switch h.page {
 	case 0:
 		return fmt.Sprintf(" Diff %s ", h.commitID[:6])

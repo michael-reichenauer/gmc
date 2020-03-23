@@ -24,7 +24,7 @@ type MainWindow struct {
 	model         *viewmodel.Service
 	repoView      *repoview.RepoView
 	detailsView   *repoview.DetailsView
-	diffView      *repoview.DiffView
+	diffView      repoview.DiffView
 	mode          showMode
 }
 
@@ -63,7 +63,10 @@ func (h *MainWindow) ToggleShowDetails() {
 }
 
 func (h *MainWindow) ShowDiff(diffGetter repoview.DiffGetter, commitID string) {
-	h.diffView = repoview.NewDiffView(h.ui, h, diffGetter, commitID)
+	if h.diffView != nil {
+		h.HideDiff()
+	}
+	h.diffView = repoview.NewSideBySideView(h.ui, h, diffGetter, commitID)
 	width, height := h.ui.WindowSize()
 	h.diffView.Show(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
 	h.diffView.SetTop()
