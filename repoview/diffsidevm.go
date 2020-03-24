@@ -98,31 +98,57 @@ func (h *diffSideVM) getCommitSides() ([]string, []string) {
 
 		leftLines, rightLines = h.add(leftLines, rightLines, ui.Blue(strings.Repeat("═", viewWidth)), ui.Blue(strings.Repeat("═", viewWidth)))
 
-		leftLines, rightLines = h.add(leftLines, rightLines, ui.Cyan(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter)), "")
+		fileText := ui.Cyan(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter))
+		leftLines, rightLines = h.add(leftLines, rightLines, fileText, fileText)
 		if df.IsRenamed {
-			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter)), "")
+			renamedText := ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
+			leftLines, rightLines = h.add(leftLines, rightLines, renamedText, renamedText)
 		}
-		for j, ds := range df.SectionDiffs {
-			if j != 0 {
-				//lines = append(lines, "")
-				leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(strings.Repeat("─", viewWidth)), ui.Dark(strings.Repeat("─", viewWidth)))
-			}
+		for _, ds := range df.SectionDiffs {
+			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(strings.Repeat("─", viewWidth)), ui.Dark(strings.Repeat("─", viewWidth)))
 			linesText := fmt.Sprintf("Lines: %s", ds.ChangedIndexes)
 			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(linesText), ui.Dark(linesText))
 			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(strings.Repeat("─", viewWidth)), ui.Dark(strings.Repeat("─", viewWidth)))
+
+			var lb []string
+			var rb []string
 			for _, dl := range ds.LinesDiffs {
 				switch dl.DiffMode {
-				case git.DiffSame:
-					leftLines, rightLines = h.add(leftLines, rightLines, dl.Line, dl.Line)
-				case git.DiffAdded:
-					leftLines, rightLines = h.add(leftLines, rightLines, "", ui.Green(dl.Line))
 				case git.DiffRemoved:
-					leftLines, rightLines = h.add(leftLines, rightLines, ui.Red(dl.Line), "")
+					lb = append(lb, ui.Red(dl.Line))
+					//leftLines, rightLines = h.add(leftLines, rightLines, ui.Red(dl.Line), "")
+				case git.DiffAdded:
+					rb = append(rb, ui.Green(dl.Line))
+				//	leftLines, rightLines = h.add(leftLines, rightLines, "", ui.Green(dl.Line))
+				case git.DiffSame:
+					leftLines, rightLines = h.flushBlock(leftLines, rightLines, lb, rb)
+					lb = nil
+					rb = nil
+					leftLines, rightLines = h.add(leftLines, rightLines, dl.Line, dl.Line)
 				}
 			}
+			leftLines, rightLines = h.flushBlock(leftLines, rightLines, lb, rb)
+			lb = nil
+			rb = nil
 		}
 	}
 
+	return leftLines, rightLines
+}
+
+func (h *diffSideVM) flushBlock(leftLines, rightLines []string, left, right []string) ([]string, []string) {
+	leftLines = append(leftLines, left...)
+	rightLines = append(rightLines, right...)
+	if len(left) > len(right) {
+		for i := 0; i < len(left)-len(right); i++ {
+			rightLines = append(rightLines, "")
+		}
+	}
+	if len(right) > len(left) {
+		for i := 0; i < len(right)-len(left); i++ {
+			leftLines = append(leftLines, "")
+		}
+	}
 	return leftLines, rightLines
 }
 
