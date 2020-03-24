@@ -3,7 +3,6 @@ package repoview
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -18,6 +17,8 @@ type diffSideVM struct {
 	leftLines   []string
 	rightLines  []string
 }
+
+const viewWidth = 200
 
 func NewDiffSideVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffSideVM {
 	return &diffSideVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
@@ -35,125 +36,155 @@ func (h *diffSideVM) load() {
 }
 
 func (h *diffSideVM) getCommitDiffLeft(viewPort ui.ViewPage) (diffPage, error) {
-	if !h.isDiffReady {
-		log.Infof("Not set")
-		return diffPage{lines: []string{"Loading diff for " + h.commitID}, firstIndex: 0, total: 1}, nil
-	}
-	if !h.isDiff {
-		h.leftLines, h.rightLines = h.getCommitSides()
-		h.isDiff = true
-	}
-	return h.getCommitDiff(viewPort, h.leftLines)
+	return h.getCommitDiff(viewPort, true)
 }
 
 func (h *diffSideVM) getCommitDiffRight(viewPort ui.ViewPage) (diffPage, error) {
-	if !h.isDiffReady {
-		log.Infof("Not set")
-		return diffPage{lines: []string{"Loading diff for " + h.commitID}, firstIndex: 0, total: 1}, nil
-	}
-	if !h.isDiff {
-		h.leftLines, h.rightLines = h.getCommitSides()
-		h.isDiff = true
-	}
-	return h.getCommitDiff(viewPort, h.rightLines)
+	return h.getCommitDiff(viewPort, false)
 }
 
-func (h *diffSideVM) getCommitDiff(viewPort ui.ViewPage, lines []string) (diffPage, error) {
-	if viewPort.FirstLine+viewPort.Height > len(lines) {
-		viewPort.FirstLine = len(lines) - viewPort.Height
+func (h *diffSideVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage, error) {
+	if !h.isDiffReady {
+		return h.loadingText(isLeft), nil
 	}
-	if viewPort.FirstLine < 0 {
-		viewPort.FirstLine = 0
-	}
-	if viewPort.FirstLine+viewPort.Height > len(lines) {
-		viewPort.Height = len(lines) - viewPort.FirstLine
+	if !h.isDiff {
+		h.setCommitSides()
+		h.isDiff = true
 	}
 
+	lines, firstIndex, lastIndex := h.getLines(isLeft, viewPort.FirstLine, viewPort.Height)
+
 	return diffPage{
-		lines:      lines[viewPort.FirstLine : viewPort.FirstLine+viewPort.Height],
-		firstIndex: viewPort.FirstLine,
+		lines:      lines[firstIndex:lastIndex],
+		firstIndex: firstIndex,
 		total:      len(lines),
 	}, nil
 }
 
-func (h *diffSideVM) getCommitSides() ([]string, []string) {
-	viewWidth := 200
-	var leftLines []string
-	var rightLines []string
-	leftLines, rightLines = h.add(leftLines, rightLines, fmt.Sprintf("Changed files: %d", len(h.commitDiff.FileDiffs)), "")
-
-	for _, df := range h.commitDiff.FileDiffs {
-		diffType := toDiffType(df)
-		leftLines, rightLines = h.add(leftLines, rightLines, fmt.Sprintf("  %s %s", diffType, df.PathAfter), "")
+func (h *diffSideVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, int) {
+	lines := h.leftLines
+	lastIndex := firstIndex + height
+	if !isLeft {
+		lines = h.rightLines
 	}
 
-	leftLines, rightLines = h.add(leftLines, rightLines, "", "")
-	leftLines, rightLines = h.add(leftLines, rightLines, "", "")
-
-	for i, df := range h.commitDiff.FileDiffs {
-		if i != 0 {
-			leftLines, rightLines = h.add(leftLines, rightLines, "", "")
-			leftLines, rightLines = h.add(leftLines, rightLines, "", "")
-		}
-
-		leftLines, rightLines = h.add(leftLines, rightLines, ui.Blue(strings.Repeat("═", viewWidth)), ui.Blue(strings.Repeat("═", viewWidth)))
-
-		fileText := ui.Cyan(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter))
-		leftLines, rightLines = h.add(leftLines, rightLines, fileText, fileText)
-		if df.IsRenamed {
-			renamedText := ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
-			leftLines, rightLines = h.add(leftLines, rightLines, renamedText, renamedText)
-		}
-		for _, ds := range df.SectionDiffs {
-			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(strings.Repeat("─", viewWidth)), ui.Dark(strings.Repeat("─", viewWidth)))
-			linesText := fmt.Sprintf("Lines: %s", ds.ChangedIndexes)
-			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(linesText), ui.Dark(linesText))
-			leftLines, rightLines = h.add(leftLines, rightLines, ui.Dark(strings.Repeat("─", viewWidth)), ui.Dark(strings.Repeat("─", viewWidth)))
-
-			var lb []string
-			var rb []string
-			for _, dl := range ds.LinesDiffs {
-				switch dl.DiffMode {
-				case git.DiffRemoved:
-					lb = append(lb, ui.Red(dl.Line))
-					//leftLines, rightLines = h.add(leftLines, rightLines, ui.Red(dl.Line), "")
-				case git.DiffAdded:
-					rb = append(rb, ui.Green(dl.Line))
-				//	leftLines, rightLines = h.add(leftLines, rightLines, "", ui.Green(dl.Line))
-				case git.DiffSame:
-					leftLines, rightLines = h.flushBlock(leftLines, rightLines, lb, rb)
-					lb = nil
-					rb = nil
-					leftLines, rightLines = h.add(leftLines, rightLines, dl.Line, dl.Line)
-				}
-			}
-			leftLines, rightLines = h.flushBlock(leftLines, rightLines, lb, rb)
-			lb = nil
-			rb = nil
-		}
+	if firstIndex+height > len(lines) {
+		firstIndex = len(lines) - height
 	}
-
-	return leftLines, rightLines
+	if firstIndex < 0 {
+		firstIndex = 0
+	}
+	if firstIndex+height > len(lines) {
+		lastIndex = firstIndex + len(lines) - firstIndex
+	}
+	return lines, firstIndex, lastIndex
 }
 
-func (h *diffSideVM) flushBlock(leftLines, rightLines []string, left, right []string) ([]string, []string) {
-	leftLines = append(leftLines, left...)
-	rightLines = append(rightLines, right...)
+func (h *diffSideVM) loadingText(isLeft bool) diffPage {
+	text := "Loading diff for " + h.commitID[:6]
+	if !isLeft {
+		text = ""
+	}
+	return diffPage{lines: []string{text}, firstIndex: 0, total: 1}
+}
+
+func (h *diffSideVM) setCommitSides() {
+	// Adding diff summery with changed files list, count, ...
+	h.addDiffSummery()
+
+	// Add file diffs
+	for _, df := range h.commitDiff.FileDiffs {
+		h.addFileHeader(df)
+
+		// Add all diff sections in a file
+		for _, ds := range df.SectionDiffs {
+			h.addDiffSectionHeader(ds)
+			h.addDiffSectionLines(ds)
+		}
+	}
+}
+
+func (h *diffSideVM) addDiffSummery() {
+	h.addLeft(fmt.Sprintf("Changed files: %d", len(h.commitDiff.FileDiffs)))
+	for _, df := range h.commitDiff.FileDiffs {
+		diffType := toDiffType(df)
+		h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+	}
+}
+
+func (h *diffSideVM) addFileHeader(df git.FileDiff) {
+	h.addLeftAndRight("")
+	h.addLeftAndRight("")
+	h.addLeftAndRight(ui.Blue(strings.Repeat("═", viewWidth)))
+	fileText := ui.Cyan(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter))
+	h.addLeftAndRight(fileText)
+	if df.IsRenamed {
+		renamedText := ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
+		h.addLeftAndRight(renamedText)
+	}
+}
+
+func (h *diffSideVM) addDiffSectionHeader(ds git.SectionDiff) {
+	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
+	leftLines, rightLines := h.parseLinesTexts(ds)
+	h.add(ui.Dark(leftLines), ui.Dark(rightLines))
+	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
+}
+
+func (h *diffSideVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
+	parts := strings.Split(ds.ChangedIndexes, "+")
+	leftText := fmt.Sprintf("Lines: %s", strings.TrimSpace(parts[0][1:]))
+	rightText := fmt.Sprintf("Lines: %s", strings.TrimSpace(parts[1]))
+	return leftText, rightText
+}
+
+func (h *diffSideVM) addDiffSectionLines(ds git.SectionDiff) {
+	var leftBlock []string
+	var rightBlock []string
+	for _, dl := range ds.LinesDiffs {
+		switch dl.DiffMode {
+		case git.DiffRemoved:
+			leftBlock = append(leftBlock, ui.Red(dl.Line))
+		case git.DiffAdded:
+			rightBlock = append(rightBlock, ui.Green(dl.Line))
+		case git.DiffSame:
+			h.addBlocks(leftBlock, rightBlock)
+			leftBlock = nil
+			rightBlock = nil
+			h.addLeftAndRight(dl.Line)
+		}
+	}
+	h.addBlocks(leftBlock, rightBlock)
+}
+
+func (h *diffSideVM) addBlocks(left, right []string) {
+	h.leftLines = append(h.leftLines, left...)
+	h.rightLines = append(h.rightLines, right...)
 	if len(left) > len(right) {
 		for i := 0; i < len(left)-len(right); i++ {
-			rightLines = append(rightLines, "")
+			h.rightLines = append(h.rightLines, ui.Dark(strings.Repeat("░", viewWidth)))
 		}
 	}
 	if len(right) > len(left) {
 		for i := 0; i < len(right)-len(left); i++ {
-			leftLines = append(leftLines, "")
+			h.leftLines = append(h.leftLines, ui.Dark(strings.Repeat("░", viewWidth)))
 		}
 	}
-	return leftLines, rightLines
 }
 
-func (h *diffSideVM) add(leftLines, rightLines []string, left, right string) ([]string, []string) {
-	leftLines = append(leftLines, left)
-	rightLines = append(rightLines, right)
-	return leftLines, rightLines
+func (h *diffSideVM) addLeftAndRight(text string) {
+	h.add(text, text)
+}
+
+func (h *diffSideVM) addLeft(left string) {
+	h.add(left, "")
+}
+
+func (h *diffSideVM) addRight(right string) {
+	h.add("", right)
+}
+
+func (h *diffSideVM) add(left, right string) {
+	h.leftLines = append(h.leftLines, left)
+	h.rightLines = append(h.rightLines, right)
 }
