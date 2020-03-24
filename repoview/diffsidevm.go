@@ -8,15 +8,16 @@ import (
 )
 
 type diffSideVM struct {
-	diffViewer  ui.Viewer
-	diffGetter  DiffGetter
-	commitDiff  git.CommitDiff
-	commitID    string
-	isDiffReady bool
-	isDiff      bool
-	leftLines   []string
-	rightLines  []string
-	isUnified   bool
+	diffViewer     ui.Viewer
+	diffGetter     DiffGetter
+	commitDiff     git.CommitDiff
+	commitID       string
+	isDiffReady    bool
+	isDiff         bool
+	leftLines      []string
+	rightLines     []string
+	isUnified      bool
+	firstCharIndex int
 }
 
 const viewWidth = 200
@@ -55,8 +56,8 @@ func (h *diffSideVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage,
 	if !h.isDiffReady {
 		return h.loadingText(isLeft), nil
 	}
-	if !h.isDiff {
-		h.setCommitSides()
+	if h.isNewDiffNeeded(viewPort.FirstCharIndex) {
+		h.setDiffSides(viewPort.FirstCharIndex)
 		h.isDiff = true
 	}
 
@@ -67,6 +68,10 @@ func (h *diffSideVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage,
 		firstIndex: firstIndex,
 		total:      len(lines),
 	}, nil
+}
+
+func (h *diffSideVM) isNewDiffNeeded(firstCharIndex int) bool {
+	return !h.isDiff || h.firstCharIndex != firstCharIndex
 }
 
 func (h *diffSideVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, int) {
@@ -96,8 +101,11 @@ func (h *diffSideVM) loadingText(isLeft bool) diffPage {
 	return diffPage{lines: []string{text}, firstIndex: 0, total: 1}
 }
 
-func (h *diffSideVM) setCommitSides() {
+func (h *diffSideVM) setDiffSides(firstCharIndex int) {
+	h.leftLines = nil
+	h.rightLines = nil
 	// Adding diff summery with changed files list, count, ...
+	h.firstCharIndex = firstCharIndex
 	h.addDiffSummery()
 
 	// Add file diffs
@@ -118,6 +126,16 @@ func (h *diffSideVM) addDiffSummery() {
 		diffType := toDiffType(df)
 		h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
 	}
+}
+
+func (h *diffSideVM) line(text string) string {
+	if h.firstCharIndex > len(text) {
+		return ""
+	}
+	if h.firstCharIndex <= 0 {
+		return text
+	}
+	return text[h.firstCharIndex:]
 }
 
 func (h *diffSideVM) addFileHeader(df git.FileDiff) {
@@ -154,16 +172,17 @@ func (h *diffSideVM) addDiffSectionLines(ds git.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
 	for _, dl := range ds.LinesDiffs {
+		l := h.line(dl.Line)
 		switch dl.DiffMode {
 		case git.DiffRemoved:
-			leftBlock = append(leftBlock, ui.Red(dl.Line))
+			leftBlock = append(leftBlock, ui.Red(l))
 		case git.DiffAdded:
-			rightBlock = append(rightBlock, ui.Green(dl.Line))
+			rightBlock = append(rightBlock, ui.Green(l))
 		case git.DiffSame:
 			h.addBlocks(leftBlock, rightBlock)
 			leftBlock = nil
 			rightBlock = nil
-			h.addLeftAndRight(dl.Line)
+			h.addLeftAndRight(l)
 		}
 	}
 	h.addBlocks(leftBlock, rightBlock)

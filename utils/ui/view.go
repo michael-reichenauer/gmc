@@ -30,10 +30,11 @@ type Properties struct {
 }
 
 type ViewPage struct {
-	Width       int
-	Height      int
-	FirstLine   int
-	CurrentLine int
+	Width          int
+	Height         int
+	FirstLine      int
+	CurrentLine    int
+	FirstCharIndex int
 }
 
 type ViewPageData struct {
@@ -51,7 +52,7 @@ type View interface {
 	Properties() *Properties
 	Show(bounds Rect)
 	SetBounds(bounds Rect)
-	SetPage(firstLine int, currentLine int)
+	SetPage(firstLine, currentLine, firstCharIndex int)
 	SetCurrentView()
 	SetTop()
 	SetBottom()
@@ -68,15 +69,17 @@ type view struct {
 	guiView    *gocui.View
 	scrollView *gocui.View
 
-	properties   *Properties
-	viewName     string
-	viewData     func(viewPort ViewPage) ViewPageData
-	firstIndex   int
-	linesCount   int
-	currentIndex int
-	total        int
-	width        int
-	ui           *UI
+	properties         *Properties
+	viewName           string
+	viewData           func(viewPort ViewPage) ViewPageData
+	firstIndex         int
+	linesCount         int
+	currentIndex       int
+	total              int
+	width              int
+	ui                 *UI
+	IsScrollHorizontal bool
+	FirstCharIndex     int
 }
 
 func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
@@ -146,8 +149,9 @@ func (h *view) Show(bounds Rect) {
 
 		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
 		h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.CursorDown)
-		h.SetKey(gocui.MouseWheelDown, gocui.ModNone, h.LineDown)
-		h.SetKey(gocui.MouseWheelUp, gocui.ModNone, h.LineUp)
+		h.SetKey(gocui.MouseMiddle, gocui.ModNone, h.ToggleScroll)
+		h.SetKey(gocui.MouseWheelDown, gocui.ModNone, h.MouseWheelDown)
+		h.SetKey(gocui.MouseWheelUp, gocui.ModNone, h.MouseWheelUp)
 		h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUp)
@@ -245,10 +249,11 @@ func (h *view) NotifyChanged() {
 	})
 }
 
-func (h *view) SetPage(firstLine int, currentLine int) {
-	if h.firstIndex != firstLine || h.currentIndex != currentLine {
+func (h *view) SetPage(firstLine, currentLine, firstCharIndex int) {
+	if h.firstIndex != firstLine || h.currentIndex != currentLine || h.FirstCharIndex != firstCharIndex {
 		h.firstIndex = firstLine
 		h.currentIndex = currentLine
+		h.FirstCharIndex = firstCharIndex
 		h.NotifyChanged()
 	}
 }
@@ -329,7 +334,13 @@ func (h view) ViewPage() ViewPage {
 		// View is to small (not visible)
 		return ViewPage{Width: 1, FirstLine: 0, Height: 1, CurrentLine: 0}
 	}
-	return ViewPage{Width: width - 2, FirstLine: h.firstIndex, Height: height, CurrentLine: h.currentIndex}
+	return ViewPage{
+		Width:          width - 2,
+		FirstLine:      h.firstIndex,
+		Height:         height,
+		CurrentLine:    h.currentIndex,
+		FirstCharIndex: h.FirstCharIndex,
+	}
 }
 
 func (h *view) Properties() *Properties {
@@ -394,11 +405,19 @@ func (h *view) PageUp() {
 	h.scroll(-y + 1)
 }
 
-func (h *view) LineDown() {
+func (h *view) MouseWheelDown() {
+	if h.IsScrollHorizontal {
+		h.scrollHorizontal(1)
+		return
+	}
 	h.scroll(1)
 }
 
-func (h *view) LineUp() {
+func (h *view) MouseWheelUp() {
+	if h.IsScrollHorizontal {
+		h.scrollHorizontal(-1)
+		return
+	}
 	h.scroll(-1)
 }
 
@@ -522,6 +541,18 @@ func (h *view) scroll(move int) {
 	}
 }
 
+func (h *view) scrollHorizontal(move int) {
+	newFirstCharIndex := h.FirstCharIndex + move
+	if newFirstCharIndex < 0 {
+		return
+	}
+	h.FirstCharIndex = newFirstCharIndex
+	h.NotifyChanged()
+	if h.properties.OnMoved != nil {
+		h.properties.OnMoved()
+	}
+}
+
 func (h *view) getScrollbarIndexes() (start, end int) {
 	scrollbarFactor := float64(h.linesCount) / float64(h.total)
 	sbStart := int(math.Floor(float64(h.firstIndex) * scrollbarFactor))
@@ -538,4 +569,9 @@ func (h *view) getScrollbarIndexes() (start, end int) {
 	}
 	// log.Infof("sb1: %d, sb2: %d, lines: %d", sbStart, sbSize, h.linesCount)
 	return sbStart, sbStart + sbSize
+}
+
+func (h *view) ToggleScroll() {
+	log.Infof("Toggle scroll")
+	h.IsScrollHorizontal = !h.IsScrollHorizontal
 }

@@ -122,12 +122,12 @@ func (t *DiffSideBySideView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
 
 func (t *DiffSideBySideView) onMovedLeft() {
 	p := t.leftSide.ViewPage()
-	t.rightSide.SetPage(p.FirstLine, p.CurrentLine)
+	t.rightSide.SetPage(p.FirstLine, p.CurrentLine, p.FirstCharIndex)
 }
 
 func (t *DiffSideBySideView) onMovedRight() {
 	p := t.rightSide.ViewPage()
-	t.leftSide.SetPage(p.FirstLine, p.CurrentLine)
+	t.leftSide.SetPage(p.FirstLine, p.CurrentLine, p.FirstCharIndex)
 }
 
 func (t *DiffSideBySideView) ToUnified() {
