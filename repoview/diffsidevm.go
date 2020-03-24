@@ -16,6 +16,7 @@ type diffSideVM struct {
 	isDiff      bool
 	leftLines   []string
 	rightLines  []string
+	isUnified   bool
 }
 
 const viewWidth = 200
@@ -33,6 +34,13 @@ func (h *diffSideVM) load() {
 			h.diffViewer.NotifyChanged()
 		})
 	}()
+}
+
+func (h *diffSideVM) setUnified(isUnified bool) {
+	h.isUnified = isUnified
+	h.isDiff = false
+	h.leftLines = nil
+	h.rightLines = nil
 }
 
 func (h *diffSideVM) getCommitDiffLeft(viewPort ui.ViewPage) (diffPage, error) {
@@ -132,6 +140,10 @@ func (h *diffSideVM) addDiffSectionHeader(ds git.SectionDiff) {
 }
 
 func (h *diffSideVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
+	if h.isUnified {
+		return fmt.Sprintf("Lines: %s", ds.ChangedIndexes), ""
+	}
+
 	parts := strings.Split(ds.ChangedIndexes, "+")
 	leftText := fmt.Sprintf("Lines: %s", strings.TrimSpace(parts[0][1:]))
 	rightText := fmt.Sprintf("Lines: %s", strings.TrimSpace(parts[1]))
@@ -158,6 +170,15 @@ func (h *diffSideVM) addDiffSectionLines(ds git.SectionDiff) {
 }
 
 func (h *diffSideVM) addBlocks(left, right []string) {
+	if h.isUnified {
+		h.leftLines = append(h.leftLines, left...)
+		h.leftLines = append(h.leftLines, right...)
+		for i := 0; i < len(left)+len(right); i++ {
+			h.rightLines = append(h.rightLines, ui.Dark(strings.Repeat("░", viewWidth)))
+		}
+		return
+	}
+
 	h.leftLines = append(h.leftLines, left...)
 	h.rightLines = append(h.rightLines, right...)
 	if len(left) > len(right) {
@@ -178,10 +199,6 @@ func (h *diffSideVM) addLeftAndRight(text string) {
 
 func (h *diffSideVM) addLeft(left string) {
 	h.add(left, "")
-}
-
-func (h *diffSideVM) addRight(right string) {
-	h.add("", right)
 }
 
 func (h *diffSideVM) add(left, right string) {

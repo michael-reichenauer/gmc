@@ -19,25 +19,32 @@ type DiffSideBySideView struct {
 	mainService mainService
 	leftSide    *DiffSideView
 	rightSide   *DiffSideView
+	commitID    string
+	isUnified   bool
+	lastBounds  ui.Rect
 }
 
 func (t *DiffSideBySideView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewSideBySideView(uiHandler *ui.UI,
+func NewSideBySideView(
+	uiHandler *ui.UI,
 	mainService mainService,
 	diffGetter DiffGetter,
-	commitID string) DiffView {
-
+	commitID string,
+) DiffView {
 	t := &DiffSideBySideView{
 		mainService: mainService,
+		commitID:    commitID,
 	}
 	t.vm = NewDiffSideVM(t, diffGetter, commitID)
+	t.vm.setUnified(t.isUnified)
 	t.leftSide = newDiffSideView(uiHandler, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
+	t.rightSide = newDiffSideView(uiHandler, t.viewDataRight, nil, t.onMovedRight)
+
 	t.leftSide.Properties().HideScrollbar = true
 	t.leftSide.Properties().Title = "Before " + commitID[:6]
-	t.rightSide = newDiffSideView(uiHandler, t.viewDataRight, nil, t.onMovedRight)
 	t.rightSide.Properties().Title = "After " + commitID[:6]
 	return t
 }
@@ -48,6 +55,8 @@ func (t *DiffSideBySideView) onLoadLeft() {
 	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
 	t.leftSide.SetKey(gocui.KeyCtrlQ, gocui.ModNone, t.mainService.HideDiff)
 	t.leftSide.SetKey('q', gocui.ModNone, t.mainService.HideDiff)
+	t.leftSide.SetKey('1', gocui.ModNone, t.ToUnified)
+	t.leftSide.SetKey('2', gocui.ModNone, t.ToSideBySide)
 
 	t.vm.load()
 }
@@ -100,6 +109,10 @@ func (t *DiffSideBySideView) NotifyChanged() {
 }
 
 func (t *DiffSideBySideView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
+	t.lastBounds = bounds
+	if t.isUnified {
+		return bounds, ui.Rect{W: 1, H: 1}
+	}
 	wl := bounds.W / 2
 	wr := bounds.W - wl - 1
 	lb := ui.Rect{X: bounds.X, Y: bounds.Y, W: wl, H: bounds.H}
@@ -115,4 +128,29 @@ func (t *DiffSideBySideView) onMovedLeft() {
 func (t *DiffSideBySideView) onMovedRight() {
 	p := t.rightSide.ViewPage()
 	t.leftSide.SetPage(p.FirstLine, p.CurrentLine)
+}
+
+func (t *DiffSideBySideView) ToUnified() {
+	if t.isUnified {
+		return
+	}
+	t.isUnified = true
+	t.leftSide.Properties().HideScrollbar = false
+	t.leftSide.Properties().Title = "Unified diff " + t.commitID[:6]
+	t.vm.setUnified(t.isUnified)
+	t.SetBounds(t.lastBounds)
+	t.NotifyChanged()
+}
+
+func (t *DiffSideBySideView) ToSideBySide() {
+	if !t.isUnified {
+		return
+	}
+	t.isUnified = false
+	t.leftSide.Properties().HideScrollbar = true
+	t.leftSide.Properties().Title = "Before " + t.commitID[:6]
+	t.rightSide.Properties().Title = "After " + t.commitID[:6]
+	t.vm.setUnified(t.isUnified)
+	t.SetBounds(t.lastBounds)
+	t.NotifyChanged()
 }

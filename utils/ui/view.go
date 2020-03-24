@@ -184,9 +184,7 @@ func (h *view) NotifyChanged() {
 	h.ui.gui.Update(func(g *gocui.Gui) error {
 		// Clear the view to make room for the new data
 		h.guiView.Clear()
-		if !h.properties.HideScrollbar {
-			h.scrollView.Clear()
-		}
+		h.scrollView.Clear()
 
 		isCurrent := h.ui.gui.CurrentView() == h.guiView
 
@@ -226,6 +224,12 @@ func (h *view) NotifyChanged() {
 		if h.linesCount == 0 {
 			// No view data
 			return nil
+		}
+
+		if h.properties.Title != "" {
+			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
+		} else {
+			h.guiView.Title = ""
 		}
 
 		// Show the new view data for the view port
