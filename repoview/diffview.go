@@ -14,8 +14,8 @@ type DiffView interface {
 	NotifyChanged()
 }
 
-type DiffSideBySideView struct {
-	vm          *diffSideVM
+type diffView struct {
+	vm          *diffVM
 	mainService mainService
 	leftSide    *DiffSideView
 	rightSide   *DiffSideView
@@ -24,21 +24,21 @@ type DiffSideBySideView struct {
 	lastBounds  ui.Rect
 }
 
-func (t *DiffSideBySideView) PostOnUIThread(f func()) {
+func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewSideBySideView(
+func NewDiffView(
 	uiHandler *ui.UI,
 	mainService mainService,
 	diffGetter DiffGetter,
 	commitID string,
 ) DiffView {
-	t := &DiffSideBySideView{
+	t := &diffView{
 		mainService: mainService,
 		commitID:    commitID,
 	}
-	t.vm = NewDiffSideVM(t, diffGetter, commitID)
+	t.vm = newDiffVM(t, diffGetter, commitID)
 	t.vm.setUnified(t.isUnified)
 	t.leftSide = newDiffSideView(uiHandler, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
 	t.rightSide = newDiffSideView(uiHandler, t.viewDataRight, nil, t.onMovedRight)
@@ -49,7 +49,7 @@ func NewSideBySideView(
 	return t
 }
 
-func (t *DiffSideBySideView) onLoadLeft() {
+func (t *diffView) onLoadLeft() {
 	t.leftSide.SetKey(gocui.KeyEsc, gocui.ModNone, t.mainService.HideDiff)
 	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
 	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
@@ -63,7 +63,7 @@ func (t *DiffSideBySideView) onLoadLeft() {
 	t.vm.load()
 }
 
-func (t *DiffSideBySideView) viewDataLeft(viewPort ui.ViewPage) ui.ViewPageData {
+func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewPageData {
 	diff, err := t.vm.getCommitDiffLeft(viewPort)
 	if err != nil {
 		return ui.ViewPageData{}
@@ -71,7 +71,7 @@ func (t *DiffSideBySideView) viewDataLeft(viewPort ui.ViewPage) ui.ViewPageData 
 	return ui.ViewPageData{Lines: diff.lines, FirstIndex: diff.firstIndex, Total: diff.total}
 }
 
-func (t *DiffSideBySideView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData {
+func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData {
 	diff, err := t.vm.getCommitDiffRight(viewPort)
 	if err != nil {
 		return ui.ViewPageData{}
@@ -79,38 +79,38 @@ func (t *DiffSideBySideView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData
 	return ui.ViewPageData{Lines: diff.lines, FirstIndex: diff.firstIndex, Total: diff.total}
 }
 
-func (t *DiffSideBySideView) Show(bounds ui.Rect) {
+func (t *diffView) Show(bounds ui.Rect) {
 	lb, rb := t.getSplitBounds(bounds)
 	t.leftSide.Show(lb)
 	t.rightSide.Show(rb)
 }
 
-func (t *DiffSideBySideView) SetTop() {
+func (t *diffView) SetTop() {
 	t.rightSide.SetTop()
 	t.leftSide.SetTop()
 }
 
-func (t *DiffSideBySideView) SetCurrentView() {
+func (t *diffView) SetCurrentView() {
 	t.leftSide.SetCurrentView()
 }
 
-func (t *DiffSideBySideView) Close() {
+func (t *diffView) Close() {
 	t.leftSide.Close()
 	t.rightSide.Close()
 }
 
-func (t *DiffSideBySideView) SetBounds(bounds ui.Rect) {
+func (t *diffView) SetBounds(bounds ui.Rect) {
 	lb, rb := t.getSplitBounds(bounds)
 	t.leftSide.SetBounds(lb)
 	t.rightSide.SetBounds(rb)
 }
 
-func (t *DiffSideBySideView) NotifyChanged() {
+func (t *diffView) NotifyChanged() {
 	t.leftSide.NotifyChanged()
 	t.rightSide.NotifyChanged()
 }
 
-func (t *DiffSideBySideView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
+func (t *diffView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
 	t.lastBounds = bounds
 	if t.isUnified {
 		return bounds, ui.Rect{W: 1, H: 1}
@@ -122,17 +122,15 @@ func (t *DiffSideBySideView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
 	return lb, rb
 }
 
-func (t *DiffSideBySideView) onMovedLeft() {
-	p := t.leftSide.ViewPage()
-	t.rightSide.SetPage(p.FirstLine, p.CurrentLine, p.FirstCharIndex)
+func (t *diffView) onMovedLeft() {
+	t.rightSide.SetPage(t.leftSide.ViewPage())
 }
 
-func (t *DiffSideBySideView) onMovedRight() {
-	p := t.rightSide.ViewPage()
-	t.leftSide.SetPage(p.FirstLine, p.CurrentLine, p.FirstCharIndex)
+func (t *diffView) onMovedRight() {
+	t.leftSide.SetPage(t.rightSide.ViewPage())
 }
 
-func (t *DiffSideBySideView) ToUnified() {
+func (t *diffView) ToUnified() {
 	if t.isUnified {
 		return
 	}
@@ -144,7 +142,7 @@ func (t *DiffSideBySideView) ToUnified() {
 	t.NotifyChanged()
 }
 
-func (t *DiffSideBySideView) ToSideBySide() {
+func (t *diffView) ToSideBySide() {
 	if !t.isUnified {
 		return
 	}
@@ -157,10 +155,10 @@ func (t *DiffSideBySideView) ToSideBySide() {
 	t.NotifyChanged()
 }
 
-func (t *DiffSideBySideView) scrollHorizontalLeft() {
+func (t *diffView) scrollHorizontalLeft() {
 	t.leftSide.ScrollHorizontal(-1)
 }
 
-func (t *DiffSideBySideView) scrollHorizontalRight() {
+func (t *diffView) scrollHorizontalRight() {
 	t.leftSide.ScrollHorizontal(1)
 }

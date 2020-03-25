@@ -30,11 +30,12 @@ type Properties struct {
 }
 
 type ViewPage struct {
-	Width          int
-	Height         int
-	FirstLine      int
-	CurrentLine    int
-	FirstCharIndex int
+	Width                 int
+	Height                int
+	FirstLine             int
+	CurrentLine           int
+	FirstCharIndex        int
+	IsHorizontalScrolling bool
 }
 
 type ViewPageData struct {
@@ -52,7 +53,7 @@ type View interface {
 	Properties() *Properties
 	Show(bounds Rect)
 	SetBounds(bounds Rect)
-	SetPage(firstLine, currentLine, firstCharIndex int)
+	SetPage(vp ViewPage)
 	SetCurrentView()
 	SetTop()
 	SetBottom()
@@ -250,11 +251,15 @@ func (h *view) NotifyChanged() {
 	})
 }
 
-func (h *view) SetPage(firstLine, currentLine, firstCharIndex int) {
-	if h.firstIndex != firstLine || h.currentIndex != currentLine || h.FirstCharIndex != firstCharIndex {
-		h.firstIndex = firstLine
-		h.currentIndex = currentLine
-		h.FirstCharIndex = firstCharIndex
+func (h *view) SetPage(vp ViewPage) {
+	if h.firstIndex != vp.FirstLine ||
+		h.currentIndex != vp.CurrentLine ||
+		h.FirstCharIndex != vp.FirstCharIndex ||
+		h.IsScrollHorizontal != vp.IsHorizontalScrolling {
+		h.firstIndex = vp.FirstLine
+		h.currentIndex = vp.CurrentLine
+		h.FirstCharIndex = vp.FirstCharIndex
+		h.IsScrollHorizontal = vp.IsHorizontalScrolling
 		h.NotifyChanged()
 	}
 }
@@ -284,7 +289,12 @@ func (h *view) toScrollTextBytes(linesCount int) []byte {
 		// // Draw the scrollbar
 		if i >= sbStart && i <= sbEnd {
 			// Within scrollbar, draw the scrollbar handle
-			sb.WriteString(MagentaDk(scrollBarHandle))
+			if h.IsScrollHorizontal {
+				sb.WriteString(Dark(scrollBarHandle))
+			} else {
+				sb.WriteString(MagentaDk(scrollBarHandle))
+			}
+
 		} else {
 			sb.WriteString(" ")
 		}
@@ -336,11 +346,12 @@ func (h view) ViewPage() ViewPage {
 		return ViewPage{Width: 1, FirstLine: 0, Height: 1, CurrentLine: 0}
 	}
 	return ViewPage{
-		Width:          width - 2,
-		FirstLine:      h.firstIndex,
-		Height:         height,
-		CurrentLine:    h.currentIndex,
-		FirstCharIndex: h.FirstCharIndex,
+		Width:                 width - 2,
+		FirstLine:             h.firstIndex,
+		Height:                height,
+		CurrentLine:           h.currentIndex,
+		FirstCharIndex:        h.FirstCharIndex,
+		IsHorizontalScrolling: h.IsScrollHorizontal,
 	}
 }
 
@@ -573,8 +584,11 @@ func (h *view) getScrollbarIndexes() (start, end int) {
 }
 
 func (h *view) ToggleScroll() {
-	log.Infof("Toggle scroll")
 	h.IsScrollHorizontal = !h.IsScrollHorizontal
+	h.NotifyChanged()
+	if h.properties.OnMoved != nil {
+		h.properties.OnMoved()
+	}
 }
 
 func (h *view) scrlName() string {

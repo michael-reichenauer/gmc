@@ -17,7 +17,7 @@ type diffPage struct {
 	total      int
 }
 
-type diffSideVM struct {
+type diffVM struct {
 	diffViewer     ui.Viewer
 	diffGetter     DiffGetter
 	commitDiff     git.CommitDiff
@@ -32,11 +32,11 @@ type diffSideVM struct {
 
 const viewWidth = 200
 
-func NewDiffSideVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffSideVM {
-	return &diffSideVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
+func newDiffVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
+	return &diffVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
 }
 
-func (h *diffSideVM) load() {
+func (h *diffVM) load() {
 	go func() {
 		diff, _ := h.diffGetter.GetCommitDiff(h.commitID)
 		h.diffViewer.PostOnUIThread(func() {
@@ -47,22 +47,22 @@ func (h *diffSideVM) load() {
 	}()
 }
 
-func (h *diffSideVM) setUnified(isUnified bool) {
+func (h *diffVM) setUnified(isUnified bool) {
 	h.isUnified = isUnified
 	h.isDiff = false
 	h.leftLines = nil
 	h.rightLines = nil
 }
 
-func (h *diffSideVM) getCommitDiffLeft(viewPort ui.ViewPage) (diffPage, error) {
+func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (diffPage, error) {
 	return h.getCommitDiff(viewPort, true)
 }
 
-func (h *diffSideVM) getCommitDiffRight(viewPort ui.ViewPage) (diffPage, error) {
+func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (diffPage, error) {
 	return h.getCommitDiff(viewPort, false)
 }
 
-func (h *diffSideVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage, error) {
+func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage, error) {
 	if !h.isDiffReady {
 		return h.loadingText(isLeft), nil
 	}
@@ -80,11 +80,11 @@ func (h *diffSideVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage,
 	}, nil
 }
 
-func (h *diffSideVM) isNewDiffNeeded(firstCharIndex int) bool {
+func (h *diffVM) isNewDiffNeeded(firstCharIndex int) bool {
 	return !h.isDiff || h.firstCharIndex != firstCharIndex
 }
 
-func (h *diffSideVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, int) {
+func (h *diffVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, int) {
 	lines := h.leftLines
 	lastIndex := firstIndex + height
 	if !isLeft {
@@ -103,7 +103,7 @@ func (h *diffSideVM) getLines(isLeft bool, firstIndex, height int) ([]string, in
 	return lines, firstIndex, lastIndex
 }
 
-func (h *diffSideVM) loadingText(isLeft bool) diffPage {
+func (h *diffVM) loadingText(isLeft bool) diffPage {
 	text := "Loading diff for " + h.commitID[:6]
 	if !isLeft {
 		text = ""
@@ -111,7 +111,7 @@ func (h *diffSideVM) loadingText(isLeft bool) diffPage {
 	return diffPage{lines: []string{text}, firstIndex: 0, total: 1}
 }
 
-func (h *diffSideVM) setDiffSides(firstCharIndex int) {
+func (h *diffVM) setDiffSides(firstCharIndex int) {
 	h.leftLines = nil
 	h.rightLines = nil
 	// Adding diff summery with changed files list, count, ...
@@ -129,9 +129,10 @@ func (h *diffSideVM) setDiffSides(firstCharIndex int) {
 			h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
 		}
 	}
+	h.addLeftAndRight("")
 }
 
-func (h *diffSideVM) addDiffSummery() {
+func (h *diffVM) addDiffSummery() {
 	h.addLeft(fmt.Sprintf("Changed files: %d", len(h.commitDiff.FileDiffs)))
 	for _, df := range h.commitDiff.FileDiffs {
 		diffType := h.toDiffType(df)
@@ -139,7 +140,7 @@ func (h *diffSideVM) addDiffSummery() {
 	}
 }
 
-func (h *diffSideVM) line(text string) string {
+func (h *diffVM) line(text string) string {
 	if h.firstCharIndex > len(text) {
 		return ""
 	}
@@ -149,7 +150,7 @@ func (h *diffSideVM) line(text string) string {
 	return text[h.firstCharIndex:]
 }
 
-func (h *diffSideVM) addFileHeader(df git.FileDiff) {
+func (h *diffVM) addFileHeader(df git.FileDiff) {
 	h.addLeftAndRight("")
 	h.addLeftAndRight("")
 	h.addLeftAndRight(ui.Blue(strings.Repeat("═", viewWidth)))
@@ -161,13 +162,13 @@ func (h *diffSideVM) addFileHeader(df git.FileDiff) {
 	}
 }
 
-func (h *diffSideVM) addDiffSectionHeader(ds git.SectionDiff) {
+func (h *diffVM) addDiffSectionHeader(ds git.SectionDiff) {
 	leftLines, rightLines := h.parseLinesTexts(ds)
 	h.add(ui.Dark(leftLines), ui.Dark(rightLines))
 	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
 }
 
-func (h *diffSideVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
+func (h *diffVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
 	if h.isUnified {
 		return fmt.Sprintf("Lines %s:", ds.ChangedIndexes), ""
 	}
@@ -178,7 +179,7 @@ func (h *diffSideVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
 	return leftText, rightText
 }
 
-func (h *diffSideVM) addDiffSectionLines(ds git.SectionDiff) {
+func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
 	for _, dl := range ds.LinesDiffs {
@@ -198,7 +199,7 @@ func (h *diffSideVM) addDiffSectionLines(ds git.SectionDiff) {
 	h.addBlocks(leftBlock, rightBlock)
 }
 
-func (h *diffSideVM) addBlocks(left, right []string) {
+func (h *diffVM) addBlocks(left, right []string) {
 	if h.isUnified {
 		h.leftLines = append(h.leftLines, left...)
 		h.leftLines = append(h.leftLines, right...)
@@ -222,20 +223,20 @@ func (h *diffSideVM) addBlocks(left, right []string) {
 	}
 }
 
-func (h *diffSideVM) addLeftAndRight(text string) {
+func (h *diffVM) addLeftAndRight(text string) {
 	h.add(text, text)
 }
 
-func (h *diffSideVM) addLeft(left string) {
+func (h *diffVM) addLeft(left string) {
 	h.add(left, "")
 }
 
-func (h *diffSideVM) add(left, right string) {
+func (h *diffVM) add(left, right string) {
 	h.leftLines = append(h.leftLines, left)
 	h.rightLines = append(h.rightLines, right)
 }
 
-func (h *diffSideVM) toDiffType(df git.FileDiff) string {
+func (h *diffVM) toDiffType(df git.FileDiff) string {
 	switch df.DiffMode {
 	case git.DiffModified:
 		return "Modified:"
