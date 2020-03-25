@@ -53,11 +53,11 @@ func (t *repoLayout) getPageLines(commits []viewmodel.Commit, viewWidth int, cur
 func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, timeWidth int) {
 	// Default widths (norma and wide view)
 	authorWidth = 15
-	timeWidth = 15
+	timeWidth = 16
 	if commitWidth < 90 {
 		// Reducing author and and time if narrow view
 		authorWidth = 10
-		timeWidth = 9
+		timeWidth = 10
 	}
 	if commitWidth < 60 {
 		// Disabled author and time if very narrow view
