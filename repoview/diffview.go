@@ -174,6 +174,6 @@ func (t *diffView) showContextMenu(x int, y int) {
 		cm.Add(ui.MenuItem{Text: "Show Unified Diff", Key: "1", Action: func() { t.ToUnified() }})
 	}
 
-	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: func() { t.Close() }})
+	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: func() { t.mainService.HideDiff() }})
 	cm.Show(x+3, y+2)
 }
