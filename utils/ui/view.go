@@ -397,12 +397,12 @@ func (h *view) MoveLine(line int) {
 
 func (h *view) PageDown() {
 	_, y := h.Size()
-	h.scroll(y - 1)
+	h.scrollVertically(y - 1)
 }
 
 func (h *view) PageUp() {
 	_, y := h.Size()
-	h.scroll(-y + 1)
+	h.scrollVertically(-y + 1)
 }
 
 func (h *view) MouseWheelDown() {
@@ -410,7 +410,7 @@ func (h *view) MouseWheelDown() {
 		h.scrollHorizontal(1)
 		return
 	}
-	h.scroll(1)
+	h.scrollVertically(1)
 }
 
 func (h *view) MouseWheelUp() {
@@ -418,15 +418,15 @@ func (h *view) MouseWheelUp() {
 		h.scrollHorizontal(-1)
 		return
 	}
-	h.scroll(-1)
+	h.scrollVertically(-1)
 }
 
 func (h *view) PageHome() {
-	h.scroll(-h.currentIndex)
+	h.scrollVertically(-h.currentIndex)
 }
 
 func (h *view) PageEnd() {
-	h.scroll(h.total)
+	h.scrollVertically(h.total)
 }
 
 func (h *view) MouseLeft() {
@@ -504,12 +504,12 @@ func (h *view) move(move int) {
 	}
 }
 
-func (h *view) scroll(move int) {
+func (h *view) scrollVertically(scroll int) {
 	if h.total <= 0 {
 		// Cannot scroll empty view
 		return
 	}
-	newFirst := h.firstIndex + move
+	newFirst := h.firstIndex + scroll
 
 	if newFirst < 0 {
 		newFirst = 0
@@ -541,8 +541,8 @@ func (h *view) scroll(move int) {
 	}
 }
 
-func (h *view) scrollHorizontal(move int) {
-	newFirstCharIndex := h.FirstCharIndex + move
+func (h *view) scrollHorizontal(scroll int) {
+	newFirstCharIndex := h.FirstCharIndex + scroll
 	if newFirstCharIndex < 0 {
 		return
 	}
