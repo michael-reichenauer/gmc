@@ -15,6 +15,7 @@ type DiffView interface {
 }
 
 type diffView struct {
+	ui          *ui.UI
 	vm          *diffVM
 	mainService mainService
 	leftSide    *DiffSideView
@@ -29,21 +30,23 @@ func (t *diffView) PostOnUIThread(f func()) {
 }
 
 func NewDiffView(
-	uiHandler *ui.UI,
+	ui *ui.UI,
 	mainService mainService,
 	diffGetter DiffGetter,
 	commitID string,
 ) DiffView {
 	t := &diffView{
+		ui:          ui,
 		mainService: mainService,
 		commitID:    commitID,
 	}
 	t.vm = newDiffVM(t, diffGetter, commitID)
 	t.vm.setUnified(t.isUnified)
-	t.leftSide = newDiffSideView(uiHandler, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
-	t.rightSide = newDiffSideView(uiHandler, t.viewDataRight, nil, t.onMovedRight)
+	t.leftSide = newDiffSideView(ui, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
+	t.rightSide = newDiffSideView(ui, t.viewDataRight, nil, t.onMovedRight)
 
 	t.leftSide.Properties().HideScrollbar = true
+	t.leftSide.Properties().OnMouseRight = t.showContextMenu
 	t.leftSide.Properties().Title = "Before " + commitID[:6]
 	t.rightSide.Properties().Title = "After " + commitID[:6]
 	return t
@@ -161,4 +164,16 @@ func (t *diffView) scrollHorizontalLeft() {
 
 func (t *diffView) scrollHorizontalRight() {
 	t.leftSide.ScrollHorizontal(1)
+}
+
+func (t *diffView) showContextMenu(x int, y int) {
+	cm := t.ui.NewMenu("")
+	if t.isUnified {
+		cm.Add(ui.MenuItem{Text: "Show Split Diff", Key: "2", Action: func() { t.ToSideBySide() }})
+	} else {
+		cm.Add(ui.MenuItem{Text: "Show Unified Diff", Key: "1", Action: func() { t.ToUnified() }})
+	}
+
+	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: func() { t.Close() }})
+	cm.Show(x+3, y+2)
 }
