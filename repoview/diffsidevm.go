@@ -7,6 +7,16 @@ import (
 	"strings"
 )
 
+type DiffGetter interface {
+	GetCommitDiff(id string) (git.CommitDiff, error)
+}
+
+type diffPage struct {
+	lines      []string
+	firstIndex int
+	total      int
+}
+
 type diffSideVM struct {
 	diffViewer     ui.Viewer
 	diffGetter     DiffGetter
@@ -116,6 +126,7 @@ func (h *diffSideVM) setDiffSides(firstCharIndex int) {
 		for _, ds := range df.SectionDiffs {
 			h.addDiffSectionHeader(ds)
 			h.addDiffSectionLines(ds)
+			h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
 		}
 	}
 }
@@ -123,7 +134,7 @@ func (h *diffSideVM) setDiffSides(firstCharIndex int) {
 func (h *diffSideVM) addDiffSummery() {
 	h.addLeft(fmt.Sprintf("Changed files: %d", len(h.commitDiff.FileDiffs)))
 	for _, df := range h.commitDiff.FileDiffs {
-		diffType := toDiffType(df)
+		diffType := h.toDiffType(df)
 		h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
 	}
 }
@@ -142,7 +153,7 @@ func (h *diffSideVM) addFileHeader(df git.FileDiff) {
 	h.addLeftAndRight("")
 	h.addLeftAndRight("")
 	h.addLeftAndRight(ui.Blue(strings.Repeat("═", viewWidth)))
-	fileText := ui.Cyan(fmt.Sprintf("%s %s", toDiffType(df), df.PathAfter))
+	fileText := ui.Cyan(fmt.Sprintf("%s %s", h.toDiffType(df), df.PathAfter))
 	h.addLeftAndRight(fileText)
 	if df.IsRenamed {
 		renamedText := ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
@@ -151,7 +162,7 @@ func (h *diffSideVM) addFileHeader(df git.FileDiff) {
 }
 
 func (h *diffSideVM) addDiffSectionHeader(ds git.SectionDiff) {
-	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
+	//h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
 	leftLines, rightLines := h.parseLinesTexts(ds)
 	h.add(ui.Dark(leftLines), ui.Dark(rightLines))
 	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
@@ -159,12 +170,12 @@ func (h *diffSideVM) addDiffSectionHeader(ds git.SectionDiff) {
 
 func (h *diffSideVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
 	if h.isUnified {
-		return fmt.Sprintf("Lines: %s", ds.ChangedIndexes), ""
+		return fmt.Sprintf("Lines %s:", ds.ChangedIndexes), ""
 	}
 
 	parts := strings.Split(ds.ChangedIndexes, "+")
-	leftText := fmt.Sprintf("Lines: %s", strings.TrimSpace(parts[0][1:]))
-	rightText := fmt.Sprintf("Lines: %s", strings.TrimSpace(parts[1]))
+	leftText := fmt.Sprintf("Lines %s:", strings.TrimSpace(parts[0][1:]))
+	rightText := fmt.Sprintf("Lines %s:", strings.TrimSpace(parts[1]))
 	return leftText, rightText
 }
 
@@ -223,4 +234,16 @@ func (h *diffSideVM) addLeft(left string) {
 func (h *diffSideVM) add(left, right string) {
 	h.leftLines = append(h.leftLines, left)
 	h.rightLines = append(h.rightLines, right)
+}
+
+func (h *diffSideVM) toDiffType(df git.FileDiff) string {
+	switch df.DiffMode {
+	case git.DiffModified:
+		return "Modified:"
+	case git.DiffAdded:
+		return "Added:   "
+	case git.DiffRemoved:
+		return "Removed: "
+	}
+	return ""
 }
