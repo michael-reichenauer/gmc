@@ -63,6 +63,7 @@ type View interface {
 	Clear()
 	PostOnUIThread(func())
 	Close()
+	ScrollHorizontal(scroll int)
 }
 
 type view struct {
@@ -180,8 +181,8 @@ func (h *view) Show(bounds Rect) {
 	}
 }
 
-func (h *view) scrlName() string {
-	return h.viewName + "scrl"
+func (h *view) ScrollHorizontal(scroll int) {
+	h.scrollHorizontal(scroll)
 }
 
 func (h *view) NotifyChanged() {
@@ -443,6 +444,7 @@ func (h *view) mouseOutside() {
 		h.properties.OnMouseOutside()
 	}
 }
+
 func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 	cx, cy := h.guiView.Cursor()
 	log.Infof("Cursor %d,%d for %q", cx, cy, h.viewName)
@@ -469,7 +471,6 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 		mouseHandler(cx, cy)
 	})
 }
-
 func (h *view) move(move int) {
 	if h.total <= 0 {
 		// Cannot scroll empty view
@@ -574,4 +575,8 @@ func (h *view) getScrollbarIndexes() (start, end int) {
 func (h *view) ToggleScroll() {
 	log.Infof("Toggle scroll")
 	h.IsScrollHorizontal = !h.IsScrollHorizontal
+}
+
+func (h *view) scrlName() string {
+	return h.viewName + "scrl"
 }

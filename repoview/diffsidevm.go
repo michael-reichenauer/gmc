@@ -162,7 +162,6 @@ func (h *diffSideVM) addFileHeader(df git.FileDiff) {
 }
 
 func (h *diffSideVM) addDiffSectionHeader(ds git.SectionDiff) {
-	//h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
 	leftLines, rightLines := h.parseLinesTexts(ds)
 	h.add(ui.Dark(leftLines), ui.Dark(rightLines))
 	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))

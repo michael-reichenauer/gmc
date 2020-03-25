@@ -57,6 +57,8 @@ func (t *DiffSideBySideView) onLoadLeft() {
 	t.leftSide.SetKey('q', gocui.ModNone, t.mainService.HideDiff)
 	t.leftSide.SetKey('1', gocui.ModNone, t.ToUnified)
 	t.leftSide.SetKey('2', gocui.ModNone, t.ToSideBySide)
+	t.leftSide.SetKey(gocui.KeyArrowLeft, gocui.ModNone, t.scrollHorizontalLeft)
+	t.leftSide.SetKey(gocui.KeyArrowRight, gocui.ModNone, t.scrollHorizontalRight)
 
 	t.vm.load()
 }
@@ -153,4 +155,12 @@ func (t *DiffSideBySideView) ToSideBySide() {
 	t.vm.setUnified(t.isUnified)
 	t.SetBounds(t.lastBounds)
 	t.NotifyChanged()
+}
+
+func (t *DiffSideBySideView) scrollHorizontalLeft() {
+	t.leftSide.ScrollHorizontal(-1)
+}
+
+func (t *DiffSideBySideView) scrollHorizontalRight() {
+	t.leftSide.ScrollHorizontal(1)
 }
