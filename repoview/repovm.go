@@ -2,6 +2,7 @@ package repoview
 
 import (
 	"context"
+	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/git"
@@ -31,6 +32,7 @@ type repoVM struct {
 	repo             viewmodel.ViewRepo
 	firstIndex       int
 	currentIndex     int
+	isLoading        bool
 }
 
 type trace struct {
@@ -55,6 +57,7 @@ func newRepoVM(
 }
 
 func (h *repoVM) load() {
+	h.isLoading = true
 	ctx, cancel := context.WithCancel(context.Background())
 	h.cancel = cancel
 	go h.monitorModelRoutine(ctx)
@@ -70,6 +73,7 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	for vr := range h.viewModelService.ViewRepos {
 		log.Infof("Detected model change")
 		h.repoViewer.PostOnUIThread(func() {
+			h.isLoading = false
 			h.repo = vr
 			h.repoViewer.NotifyChanged()
 		})
@@ -77,6 +81,15 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 }
 
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
+	if h.isLoading {
+		return repoPage{
+			repoPath:     h.repo.RepoPath,
+			lines:        []string{fmt.Sprintf("Loading %s ...", h.workingFolder)},
+			total:        1,
+			firstIndex:   0,
+			currentIndex: 0,
+		}, nil
+	}
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
 	h.currentIndex = viewPage.CurrentLine

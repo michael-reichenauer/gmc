@@ -11,6 +11,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"strings"
+	"time"
 )
 
 const (
@@ -147,6 +148,7 @@ func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, b
 
 func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {
 	log.Infof("getViewModel")
+	t := time.Now()
 	repo := newRepo()
 	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
@@ -174,7 +176,7 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 
 	// Draw branch connector lines
 	s.branchesGraph.drawConnectorLines(repo)
-	log.Infof("getViewModel done")
+	log.Infof("getViewModel done, (%v)", time.Since(t))
 	return repo
 }
 
