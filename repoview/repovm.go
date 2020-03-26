@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
 )
@@ -81,6 +82,8 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 }
 
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
+	t := timer.Start()
+	defer log.Infof("GetRepoPage %v", t)
 	if h.isLoading {
 		return repoPage{
 			repoPath:     h.repo.RepoPath,
@@ -90,6 +93,7 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 			currentIndex: 0,
 		}, nil
 	}
+
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
 	h.currentIndex = viewPage.CurrentLine

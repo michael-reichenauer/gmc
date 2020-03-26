@@ -35,6 +35,19 @@ func TestViewCurrent(t *testing.T) {
 	fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
 }
 
+func TestViewAcst(t *testing.T) {
+	cs := config.NewConfig("0.0", "c:/code/AcmAcs")
+	m := &mock{uiWork: make(chan func())}
+	vm := newRepoVM(m, nil, cs, "c:/code/AcmAcs")
+	vm.load()
+	vm.refresh()
+	for f := range m.uiWork {
+		f()
+	}
+	vd, _ := vm.GetRepoPage(ui.ViewPage{Height: 20, Width: 120})
+	fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
+}
+
 //
 // func TestView(t *testing.T) {
 // 	cs := config.NewConfig()
