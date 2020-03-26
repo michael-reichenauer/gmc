@@ -174,7 +174,7 @@ func tryParseFileMode(line string) (DiffMode, bool) {
 		return DiffAdded, true
 	}
 	if strings.HasPrefix(line, "deleted file mode") {
-		return DiffAdded, true
+		return DiffRemoved, true
 	}
 	return DiffModified, false
 }

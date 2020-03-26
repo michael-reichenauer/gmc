@@ -302,7 +302,7 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 
 func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Branch {
 	c := viewRepo.viewRepo.Commits[commitIndex]
-	if !c.IsMore {
+	if c.More == MoreNone {
 		return nil
 	}
 	var branches []*gitrepo.Branch
@@ -487,7 +487,7 @@ func (s *Service) setParentChildRelations(repo *viewRepo) {
 				c.MergeParent = repo.commitById[c.ParentIDs[1]]
 				if c.MergeParent == nil {
 					// commit has a merge parent, that is not visible, mark the commit as expandable
-					c.IsMore = true
+					c.More.Set(MoreMergeIn)
 				}
 			}
 		}
@@ -495,18 +495,18 @@ func (s *Service) setParentChildRelations(repo *viewRepo) {
 		for _, childID := range c.ChildIDs {
 			if _, ok := repo.commitById[childID]; !ok {
 				// commit has a child, that is not visible, mark the commit as expandable
-				c.IsMore = true
+				c.More.Set(MoreBranchOut)
 			}
 		}
 
-		if !c.IsMore {
+		if c.More == MoreNone {
 			for _, branchName := range c.BranchTips {
 				if !repo.containsBranchName(branchName) {
-					c.IsMore = true
+					// Some not shown branch tip att this commit
+					c.More.Set(MoreBranchOut)
 					break
 				}
 			}
-
 		}
 	}
 }

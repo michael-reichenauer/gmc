@@ -20,12 +20,13 @@ import (
 )
 
 const (
-	version = "0.24"
+	version = "0.25"
 )
 
 var (
-	repoPathFlag    = flag.String("d", "", "specify working folder")
-	showVersionFlag = flag.Bool("version", false, "print gmc version")
+	workingFolderFlag = flag.String("d", "", "specify working folder")
+	showVersionFlag   = flag.Bool("version", false, "print gmc version")
+	pauseFlag         = flag.Bool("pause", false, "pause until user click enter")
 )
 
 func main() {
@@ -37,18 +38,29 @@ func main() {
 
 	if isDebugConsole() {
 		// Seems program is run within a debugger console, which the termbox does not support
-		// So a new external process has been started and this instance ends
+		// So a new external process is started and this instance ends
+		startAsExternalProcess()
 		return
 	}
+
+	if *pauseFlag {
+		// The process was started with 'pause' flag, e.g. from Goland,
+		// wait until enter is clicked, this can be used for attaching a debugger
+		fmt.Printf("Click 'enter' to procede ...")
+		utils.DebugWait()
+	}
+
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
 	// Set default http client proxy to the system proxy (used by e.g. telemetry)
 	utils.SetDefaultHTTPProxy()
 	logger.StdTelemetry.Enable(version)
+	defer logger.StdTelemetry.Close()
 
 	log.Eventf("program-start", "Starting gmc %s ...", version)
+	defer log.Event("program-stop")
 
-	configService := config.NewConfig(version, *repoPathFlag)
+	configService := config.NewConfig(version, *workingFolderFlag)
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
 	})
@@ -64,31 +76,34 @@ func main() {
 		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})
-
-	log.Event("program-stop")
-	logger.StdTelemetry.Close()
 }
 
 func isDebugConsole() bool {
-	// termbox requires a "real" terminal, so check if current terminal is ok (check only on windows)
+	// termbox requires a "real" terminal. The GoLand console is not supported.
+	// so check if current terminal is ok (check only on windows)
 	if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) ||
 		runtime.GOOS != "windows" {
 		return false
 	}
+	return true
+}
 
-	// Seems to running in a debug terminal like e.g. in goland, restart as an external command
+func startAsExternalProcess() {
 	args := []string{"/C", "start"}
 	args = append(args, os.Args...)
 	cmd := exec.Command("cmd", args...)
 	_ = cmd.Start()
 	_ = cmd.Wait()
-	return true
 }
 
 func logProgramInfo(configService *config.Service) {
 	log.Infof("Version: %s", configService.ProgramVersion)
 	log.Infof("Binary path: %q", utils.BinPath())
-	log.Infof("Folder path: %s", configService.FolderPath)
-	log.Infof("Git version: %s", git.GitVersion())
-	log.Infof("Http proxy: %s", utils.GetHTTPProxyURL())
+	log.Infof("OS: %q", runtime.GOOS)
+	log.Infof("Arch: %q", runtime.GOARCH)
+	log.Infof("Go version: %q", runtime.Version())
+	log.Infof("Folder path: %q", configService.FolderPath)
+	log.Infof("Working Folder: %q", utils.CurrentDir())
+	log.Infof("Git version: %q", git.GitVersion())
+	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
 }

@@ -1,17 +1,23 @@
 package viewmodel
 
 import (
+	"github.com/michael-reichenauer/gmc/utils"
 	"time"
 )
 
 type ViewRepo struct {
 	Commits            []Commit
-	GraphWidth         int
 	CurrentBranchName  string
 	RepoPath           string
 	UncommittedChanges int
 	viewRepo           *viewRepo
 }
+
+const (
+	MoreNone                    = 0
+	MoreMergeIn   utils.Bitmask = 1 << iota // ╮
+	MoreBranchOut                           // ╭
+)
 
 type Commit struct {
 	ID           string
@@ -23,7 +29,7 @@ type Commit struct {
 	IsCurrent    bool
 	Branch       Branch
 	Graph        []GraphColumn
-	IsMore       bool
+	More         utils.Bitmask
 	ParentIDs    []string
 	ChildIDs     []string
 	BranchTips   []string
@@ -59,7 +65,6 @@ func newViewRepo(repo *viewRepo) ViewRepo {
 	return ViewRepo{
 		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
-		GraphWidth:         len(repo.Branches) * 2,
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
 		viewRepo:           repo,
@@ -87,7 +92,7 @@ func toCommit(c *commit) Commit {
 		IsCurrent:    c.IsCurrent,
 		Branch:       toBranch(c.Branch),
 		Graph:        c.graph,
-		IsMore:       c.IsMore,
+		More:         c.More,
 		BranchTips:   c.BranchTips,
 		IsLocalOnly:  c.IsLocalOnly,
 		IsRemoteOnly: c.IsRemoteOnly,

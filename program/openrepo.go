@@ -34,7 +34,7 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 	log.Infof("Opening %q ...", folderPath)
 	workingFolder, err := git.WorkingFolderRoot(folderPath)
 	if folderPath == "" || err != nil {
-		log.Warnf("No working folder %q", folderPath)
+		log.Infof("No working folder %q", folderPath)
 		openMenu := h.GetStartMenu()
 		openMenu.Show(3, 1)
 		return
