@@ -83,7 +83,7 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 	t := timer.Start()
-	defer log.Infof("GetRepoPage %v", t)
+	defer log.Infof("GetRepoPage %d %d %v", viewPage.FirstLine, viewPage.CurrentLine, t)
 	if h.isLoading {
 		return repoPage{
 			repoPath:     h.repo.RepoPath,

@@ -82,6 +82,8 @@ type view struct {
 	ui                 *UI
 	IsScrollHorizontal bool
 	FirstCharIndex     int
+	notifyCount        int
+	scrollNotifyCount  int
 }
 
 func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
@@ -188,6 +190,8 @@ func (h *view) ScrollHorizontal(scroll int) {
 
 func (h *view) NotifyChanged() {
 	h.ui.gui.Update(func(g *gocui.Gui) error {
+		h.notifyCount++
+		h.scrollNotifyCount = h.notifyCount
 		// Clear the view to make room for the new data
 		h.guiView.Clear()
 		h.scrollView.Clear()
@@ -510,7 +514,6 @@ func (h *view) move(move int) {
 		h.firstIndex = h.currentIndex - h.linesCount + 1
 	}
 
-	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
 	}
@@ -547,6 +550,12 @@ func (h *view) scrollVertically(scroll int) {
 	h.firstIndex = newFirst
 	h.currentIndex = newCurrent
 
+	h.scrollNotifyCount++
+	if h.scrollNotifyCount <= h.notifyCount+1 {
+		h.NotifyChanged()
+	} else {
+		log.Infof("Skipp notify for %d %d", h.firstIndex, h.currentIndex)
+	}
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
