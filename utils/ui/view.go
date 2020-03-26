@@ -553,10 +553,7 @@ func (h *view) scrollVertically(scroll int) {
 	h.scrollNotifyCount++
 	if h.scrollNotifyCount <= h.notifyCount+1 {
 		h.NotifyChanged()
-	} else {
-		log.Infof("Skipp notify for %d %d", h.firstIndex, h.currentIndex)
 	}
-	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
 	}
