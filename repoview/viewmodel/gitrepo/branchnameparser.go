@@ -36,7 +36,7 @@ func newBranchNameParser() *branchNameParser {
 
 func (h *branchNameParser) isPullMerge(c *Commit) bool {
 	fi := h.parseCommit(c)
-	return fi.from != "" && fi.from == fi.into
+	return h.isPullMergeCommit(fi)
 }
 
 func (h *branchNameParser) parseCommit(c *Commit) fromInto {
@@ -54,8 +54,18 @@ func (h *branchNameParser) parseCommit(c *Commit) fromInto {
 	// could actually be multiple names, but lets ignore that
 	h.parsedCommits[c.Id] = fi
 	h.branchNames[c.Id] = fi.into
-	h.branchNames[c.ParentIDs[1]] = fi.from
+	if !h.isPullMergeCommit(fi) {
+		h.branchNames[c.ParentIDs[1]] = fi.from
+	} else {
+		// The order of the parents will be switched for a pull merge and thus
+		h.branchNames[c.ParentIDs[0]] = fi.from
+	}
+
 	return fi
+}
+
+func (h *branchNameParser) isPullMergeCommit(fi fromInto) bool {
+	return fi.from != "" && fi.from == fi.into
 }
 
 func (h *branchNameParser) branchName(id string) string {

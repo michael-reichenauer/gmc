@@ -74,11 +74,26 @@ func (h *branchesService) determineBranchHierarchy(repo *Repo) {
 func (h *branchesService) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
 		h.determineBranch(repo, c)
+		h.setMasterBackbone(c)
 		c.Branch.BottomID = c.Id
 	}
 }
 
+func (h *branchesService) setMasterBackbone(c *Commit) {
+	if c.FirstParent == nil {
+		return
+	}
+	if c.Branch.Name == "origin/master" || c.Branch.Name == "master" {
+		c.FirstParent.Branch = c.Branch
+		c.FirstParent.addBranch(c.Branch)
+	}
+}
+
 func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
+	if c.Branch != nil {
+		// Branch already set
+		return
+	}
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, use that
 		c.Branch = c.Branches[0]
@@ -158,7 +173,6 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	c.Branch = repo.addMultiBranch(c)
 	c.addBranch(c.Branch)
 }
-
 func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	if len(c.Branches) < 1 {
 		return nil
@@ -172,6 +186,7 @@ func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	}
 	return nil
 }
+
 func (h *branchesService) isChildMultiBranch(c *Commit) *Branch {
 	for _, cc := range c.Children {
 		if cc.Branch.IsMultiBranch {
