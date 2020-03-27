@@ -6,6 +6,8 @@ import (
 	"sort"
 )
 
+// getGitModelBranches returns the git branches based on the name together with ancestor branches
+// If no named branches, the current branch (with ancestors is returned)
 func (s *Service) getGitModelBranches(branchNames []string, gmRepo gitrepo.Repo) []*gitrepo.Branch {
 	if len(branchNames) == 0 {
 		// No specified branches, default to current, or master
