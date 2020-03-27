@@ -9,9 +9,8 @@ import (
 )
 
 var (
-	currentLineMarker = '│'
-	scrollBarHandle   = "▐"
-	scrollBarHandle2  = "█"
+	currentLineMarker = '│' // The marker for current line (left)
+	scrollBarHandle   = "▐" // The scrollbar handle (right)
 )
 
 type Properties struct {
