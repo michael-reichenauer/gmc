@@ -11,7 +11,6 @@ import (
 var (
 	currentLineMarker = '│'
 	scrollBarHandle   = "▐"
-	scrollBarHandle2  = "█"
 )
 
 type Properties struct {
