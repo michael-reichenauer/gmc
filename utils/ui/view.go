@@ -512,7 +512,7 @@ func (h *view) move(move int) {
 		// Need to scroll view down to the new current line
 		h.firstIndex = h.currentIndex - h.linesCount + 1
 	}
-
+	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
 	}
