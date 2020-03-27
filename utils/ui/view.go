@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"golang.org/x/sync/semaphore"
 	"math"
 	"strings"
 )
@@ -81,32 +82,34 @@ type view struct {
 	ui                 *UI
 	IsScrollHorizontal bool
 	FirstCharIndex     int
-	notifyCount        int
-	scrollNotifyCount  int
+	notifyThrottler    *semaphore.Weighted
 }
 
 func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
 	return &view{
-		ui:         ui,
-		viewName:   ui.NewViewName(),
-		viewData:   viewData,
-		properties: &Properties{}}
+		ui:              ui,
+		viewName:        ui.NewViewName(),
+		viewData:        viewData,
+		notifyThrottler: semaphore.NewWeighted(int64(1)),
+		properties:      &Properties{}}
 }
 
 func newViewFromTextFunc(ui *UI, viewText func(viewPort ViewPage) string) *view {
 	return &view{
-		ui:         ui,
-		viewName:   ui.NewViewName(),
-		viewData:   viewDataFromTextFunc(viewText),
-		properties: &Properties{}}
+		ui:              ui,
+		viewName:        ui.NewViewName(),
+		viewData:        viewDataFromTextFunc(viewText),
+		notifyThrottler: semaphore.NewWeighted(int64(1)),
+		properties:      &Properties{}}
 }
 
 func newView(ui *UI, text string) *view {
 	return &view{
-		ui:         ui,
-		viewName:   ui.NewViewName(),
-		viewData:   viewDataFromText(text),
-		properties: &Properties{}}
+		ui:              ui,
+		viewName:        ui.NewViewName(),
+		viewData:        viewDataFromText(text),
+		notifyThrottler: semaphore.NewWeighted(int64(1)),
+		properties:      &Properties{}}
 }
 
 func viewDataFromText(viewText string) func(viewPort ViewPage) ViewPageData {
@@ -188,9 +191,14 @@ func (h *view) ScrollHorizontal(scroll int) {
 }
 
 func (h *view) NotifyChanged() {
+	if !h.notifyThrottler.TryAcquire(1) {
+		// Already scheduled notify, skipping this
+		return
+	}
+
 	h.ui.gui.Update(func(g *gocui.Gui) error {
-		h.notifyCount++
-		h.scrollNotifyCount = h.notifyCount
+		h.notifyThrottler.Release(1)
+
 		// Clear the view to make room for the new data
 		h.guiView.Clear()
 		h.scrollView.Clear()
@@ -549,10 +557,7 @@ func (h *view) scrollVertically(scroll int) {
 	h.firstIndex = newFirst
 	h.currentIndex = newCurrent
 
-	h.scrollNotifyCount++
-	if h.scrollNotifyCount <= h.notifyCount+1 {
-		h.NotifyChanged()
-	}
+	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
 	}
