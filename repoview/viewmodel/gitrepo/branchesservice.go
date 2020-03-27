@@ -1,9 +1,5 @@
 package gitrepo
 
-import (
-	"github.com/michael-reichenauer/gmc/utils/log"
-)
-
 // Default branch priority determines parent child branch relations
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
@@ -36,6 +32,12 @@ func (h *branchesService) setGitBranchTips(repo *Repo) {
 
 func (h *branchesService) setCommitBranchesAndChildren(repo *Repo) {
 	for _, c := range repo.Commits {
+		h.branchNames.parseCommit(c)
+		if len(c.ParentIDs) == 2 && h.branchNames.isPullMerge(c) {
+			// if the commit is a pull merger, we do switch the order of parents
+			c.ParentIDs = []string{c.ParentIDs[1], c.ParentIDs[0]}
+		}
+
 		parent, ok := repo.Parent(c, 0)
 		if ok {
 			parent.Children = append(parent.Children, c)
@@ -71,17 +73,12 @@ func (h *branchesService) determineBranchHierarchy(repo *Repo) {
 
 func (h *branchesService) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
-		h.branchNames.parseCommit(c)
-
 		h.determineBranch(repo, c)
 		c.Branch.BottomID = c.Id
 	}
 }
 
 func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
-	if c.Sid == "6541ab" {
-		log.Infof("")
-	}
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, use that
 		c.Branch = c.Branches[0]
