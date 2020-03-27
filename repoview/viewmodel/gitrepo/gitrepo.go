@@ -87,7 +87,7 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 			// Some time has passed, check if there is a repo or status change event to act on
 			// This is to avoid that multiple change events in a short interval is batched
 			if change != noChange {
-				log.Infof("waited for %s", change)
+				log.Infof("waited for %v", change)
 				change = noChange
 				if change == statusChange && hasRepo {
 					s.triggerStatus(repo)
@@ -103,10 +103,10 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 				// No more change events, closing this repo
 				return
 			}
-			log.Infof("Change %s", changeEvent)
+			log.Infof("Change %v", changeEvent)
 			if changeEvent == statusChange && !hasRepo {
 				// Status change, but we have not yet a repo, ignore status until repo exist
-				log.Infof("No repo for status change %s", changeEvent)
+				log.Infof("No repo for status change %v", changeEvent)
 				break
 			}
 			if change == noChange {

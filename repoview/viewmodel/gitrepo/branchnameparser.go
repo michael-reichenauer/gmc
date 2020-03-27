@@ -14,7 +14,7 @@ var (
 			`\s+'?(?P<from>[0-9A-Za-z_/-]+)'?` + //           the <from> branch name
 			`(?P<direction>\s+of\s+[^\s]+)?` + //             the optional 'of repo url'
 			`(\s+(into|to)\s+(?P<into>[0-9A-Za-z_/-]+))?`) // the <into> branch name
-	from, into, direction = indexes()
+	from, into, direction = nameRegExpIndexes()
 )
 
 type fromInto struct {
@@ -32,6 +32,11 @@ func newBranchNameParser() *branchNameParser {
 		parsedCommits: make(map[string]fromInto),
 		branchNames:   make(map[string]string),
 	}
+}
+
+func (h *branchNameParser) isPullMerge(c *Commit) bool {
+	fi := h.parseCommit(c)
+	return fi.from != "" && fi.from == fi.into
 }
 
 func (h *branchNameParser) parseCommit(c *Commit) fromInto {
@@ -62,20 +67,45 @@ func (h *branchNameParser) parseMergeBranchNames(subject string) fromInto {
 	if len(matches) == 0 {
 		return fromInto{}
 	}
+	match := matches[0]
 
-	if matches[0][from] != "" && matches[0][direction] != "" && matches[0][into] == "" {
-		// Subject is a pull merge (same source and target branch)
+	if h.isMatchPullMerge(match) {
+		// Subject is a pull merge same branch from remote repo (same remote source and target branch)
 		return fromInto{
-			from: h.trimBranchName(matches[0][from]),
-			into: h.trimBranchName(matches[0][from])}
+			from: h.trimBranchName(match[from]),
+			into: h.trimBranchName(match[from])}
 	}
+
 	return fromInto{
-		from: h.trimBranchName(matches[0][from]),
-		into: h.trimBranchName(matches[0][into])}
+		from: h.trimBranchName(match[from]),
+		into: h.trimBranchName(match[into])}
 }
 
-// indexes returns the named group indexes to be used in parse
-func indexes() (fromIndex, intoIndex, directionIndex int) {
+func (h *branchNameParser) isMatchPullMerge(match []string) bool {
+	if match[from] != "" && match[direction] != "" &&
+		(match[into] == "" || match[into] == match[from]) {
+		return true
+	}
+
+	if match[from] != "" && match[into] != "" &&
+		h.trimBranchName(match[from]) == h.trimBranchName(match[into]) {
+		return true
+	}
+
+	return false
+}
+
+func (h *branchNameParser) trimBranchName(name string) string {
+	for _, prefix := range prefixes {
+		if strings.HasPrefix(name, prefix) {
+			return name[len(prefix):]
+		}
+	}
+	return name
+}
+
+// nameRegExpIndexes returns the named group indexes to be used in parse
+func nameRegExpIndexes() (fromIndex, intoIndex, directionIndex int) {
 	n1 := nameRegExp.SubexpNames()
 	for i, v := range n1 {
 		if v == "from" {
@@ -89,13 +119,4 @@ func indexes() (fromIndex, intoIndex, directionIndex int) {
 		}
 	}
 	return
-}
-
-func (h *branchNameParser) trimBranchName(name string) string {
-	for _, prefix := range prefixes {
-		if strings.HasPrefix(name, prefix) {
-			return name[len(prefix):]
-		}
-	}
-	return name
 }
