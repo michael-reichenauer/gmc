@@ -479,7 +479,7 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 
 	if isMoveLine || mouseHandler == nil {
 		p := h.ViewPage()
-		line := cy - p.CurrentLine
+		line := p.FirstLine + cy - p.CurrentLine
 		log.Infof("Mouse move %d lines", line)
 		h.MoveLine(line)
 	}
