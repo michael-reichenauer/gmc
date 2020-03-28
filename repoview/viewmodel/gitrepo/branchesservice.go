@@ -1,6 +1,6 @@
 package gitrepo
 
-// Default branch priority determines parent child branch relations
+// Default branch priority determines parent child branch relations.
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type branchesService struct {
