@@ -103,7 +103,6 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 				// No more change events, closing this repo
 				return
 			}
-			log.Infof("Change %v", changeEvent)
 			if changeEvent == statusChange && !hasRepo {
 				// Status change, but we have not yet a repo, ignore status until repo exist
 				log.Infof("No repo for status change %v", changeEvent)
