@@ -1,5 +1,9 @@
 package gitrepo
 
+import (
+	"github.com/michael-reichenauer/gmc/utils"
+)
+
 // Default branch priority determines parent child branch relations.
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
@@ -83,17 +87,13 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 	if c.FirstParent == nil {
 		return
 	}
-	if c.Branch.Name == "origin/master" || c.Branch.Name == "master" {
-		c.FirstParent.Branch = c.Branch
+	if utils.StringsContains(DefaultBranchPriority, c.Branch.Name) {
+		// master and develop are special and will make a "backbone" for other branches to depend on
 		c.FirstParent.addBranch(c.Branch)
 	}
 }
 
 func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
-	if c.Branch != nil {
-		// Branch already set
-		return
-	}
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, use that
 		c.Branch = c.Branches[0]
