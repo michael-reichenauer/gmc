@@ -39,9 +39,9 @@ type ViewPage struct {
 }
 
 type ViewPageData struct {
-	Lines      []string
-	FirstIndex int
-	Total      int
+	Lines []string
+	//FirstIndex int
+	Total int
 }
 
 type Viewer interface {
@@ -131,9 +131,8 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 		}
 		lines = lines[firstIndex : firstIndex+height]
 		return ViewPageData{
-			Lines:      lines,
-			FirstIndex: viewPort.FirstLine,
-			Total:      len(lines),
+			Lines: lines,
+			Total: len(lines),
 		}
 	}
 }
@@ -195,71 +194,75 @@ func (h *view) NotifyChanged() {
 		// Already scheduled notify, skipping this
 		return
 	}
+	go func() {
+		h.ui.gui.Update(func(g *gocui.Gui) error {
+			h.notifyThrottler.Release(1)
 
-	h.ui.gui.Update(func(g *gocui.Gui) error {
-		h.notifyThrottler.Release(1)
+			// Clear the view to make room for the new data
+			h.guiView.Clear()
+			h.scrollView.Clear()
 
-		// Clear the view to make room for the new data
-		h.guiView.Clear()
-		h.scrollView.Clear()
+			isCurrent := h.ui.gui.CurrentView() == h.guiView
 
-		isCurrent := h.ui.gui.CurrentView() == h.guiView
+			// Get the view size to calculate the view port
+			width, height := h.guiView.Size()
+			if width <= 1 || height <= 0 {
+				// View is to small (not visible)
+				return nil
+			}
+			viewPort := h.ViewPage()
 
-		// Get the view size to calculate the view port
-		width, height := h.guiView.Size()
-		if width <= 1 || height <= 0 {
-			// View is to small (not visible)
-			return nil
-		}
-		viewPort := h.ViewPage()
+			// Get the view data for that view port and get data sizes (could be smaller than view)
+			viewData := h.viewData(viewPort)
+			if viewData.Total < len(viewData.Lines) {
+				viewData.Total = len(viewData.Lines)
+			}
 
-		// Get the view data for that view port and get data sizes (could be smaller than view)
-		viewData := h.viewData(viewPort)
+			h.width = width
+			h.total = viewData.Total
 
-		h.width = width
-		h.firstIndex = viewData.FirstIndex
-		h.total = viewData.Total
-		h.linesCount = len(viewData.Lines)
-		if h.total < len(viewData.Lines) {
-			// total was probably not specified (or wrong), lets adjust
-			h.total = len(viewData.Lines)
-		}
-		if h.linesCount > height {
-			// view data lines are more than view height, lets skip some lines
-			h.linesCount = height
-			viewData.Lines = viewData.Lines[:height]
-		}
+			h.linesCount = len(viewData.Lines)
+			if h.total < len(viewData.Lines) {
+				// total was probably not specified (or wrong), lets adjust
+				h.total = len(viewData.Lines)
+			}
+			if h.linesCount > height {
+				// view data lines are more than view height, lets skip some lines
+				h.linesCount = height
+				viewData.Lines = viewData.Lines[:height]
+			}
 
-		// Adjust current line to be in the visible area
-		if h.currentIndex < h.firstIndex {
-			h.currentIndex = h.firstIndex
-		}
-		if h.currentIndex > h.firstIndex+h.linesCount {
-			h.currentIndex = h.firstIndex + h.linesCount
-		}
+			// Adjust current line to be in the visible area
+			if h.currentIndex < h.firstIndex {
+				h.currentIndex = h.firstIndex
+			}
+			if h.currentIndex > h.firstIndex+h.linesCount {
+				h.currentIndex = h.firstIndex + h.linesCount
+			}
 
-		if h.linesCount == 0 {
-			// No view data
-			return nil
-		}
+			if h.linesCount == 0 {
+				// No view data
+				return nil
+			}
 
-		if h.properties.Title != "" {
-			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
-		} else {
-			h.guiView.Title = ""
-		}
+			if h.properties.Title != "" {
+				h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
+			} else {
+				h.guiView.Title = ""
+			}
 
-		// Show the new view data for the view port
-		if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
-			panic(log.Fatal(err))
-		}
-		if !h.properties.HideScrollbar {
-			if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
+			// Show the new view data for the view port
+			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
 				panic(log.Fatal(err))
 			}
-		}
-		return nil
-	})
+			if !h.properties.HideScrollbar {
+				if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
+					panic(log.Fatal(err))
+				}
+			}
+			return nil
+		})
+	}()
 }
 
 func (h *view) SetPage(vp ViewPage) {

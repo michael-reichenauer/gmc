@@ -51,7 +51,7 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
 	}
 
-	return ui.ViewPageData{Lines: repoPage.lines, FirstIndex: repoPage.firstIndex, Total: repoPage.total}
+	return ui.ViewPageData{Lines: repoPage.lines, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {

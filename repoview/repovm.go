@@ -7,15 +7,12 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
 )
 
 type repoPage struct {
 	lines              []string
-	firstIndex         int
-	currentIndex       int
 	total              int
 	repoPath           string
 	currentBranchName  string
@@ -82,15 +79,13 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 }
 
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
-	t := timer.Start()
-	defer log.Infof("GetRepoPage %d %d %v", viewPage.FirstLine, viewPage.CurrentLine, t)
+	//t := timer.Start()
+	//defer log.Infof("GetRepoPage %d %d %v", viewPage.FirstLine, viewPage.CurrentLine, t)
 	if h.isLoading {
 		return repoPage{
-			repoPath:     h.repo.RepoPath,
-			lines:        []string{fmt.Sprintf("Loading %s ...", h.workingFolder)},
-			total:        1,
-			firstIndex:   0,
-			currentIndex: 0,
+			repoPath: h.repo.RepoPath,
+			lines:    []string{fmt.Sprintf("Loading %s ...", h.workingFolder)},
+			total:    1,
 		}, nil
 	}
 
@@ -101,8 +96,6 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 		repoPath:           h.repo.RepoPath,
 		lines:              lines,
 		total:              len(h.repo.Commits),
-		firstIndex:         firstIndex,
-		currentIndex:       viewPage.CurrentLine,
 		uncommittedChanges: h.repo.UncommittedChanges,
 		currentBranchName:  h.repo.CurrentBranchName,
 	}, nil
