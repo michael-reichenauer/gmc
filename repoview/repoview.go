@@ -55,7 +55,6 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
 }
 
 func (h *RepoView) onLoad() {
-	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showContextMenu)
