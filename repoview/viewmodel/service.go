@@ -6,12 +6,12 @@ import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
 	"hash/fnv"
 	"sort"
 	"strings"
-	"time"
 )
 
 const (
@@ -148,35 +148,43 @@ func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, b
 
 func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {
 	log.Infof("getViewModel")
-	t := time.Now()
+	t := timer.Start()
 	repo := newRepo()
 	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
 	repo.UncommittedChanges = grepo.Status.AllChanges()
+	log.Infof("Got status %v", t)
 
 	branches := s.getGitModelBranches(branchNames, grepo)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
+	log.Infof("added branches %v", t)
 	currentBranch, ok := grepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
-
+	log.Infof("current branch %v", t)
 	repo.addVirtualStatusCommit(grepo)
+	log.Infof("virtual status %v", t)
 	for _, c := range grepo.Commits {
 		repo.addGitCommit(c)
 	}
+	log.Infof("added %d commits %v", len(repo.Commits), len(grepo.Commits), t)
 	s.adjustCurrentBranchIfStatus(repo)
+	log.Infof("adjust if status %v", t)
 	s.setBranchParentChildRelations(repo)
+	log.Infof("set branch parent child %v", t)
 	s.setParentChildRelations(repo)
-
+	log.Infof("set parent child %v", t)
 	// Draw branch lines
 	s.branchesGraph.drawBranchLines(repo)
+	log.Infof("drawBranchLines %v", t)
 
 	// Draw branch connector lines
 	s.branchesGraph.drawConnectorLines(repo)
-	log.Infof("getViewModel done, (%v)", time.Since(t))
+	log.Infof("drawConnectorLines %v", t)
+	log.Infof("getViewModel done, (%v)", t)
 	return repo
 }
 
