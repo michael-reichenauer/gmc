@@ -182,6 +182,12 @@ func (h *view) Show(bounds Rect) {
 		h.scrollView.Wrap = false
 		h.scrollView.Highlight = false
 		h.scrollView.Title = ""
+		if err := h.ui.gui.SetKeybinding(h.scrlName(), gocui.MouseLeft, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			h.ScrollSet()
+			return nil
+		}); err != nil {
+			panic(log.Fatal(err))
+		}
 	}
 }
 
@@ -606,4 +612,14 @@ func (h *view) ToggleScroll() {
 
 func (h *view) scrlName() string {
 	return h.viewName + "scrl"
+}
+
+func (h *view) ScrollSet() {
+	_, cy := h.scrollView.Cursor()
+	_, sh := h.scrollView.Size()
+	setLine := h.total
+	if sh-1 > 0 {
+		setLine = int(math.Ceil((float64(cy) / float64(sh-1)) * float64(h.total)))
+	}
+	h.move(setLine - h.currentIndex)
 }
