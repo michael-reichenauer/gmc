@@ -159,7 +159,7 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
-	log.Infof("added branches %v", t)
+	log.Infof("added %d (%d) branches %v", len(branches), len(grepo.Branches), t)
 	currentBranch, ok := grepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
@@ -170,7 +170,7 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	for _, c := range grepo.Commits {
 		repo.addGitCommit(c)
 	}
-	log.Infof("added %d commits %v", len(repo.Commits), len(grepo.Commits), t)
+	log.Infof("added %d (%d) commits %v", len(repo.Commits), len(grepo.Commits), t)
 	s.adjustCurrentBranchIfStatus(repo)
 	log.Infof("adjust if status %v", t)
 	s.setBranchParentChildRelations(repo)

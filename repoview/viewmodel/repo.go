@@ -132,8 +132,8 @@ func (r *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 
 func (r *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
 	var branch = r.BranchByName(c.Branch.Name)
-	isLocalOnly := r.isLocalOnly(c, branch)
-	isRemoteOnly := r.isRemoteOnly(c, branch)
+	// isLocalOnly := r.isLocalOnly(c, branch)
+	// isRemoteOnly := r.isRemoteOnly(c, branch)
 
 	return &commit{
 		ID:           c.Id,
@@ -149,8 +149,8 @@ func (r *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
 		Index:        index,
 		graph:        make([]GraphColumn, len(r.Branches)),
 		BranchTips:   c.BranchTipNames,
-		IsLocalOnly:  isLocalOnly,
-		IsRemoteOnly: isRemoteOnly,
+		IsLocalOnly:  false,
+		IsRemoteOnly: false,
 	}
 }
 
