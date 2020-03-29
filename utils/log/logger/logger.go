@@ -32,7 +32,7 @@ type Logger struct {
 
 func NewLogger(prefix string) *Logger {
 	// fmt.Printf("log target: %s\n", logTarget)
-	remoteAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:6868")
+	remoteAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:40000")
 	if err != nil {
 		panic(err)
 	}

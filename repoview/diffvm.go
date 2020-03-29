@@ -11,11 +11,11 @@ type DiffGetter interface {
 	GetCommitDiff(id string) (git.CommitDiff, error)
 }
 
-type diffPage struct {
-	lines      []string
-	firstIndex int
-	total      int
-}
+// type diffPage struct {
+// 	lines      []string
+// 	//firstIndex int
+// 	total      int
+// }
 
 type diffVM struct {
 	diffViewer     ui.Viewer
@@ -54,15 +54,15 @@ func (h *diffVM) setUnified(isUnified bool) {
 	h.rightLines = nil
 }
 
-func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (diffPage, error) {
+func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (ui.ViewPageData, error) {
 	return h.getCommitDiff(viewPort, true)
 }
 
-func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (diffPage, error) {
+func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (ui.ViewPageData, error) {
 	return h.getCommitDiff(viewPort, false)
 }
 
-func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage, error) {
+func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewPageData, error) {
 	if !h.isDiffReady {
 		return h.loadingText(isLeft), nil
 	}
@@ -73,10 +73,9 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (diffPage, err
 
 	lines, firstIndex, lastIndex := h.getLines(isLeft, viewPort.FirstLine, viewPort.Height)
 
-	return diffPage{
-		lines:      lines[firstIndex:lastIndex],
-		firstIndex: firstIndex,
-		total:      len(lines),
+	return ui.ViewPageData{
+		Lines: lines[firstIndex:lastIndex],
+		Total: len(lines),
 	}, nil
 }
 
@@ -103,12 +102,12 @@ func (h *diffVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, i
 	return lines, firstIndex, lastIndex
 }
 
-func (h *diffVM) loadingText(isLeft bool) diffPage {
+func (h *diffVM) loadingText(isLeft bool) ui.ViewPageData {
 	text := "Loading diff for " + h.commitID[:6]
 	if !isLeft {
 		text = ""
 	}
-	return diffPage{lines: []string{text}, firstIndex: 0, total: 1}
+	return ui.ViewPageData{Lines: []string{text}}
 }
 
 func (h *diffVM) setDiffSides(firstCharIndex int) {

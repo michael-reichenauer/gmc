@@ -51,11 +51,10 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
 	}
 
-	return ui.ViewPageData{Lines: repoPage.lines, FirstIndex: repoPage.firstIndex, Total: repoPage.total}
+	return ui.ViewPageData{Lines: repoPage.lines, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {
-	h.SetKey(gocui.KeyCtrl5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showContextMenu)
