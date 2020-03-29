@@ -511,12 +511,17 @@ func (s *Service) setAheadBehind(repo *viewRepo) {
 func (s *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
 	localBranch := repo.tryGetBranchByName(b.localName)
 	localTip := s.tryGetRealLocalTip(localBranch)
+	localBase := localBranch.bottom.Parent
 
 	count := 0
 	for c := b.tip; c != nil && c.Branch == b && count < 50; c = c.Parent {
 		count++
 		if localTip != nil && localTip == c {
 			// Local branch tip on same commit as remote branch tip (i.e. synced)
+			break
+		}
+		if localBase != nil && localBase == c {
+			// Local branch base on same commit as remote branch tip (i.e. synced from this point)
 			break
 		}
 		if c.MergeParent != nil && c.MergeParent.Branch.name == b.localName {
