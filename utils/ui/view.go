@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"golang.org/x/sync/semaphore"
 	"math"
 	"strings"
 )
 
 var (
-	currentLineMarker = '│'
-	scrollBarHandle   = "▐"
-	scrollBarHandle2  = "█"
+	currentLineMarker = '│' // The marker for current line (left)
+	scrollBarHandle   = "▐" // The scrollbar handle (right)
 )
 
 type Properties struct {
@@ -39,9 +39,9 @@ type ViewPage struct {
 }
 
 type ViewPageData struct {
-	Lines      []string
-	FirstIndex int
-	Total      int
+	Lines []string
+	//FirstIndex int
+	Total int
 }
 
 type Viewer interface {
@@ -82,30 +82,34 @@ type view struct {
 	ui                 *UI
 	IsScrollHorizontal bool
 	FirstCharIndex     int
+	notifyThrottler    *semaphore.Weighted
 }
 
 func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
 	return &view{
-		ui:         ui,
-		viewName:   ui.NewViewName(),
-		viewData:   viewData,
-		properties: &Properties{}}
+		ui:              ui,
+		viewName:        ui.NewViewName(),
+		viewData:        viewData,
+		notifyThrottler: semaphore.NewWeighted(int64(1)),
+		properties:      &Properties{}}
 }
 
 func newViewFromTextFunc(ui *UI, viewText func(viewPort ViewPage) string) *view {
 	return &view{
-		ui:         ui,
-		viewName:   ui.NewViewName(),
-		viewData:   viewDataFromTextFunc(viewText),
-		properties: &Properties{}}
+		ui:              ui,
+		viewName:        ui.NewViewName(),
+		viewData:        viewDataFromTextFunc(viewText),
+		notifyThrottler: semaphore.NewWeighted(int64(1)),
+		properties:      &Properties{}}
 }
 
 func newView(ui *UI, text string) *view {
 	return &view{
-		ui:         ui,
-		viewName:   ui.NewViewName(),
-		viewData:   viewDataFromText(text),
-		properties: &Properties{}}
+		ui:              ui,
+		viewName:        ui.NewViewName(),
+		viewData:        viewDataFromText(text),
+		notifyThrottler: semaphore.NewWeighted(int64(1)),
+		properties:      &Properties{}}
 }
 
 func viewDataFromText(viewText string) func(viewPort ViewPage) ViewPageData {
@@ -127,9 +131,8 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 		}
 		lines = lines[firstIndex : firstIndex+height]
 		return ViewPageData{
-			Lines:      lines,
-			FirstIndex: viewPort.FirstLine,
-			Total:      len(lines),
+			Lines: lines,
+			Total: len(lines),
 		}
 	}
 }
@@ -179,6 +182,12 @@ func (h *view) Show(bounds Rect) {
 		h.scrollView.Wrap = false
 		h.scrollView.Highlight = false
 		h.scrollView.Title = ""
+		if err := h.ui.gui.SetKeybinding(h.scrlName(), gocui.MouseLeft, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+			h.ScrollSet()
+			return nil
+		}); err != nil {
+			panic(log.Fatal(err))
+		}
 	}
 }
 
@@ -187,68 +196,79 @@ func (h *view) ScrollHorizontal(scroll int) {
 }
 
 func (h *view) NotifyChanged() {
-	h.ui.gui.Update(func(g *gocui.Gui) error {
-		// Clear the view to make room for the new data
-		h.guiView.Clear()
-		h.scrollView.Clear()
+	if !h.notifyThrottler.TryAcquire(1) {
+		// Already scheduled notify, skipping this
+		return
+	}
+	go func() {
+		h.ui.gui.Update(func(g *gocui.Gui) error {
+			h.notifyThrottler.Release(1)
 
-		isCurrent := h.ui.gui.CurrentView() == h.guiView
+			// Clear the view to make room for the new data
+			h.guiView.Clear()
+			h.scrollView.Clear()
 
-		// Get the view size to calculate the view port
-		width, height := h.guiView.Size()
-		if width <= 1 || height <= 0 {
-			// View is to small (not visible)
-			return nil
-		}
-		viewPort := h.ViewPage()
+			isCurrent := h.ui.gui.CurrentView() == h.guiView
 
-		// Get the view data for that view port and get data sizes (could be smaller than view)
-		viewData := h.viewData(viewPort)
+			// Get the view size to calculate the view port
+			width, height := h.guiView.Size()
+			if width <= 1 || height <= 0 {
+				// View is to small (not visible)
+				return nil
+			}
+			viewPort := h.ViewPage()
 
-		h.width = width
-		h.firstIndex = viewData.FirstIndex
-		h.total = viewData.Total
-		h.linesCount = len(viewData.Lines)
-		if h.total < len(viewData.Lines) {
-			// total was probably not specified (or wrong), lets adjust
-			h.total = len(viewData.Lines)
-		}
-		if h.linesCount > height {
-			// view data lines are more than view height, lets skip some lines
-			h.linesCount = height
-			viewData.Lines = viewData.Lines[:height]
-		}
+			// Get the view data for that view port and get data sizes (could be smaller than view)
+			viewData := h.viewData(viewPort)
+			if viewData.Total < len(viewData.Lines) {
+				viewData.Total = len(viewData.Lines)
+			}
 
-		// Adjust current line to be in the visible area
-		if h.currentIndex < h.firstIndex {
-			h.currentIndex = h.firstIndex
-		}
-		if h.currentIndex > h.firstIndex+h.linesCount {
-			h.currentIndex = h.firstIndex + h.linesCount
-		}
+			h.width = width
+			h.total = viewData.Total
 
-		if h.linesCount == 0 {
-			// No view data
-			return nil
-		}
+			h.linesCount = len(viewData.Lines)
+			if h.total < len(viewData.Lines) {
+				// total was probably not specified (or wrong), lets adjust
+				h.total = len(viewData.Lines)
+			}
+			if h.linesCount > height {
+				// view data lines are more than view height, lets skip some lines
+				h.linesCount = height
+				viewData.Lines = viewData.Lines[:height]
+			}
 
-		if h.properties.Title != "" {
-			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
-		} else {
-			h.guiView.Title = ""
-		}
+			// Adjust current line to be in the visible area
+			if h.currentIndex < h.firstIndex {
+				h.currentIndex = h.firstIndex
+			}
+			if h.currentIndex > h.firstIndex+h.linesCount {
+				h.currentIndex = h.firstIndex + h.linesCount
+			}
 
-		// Show the new view data for the view port
-		if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
-			panic(log.Fatal(err))
-		}
-		if !h.properties.HideScrollbar {
-			if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
+			if h.linesCount == 0 {
+				// No view data
+				return nil
+			}
+
+			if h.properties.Title != "" {
+				h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
+			} else {
+				h.guiView.Title = ""
+			}
+
+			// Show the new view data for the view port
+			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
 				panic(log.Fatal(err))
 			}
-		}
-		return nil
-	})
+			if !h.properties.HideScrollbar {
+				if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
+					panic(log.Fatal(err))
+				}
+			}
+			return nil
+		})
+	}()
 }
 
 func (h *view) SetPage(vp ViewPage) {
@@ -468,7 +488,7 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 
 	if isMoveLine || mouseHandler == nil {
 		p := h.ViewPage()
-		line := cy - p.CurrentLine
+		line := p.FirstLine + cy - p.CurrentLine
 		log.Infof("Mouse move %d lines", line)
 		h.MoveLine(line)
 	}
@@ -509,7 +529,6 @@ func (h *view) move(move int) {
 		// Need to scroll view down to the new current line
 		h.firstIndex = h.currentIndex - h.linesCount + 1
 	}
-
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
@@ -593,4 +612,14 @@ func (h *view) ToggleScroll() {
 
 func (h *view) scrlName() string {
 	return h.viewName + "scrl"
+}
+
+func (h *view) ScrollSet() {
+	_, cy := h.scrollView.Cursor()
+	_, sh := h.scrollView.Size()
+	setLine := h.total
+	if sh-1 > 0 {
+		setLine = int(math.Ceil((float64(cy) / float64(sh-1)) * float64(h.total)))
+	}
+	h.move(setLine - h.currentIndex)
 }

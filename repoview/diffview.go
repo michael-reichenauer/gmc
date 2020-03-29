@@ -71,7 +71,7 @@ func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewPageData {
 	if err != nil {
 		return ui.ViewPageData{}
 	}
-	return ui.ViewPageData{Lines: diff.lines, FirstIndex: diff.firstIndex, Total: diff.total}
+	return diff
 }
 
 func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData {
@@ -79,7 +79,7 @@ func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData {
 	if err != nil {
 		return ui.ViewPageData{}
 	}
-	return ui.ViewPageData{Lines: diff.lines, FirstIndex: diff.firstIndex, Total: diff.total}
+	return diff
 }
 
 func (t *diffView) Show(bounds ui.Rect) {

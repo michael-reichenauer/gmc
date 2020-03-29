@@ -87,7 +87,7 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 			// Some time has passed, check if there is a repo or status change event to act on
 			// This is to avoid that multiple change events in a short interval is batched
 			if change != noChange {
-				log.Infof("waited for %s", change)
+				log.Infof("waited for %v", change)
 				change = noChange
 				if change == statusChange && hasRepo {
 					s.triggerStatus(repo)
@@ -103,10 +103,9 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 				// No more change events, closing this repo
 				return
 			}
-			log.Infof("Change %s", changeEvent)
 			if changeEvent == statusChange && !hasRepo {
 				// Status change, but we have not yet a repo, ignore status until repo exist
-				log.Infof("No repo for status change %s", changeEvent)
+				log.Infof("No repo for status change %v", changeEvent)
 				break
 			}
 			if change == noChange {
@@ -225,92 +224,6 @@ func (s *GitRepo) getFreshRepo() (Repo, error) {
 	log.Infof("Git repo %v", time.Since(t))
 	return *repo, nil
 }
-
-//
-// func (s *GitRepo) monitorRepoChangesRoutine() {
-// 	defer s.waitGroup.Done()
-// 	var ticker *time.Ticker
-// 	tickerChan := func() <-chan time.Time {
-// 		if ticker == nil {
-// 			return nil
-// 		}
-// 		return ticker.C
-// 	}
-// 	for {
-// 		select {
-// 		case <-s.folderMonitor.RepoChange:
-// 			ticker = time.NewTicker(1 * time.Second)
-// 		case <-tickerChan():
-// 			log.Infof("Detected repo change")
-// 			ticker = nil
-//
-// 			// Repo changed, get new fresh repo and report
-// 			repo, err := s.GetFreshRepo()
-// 			if err != nil {
-// 				s.ErrorEvents <- err
-// 				return
-// 			}
-// 			s.postRepoEvent(repo)
-// 		case <-s.done:
-// 			return
-// 		}
-// 	}
-// }
-//
-// func (s *GitRepo) postRepoEvent(repo Repo) {
-// 	select {
-// 	case s.RepoEvents <- repo:
-// 	case <-s.done:
-// 	}
-// }
-//
-// func (s *GitRepo) postStatusEvent(status Status) {
-// 	select {
-// 	case s.StatusEvents <- status:
-// 	case <-s.done:
-// 	}
-// }
-//
-// func (s *GitRepo) monitorStatusChangesRoutine() {
-// 	defer s.waitGroup.Done()
-// 	var ticker *time.Ticker
-// 	tickerChan := func() <-chan time.Time {
-// 		if ticker == nil {
-// 			return nil
-// 		}
-// 		return ticker.C
-// 	}
-// 	for {
-// 		select {
-// 		case <-s.StatusEvents:
-// 			ticker = time.NewTicker(1 * time.Second)
-// 		case <-tickerChan():
-// 			log.Infof("Detected status change")
-// 			ticker = nil
-// 			// Status changed, get new fresh status and report
-// 			status, err := s.getFreshStatus()
-// 			if err != nil {
-// 				s.ErrorEvents <- err
-// 				return
-// 			}
-// 			s.postStatusEvent(status)
-// 		case <-s.done:
-// 			return
-// 		}
-// 	}
-// }
-//
-// func (s *GitRepo) getFreshStatus() (Status, error) {
-// 	t := time.Now()
-// 	gitStatus, err := s.gitLib().GetStatus()
-// 	if err != nil {
-//
-// 		return Status{}, err
-// 	}
-// 	status := newStatus(gitStatus)
-// 	log.Infof("Git status %v", time.Since(t))
-// 	return status, nil
-// }
 
 func (s *GitRepo) fetchRoutine(ctx context.Context) {
 	fetchTicker := time.NewTicker(fetchInterval)

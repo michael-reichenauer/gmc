@@ -62,7 +62,7 @@ func (h *menuView) viewData(viewPort ViewPage) ViewPageData {
 		line := h.toItemText(viewPort.Width, h.items[i])
 		lines = append(lines, line)
 	}
-	return ViewPageData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.items)}
+	return ViewPageData{Lines: lines, Total: len(h.items)}
 }
 
 func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
