@@ -153,41 +153,33 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
 	repo.UncommittedChanges = grepo.Status.AllChanges()
-	log.Infof("Got status %v", t)
 
 	branches := s.getGitModelBranches(branchNames, grepo)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
-	log.Infof("added %d (%d) branches %v", len(branches), len(grepo.Branches), t)
+
 	currentBranch, ok := grepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
-	log.Infof("current branch %v", t)
+
 	repo.addVirtualStatusCommit(grepo)
-	log.Infof("virtual status %v", t)
 	for _, c := range grepo.Commits {
 		repo.addGitCommit(c)
 	}
-	log.Infof("added %d (%d) commits %v", len(repo.Commits), len(grepo.Commits), t)
+
 	s.adjustCurrentBranchIfStatus(repo)
-	log.Infof("adjust if status %v", t)
 	s.setBranchParentChildRelations(repo)
-	log.Infof("set branch parent child %v", t)
 	s.setParentChildRelations(repo)
-	log.Infof("set parent child %v", t)
 	s.setAheadBehind(repo)
-	log.Infof("setAheadBehind %v", t)
 
 	// Draw branch lines
 	s.branchesGraph.drawBranchLines(repo)
-	log.Infof("drawBranchLines %v", t)
 
 	// Draw branch connector lines
 	s.branchesGraph.drawConnectorLines(repo)
-	log.Infof("drawConnectorLines %v", t)
-	log.Infof("getViewModel done, (%v)", t)
+	log.Infof("getViewModel done, %s", t)
 	return repo
 }
 
