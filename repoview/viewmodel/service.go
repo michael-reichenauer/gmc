@@ -177,6 +177,9 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	log.Infof("set branch parent child %v", t)
 	s.setParentChildRelations(repo)
 	log.Infof("set parent child %v", t)
+	s.setAheadBehind(repo)
+	log.Infof("setAheadBehind %v", t)
+
 	// Draw branch lines
 	s.branchesGraph.drawBranchLines(repo)
 	log.Infof("drawBranchLines %v", t)
@@ -444,39 +447,6 @@ func (s *Service) HideBranch(viewRepo ViewRepo, name string) {
 	s.showBranches(branchNames)
 }
 
-//
-// func (s *Service) RepoPath() string {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	return s.gmRepo.RepoPath
-// }
-//
-// func (s *Service) CloseBranch(index int) {
-// 	s.lock.Lock()
-// 	if index >= len(s.currentViewModel.Commits) {
-// 		// Repo must just have changed, just ignore
-// 		s.lock.Unlock()
-// 		return
-// 	}
-// 	c := s.currentViewModel.Commits[index]
-// 	if c.Branch.name == masterName || c.Branch.name == remoteMasterName {
-// 		// Cannot close master
-// 		s.lock.Unlock()
-// 		return
-// 	}
-//
-// 	// get branch ids except for the commit branch or decedent branches
-// 	var branchNames []string
-// 	for _, b := range s.currentViewModel.Branches {
-// 		if b.name != c.Branch.name && !c.Branch.isAncestor(b) {
-// 			branchNames = append(branchNames, b.name)
-// 		}
-// 	}
-// 	s.lock.Unlock()
-// 	log.Event("vms-branches-close")
-// 	s.showBranches(branchNames)
-// }
-
 func (s *Service) setBranchParentChildRelations(repo *viewRepo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
@@ -527,6 +497,58 @@ func (s *Service) toBranchNames(branches []*branch) []string {
 		ids = append(ids, b.name)
 	}
 	return ids
+}
+
+func (s *Service) setAheadBehind(repo *viewRepo) {
+	for _, b := range repo.Branches {
+		if b.isRemote && b.localName != "" {
+			s.setIsRemoteOnlyCommits(repo, b)
+		} else if !b.isRemote && b.remoteName != "" {
+			s.setLocalOnlyCommits(b)
+		}
+	}
+}
+func (s *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
+	localBranch := repo.tryGetBranchByName(b.localName)
+	localTip := s.tryGetRealLocalTip(localBranch)
+
+	count := 0
+	for c := b.tip; c != nil && c.Branch == b && count < 50; c = c.Parent {
+		count++
+		if localTip != nil && localTip == c {
+			// Local branch tip on same commit as remote branch tip (i.e. synced)
+			break
+		}
+		if c.MergeParent != nil && c.MergeParent.Branch.name == b.localName {
+			break
+		}
+		c.IsRemoteOnly = true
+	}
+}
+func (s *Service) setLocalOnlyCommits(b *branch) {
+	count := 0
+	for c := b.tip; c != nil && c.Branch == b && count < 50; c = c.Parent {
+		if c.ID == git.UncommittedID {
+			continue
+		}
+		count++
+		c.IsLocalOnly = true
+	}
+}
+
+func (s *Service) tryGetRealLocalTip(localBranch *branch) *commit {
+	var localTip *commit
+	if localBranch != nil {
+		localTip = localBranch.tip
+		if localTip.ID == git.UncommittedID {
+			localTip = localTip.Parent
+		}
+	}
+	return localTip
+}
+
+func (s *Service) isSynced(b *branch) bool {
+	return b.isRemote && b.localName == "" || !b.isRemote && b.remoteName == ""
 }
 
 //
