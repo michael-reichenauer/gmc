@@ -411,6 +411,14 @@ func (h *view) Clear() {
 	h.guiView.Clear()
 }
 
+func (h *view) Read() string {
+	return strings.Join(h.ReadLines(), "\n")
+}
+
+func (h *view) ReadLines() []string {
+	return h.guiView.BufferLines()
+}
+
 func (h *view) Size() (int, int) {
 	return h.guiView.Size()
 }
