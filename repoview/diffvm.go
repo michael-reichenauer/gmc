@@ -11,12 +11,6 @@ type DiffGetter interface {
 	GetCommitDiff(id string) (git.CommitDiff, error)
 }
 
-// type diffPage struct {
-// 	lines      []string
-// 	//firstIndex int
-// 	total      int
-// }
-
 type diffVM struct {
 	diffViewer     ui.Viewer
 	diffGetter     DiffGetter
