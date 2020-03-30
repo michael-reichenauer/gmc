@@ -14,13 +14,15 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	stdlog "log"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"runtime"
 )
 
 const (
-	version = "0.25"
+	version = "0.26"
 )
 
 var (
@@ -43,11 +45,15 @@ func main() {
 		return
 	}
 
+	go func() {
+		log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
+	}()
+
 	if *pauseFlag {
 		// The process was started with 'pause' flag, e.g. from Goland,
 		// wait until enter is clicked, this can be used for attaching a debugger
-		fmt.Printf("Click 'enter' to procede ...")
-		utils.DebugWait()
+		fmt.Printf("Click 'enter' to proceed ...\n")
+		utils.ReadLine()
 	}
 
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui

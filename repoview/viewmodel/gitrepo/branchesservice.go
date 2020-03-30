@@ -1,10 +1,10 @@
 package gitrepo
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils"
 )
 
-// Default branch priority determines parent child branch relations
+// Default branch priority determines parent child branch relations.
 var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
 
 type branchesService struct {
@@ -36,6 +36,12 @@ func (h *branchesService) setGitBranchTips(repo *Repo) {
 
 func (h *branchesService) setCommitBranchesAndChildren(repo *Repo) {
 	for _, c := range repo.Commits {
+		h.branchNames.parseCommit(c)
+		if len(c.ParentIDs) == 2 && h.branchNames.isPullMerge(c) {
+			// if the commit is a pull merger, we do switch the order of parents
+			c.ParentIDs = []string{c.ParentIDs[1], c.ParentIDs[0]}
+		}
+
 		parent, ok := repo.Parent(c, 0)
 		if ok {
 			parent.Children = append(parent.Children, c)
@@ -71,17 +77,23 @@ func (h *branchesService) determineBranchHierarchy(repo *Repo) {
 
 func (h *branchesService) determineCommitBranches(repo *Repo) {
 	for _, c := range repo.Commits {
-		h.branchNames.parseCommit(c)
-
 		h.determineBranch(repo, c)
+		h.setMasterBackbone(c)
 		c.Branch.BottomID = c.Id
 	}
 }
 
-func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
-	if c.Sid == "6541ab" {
-		log.Infof("")
+func (h *branchesService) setMasterBackbone(c *Commit) {
+	if c.FirstParent == nil {
+		return
 	}
+	if utils.StringsContains(DefaultBranchPriority, c.Branch.Name) {
+		// master and develop are special and will make a "backbone" for other branches to depend on
+		c.FirstParent.addBranch(c.Branch)
+	}
+}
+
+func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, use that
 		c.Branch = c.Branches[0]
@@ -161,7 +173,6 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	c.Branch = repo.addMultiBranch(c)
 	c.addBranch(c.Branch)
 }
-
 func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	if len(c.Branches) < 1 {
 		return nil
@@ -175,6 +186,7 @@ func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	}
 	return nil
 }
+
 func (h *branchesService) isChildMultiBranch(c *Commit) *Branch {
 	for _, cc := range c.Children {
 		if cc.Branch.IsMultiBranch {

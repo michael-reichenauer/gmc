@@ -23,9 +23,10 @@ func CurrentDir() string {
 	return dir
 }
 
-func DebugWait() {
-	var input string
-	fmt.Scanln(&input)
+func ReadLine() string {
+	var line string
+	fmt.Scanln(&line)
+	return line
 }
 
 func BinPath() string {

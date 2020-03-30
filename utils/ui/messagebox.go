@@ -105,7 +105,7 @@ func (h *messageBoxView) viewData(viewPort ViewPage) ViewPageData {
 	for i := viewPort.FirstLine; i < length; i++ {
 		lines = append(lines, utils.Text(h.lines[i], viewPort.Width))
 	}
-	return ViewPageData{Lines: lines, FirstIndex: viewPort.FirstLine, Total: len(h.lines)}
+	return ViewPageData{Lines: lines, Total: len(h.lines)}
 }
 
 func (h *messageBoxView) onClose() {
