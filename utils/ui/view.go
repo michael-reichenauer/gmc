@@ -10,9 +10,10 @@ import (
 )
 
 var (
-	currentLineMarker = '│' // The marker for current line (left)
-	scrollBarHandle   = "▐" // The scrollbar handle (right)
-	scrollBarHandle2  = '▐' // The scrollbar handle (right)
+	currentLineMarker          = '│' // The marker for current line (left)
+	scrollBarVerticalHandle    = '▐' // The scrollbar handle (right)
+	scrollBarHorizontalHandle  = '▄' // The scrollbar handle (down)
+	scrollBarHorizontalHandle2 = '_' // The scrollbar handle inactive (down)
 )
 
 type Properties struct {
@@ -41,8 +42,9 @@ type ViewPage struct {
 }
 
 type ViewPageData struct {
-	Lines []string
-	Total int
+	Lines    []string
+	Total    int
+	MaxWidth int
 }
 
 type Viewer interface {
@@ -70,9 +72,7 @@ type View interface {
 }
 
 type view struct {
-	guiView *gocui.View
-	//scrollView *gocui.View
-
+	guiView            *gocui.View
 	properties         *Properties
 	viewName           string
 	viewData           func(viewPort ViewPage) ViewPageData
@@ -81,35 +81,19 @@ type view struct {
 	currentIndex       int
 	total              int
 	width              int
+	height             int
 	ui                 *UI
 	IsScrollHorizontal bool
 	FirstCharIndex     int
 	notifyThrottler    *semaphore.Weighted
+	maxLineWidth       int
 }
 
-func newViewFromPageFunc(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
+func newView(ui *UI, viewData func(viewPort ViewPage) ViewPageData) *view {
 	return &view{
 		ui:              ui,
 		viewName:        ui.NewViewName(),
 		viewData:        viewData,
-		notifyThrottler: semaphore.NewWeighted(int64(1)),
-		properties:      &Properties{}}
-}
-
-func newViewFromTextFunc(ui *UI, viewText func(viewPort ViewPage) string) *view {
-	return &view{
-		ui:              ui,
-		viewName:        ui.NewViewName(),
-		viewData:        viewDataFromTextFunc(viewText),
-		notifyThrottler: semaphore.NewWeighted(int64(1)),
-		properties:      &Properties{}}
-}
-
-func newView(ui *UI, text string) *view {
-	return &view{
-		ui:              ui,
-		viewName:        ui.NewViewName(),
-		viewData:        viewDataFromText(text),
 		notifyThrottler: semaphore.NewWeighted(int64(1)),
 		properties:      &Properties{}}
 }
@@ -182,24 +166,6 @@ func (h *view) Show(bounds Rect) {
 			h.properties.OnLoad()
 		}
 	}
-	// sb := h.scrollBounds(bounds)
-	// if scrollView, err := h.ui.gui.SetView(h.scrlName(), sb.X, sb.Y, sb.W, sb.H); err != nil {
-	// 	if err != gocui.ErrUnknownView {
-	// 		panic(log.Fatalf(err, "%s", h.scrlName()))
-	// 	}
-	// 	h.scrollView = scrollView
-	// 	h.scrollView.Frame = false
-	// 	h.scrollView.Editable = false
-	// 	h.scrollView.Wrap = false
-	// 	h.scrollView.Highlight = false
-	// 	h.scrollView.Title = ""
-	// 	if err := h.ui.gui.SetKeybinding(h.scrlName(), gocui.MouseLeft, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-	// 		h.ScrollSet()
-	// 		return nil
-	// 	}); err != nil {
-	// 		panic(log.Fatal(err))
-	// 	}
-	// }
 }
 
 func (h *view) ScrollHorizontal(scroll int) {
@@ -217,7 +183,6 @@ func (h *view) NotifyChanged() {
 
 			// Clear the view to make room for the new data
 			h.guiView.Clear()
-			//h.scrollView.Clear()
 
 			isCurrent := h.ui.gui.CurrentView() == h.guiView
 
@@ -234,8 +199,10 @@ func (h *view) NotifyChanged() {
 			if viewData.Total < len(viewData.Lines) {
 				viewData.Total = len(viewData.Lines)
 			}
+			h.maxLineWidth = viewData.MaxWidth
 
 			h.width = width
+			h.height = height
 			h.total = viewData.Total
 
 			h.linesCount = len(viewData.Lines)
@@ -274,7 +241,8 @@ func (h *view) NotifyChanged() {
 			}
 
 			if !h.properties.HideScrollbar {
-				h.drawScrollbar(len(viewData.Lines))
+				h.drawVerticalScrollbar(len(viewData.Lines))
+				h.drawHorizontalScrollbar()
 			}
 			return nil
 		})
@@ -311,37 +279,11 @@ func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
 	return []byte(sb.String())
 }
 
-func (h *view) toScrollTextBytes(linesCount int) []byte {
-	sbStart, sbEnd := h.getScrollbarIndexes()
-
-	var sb strings.Builder
-	for i := 0; i < linesCount; i++ {
-		// // Draw the scrollbar
-		if i >= sbStart && i <= sbEnd {
-			// Within scrollbar, draw the scrollbar handle
-			if h.IsScrollHorizontal {
-				sb.WriteString(Dark(scrollBarHandle))
-			} else {
-				sb.WriteString(MagentaDk(scrollBarHandle))
-			}
-
-		} else {
-			sb.WriteString(" ")
-		}
-		sb.WriteString("\n")
-	}
-	return []byte(sb.String())
-}
-
 func (h *view) SetBounds(bounds Rect) {
 	mb := h.mainBounds(bounds)
 	if _, err := h.ui.gui.SetView(h.viewName, mb.X, mb.Y, mb.W, mb.H); err != nil {
 		panic(log.Fatal(err))
 	}
-	// sb := h.scrollBounds(bounds)
-	// if _, err := h.ui.gui.SetView(h.scrlName(), sb.X, sb.Y, sb.W, sb.H); err != nil {
-	// 	panic(log.Fatal(err))
-	// }
 }
 
 func (h *view) SetTitle(title string) {
@@ -356,18 +298,12 @@ func (h *view) SetTop() {
 	if _, err := h.ui.gui.SetViewOnTop(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	// if _, err := h.ui.gui.SetViewOnTop(h.scrlName()); err != nil {
-	// 	panic(log.Fatal(err))
-	// }
 }
 
 func (h *view) SetBottom() {
 	if _, err := h.ui.gui.SetViewOnBottom(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	// if _, err := h.ui.gui.SetViewOnBottom(h.scrlName()); err != nil {
-	// 	panic(log.Fatal(err))
-	// }
 }
 
 func (h view) ViewPage() ViewPage {
@@ -403,9 +339,6 @@ func (h *view) Close() {
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}
-	// if err := h.ui.gui.DeleteView(h.scrlName()); err != nil {
-	// 	panic(log.Fatal(err))
-	// }
 	if err := h.ui.gui.DeleteView(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
@@ -505,10 +438,12 @@ func (h *view) mouseOutside() {
 
 func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 	cx, cy := h.guiView.Cursor()
-	log.Infof("Cursor %d,%d for %q", cx, cy, h.viewName)
+	if !h.properties.HideScrollbar && cx == h.width-2 {
+		h.ScrollVerticalSet(cy)
+		return
+	}
 
 	if h != h.ui.currentView {
-		log.Infof("Mouse outside for %s %q", h.viewName, h.ui.currentView.viewName)
 		h.ui.currentView.mouseOutside()
 		return
 	}
@@ -516,7 +451,6 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 	if isMoveLine || mouseHandler == nil {
 		p := h.ViewPage()
 		line := p.FirstLine + cy - p.CurrentLine
-		log.Infof("Mouse move %d lines", line)
 		h.MoveLine(line)
 	}
 
@@ -525,10 +459,10 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 	}
 
 	h.PostOnUIThread(func() {
-		log.Infof("Mouse handler %d, %d", cx, cy)
 		mouseHandler(cx, cy)
 	})
 }
+
 func (h *view) move(move int) {
 	if h.total <= 0 {
 		// Cannot scroll empty view
@@ -604,6 +538,9 @@ func (h *view) scrollHorizontal(scroll int) {
 	if newFirstCharIndex < 0 {
 		return
 	}
+	if h.maxLineWidth != 0 && newFirstCharIndex > h.maxLineWidth-h.width {
+		return
+	}
 	h.FirstCharIndex = newFirstCharIndex
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
@@ -611,7 +548,7 @@ func (h *view) scrollHorizontal(scroll int) {
 	}
 }
 
-func (h *view) getScrollbarIndexes() (start, end int) {
+func (h *view) getVerticalScrollbarIndexes() (start, end int) {
 	scrollbarFactor := float64(h.linesCount) / float64(h.total)
 	sbStart := int(math.Floor(float64(h.firstIndex) * scrollbarFactor))
 	sbSize := int(math.Ceil(float64(h.linesCount) * scrollbarFactor))
@@ -629,6 +566,24 @@ func (h *view) getScrollbarIndexes() (start, end int) {
 	return sbStart, sbStart + sbSize
 }
 
+func (h *view) getHorizontalScrollbarIndexes() (start, end int) {
+	scrollbarFactor := float64(h.width) / float64(h.maxLineWidth)
+	sbStart := int(math.Floor(float64(h.FirstCharIndex) * scrollbarFactor))
+	sbSize := int(math.Ceil(float64(h.width) * scrollbarFactor))
+	if sbStart+sbSize+1 > h.width {
+		sbStart = h.width - sbSize - 1
+		if sbStart < 0 {
+			sbStart = 0
+		}
+	}
+	if h.width == h.maxLineWidth {
+		sbStart = -1
+		sbSize = -1
+	}
+	log.Infof("sb1: %d, sb2: %d, chars: %d %d", sbStart, sbSize, h.width, h.maxLineWidth)
+	return sbStart, sbStart + sbSize
+}
+
 func (h *view) ToggleScroll() {
 	h.IsScrollHorizontal = !h.IsScrollHorizontal
 	h.NotifyChanged()
@@ -637,32 +592,18 @@ func (h *view) ToggleScroll() {
 	}
 }
 
-// func (h *view) scrlName() string {
-// 	return h.viewName + "scrl"
-// }
-
-func (h *view) ScrollSet() {
-	// _, cy := h.scrollView.Cursor()
-	// _, sh := h.scrollView.Size()
-	// setLine := h.total
-	// if sh-1 > 0 {
-	// 	setLine = int(math.Ceil((float64(cy) / float64(sh-1)) * float64(h.total)))
-	// }
-	// h.move(setLine - h.currentIndex)
+func (h *view) ScrollVerticalSet(cy int) {
+	setLine := h.total
+	if h.height-1 > 0 {
+		setLine = int(math.Ceil((float64(cy) / float64(h.height-1)) * float64(h.total)))
+	}
+	h.move(setLine - h.currentIndex)
 }
 
 func (h *view) mainBounds(bounds Rect) Rect {
 	b := Rect{X: bounds.X - 1, Y: bounds.Y - 1, W: bounds.X + bounds.W + 1, H: bounds.Y + bounds.H}
 	return h.validBounds(b)
 }
-
-// func (h *view) scrollBounds(bounds Rect) Rect {
-// 	b := Rect{X: bounds.X + bounds.W - 2, Y: bounds.Y - 1, W: bounds.X + bounds.W, H: bounds.Y + bounds.H - 4}
-// 	if h.properties.Title != "" || h.properties.HasFrame {
-// 		b.H = b.H - 1
-// 	}
-// 	return h.validBounds(b)
-// }
 
 func (h *view) validBounds(b Rect) Rect {
 	if b.W < 0 {
@@ -674,55 +615,70 @@ func (h *view) validBounds(b Rect) Rect {
 	return b
 }
 
-func (h *view) drawScrollbar(linesCount int) {
+func (h *view) drawVerticalScrollbar(linesCount int) {
+	// Remember original values
 	x, y := h.guiView.Cursor()
 	fg := h.guiView.FgColor
-	bg := h.guiView.BgColor
+
+	// Set scrollbar handle color
 	h.guiView.FgColor = gocui.ColorMagenta
 	if h.IsScrollHorizontal {
 		h.guiView.FgColor = gocui.ColorWhite
 	}
 
-	sx := h.width - 2
-	h.guiView.SetCursor(h.width-2, 0)
-	h.guiView.EditWrite(scrollBarHandle2)
+	sx := h.width - 1
+	sbStart, sbEnd := h.getVerticalScrollbarIndexes()
 
-	sbStart, sbEnd := h.getScrollbarIndexes()
-
+	// Draw the scrollbar
 	for i := 0; i < linesCount; i++ {
-		h.guiView.SetCursor(sx, i)
-		//  Draw the scrollbar
+		_ = h.guiView.SetCursor(sx, i)
+		h.guiView.EditDelete(true)
 		if i >= sbStart && i <= sbEnd {
 			// Within scrollbar, draw the scrollbar handle
-			h.guiView.EditWrite(scrollBarHandle2)
-
+			h.guiView.EditWrite(scrollBarVerticalHandle)
 		} else {
 			h.guiView.EditWrite(' ')
 		}
 	}
 
-	h.guiView.SetCursor(x, y)
+	// Restore values
+	_ = h.guiView.SetCursor(x, y)
 	h.guiView.FgColor = fg
-	h.guiView.BgColor = bg
 }
-func (h *view) sdfsdf(linesCount int) []byte {
-	sbStart, sbEnd := h.getScrollbarIndexes()
 
-	var sb strings.Builder
-	for i := 0; i < linesCount; i++ {
-		// // Draw the scrollbar
+func (h *view) drawHorizontalScrollbar() {
+	if h.maxLineWidth == 0 {
+		return
+	}
+	// Remember original values
+	x, y := h.guiView.Cursor()
+	fg := h.guiView.FgColor
+
+	// Set scrollbar handle color
+	h.guiView.FgColor = gocui.ColorMagenta
+	handle := scrollBarHorizontalHandle
+
+	if !h.IsScrollHorizontal {
+		h.guiView.FgColor = gocui.ColorWhite
+		handle = scrollBarHorizontalHandle2
+	}
+
+	sy := h.height - 1
+	sbStart, sbEnd := h.getHorizontalScrollbarIndexes()
+
+	// Draw the scrollbar
+	for i := 1; i < h.width-1; i++ {
+		_ = h.guiView.SetCursor(i, sy)
+		h.guiView.EditDelete(true)
 		if i >= sbStart && i <= sbEnd {
 			// Within scrollbar, draw the scrollbar handle
-			if h.IsScrollHorizontal {
-				sb.WriteString(Dark(scrollBarHandle))
-			} else {
-				sb.WriteString(MagentaDk(scrollBarHandle))
-			}
-
+			h.guiView.EditWrite(handle)
 		} else {
-			sb.WriteString(" ")
+			h.guiView.EditWrite(' ')
 		}
-		sb.WriteString("\n")
 	}
-	return []byte(sb.String())
+
+	// Restore values
+	_ = h.guiView.SetCursor(x, y)
+	h.guiView.FgColor = fg
 }

@@ -34,7 +34,7 @@ func NewUI() *UI {
 }
 
 func (h *UI) NewView(text string) View {
-	return newView(h, text)
+	return newView(h, viewDataFromText(text))
 }
 
 func (h *UI) NewMenu(title string) *Menu {
@@ -42,11 +42,11 @@ func (h *UI) NewMenu(title string) *Menu {
 }
 
 func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewPageData) View {
-	return newViewFromPageFunc(h, viewData)
+	return newView(h, viewData)
 }
 
 func (h *UI) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
-	return newViewFromTextFunc(h, viewText)
+	return newView(h, viewDataFromTextFunc(viewText))
 }
 
 func (h *UI) Run(runFunc func()) {

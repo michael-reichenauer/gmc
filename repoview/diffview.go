@@ -118,10 +118,10 @@ func (t *diffView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
 	if t.isUnified {
 		return bounds, ui.Rect{W: 1, H: 1}
 	}
-	wl := bounds.W / 2
-	wr := bounds.W - wl - 1
-	lb := ui.Rect{X: bounds.X, Y: bounds.Y, W: wl, H: bounds.H}
-	rb := ui.Rect{X: bounds.X + wl + 1, Y: bounds.Y, W: wr, H: bounds.H}
+	wl := bounds.W/2 - 3
+	wr := bounds.W - wl
+	lb := ui.Rect{X: bounds.X - 1, Y: bounds.Y, W: wl, H: bounds.H + 1}
+	rb := ui.Rect{X: bounds.X + wl + 1, Y: bounds.Y, W: wr, H: bounds.H + 1}
 	return lb, rb
 }
 

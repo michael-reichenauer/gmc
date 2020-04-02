@@ -22,6 +22,7 @@ type diffVM struct {
 	rightLines     []string
 	isUnified      bool
 	firstCharIndex int
+	maxWidth       int
 }
 
 const viewWidth = 200
@@ -68,8 +69,9 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewPageDa
 	lines, firstIndex, lastIndex := h.getLines(isLeft, viewPort.FirstLine, viewPort.Height)
 
 	return ui.ViewPageData{
-		Lines: lines[firstIndex:lastIndex],
-		Total: len(lines),
+		Lines:    lines[firstIndex:lastIndex],
+		Total:    len(lines),
+		MaxWidth: h.maxWidth,
 	}, nil
 }
 
@@ -107,6 +109,7 @@ func (h *diffVM) loadingText(isLeft bool) ui.ViewPageData {
 func (h *diffVM) setDiffSides(firstCharIndex int) {
 	h.leftLines = nil
 	h.rightLines = nil
+	h.maxWidth = 0
 	// Adding diff summery with changed files list, count, ...
 	h.firstCharIndex = firstCharIndex
 	h.addDiffSummery()
@@ -177,6 +180,9 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
 	for _, dl := range ds.LinesDiffs {
+		if len(dl.Line) > h.maxWidth {
+			h.maxWidth = len(dl.Line)
+		}
 		l := h.line(dl.Line)
 		switch dl.DiffMode {
 		case git.DiffRemoved:
