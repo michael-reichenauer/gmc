@@ -15,7 +15,9 @@ type mainService interface {
 	RecentReposMenuItem() ui.MenuItem
 	ShowDiff(diffGetter DiffGetter, commitID string)
 	HideDiff()
+	HideCommit()
 	NewMenu(title string) *ui.Menu
+	Commit()
 }
 
 type RepoView struct {
@@ -57,6 +59,7 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
 func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
 	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
+	h.SetKey(gocui.KeyCtrlSpace, gocui.ModNone, h.vm.commit)
 	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showContextMenu)
 	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.vm.saveTotalDebugState)
 	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.vm.ChangeBranchColor)

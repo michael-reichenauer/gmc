@@ -26,6 +26,7 @@ type MainWindow struct {
 	detailsView   *repoview.DetailsView
 	diffView      repoview.DiffView
 	mode          showMode
+	commitView    *repoview.CommitView
 }
 
 func NewMainWindow(ui *ui.UI, configService *config.Service) *MainWindow {
@@ -71,6 +72,35 @@ func (h *MainWindow) ShowDiff(diffGetter repoview.DiffGetter, commitID string) {
 	h.diffView.Show(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
 	h.diffView.SetTop()
 	h.diffView.SetCurrentView()
+	h.OnResizeWindow()
+}
+
+func (h *MainWindow) Commit() {
+	h.commitView = repoview.NewCommitView(h.ui, h, "branches/mr/commit")
+	width, height := h.ui.WindowSize()
+	cw := width - 2
+	ch := height - 2
+	if cw > 7 {
+		cw = 70
+
+	}
+	if ch > 20 {
+		ch = 20
+	}
+	cx := (width - cw) / 2
+	cy := (height - ch) / 2
+
+	h.commitView.Show(ui.Rect{X: cx, Y: cy, W: cw, H: ch})
+	h.commitView.SetCurrentView()
+	h.commitView.SetTop()
+	h.OnResizeWindow()
+}
+
+func (h *MainWindow) HideCommit() {
+	h.commitView.Close()
+	h.commitView = nil
+	h.repoView.SetCurrentView()
+	h.repoView.SetTop()
 	h.OnResizeWindow()
 }
 

@@ -140,6 +140,9 @@ func (h *repoVM) showContextMenu(x, y int) {
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		h.mainService.ShowDiff(h.viewModelService, c.ID)
 	}})
+	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: func() {
+		h.mainService.Commit()
+	}})
 	switchItems := h.GetSwitchBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
 	menu.Add(h.mainService.RecentReposMenuItem())
@@ -274,4 +277,8 @@ func (h *repoVM) showDiff() {
 
 func (h *repoVM) saveTotalDebugState() {
 	//	h.vm.RefreshTrace(h.ViewPage())
+}
+
+func (h *repoVM) commit() {
+	h.mainService.Commit()
 }

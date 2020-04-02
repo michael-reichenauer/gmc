@@ -12,6 +12,7 @@ import (
 var (
 	currentLineMarker = '│' // The marker for current line (left)
 	scrollBarHandle   = "▐" // The scrollbar handle (right)
+	scrollBarHandle2  = '▐' // The scrollbar handle (right)
 )
 
 type Properties struct {
@@ -27,6 +28,7 @@ type Properties struct {
 	OnMouseOutside func()
 	OnMoved        func()
 	Name           string
+	IsEditable     bool
 }
 
 type ViewPage struct {
@@ -40,7 +42,6 @@ type ViewPage struct {
 
 type ViewPageData struct {
 	Lines []string
-	//FirstIndex int
 	Total int
 }
 
@@ -60,6 +61,7 @@ type View interface {
 	SetTitle(title string)
 	NotifyChanged()
 	SetKey(key interface{}, modifier gocui.Modifier, handler func())
+	DeleteKey(key interface{}, modifier gocui.Modifier)
 	ViewPage() ViewPage
 	Clear()
 	PostOnUIThread(func())
@@ -68,8 +70,8 @@ type View interface {
 }
 
 type view struct {
-	guiView    *gocui.View
-	scrollView *gocui.View
+	guiView *gocui.View
+	//scrollView *gocui.View
 
 	properties         *Properties
 	viewName           string
@@ -138,9 +140,12 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 }
 
 func (h *view) Show(bounds Rect) {
-	if guiView, err := h.ui.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
+	h.ui.Gui().Cursor = h.properties.IsEditable
+	mb := h.mainBounds(bounds)
+
+	if guiView, err := h.ui.gui.SetView(h.viewName, mb.X, mb.Y, mb.W, mb.H); err != nil {
 		if err != gocui.ErrUnknownView {
-			panic(log.Fatalf(err, "%s %d,%d,%d,%d", h.viewName, bounds.X-1, bounds.Y-1, bounds.W, bounds.H))
+			panic(log.Fatalf(err, "%s %+v,%d,%d,%d", h.viewName, mb))
 		}
 
 		h.guiView = guiView
@@ -151,13 +156,18 @@ func (h *view) Show(bounds Rect) {
 		if h.properties.Title != "" {
 			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 		}
+		if h.properties.IsEditable {
+			h.guiView.Editable = true
+		}
+		if !h.properties.IsEditable {
+			h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
+			h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.CursorDown)
+			h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
+		}
 
-		h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.CursorUp)
-		h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.CursorDown)
 		h.SetKey(gocui.MouseMiddle, gocui.ModNone, h.ToggleScroll)
 		h.SetKey(gocui.MouseWheelDown, gocui.ModNone, h.MouseWheelDown)
 		h.SetKey(gocui.MouseWheelUp, gocui.ModNone, h.MouseWheelUp)
-		h.SetKey(gocui.KeySpace, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.PageDown)
 		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.PageUp)
 		h.SetKey(gocui.KeyHome, gocui.ModNone, h.PageHome)
@@ -172,23 +182,24 @@ func (h *view) Show(bounds Rect) {
 			h.properties.OnLoad()
 		}
 	}
-	if scrollView, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
-		if err != gocui.ErrUnknownView {
-			panic(log.Fatalf(err, "%s", h.scrlName()))
-		}
-		h.scrollView = scrollView
-		h.scrollView.Frame = false
-		h.scrollView.Editable = false
-		h.scrollView.Wrap = false
-		h.scrollView.Highlight = false
-		h.scrollView.Title = ""
-		if err := h.ui.gui.SetKeybinding(h.scrlName(), gocui.MouseLeft, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
-			h.ScrollSet()
-			return nil
-		}); err != nil {
-			panic(log.Fatal(err))
-		}
-	}
+	// sb := h.scrollBounds(bounds)
+	// if scrollView, err := h.ui.gui.SetView(h.scrlName(), sb.X, sb.Y, sb.W, sb.H); err != nil {
+	// 	if err != gocui.ErrUnknownView {
+	// 		panic(log.Fatalf(err, "%s", h.scrlName()))
+	// 	}
+	// 	h.scrollView = scrollView
+	// 	h.scrollView.Frame = false
+	// 	h.scrollView.Editable = false
+	// 	h.scrollView.Wrap = false
+	// 	h.scrollView.Highlight = false
+	// 	h.scrollView.Title = ""
+	// 	if err := h.ui.gui.SetKeybinding(h.scrlName(), gocui.MouseLeft, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+	// 		h.ScrollSet()
+	// 		return nil
+	// 	}); err != nil {
+	// 		panic(log.Fatal(err))
+	// 	}
+	// }
 }
 
 func (h *view) ScrollHorizontal(scroll int) {
@@ -206,7 +217,7 @@ func (h *view) NotifyChanged() {
 
 			// Clear the view to make room for the new data
 			h.guiView.Clear()
-			h.scrollView.Clear()
+			//h.scrollView.Clear()
 
 			isCurrent := h.ui.gui.CurrentView() == h.guiView
 
@@ -261,10 +272,9 @@ func (h *view) NotifyChanged() {
 			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
 				panic(log.Fatal(err))
 			}
+
 			if !h.properties.HideScrollbar {
-				if _, err := h.scrollView.Write(h.toScrollTextBytes(len(viewData.Lines))); err != nil {
-					panic(log.Fatal(err))
-				}
+				h.drawScrollbar(len(viewData.Lines))
 			}
 			return nil
 		})
@@ -324,12 +334,14 @@ func (h *view) toScrollTextBytes(linesCount int) []byte {
 }
 
 func (h *view) SetBounds(bounds Rect) {
-	if _, err := h.ui.gui.SetView(h.viewName, bounds.X-1, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
+	mb := h.mainBounds(bounds)
+	if _, err := h.ui.gui.SetView(h.viewName, mb.X, mb.Y, mb.W, mb.H); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.ui.gui.SetView(h.scrlName(), bounds.X+bounds.W-2, bounds.Y-1, bounds.X+bounds.W, bounds.Y+bounds.H); err != nil {
-		panic(log.Fatal(err))
-	}
+	// sb := h.scrollBounds(bounds)
+	// if _, err := h.ui.gui.SetView(h.scrlName(), sb.X, sb.Y, sb.W, sb.H); err != nil {
+	// 	panic(log.Fatal(err))
+	// }
 }
 
 func (h *view) SetTitle(title string) {
@@ -344,18 +356,18 @@ func (h *view) SetTop() {
 	if _, err := h.ui.gui.SetViewOnTop(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.ui.gui.SetViewOnTop(h.scrlName()); err != nil {
-		panic(log.Fatal(err))
-	}
+	// if _, err := h.ui.gui.SetViewOnTop(h.scrlName()); err != nil {
+	// 	panic(log.Fatal(err))
+	// }
 }
 
 func (h *view) SetBottom() {
 	if _, err := h.ui.gui.SetViewOnBottom(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-	if _, err := h.ui.gui.SetViewOnBottom(h.scrlName()); err != nil {
-		panic(log.Fatal(err))
-	}
+	// if _, err := h.ui.gui.SetViewOnBottom(h.scrlName()); err != nil {
+	// 	panic(log.Fatal(err))
+	// }
 }
 
 func (h view) ViewPage() ViewPage {
@@ -366,7 +378,7 @@ func (h view) ViewPage() ViewPage {
 		return ViewPage{Width: 1, FirstLine: 0, Height: 1, CurrentLine: 0}
 	}
 	return ViewPage{
-		Width:                 width - 2,
+		Width:                 width - 3,
 		FirstLine:             h.firstIndex,
 		Height:                height,
 		CurrentLine:           h.currentIndex,
@@ -387,12 +399,13 @@ func (h *view) PostOnUIThread(f func()) {
 }
 
 func (h *view) Close() {
+	h.ui.Gui().Cursor = !h.properties.IsEditable
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}
-	if err := h.ui.gui.DeleteView(h.scrlName()); err != nil {
-		panic(log.Fatal(err))
-	}
+	// if err := h.ui.gui.DeleteView(h.scrlName()); err != nil {
+	// 	panic(log.Fatal(err))
+	// }
 	if err := h.ui.gui.DeleteView(h.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
@@ -403,6 +416,12 @@ func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) 
 		handler()
 		return nil
 	}); err != nil {
+		panic(log.Fatal(err))
+	}
+}
+
+func (h *view) DeleteKey(key interface{}, modifier gocui.Modifier) {
+	if err := h.ui.gui.DeleteKeybinding(h.viewName, key, modifier); err != nil {
 		panic(log.Fatal(err))
 	}
 }
@@ -618,16 +637,92 @@ func (h *view) ToggleScroll() {
 	}
 }
 
-func (h *view) scrlName() string {
-	return h.viewName + "scrl"
-}
+// func (h *view) scrlName() string {
+// 	return h.viewName + "scrl"
+// }
 
 func (h *view) ScrollSet() {
-	_, cy := h.scrollView.Cursor()
-	_, sh := h.scrollView.Size()
-	setLine := h.total
-	if sh-1 > 0 {
-		setLine = int(math.Ceil((float64(cy) / float64(sh-1)) * float64(h.total)))
+	// _, cy := h.scrollView.Cursor()
+	// _, sh := h.scrollView.Size()
+	// setLine := h.total
+	// if sh-1 > 0 {
+	// 	setLine = int(math.Ceil((float64(cy) / float64(sh-1)) * float64(h.total)))
+	// }
+	// h.move(setLine - h.currentIndex)
+}
+
+func (h *view) mainBounds(bounds Rect) Rect {
+	b := Rect{X: bounds.X - 1, Y: bounds.Y - 1, W: bounds.X + bounds.W + 1, H: bounds.Y + bounds.H}
+	return h.validBounds(b)
+}
+
+// func (h *view) scrollBounds(bounds Rect) Rect {
+// 	b := Rect{X: bounds.X + bounds.W - 2, Y: bounds.Y - 1, W: bounds.X + bounds.W, H: bounds.Y + bounds.H - 4}
+// 	if h.properties.Title != "" || h.properties.HasFrame {
+// 		b.H = b.H - 1
+// 	}
+// 	return h.validBounds(b)
+// }
+
+func (h *view) validBounds(b Rect) Rect {
+	if b.W < 0 {
+		b.W = 0
 	}
-	h.move(setLine - h.currentIndex)
+	if b.H < 0 {
+		b.H = 0
+	}
+	return b
+}
+
+func (h *view) drawScrollbar(linesCount int) {
+	x, y := h.guiView.Cursor()
+	fg := h.guiView.FgColor
+	bg := h.guiView.BgColor
+	h.guiView.FgColor = gocui.ColorMagenta
+	if h.IsScrollHorizontal {
+		h.guiView.FgColor = gocui.ColorWhite
+	}
+
+	sx := h.width - 2
+	h.guiView.SetCursor(h.width-2, 0)
+	h.guiView.EditWrite(scrollBarHandle2)
+
+	sbStart, sbEnd := h.getScrollbarIndexes()
+
+	for i := 0; i < linesCount; i++ {
+		h.guiView.SetCursor(sx, i)
+		//  Draw the scrollbar
+		if i >= sbStart && i <= sbEnd {
+			// Within scrollbar, draw the scrollbar handle
+			h.guiView.EditWrite(scrollBarHandle2)
+
+		} else {
+			h.guiView.EditWrite(' ')
+		}
+	}
+
+	h.guiView.SetCursor(x, y)
+	h.guiView.FgColor = fg
+	h.guiView.BgColor = bg
+}
+func (h *view) sdfsdf(linesCount int) []byte {
+	sbStart, sbEnd := h.getScrollbarIndexes()
+
+	var sb strings.Builder
+	for i := 0; i < linesCount; i++ {
+		// // Draw the scrollbar
+		if i >= sbStart && i <= sbEnd {
+			// Within scrollbar, draw the scrollbar handle
+			if h.IsScrollHorizontal {
+				sb.WriteString(Dark(scrollBarHandle))
+			} else {
+				sb.WriteString(MagentaDk(scrollBarHandle))
+			}
+
+		} else {
+			sb.WriteString(" ")
+		}
+		sb.WriteString("\n")
+	}
+	return []byte(sb.String())
 }
