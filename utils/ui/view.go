@@ -376,15 +376,15 @@ func (h *view) Size() (int, int) {
 }
 
 func (h *view) CursorUp() {
-	h.move(-1)
+	h.moveVertically(-1)
 }
 
 func (h *view) CursorDown() {
-	h.move(1)
+	h.moveVertically(1)
 }
 
 func (h *view) MoveLine(line int) {
-	h.move(line)
+	h.moveVertically(line)
 }
 
 func (h *view) PageDown() {
@@ -442,6 +442,10 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 		h.ScrollVerticalSet(cy)
 		return
 	}
+	if !h.properties.HideScrollbar && cy == h.height-1 {
+		h.scrollHorizontalSet(cx)
+		return
+	}
 
 	if h != h.ui.currentView {
 		h.ui.currentView.mouseOutside()
@@ -463,7 +467,7 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isMoveLine bool) {
 	})
 }
 
-func (h *view) move(move int) {
+func (h *view) moveVertically(move int) {
 	if h.total <= 0 {
 		// Cannot scroll empty view
 		return
@@ -538,7 +542,7 @@ func (h *view) scrollHorizontal(scroll int) {
 	if newFirstCharIndex < 0 {
 		return
 	}
-	if h.maxLineWidth != 0 && newFirstCharIndex > h.maxLineWidth-h.width {
+	if h.maxLineWidth != 0 && newFirstCharIndex > h.maxLineWidth-h.width/2 {
 		return
 	}
 	h.FirstCharIndex = newFirstCharIndex
@@ -585,6 +589,10 @@ func (h *view) getHorizontalScrollbarIndexes() (start, end int) {
 }
 
 func (h *view) ToggleScroll() {
+	if !h.IsScrollHorizontal && (h.maxLineWidth == 0 || h.maxLineWidth < h.width) {
+		// Do not toggle if no need for horizontal scroll
+		return
+	}
 	h.IsScrollHorizontal = !h.IsScrollHorizontal
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
@@ -597,7 +605,7 @@ func (h *view) ScrollVerticalSet(cy int) {
 	if h.height-1 > 0 {
 		setLine = int(math.Ceil((float64(cy) / float64(h.height-1)) * float64(h.total)))
 	}
-	h.move(setLine - h.currentIndex)
+	h.moveVertically(setLine - h.currentIndex)
 }
 
 func (h *view) mainBounds(bounds Rect) Rect {
@@ -647,7 +655,7 @@ func (h *view) drawVerticalScrollbar(linesCount int) {
 }
 
 func (h *view) drawHorizontalScrollbar() {
-	if h.maxLineWidth == 0 {
+	if h.maxLineWidth == 0 || h.maxLineWidth < h.width {
 		return
 	}
 	// Remember original values
@@ -681,4 +689,25 @@ func (h *view) drawHorizontalScrollbar() {
 	// Restore values
 	_ = h.guiView.SetCursor(x, y)
 	h.guiView.FgColor = fg
+}
+
+func (h *view) scrollHorizontalSet(cx int) {
+	if h.maxLineWidth == 0 {
+		return
+	}
+	set := h.maxLineWidth
+	if h.width-1 > 0 {
+		set = int(math.Ceil((float64(cx) / float64(h.width-1)) * float64(h.maxLineWidth)))
+	}
+	if set > h.maxLineWidth-h.width/2 {
+		set = h.maxLineWidth - h.width/2
+	}
+	if set < 0 {
+		set = 0
+	}
+	h.FirstCharIndex = set
+	h.NotifyChanged()
+	if h.properties.OnMoved != nil {
+		h.properties.OnMoved()
+	}
 }
