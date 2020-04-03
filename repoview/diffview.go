@@ -116,7 +116,7 @@ func (t *diffView) NotifyChanged() {
 func (t *diffView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
 	t.lastBounds = bounds
 	if t.isUnified {
-		return bounds, ui.Rect{W: 1, H: 1}
+		return ui.Rect{X: 0, Y: 1, W: bounds.W + 2, H: bounds.H + 1}, ui.Rect{W: 1, H: 1}
 	}
 	wl := bounds.W/2 - 3
 	wr := bounds.W - wl
