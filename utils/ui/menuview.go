@@ -51,7 +51,7 @@ func (h *menuView) show(bounds Rect) {
 	h.NotifyChanged()
 }
 
-func (h *menuView) viewData(viewPort ViewPage) ViewPageData {
+func (h *menuView) viewData(viewPort ViewPage) ViewText {
 	var lines []string
 	length := viewPort.FirstLine + viewPort.Height
 	if length > len(h.items) {
@@ -62,7 +62,7 @@ func (h *menuView) viewData(viewPort ViewPage) ViewPageData {
 		line := h.toItemText(viewPort.Width, h.items[i])
 		lines = append(lines, line)
 	}
-	return ViewPageData{Lines: lines, Total: len(h.items)}
+	return ViewText{Lines: lines, Total: len(h.items)}
 }
 
 func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {

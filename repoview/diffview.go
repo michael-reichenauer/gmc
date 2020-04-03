@@ -45,7 +45,7 @@ func NewDiffView(
 	t.leftSide = newDiffSideView(ui, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
 	t.rightSide = newDiffSideView(ui, t.viewDataRight, nil, t.onMovedRight)
 
-	t.leftSide.Properties().HideScrollbar = true
+	t.leftSide.Properties().HideVerticalScrollbar = true
 	t.leftSide.Properties().OnMouseRight = t.showContextMenu
 	t.leftSide.Properties().Title = "Before " + commitID[:6]
 	t.rightSide.Properties().Title = "After " + commitID[:6]
@@ -66,18 +66,18 @@ func (t *diffView) onLoadLeft() {
 	t.vm.load()
 }
 
-func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewPageData {
+func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewText {
 	diff, err := t.vm.getCommitDiffLeft(viewPort)
 	if err != nil {
-		return ui.ViewPageData{}
+		return ui.ViewText{}
 	}
 	return diff
 }
 
-func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData {
+func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewText {
 	diff, err := t.vm.getCommitDiffRight(viewPort)
 	if err != nil {
-		return ui.ViewPageData{}
+		return ui.ViewText{}
 	}
 	return diff
 }
@@ -126,11 +126,11 @@ func (t *diffView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
 }
 
 func (t *diffView) onMovedLeft() {
-	t.rightSide.SetPage(t.leftSide.ViewPage())
+	t.rightSide.SyncWithView(t.leftSide.View)
 }
 
 func (t *diffView) onMovedRight() {
-	t.leftSide.SetPage(t.rightSide.ViewPage())
+	t.leftSide.SyncWithView(t.rightSide)
 }
 
 func (t *diffView) ToUnified() {
@@ -138,7 +138,7 @@ func (t *diffView) ToUnified() {
 		return
 	}
 	t.isUnified = true
-	t.leftSide.Properties().HideScrollbar = false
+	t.leftSide.Properties().HideVerticalScrollbar = false
 	t.leftSide.Properties().Title = "Unified diff " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
 	t.SetBounds(t.lastBounds)
@@ -150,7 +150,7 @@ func (t *diffView) ToSideBySide() {
 		return
 	}
 	t.isUnified = false
-	t.leftSide.Properties().HideScrollbar = true
+	t.leftSide.Properties().HideVerticalScrollbar = true
 	t.leftSide.Properties().Title = "Before " + t.commitID[:6]
 	t.rightSide.Properties().Title = "After " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)

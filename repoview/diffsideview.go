@@ -10,7 +10,7 @@ type DiffSideView struct {
 
 func newDiffSideView(
 	uiHandler *ui.UI,
-	viewData func(viewPort ui.ViewPage) ui.ViewPageData,
+	viewData func(viewPort ui.ViewPage) ui.ViewText,
 	onLoad func(),
 	onMoved func(),
 ) *DiffSideView {

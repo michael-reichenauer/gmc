@@ -41,7 +41,7 @@ func (h *UI) NewMenu(title string) *Menu {
 	return newMenu(h, title)
 }
 
-func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewPageData) View {
+func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewText) View {
 	return newView(h, viewData)
 }
 
@@ -111,11 +111,6 @@ func (h *UI) SetCurrentView(v View) {
 	if _, err := h.gui.SetCurrentView(h.currentView.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
-}
-
-func quit(g *gocui.Gui, v *gocui.View) error {
-	log.Infof("Quiting")
-	return gocui.ErrQuit
 }
 
 func (h *UI) layout(gui *gocui.Gui) error {

@@ -49,15 +49,15 @@ func (h *diffVM) setUnified(isUnified bool) {
 	h.rightLines = nil
 }
 
-func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (ui.ViewPageData, error) {
+func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (ui.ViewText, error) {
 	return h.getCommitDiff(viewPort, true)
 }
 
-func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (ui.ViewPageData, error) {
+func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (ui.ViewText, error) {
 	return h.getCommitDiff(viewPort, false)
 }
 
-func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewPageData, error) {
+func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewText, error) {
 	if !h.isDiffReady {
 		return h.loadingText(isLeft), nil
 	}
@@ -68,7 +68,7 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewPageDa
 
 	lines, firstIndex, lastIndex := h.getLines(isLeft, viewPort.FirstLine, viewPort.Height)
 
-	return ui.ViewPageData{
+	return ui.ViewText{
 		Lines:    lines[firstIndex:lastIndex],
 		Total:    len(lines),
 		MaxWidth: h.maxWidth,
@@ -98,12 +98,12 @@ func (h *diffVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, i
 	return lines, firstIndex, lastIndex
 }
 
-func (h *diffVM) loadingText(isLeft bool) ui.ViewPageData {
+func (h *diffVM) loadingText(isLeft bool) ui.ViewText {
 	text := "Loading diff for " + h.commitID[:6]
 	if !isLeft {
 		text = ""
 	}
-	return ui.ViewPageData{Lines: []string{text}}
+	return ui.ViewText{Lines: []string{text}}
 }
 
 func (h *diffVM) setDiffSides(firstCharIndex int) {

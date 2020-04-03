@@ -41,10 +41,10 @@ func NewRepoView(uiHandler *ui.UI, configService *config.Service, mainService ma
 	return h
 }
 
-func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
+func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewPageData{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
+		return ui.ViewText{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
@@ -53,7 +53,7 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
 	}
 
-	return ui.ViewPageData{Lines: repoPage.lines, Total: repoPage.total}
+	return ui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {
