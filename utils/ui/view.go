@@ -12,6 +12,7 @@ const (
 	currentLineMarker = '│' // The marker for current line (left)
 )
 
+// Properties that adjust view behavior and can be accessed via View.Properties()
 type ViewProperties struct {
 	Title                   string
 	HasFrame                bool
@@ -333,7 +334,7 @@ func (h *view) PostOnUIThread(f func()) {
 }
 
 func (h *view) Close() {
-	h.ui.Gui().Cursor = !h.properties.IsEditable
+	h.ui.Gui().Cursor = false
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}

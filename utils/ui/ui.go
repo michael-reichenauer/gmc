@@ -122,9 +122,9 @@ func (h *UI) layout(gui *gocui.Gui) error {
 		if h.OnResizeWindow != nil {
 			h.OnResizeWindow()
 		}
-		if !h.gui.Cursor {
-			termbox.SetCursor(0, 0) // workaround for hiding the cursor
-		}
+		//if !h.gui.Cursor {
+		termbox.SetCursor(0, 0) // workaround for hiding the cursor
+		//}
 	}
 
 	if h.isInitialized {

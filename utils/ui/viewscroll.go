@@ -132,6 +132,9 @@ func (h *view) getHorizontalScrollbarIndexes() (start, end int) {
 }
 
 func (h *view) drawVerticalScrollbar(linesCount int) {
+	if h.properties.HideVerticalScrollbar || h.total < h.height {
+		return
+	}
 	// Remember original values
 	x, y := h.guiView.Cursor()
 	fg := h.guiView.FgColor
@@ -163,7 +166,7 @@ func (h *view) drawVerticalScrollbar(linesCount int) {
 }
 
 func (h *view) drawHorizontalScrollbar() {
-	if h.maxLineWidth == 0 || h.maxLineWidth < h.width {
+	if h.properties.HideHorizontalScrollbar || h.maxLineWidth == 0 || h.maxLineWidth < h.width {
 		return
 	}
 	// Remember original values
