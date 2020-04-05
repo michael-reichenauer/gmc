@@ -1,47 +1,81 @@
 package ui
 
 import (
-	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 )
 
 type MessageBox struct {
-	uiHandler      *UI
-	messageBoxView *messageBoxView
-	text           string
+	ui           *UI
+	boxView      View
+	textView     View
+	buttonsView  View
+	text         string
+	title        string
+	previousView View
 }
 
-func NewMessageBox(uiHandler *UI, text, title string) *MessageBox {
-	return &MessageBox{
-		uiHandler:      uiHandler,
-		messageBoxView: newMessageBoxView(uiHandler, title, true),
-		text:           text}
+func NewMessageBox(ui *UI, text, title string) *MessageBox {
+	return &MessageBox{ui: ui, text: text, title: title}
 }
 
 func (h *MessageBox) Show() {
-	text := h.text + "\n\n\n[OK]"
-	lines := strings.Split(text, "\n")
+	h.previousView = h.ui.CurrentView()
 
-	bounds, err := h.getBounds(lines)
-	if err != nil {
-		log.Warnf("Failed to show msg box, %v", err)
-	}
+	h.boxView = h.newBoxView()
+	h.buttonsView = h.newButtonsView()
+	h.textView = h.newTextView()
 
-	h.messageBoxView.show(bounds, lines)
+	bb, tb, bbb := h.getBounds()
+	h.boxView.Show(bb)
+	h.buttonsView.Show(bbb)
+	h.textView.Show(tb)
+
+	h.boxView.SetTop()
+	h.buttonsView.SetTop()
+	h.textView.SetTop()
+	h.textView.SetCurrentView()
 }
 
-func (h *MessageBox) getBounds(lines []string) (Rect, error) {
-	windowWidth, windowHeight := h.uiHandler.WindowSize()
-	if windowWidth < 4 || windowHeight < 4 {
-		return Rect{}, fmt.Errorf("to small window, to shwo message box")
-	}
+func (h *MessageBox) newBoxView() View {
+	view := h.ui.NewView("")
+	view.Properties().Title = h.title
+	return view
+}
+
+func (h *MessageBox) newButtonsView() View {
+	view := h.ui.NewView("[OK]")
+	view.Properties().OnMouseLeft = h.onButtonsClick
+	return view
+}
+
+func (h *MessageBox) newTextView() View {
+	view := h.ui.NewView(h.text)
+	view.Properties().HideCurrentLineMarker = true
+	view.SetKey(gocui.KeyEsc, gocui.ModNone, h.Close)
+	view.SetKey(gocui.KeyEnter, gocui.ModNone, h.Close)
+	return view
+}
+
+func (h *MessageBox) Close() {
+	h.textView.Close()
+	h.buttonsView.Close()
+	h.boxView.Close()
+	h.ui.SetCurrentView(h.previousView)
+}
+
+func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
+	lines := strings.Split(h.text, "\n")
+	windowWidth, windowHeight := h.ui.WindowSize()
+
 	width := h.maxTextWidth(lines)
 	if width < 30 {
 		width = 30
 	}
+	if width > 70 {
+		width = 70
+	}
+
 	if width > windowWidth-4 {
 		width = windowWidth - 4
 	}
@@ -49,13 +83,16 @@ func (h *MessageBox) getBounds(lines []string) (Rect, error) {
 	if height < 4 {
 		height = 4
 	}
+	if height > 20 {
+		height = 20
+	}
 	if height > windowHeight-4 {
 		height = windowHeight - 4
 	}
 	x := (windowWidth - width) / 2
 	y := (windowHeight - height) / 2
 
-	return Rect{x, y, width, height}, nil
+	return Rect{x, y, width, height}, Rect{x, y, width, height - 2}, Rect{x, y + height - 1, width, 1}
 }
 
 func (h *MessageBox) maxTextWidth(lines []string) int {
@@ -68,51 +105,8 @@ func (h *MessageBox) maxTextWidth(lines []string) int {
 	return maxWidth
 }
 
-type messageBoxView struct {
-	View
-	lines       []string
-	ui          *UI
-	currentView View
-}
-
-func newMessageBoxView(uiHandler *UI, title string, hideCurrent bool) *messageBoxView {
-	h := &messageBoxView{ui: uiHandler}
-	h.View = uiHandler.NewViewFromPageFunc(h.viewData)
-	h.View.Properties().Name = "AboutView"
-	h.View.Properties().HasFrame = true
-	h.View.Properties().Title = title
-	h.View.Properties().HideCurrent = hideCurrent
-	return h
-}
-
-func (h *messageBoxView) show(bounds Rect, lines []string) {
-	h.lines = lines
-	h.currentView = h.ui.CurrentView()
-	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
-	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
-	h.Show(bounds)
-	h.SetCurrentView()
-	h.NotifyChanged()
-}
-
-func (h *messageBoxView) viewData(viewPort ViewPage) ViewText {
-	var lines []string
-	length := viewPort.FirstLine + viewPort.Height
-	if length > len(h.lines) {
-		length = len(h.lines)
+func (h *MessageBox) onButtonsClick(x int, y int) {
+	if x < 4 {
+		h.Close()
 	}
-
-	for i := viewPort.FirstLine; i < length; i++ {
-		lines = append(lines, utils.Text(h.lines[i], viewPort.Width))
-	}
-	return ViewText{Lines: lines, Total: len(h.lines)}
-}
-
-func (h *messageBoxView) onClose() {
-	h.Close()
-	h.ui.SetCurrentView(h.currentView)
-}
-
-func (h *messageBoxView) onEnter() {
-	h.onClose()
 }

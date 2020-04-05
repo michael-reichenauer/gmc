@@ -73,7 +73,6 @@ func (h *view) scrollVertically(scroll int) {
 
 	h.firstIndex = newFirst
 	h.currentIndex = newCurrent
-
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
@@ -93,6 +92,76 @@ func (h *view) scrollHorizontal(scroll int) {
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
 	}
+}
+
+func (h *view) drawVerticalScrollbar(linesCount int) {
+	if !h.hasVerticalScrollbar() {
+		return
+	}
+	// Remember original values
+	x, y := h.guiView.Cursor()
+	fg := h.guiView.FgColor
+
+	// Set scrollbar handle color
+	h.guiView.FgColor = gocui.ColorMagenta
+	if h.isScrollHorizontal {
+		h.guiView.FgColor = gocui.ColorWhite
+	}
+
+	sx := h.width - 2
+	sbStart, sbEnd := h.getVerticalScrollbarIndexes()
+
+	// Draw the scrollbar
+	for i := 0; i < linesCount; i++ {
+		_ = h.guiView.SetCursor(sx, i)
+		if i >= sbStart && i <= sbEnd {
+			// Within scrollbar, draw the scrollbar handle
+			h.guiView.EditWrite(scrollBarVerticalHandle)
+		} else {
+			h.guiView.EditWrite(' ')
+		}
+	}
+
+	// Restore values
+	_ = h.guiView.SetCursor(x, y)
+	h.guiView.FgColor = fg
+}
+
+func (h *view) drawHorizontalScrollbar() {
+	if !h.hasHorizontalScrollbar() {
+		return
+	}
+	// Remember original values
+	x, y := h.guiView.Cursor()
+	fg := h.guiView.FgColor
+
+	// Set scrollbar handle color
+	h.guiView.FgColor = gocui.ColorMagenta
+	handle := scrollBarHorizontalHandle
+
+	if !h.isScrollHorizontal {
+		h.guiView.FgColor = gocui.ColorWhite
+		handle = scrollBarHorizontalHandle
+	}
+
+	sy := h.height - 1
+	sbStart, sbEnd := h.getHorizontalScrollbarIndexes()
+
+	// Draw the scrollbar
+	for i := 1; i < h.width-1; i++ {
+		_ = h.guiView.SetCursor(i, sy)
+		h.guiView.EditDelete(true)
+		if i >= sbStart && i <= sbEnd {
+			// Within scrollbar, draw the scrollbar handle
+			h.guiView.EditWrite(handle)
+		} else {
+			h.guiView.EditWrite(' ')
+		}
+	}
+
+	// Restore values
+	_ = h.guiView.SetCursor(x, y)
+	h.guiView.FgColor = fg
 }
 
 func (h *view) getVerticalScrollbarIndexes() (start, end int) {
@@ -131,78 +200,10 @@ func (h *view) getHorizontalScrollbarIndexes() (start, end int) {
 	return sbStart, sbStart + sbSize
 }
 
-func (h *view) drawVerticalScrollbar(linesCount int) {
-	if h.properties.HideVerticalScrollbar || h.total < h.height {
-		return
-	}
-	// Remember original values
-	x, y := h.guiView.Cursor()
-	fg := h.guiView.FgColor
-
-	// Set scrollbar handle color
-	h.guiView.FgColor = gocui.ColorMagenta
-	if h.isScrollHorizontal {
-		h.guiView.FgColor = gocui.ColorWhite
-	}
-
-	sx := h.width - 1
-	sbStart, sbEnd := h.getVerticalScrollbarIndexes()
-
-	// Draw the scrollbar
-	for i := 0; i < linesCount; i++ {
-		_ = h.guiView.SetCursor(sx, i)
-		h.guiView.EditDelete(true)
-		if i >= sbStart && i <= sbEnd {
-			// Within scrollbar, draw the scrollbar handle
-			h.guiView.EditWrite(scrollBarVerticalHandle)
-		} else {
-			h.guiView.EditWrite(' ')
-		}
-	}
-
-	// Restore values
-	_ = h.guiView.SetCursor(x, y)
-	h.guiView.FgColor = fg
-}
-
-func (h *view) drawHorizontalScrollbar() {
-	if h.properties.HideHorizontalScrollbar || h.maxLineWidth == 0 || h.maxLineWidth < h.width {
-		return
-	}
-	// Remember original values
-	x, y := h.guiView.Cursor()
-	fg := h.guiView.FgColor
-
-	// Set scrollbar handle color
-	h.guiView.FgColor = gocui.ColorMagenta
-	handle := scrollBarHorizontalHandle
-
-	if !h.isScrollHorizontal {
-		h.guiView.FgColor = gocui.ColorWhite
-		handle = scrollBarHorizontalHandle
-	}
-
-	sy := h.height - 1
-	sbStart, sbEnd := h.getHorizontalScrollbarIndexes()
-
-	// Draw the scrollbar
-	for i := 1; i < h.width-1; i++ {
-		_ = h.guiView.SetCursor(i, sy)
-		h.guiView.EditDelete(true)
-		if i >= sbStart && i <= sbEnd {
-			// Within scrollbar, draw the scrollbar handle
-			h.guiView.EditWrite(handle)
-		} else {
-			h.guiView.EditWrite(' ')
-		}
-	}
-
-	// Restore values
-	_ = h.guiView.SetCursor(x, y)
-	h.guiView.FgColor = fg
-}
-
 func (h *view) setVerticalScroll(cy int) {
+	if !h.hasHorizontalScrollbar() {
+		return
+	}
 	setLine := h.total
 	if h.height-1 > 0 {
 		setLine = int(math.Ceil((float64(cy) / float64(h.height-1)) * float64(h.total)))
@@ -211,7 +212,7 @@ func (h *view) setVerticalScroll(cy int) {
 }
 
 func (h *view) setHorizontalScroll(cx int) {
-	if h.maxLineWidth == 0 {
+	if !h.hasHorizontalScrollbar() {
 		return
 	}
 	set := h.maxLineWidth
@@ -230,4 +231,12 @@ func (h *view) setHorizontalScroll(cx int) {
 	if h.properties.OnMoved != nil {
 		h.properties.OnMoved()
 	}
+}
+
+func (h *view) hasHorizontalScrollbar() bool {
+	return !h.properties.HideHorizontalScrollbar && h.maxLineWidth > h.width
+}
+
+func (h *view) hasVerticalScrollbar() bool {
+	return !h.properties.HideVerticalScrollbar && h.total > h.height
 }

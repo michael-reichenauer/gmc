@@ -16,7 +16,7 @@ const (
 type ViewProperties struct {
 	Title                   string
 	HasFrame                bool
-	HideCurrent             bool
+	HideCurrentLineMarker   bool
 	HideVerticalScrollbar   bool
 	HideHorizontalScrollbar bool
 
@@ -106,6 +106,7 @@ func viewDataFromText(viewText string) func(viewPort ViewPage) ViewText {
 func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort ViewPage) ViewText {
 	return func(viewPort ViewPage) ViewText {
 		lines := strings.Split(viewText(viewPort), "\n")
+		maxWidth := maxTextWidth(lines)
 		firstIndex := viewPort.FirstLine
 		if firstIndex > len(lines) {
 			firstIndex = len(lines)
@@ -114,10 +115,20 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 		if firstIndex+viewPort.Height > len(lines) {
 			height = len(lines) - firstIndex
 		}
-		lines = lines[firstIndex : firstIndex+height]
+		viewLines := lines[firstIndex : firstIndex+height]
+
+		if viewPort.FirstCharIndex != 0 {
+			for i, l := range viewLines {
+				if len(l) > viewPort.FirstCharIndex {
+					viewLines[i] = l[viewPort.FirstCharIndex:]
+				}
+			}
+		}
+
 		return ViewText{
-			Lines: lines,
-			Total: len(lines),
+			Lines:    viewLines,
+			Total:    len(lines),
+			MaxWidth: maxWidth,
 		}
 	}
 }
@@ -164,6 +175,7 @@ func (h *view) Show(bounds Rect) {
 			// Let the actual view handle load to initialise view data
 			h.properties.OnLoad()
 		}
+		h.NotifyChanged()
 	}
 }
 
@@ -182,8 +194,6 @@ func (h *view) NotifyChanged() {
 
 			// Clear the view to make room for the new data
 			h.guiView.Clear()
-
-			isCurrent := h.ui.gui.CurrentView() == h.guiView
 
 			// Get the view size to calculate the view port
 			width, height := h.guiView.Size()
@@ -235,7 +245,7 @@ func (h *view) NotifyChanged() {
 			}
 
 			// Show the new view data for the view port
-			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines, isCurrent)); err != nil {
+			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines)); err != nil {
 				panic(log.Fatal(err))
 			}
 
@@ -260,11 +270,13 @@ func (h *view) SyncWithView(v View) {
 	h.NotifyChanged()
 }
 
-func (h *view) toViewTextBytes(lines []string, idCurrent bool) []byte {
+func (h *view) toViewTextBytes(lines []string) []byte {
+	isCurrentView := h.ui.gui.CurrentView() == h.guiView
+
 	var sb strings.Builder
 	for i, line := range lines {
 		// Draw the current line marker
-		if !h.properties.HideCurrent && idCurrent && i+h.firstIndex == h.currentIndex {
+		if !h.properties.HideCurrentLineMarker && isCurrentView && i+h.firstIndex == h.currentIndex {
 			sb.WriteString(ColorRune(CWhite, currentLineMarker))
 		} else {
 			sb.WriteString(" ")
@@ -433,12 +445,12 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 		return
 	}
 
-	if !h.properties.HideVerticalScrollbar && cx == h.width-2 {
+	if h.hasVerticalScrollbar() && cx == h.width-2 {
 		// Mouse down in vertical scrollbar, set scrollbar to that position
 		h.setVerticalScroll(cy)
 		return
 	}
-	if !h.properties.HideHorizontalScrollbar && cy == h.height-1 {
+	if h.hasHorizontalScrollbar() && cy == h.height-1 {
 		// Mouse down in horizontal scrollbar, set scrollbar to that position
 		h.setHorizontalScroll(cx)
 		return
@@ -448,7 +460,7 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 		// Setting current line to the line that user clicked on
 		p := h.ViewPage()
 		line := p.FirstLine + cy - p.CurrentLine
-		h.scrollVertically(line)
+		h.moveVertically(line)
 	}
 
 	// Handle mouse down event if mouse custom handler
@@ -460,11 +472,16 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 }
 
 func (h *view) toggleScrollDirection() {
-	if !h.isScrollHorizontal && (h.maxLineWidth == 0 || h.maxLineWidth < h.width) {
+	log.Infof("toggleScrollDirection")
+	if !h.isScrollHorizontal && !h.hasHorizontalScrollbar() {
 		// Do not toggle to horizontal if no need for horizontal scroll
 		return
 	}
-
+	if h.isScrollHorizontal && !h.hasVerticalScrollbar() {
+		// Do not toggle to vertical if no need for vertical scroll
+		return
+	}
+	log.Infof("toggle")
 	h.isScrollHorizontal = !h.isScrollHorizontal
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
@@ -481,4 +498,14 @@ func (h *view) mainBounds(bounds Rect) Rect {
 		b.H = 0
 	}
 	return b
+}
+
+func maxTextWidth(lines []string) int {
+	maxWidth := 0
+	for _, line := range lines {
+		if len(line) > maxWidth {
+			maxWidth = len(line)
+		}
+	}
+	return maxWidth
 }
