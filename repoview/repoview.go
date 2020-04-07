@@ -57,17 +57,17 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 }
 
 func (h *RepoView) onLoad() {
-	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
-	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
-	h.SetKey(gocui.KeyCtrlSpace, gocui.ModNone, h.vm.commit)
-	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showContextMenu)
-	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.vm.saveTotalDebugState)
-	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.vm.ChangeBranchColor)
-	h.SetKey(gocui.KeyCtrlD, gocui.ModNone, h.vm.showDiff)
-	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlC, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey('q', gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlQ, gocui.ModNone, h.uiHandler.Quit)
+	h.SetKey(gocui.KeyF5, h.vm.refresh)
+	h.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
+	h.SetKey(gocui.KeyCtrlSpace, h.vm.commit)
+	h.SetKey(gocui.KeyArrowRight, h.showContextMenu)
+	h.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
+	h.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
+	h.SetKey(gocui.KeyCtrlD, h.vm.showDiff)
+	h.SetKey(gocui.KeyEsc, h.uiHandler.Quit)
+	h.SetKey(gocui.KeyCtrlC, h.uiHandler.Quit)
+	h.SetKey('q', h.uiHandler.Quit)
+	h.SetKey(gocui.KeyCtrlQ, h.uiHandler.Quit)
 
 	h.vm.load()
 	log.Infof("Load trigger refresh")

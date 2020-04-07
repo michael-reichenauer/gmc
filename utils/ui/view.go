@@ -61,8 +61,8 @@ type View interface {
 	SetBottom()
 	SetTitle(title string)
 	NotifyChanged()
-	SetKey(key interface{}, modifier gocui.Modifier, handler func())
-	DeleteKey(key interface{}, modifier gocui.Modifier)
+	SetKey(key interface{}, handler func())
+	DeleteKey(key interface{})
 	ViewPage() ViewPage
 	Clear()
 	PostOnUIThread(func())
@@ -86,6 +86,7 @@ type view struct {
 	firstCharIndex     int
 	notifyThrottler    *semaphore.Weighted
 	maxLineWidth       int
+	//	previousView       View
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPage) ViewText) *view {
@@ -134,49 +135,45 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 }
 
 func (h *view) Show(bounds Rect) {
-	h.ui.Gui().Cursor = h.properties.IsEditable
+	log.Infof("Show %s %s", h.viewName, h.properties.Name)
 	mb := h.mainBounds(bounds)
 
-	if guiView, err := h.ui.gui.SetView(h.viewName, mb.X, mb.Y, mb.W, mb.H); err != nil {
-		if err != gocui.ErrUnknownView {
-			panic(log.Fatalf(err, "%s %+v,%d,%d,%d", h.viewName, mb))
-		}
+	guiView := h.ui.createView(h, mb)
 
-		h.guiView = guiView
-		h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
-		h.guiView.Editable = false
-		h.guiView.Wrap = false
-		h.guiView.Highlight = false
-		if h.properties.Title != "" {
-			h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
-		}
-		if h.properties.IsEditable {
-			h.guiView.Editable = true
-		}
-		if !h.properties.IsEditable {
-			h.SetKey(gocui.KeyArrowUp, gocui.ModNone, h.onKeyArrowUp)
-			h.SetKey(gocui.KeyArrowDown, gocui.ModNone, h.onKeyArrowDown)
-			h.SetKey(gocui.KeySpace, gocui.ModNone, h.onKeyPageDown)
-		}
-
-		h.SetKey(gocui.MouseMiddle, gocui.ModNone, h.toggleScrollDirection)
-		h.SetKey(gocui.MouseWheelDown, gocui.ModNone, h.onMouseWheelRollDown)
-		h.SetKey(gocui.MouseWheelUp, gocui.ModNone, h.onMouseWheelRollUp)
-		h.SetKey(gocui.KeyPgdn, gocui.ModNone, h.onKeyPageDown)
-		h.SetKey(gocui.KeyPgup, gocui.ModNone, h.onKeyPageUp)
-		h.SetKey(gocui.KeyHome, gocui.ModNone, h.onKeyPageHome)
-		h.SetKey(gocui.KeyEnd, gocui.ModNone, h.onKeyPageEnd)
-
-		h.SetKey(gocui.MouseLeft, gocui.ModNone, h.onMouseLeftClick)
-		h.SetKey(gocui.MouseRight, gocui.ModNone, h.onMouseRightClick)
-
-		log.Eventf("ui-view-show", h.Properties().Name)
-		if h.properties.OnLoad != nil {
-			// Let the actual view handle load to initialise view data
-			h.properties.OnLoad()
-		}
-		h.NotifyChanged()
+	h.guiView = guiView
+	h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
+	h.guiView.Editable = false
+	h.guiView.Wrap = false
+	h.guiView.Highlight = false
+	if h.properties.Title != "" {
+		h.guiView.Title = fmt.Sprintf(" %s ", h.properties.Title)
 	}
+	if h.properties.IsEditable {
+		h.guiView.Editable = true
+	}
+	if !h.properties.IsEditable {
+		h.SetKey(gocui.KeyArrowUp, h.onKeyArrowUp)
+		h.SetKey(gocui.KeyArrowDown, h.onKeyArrowDown)
+		h.SetKey(gocui.KeySpace, h.onKeyPageDown)
+	}
+
+	h.SetKey(gocui.MouseMiddle, h.toggleScrollDirection)
+	h.SetKey(gocui.MouseWheelDown, h.onMouseWheelRollDown)
+	h.SetKey(gocui.MouseWheelUp, h.onMouseWheelRollUp)
+	h.SetKey(gocui.KeyPgdn, h.onKeyPageDown)
+	h.SetKey(gocui.KeyPgup, h.onKeyPageUp)
+	h.SetKey(gocui.KeyHome, h.onKeyPageHome)
+	h.SetKey(gocui.KeyEnd, h.onKeyPageEnd)
+
+	h.SetKey(gocui.MouseLeft, h.onMouseLeftClick)
+	h.SetKey(gocui.MouseRight, h.onMouseRightClick)
+
+	log.Eventf("ui-view-show", h.Properties().Name)
+	if h.properties.OnLoad != nil {
+		// Let the actual view handle load to initialise view data
+		h.properties.OnLoad()
+	}
+	h.NotifyChanged()
 }
 
 func (h *view) ScrollHorizontal(scroll int) {
@@ -189,7 +186,7 @@ func (h *view) NotifyChanged() {
 		return
 	}
 	go func() {
-		h.ui.gui.Update(func(g *gocui.Gui) error {
+		h.ui.PostOnUIThread(func() {
 			h.notifyThrottler.Release(1)
 
 			// Clear the view to make room for the new data
@@ -199,7 +196,7 @@ func (h *view) NotifyChanged() {
 			width, height := h.guiView.Size()
 			if width <= 1 || height <= 0 {
 				// View is to small (not visible)
-				return nil
+				return
 			}
 			viewPort := h.ViewPage()
 
@@ -235,7 +232,7 @@ func (h *view) NotifyChanged() {
 
 			if h.linesCount == 0 {
 				// No view data
-				return nil
+				return
 			}
 
 			if h.properties.Title != "" {
@@ -255,7 +252,7 @@ func (h *view) NotifyChanged() {
 			if !h.properties.HideHorizontalScrollbar {
 				h.drawHorizontalScrollbar()
 			}
-			return nil
+			return
 		})
 	}()
 }
@@ -271,7 +268,7 @@ func (h *view) SyncWithView(v View) {
 }
 
 func (h *view) toViewTextBytes(lines []string) []byte {
-	isCurrentView := h.ui.gui.CurrentView() == h.guiView
+	isCurrentView := h == h.ui.currentView()
 
 	var sb strings.Builder
 	for i, line := range lines {
@@ -291,9 +288,7 @@ func (h *view) toViewTextBytes(lines []string) []byte {
 
 func (h *view) SetBounds(bounds Rect) {
 	mb := h.mainBounds(bounds)
-	if _, err := h.ui.gui.SetView(h.viewName, mb.X, mb.Y, mb.W, mb.H); err != nil {
-		panic(log.Fatal(err))
-	}
+	h.ui.setBounds(h, mb)
 }
 
 func (h *view) SetTitle(title string) {
@@ -301,19 +296,15 @@ func (h *view) SetTitle(title string) {
 }
 
 func (h *view) SetCurrentView() {
-	h.ui.SetCurrentView(h)
+	h.ui.setCurrentView(h)
 }
 
 func (h *view) SetTop() {
-	if _, err := h.ui.gui.SetViewOnTop(h.viewName); err != nil {
-		panic(log.Fatal(err))
-	}
+	h.ui.setTop(h)
 }
 
 func (h *view) SetBottom() {
-	if _, err := h.ui.gui.SetViewOnBottom(h.viewName); err != nil {
-		panic(log.Fatal(err))
-	}
+	h.ui.setBottom(h)
 }
 
 func (h view) ViewPage() ViewPage {
@@ -339,35 +330,23 @@ func (h *view) Properties() *ViewProperties {
 }
 
 func (h *view) PostOnUIThread(f func()) {
-	h.ui.gui.Update(func(g *gocui.Gui) error {
-		f()
-		return nil
-	})
+	h.ui.PostOnUIThread(f)
 }
 
 func (h *view) Close() {
-	h.ui.Gui().Cursor = false
+	log.Infof("Close %s", h.viewName)
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}
-	if err := h.ui.gui.DeleteView(h.viewName); err != nil {
-		panic(log.Fatal(err))
-	}
+	h.ui.closeView(h)
 }
 
-func (h *view) SetKey(key interface{}, modifier gocui.Modifier, handler func()) {
-	if err := h.ui.gui.SetKeybinding(h.viewName, key, modifier, func(gui *gocui.Gui, view *gocui.View) error {
-		handler()
-		return nil
-	}); err != nil {
-		panic(log.Fatal(err))
-	}
+func (h *view) SetKey(key interface{}, handler func()) {
+	h.ui.SetKey(h, key, handler)
 }
 
-func (h *view) DeleteKey(key interface{}, modifier gocui.Modifier) {
-	if err := h.ui.gui.DeleteKeybinding(h.viewName, key, modifier); err != nil {
-		panic(log.Fatal(err))
-	}
+func (h *view) DeleteKey(key interface{}) {
+	h.ui.deleteKey(h, key)
 }
 
 func (h *view) Clear() {
@@ -439,9 +418,10 @@ func (h *view) onMouseRightClick() {
 func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 	cx, cy := h.guiView.Cursor()
 
-	if h != h.ui.currentView && h.ui.currentView.properties.OnMouseOutside != nil {
+	currentView := h.ui.currentView()
+	if h != currentView && currentView.properties.OnMouseOutside != nil {
 		// Mouse down, but this is not the current view, inform the current view
-		h.ui.currentView.properties.OnMouseOutside()
+		currentView.properties.OnMouseOutside()
 		return
 	}
 

@@ -42,28 +42,35 @@ func NewDiffView(
 	}
 	t.vm = newDiffVM(t, diffGetter, commitID)
 	t.vm.setUnified(t.isUnified)
-	t.leftSide = newDiffSideView(ui, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
-	t.rightSide = newDiffSideView(ui, t.viewDataRight, nil, t.onMovedRight)
-
-	t.leftSide.Properties().HideVerticalScrollbar = true
-	t.leftSide.Properties().OnMouseRight = t.showContextMenu
-	t.leftSide.Properties().Title = "Before " + commitID[:6]
-	t.rightSide.Properties().Title = "After " + commitID[:6]
+	t.leftSide = t.newLeftSide()
+	t.rightSide = t.newRightSide()
 	return t
 }
 
-func (t *diffView) onLoadLeft() {
-	t.leftSide.SetKey(gocui.KeyEsc, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey(gocui.KeyCtrlQ, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey('q', gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey('1', gocui.ModNone, t.ToUnified)
-	t.leftSide.SetKey('2', gocui.ModNone, t.ToSideBySide)
-	t.leftSide.SetKey(gocui.KeyArrowLeft, gocui.ModNone, t.scrollHorizontalLeft)
-	t.leftSide.SetKey(gocui.KeyArrowRight, gocui.ModNone, t.scrollHorizontalRight)
+func (t *diffView) newLeftSide() *DiffSideView {
+	view := newDiffSideView(t.ui, t.viewDataLeft, t.vm.load, t.onMovedLeft)
 
-	t.vm.load()
+	view.Properties().HideVerticalScrollbar = true
+	view.Properties().OnMouseRight = t.showContextMenu
+	view.Properties().Title = "Before " + t.commitID[:6]
+
+	view.SetKey(gocui.KeyEsc, t.mainService.HideDiff)
+	view.SetKey(gocui.KeyCtrlC, t.mainService.HideDiff)
+	view.SetKey(gocui.KeyCtrlC, t.mainService.HideDiff)
+	view.SetKey(gocui.KeyCtrlQ, t.mainService.HideDiff)
+	view.SetKey('q', t.mainService.HideDiff)
+	view.SetKey('1', t.ToUnified)
+	view.SetKey('2', t.ToSideBySide)
+	view.SetKey(gocui.KeyArrowLeft, t.scrollHorizontalLeft)
+	view.SetKey(gocui.KeyArrowRight, t.scrollHorizontalRight)
+
+	return view
+}
+
+func (t *diffView) newRightSide() *DiffSideView {
+	view := newDiffSideView(t.ui, t.viewDataRight, nil, t.onMovedRight)
+	view.Properties().Title = "After " + t.commitID[:6]
+	return view
 }
 
 func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewText {

@@ -6,13 +6,12 @@ import (
 )
 
 type MessageBox struct {
-	ui           *UI
-	boxView      View
-	textView     View
-	buttonsView  View
-	text         string
-	title        string
-	previousView View
+	ui          *UI
+	boxView     View
+	textView    View
+	buttonsView View
+	text        string
+	title       string
 }
 
 func NewMessageBox(ui *UI, text, title string) *MessageBox {
@@ -20,8 +19,6 @@ func NewMessageBox(ui *UI, text, title string) *MessageBox {
 }
 
 func (h *MessageBox) Show() {
-	h.previousView = h.ui.CurrentView()
-
 	h.boxView = h.newBoxView()
 	h.buttonsView = h.newButtonsView()
 	h.textView = h.newTextView()
@@ -40,20 +37,23 @@ func (h *MessageBox) Show() {
 func (h *MessageBox) newBoxView() View {
 	view := h.ui.NewView("")
 	view.Properties().Title = h.title
+	view.Properties().Name = "MessageBox"
 	return view
 }
 
 func (h *MessageBox) newButtonsView() View {
 	view := h.ui.NewView("[OK]")
+	view.Properties().Name = "MessageBoxButtons"
 	view.Properties().OnMouseLeft = h.onButtonsClick
 	return view
 }
 
 func (h *MessageBox) newTextView() View {
 	view := h.ui.NewView(h.text)
+	view.Properties().Name = "MessageBoxText"
 	view.Properties().HideCurrentLineMarker = true
-	view.SetKey(gocui.KeyEsc, gocui.ModNone, h.Close)
-	view.SetKey(gocui.KeyEnter, gocui.ModNone, h.Close)
+	view.SetKey(gocui.KeyEsc, h.Close)
+	view.SetKey(gocui.KeyEnter, h.Close)
 	return view
 }
 
@@ -61,12 +61,10 @@ func (h *MessageBox) Close() {
 	h.textView.Close()
 	h.buttonsView.Close()
 	h.boxView.Close()
-	h.ui.SetCurrentView(h.previousView)
 }
 
 func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
 	lines := strings.Split(h.text, "\n")
-	windowWidth, windowHeight := h.ui.WindowSize()
 
 	width := h.maxTextWidth(lines)
 	if width < 30 {
@@ -76,9 +74,6 @@ func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
 		width = 70
 	}
 
-	if width > windowWidth-4 {
-		width = windowWidth - 4
-	}
 	height := len(lines)
 	if height < 4 {
 		height = 4
@@ -86,13 +81,9 @@ func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
 	if height > 20 {
 		height = 20
 	}
-	if height > windowHeight-4 {
-		height = windowHeight - 4
-	}
-	x := (windowWidth - width) / 2
-	y := (windowHeight - height) / 2
 
-	return Rect{x, y, width, height}, Rect{x, y, width, height - 2}, Rect{x, y + height - 1, width, 1}
+	vb := h.ui.CenterBounds(width, height)
+	return vb, Rect{vb.X, vb.Y, vb.W, vb.H - 2}, Rect{vb.X, vb.Y + vb.H - 1, vb.W, 1}
 }
 
 func (h *MessageBox) maxTextWidth(lines []string) int {
