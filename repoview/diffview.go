@@ -17,8 +17,8 @@ type diffView struct {
 	ui          *ui.UI
 	vm          *diffVM
 	mainService mainService
-	leftSide    *DiffSideView
-	rightSide   *DiffSideView
+	leftSide    ui.View
+	rightSide   ui.View
 	commitID    string
 	isUnified   bool
 }
@@ -45,13 +45,18 @@ func NewDiffView(
 	return t
 }
 
-func (t *diffView) newLeftSide() *DiffSideView {
-	view := newDiffSideView(t.ui, t.viewDataLeft, t.vm.load, t.onMovedLeft)
-
+func (t *diffView) newLeftSide() ui.View {
+	view := t.ui.NewViewFromPageFunc(t.viewDataLeft)
+	view.Properties().OnLoad = t.vm.load
+	view.Properties().OnMoved = t.onMovedLeft
+	view.Properties().Name = "DiffViewLeft"
+	view.Properties().HasFrame = true
 	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
 	view.Properties().OnMouseRight = t.showContextMenu
 	view.Properties().Title = "Before " + t.commitID[:6]
 
+	// Only need to set key on left side since left side is always current
 	view.SetKey(gocui.KeyEsc, t.mainService.HideDiff)
 	view.SetKey(gocui.KeyCtrlC, t.mainService.HideDiff)
 	view.SetKey(gocui.KeyCtrlC, t.mainService.HideDiff)
@@ -65,9 +70,15 @@ func (t *diffView) newLeftSide() *DiffSideView {
 	return view
 }
 
-func (t *diffView) newRightSide() *DiffSideView {
-	view := newDiffSideView(t.ui, t.viewDataRight, nil, t.onMovedRight)
+func (t *diffView) newRightSide() ui.View {
+	view := t.ui.NewViewFromPageFunc(t.viewDataRight)
+	view.Properties().OnMoved = t.onMovedRight
+	view.Properties().Name = "DiffViewRight"
+	view.Properties().HasFrame = true
 	view.Properties().Title = "After " + t.commitID[:6]
+	view.Properties().OnMouseRight = t.showContextMenu
+
+	// No need to set key on right side since left side is always current
 	return view
 }
 
@@ -132,7 +143,7 @@ func (t *diffView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
 }
 
 func (t *diffView) onMovedLeft() {
-	t.rightSide.SyncWithView(t.leftSide.View)
+	t.rightSide.SyncWithView(t.leftSide)
 }
 
 func (t *diffView) onMovedRight() {

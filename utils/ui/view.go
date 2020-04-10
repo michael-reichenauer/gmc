@@ -402,10 +402,18 @@ func (h *view) Size() (int, int) {
 }
 
 func (h *view) onKeyArrowUp() {
+	if h.properties.HideCurrentLineMarker {
+		h.scrollVertically(-1)
+		return
+	}
 	h.moveVertically(-1)
 }
 
 func (h *view) onKeyArrowDown() {
+	if h.properties.HideCurrentLineMarker {
+		h.scrollVertically(1)
+		return
+	}
 	h.moveVertically(1)
 }
 
