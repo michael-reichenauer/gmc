@@ -463,11 +463,21 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 
 	if h.hasVerticalScrollbar() && cx == h.width-2 {
 		// Mouse down in vertical scrollbar, set scrollbar to that position
+		if h.isScrollHorizontal {
+			// Vertical scrollbar not active, let activate first
+			h.toggleScrollDirection()
+			return
+		}
 		h.setVerticalScroll(cy)
 		return
 	}
 	if h.hasHorizontalScrollbar() && cy == h.height-1 {
 		// Mouse down in horizontal scrollbar, set scrollbar to that position
+		if !h.isScrollHorizontal {
+			// Horizontal scrollbar not active, let activate first
+			h.toggleScrollDirection()
+			return
+		}
 		h.setHorizontalScroll(cx)
 		return
 	}

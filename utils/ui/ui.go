@@ -138,10 +138,7 @@ func (h *UI) layout(gui *gocui.Gui) error {
 	if windowWidth != h.windowWidth || windowHeight != h.windowHeight {
 		h.windowWidth = windowWidth
 		h.windowHeight = windowHeight
-		for _, v := range h.shownViews {
-			v.resize(windowWidth, windowHeight)
-			v.NotifyChanged()
-		}
+		h.ResizeAllViews()
 		termbox.SetCursor(0, 0) // workaround for hiding the cursor
 	}
 
@@ -151,6 +148,13 @@ func (h *UI) layout(gui *gocui.Gui) error {
 	h.isInitialized = true
 	go h.runFunc()
 	return nil
+}
+
+func (h *UI) ResizeAllViews() {
+	for _, v := range h.shownViews {
+		v.resize(h.windowWidth, h.windowHeight)
+		v.NotifyChanged()
+	}
 }
 
 func (h *UI) CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) Rect {
