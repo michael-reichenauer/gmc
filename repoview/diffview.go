@@ -6,11 +6,10 @@ import (
 )
 
 type DiffView interface {
-	Show(rect ui.Rect)
+	Show()
 	SetTop()
 	SetCurrentView()
 	Close()
-	SetBounds(rect ui.Rect)
 	NotifyChanged()
 }
 
@@ -22,7 +21,6 @@ type diffView struct {
 	rightSide   *DiffSideView
 	commitID    string
 	isUnified   bool
-	lastBounds  ui.Rect
 }
 
 func (t *diffView) PostOnUIThread(f func()) {
@@ -89,10 +87,10 @@ func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewText {
 	return diff
 }
 
-func (t *diffView) Show(bounds ui.Rect) {
-	lb, rb := t.getSplitBounds(bounds)
-	t.leftSide.Show(lb)
-	t.rightSide.Show(rb)
+func (t *diffView) Show() {
+	lbf, rbf := t.getBounds()
+	t.leftSide.Show(lbf)
+	t.rightSide.Show(rbf)
 }
 
 func (t *diffView) SetTop() {
@@ -109,27 +107,28 @@ func (t *diffView) Close() {
 	t.rightSide.Close()
 }
 
-func (t *diffView) SetBounds(bounds ui.Rect) {
-	lb, rb := t.getSplitBounds(bounds)
-	t.leftSide.SetBounds(lb)
-	t.rightSide.SetBounds(rb)
-}
-
 func (t *diffView) NotifyChanged() {
 	t.leftSide.NotifyChanged()
 	t.rightSide.NotifyChanged()
 }
 
-func (t *diffView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
-	t.lastBounds = bounds
-	if t.isUnified {
-		return ui.Rect{X: 0, Y: 1, W: bounds.W + 2, H: bounds.H + 1}, ui.Rect{W: 1, H: 1}
+func (t *diffView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
+	left := func(w, h int) ui.Rect {
+		if t.isUnified {
+			return ui.Rect{X: 0, Y: 1, W: w + 2, H: h + 1}
+		}
+		wl := w/2 - 2
+		return ui.Rect{X: 0, Y: 1, W: wl, H: h - 1}
 	}
-	wl := bounds.W/2 - 3
-	wr := bounds.W - wl
-	lb := ui.Rect{X: bounds.X - 1, Y: bounds.Y, W: wl, H: bounds.H + 1}
-	rb := ui.Rect{X: bounds.X + wl + 1, Y: bounds.Y, W: wr, H: bounds.H + 1}
-	return lb, rb
+	right := func(w, h int) ui.Rect {
+		if t.isUnified {
+			return ui.Rect{W: 1, H: 1}
+		}
+		wl := w/2 - 2
+		wr := w - wl - 2
+		return ui.Rect{X: wl + 2, Y: 1, W: wr, H: h - 1}
+	}
+	return left, right
 }
 
 func (t *diffView) onMovedLeft() {
@@ -148,7 +147,6 @@ func (t *diffView) ToUnified() {
 	t.leftSide.Properties().HideVerticalScrollbar = false
 	t.leftSide.Properties().Title = "Unified diff " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
-	t.SetBounds(t.lastBounds)
 	t.NotifyChanged()
 }
 
@@ -161,7 +159,6 @@ func (t *diffView) ToSideBySide() {
 	t.leftSide.Properties().Title = "Before " + t.commitID[:6]
 	t.rightSide.Properties().Title = "After " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
-	t.SetBounds(t.lastBounds)
 	t.NotifyChanged()
 }
 

@@ -17,7 +17,7 @@ type mainService interface {
 	HideDiff()
 	HideCommit()
 	NewMenu(title string) *ui.Menu
-	Commit()
+	Commit(committer Committer)
 }
 
 type RepoView struct {

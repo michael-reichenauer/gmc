@@ -46,10 +46,10 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 	}
 	h.repoView = repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
 	h.repoView.Properties().HasFrame = false
-	h.repoView.Show(ui.Rect{W: 1, H: 1})
+	h.repoView.Show(ui.FullScreen())
 	h.repoView.SetTop()
 	h.repoView.SetCurrentView()
-	h.OnResizeWindow()
+	//h.OnResizeWindow()
 
 	parent := filepath.Dir(workingFolder)
 	h.configService.SetState(func(s *config.State) {

@@ -51,16 +51,15 @@ func (h *MainWindow) Show() {
 func (h *MainWindow) ToggleShowDetails() {
 	if h.mode == repo {
 		h.mode = details
-		h.detailsView = repoview.NewDetailsView(h.ui)
-		h.detailsView.Show(ui.Rect{W: 1, H: 1})
-		h.detailsView.SetTop()
+		// h.detailsView = repoview.NewDetailsView(h.ui)
+		// h.detailsView.Show(ui.Rect{W: 1, H: 1})
+		// h.detailsView.SetTop()
 	} else {
 		h.mode = repo
 		h.detailsView.Close()
 		h.detailsView = nil
 		h.repoView.SetTop()
 	}
-	h.OnResizeWindow()
 }
 
 func (h *MainWindow) ShowDiff(diffGetter repoview.DiffGetter, commitID string) {
@@ -68,56 +67,51 @@ func (h *MainWindow) ShowDiff(diffGetter repoview.DiffGetter, commitID string) {
 		h.HideDiff()
 	}
 	h.diffView = repoview.NewDiffView(h.ui, h, diffGetter, commitID)
-	width, height := h.ui.WindowSize()
-	h.diffView.Show(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+	h.diffView.Show()
 	h.diffView.SetTop()
 	h.diffView.SetCurrentView()
-	h.OnResizeWindow()
-}
-
-func (h *MainWindow) Commit() {
-	h.commitView = repoview.NewCommitView(h.ui, h, "branches/mr/commit")
-	h.commitView.Show()
-	h.OnResizeWindow()
-}
-
-func (h *MainWindow) HideCommit() {
-	h.commitView.Close()
-	h.commitView = nil
-	h.OnResizeWindow()
 }
 
 func (h *MainWindow) HideDiff() {
 	h.diffView.Close()
 	h.diffView = nil
-	h.OnResizeWindow()
 }
 
-func (h *MainWindow) OnResizeWindow() {
-	width, height := h.ui.WindowSize()
-	if h.mode == repo {
-		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
-		h.repoView.NotifyChanged()
-
-		if h.diffView != nil {
-			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
-			h.diffView.SetTop()
-			h.diffView.NotifyChanged()
-		}
-	} else if h.mode == details {
-		detailsHeight := 7
-		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
-		h.repoView.NotifyChanged()
-		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight - 1, W: width, H: detailsHeight + 1})
-		h.detailsView.NotifyChanged()
-
-		if h.diffView != nil {
-			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
-			h.diffView.SetTop()
-			h.diffView.NotifyChanged()
-		}
-	}
+func (h *MainWindow) Commit(committer repoview.Committer) {
+	h.commitView = repoview.NewCommitView(h.ui, h, committer)
+	h.commitView.Show()
 }
+
+func (h *MainWindow) HideCommit() {
+	h.commitView.Close()
+	h.commitView = nil
+}
+
+// func (h *MainWindow) OnResizeWindow() {
+// 	width, height := h.ui.WindowSize()
+// 	if h.mode == repo {
+// 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height})
+// 		h.repoView.NotifyChanged()
+//
+// 		if h.diffView != nil {
+// 			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+// 			h.diffView.SetTop()
+// 			h.diffView.NotifyChanged()
+// 		}
+// 	} else if h.mode == details {
+// 		detailsHeight := 7
+// 		h.repoView.SetBounds(ui.Rect{X: 0, Y: 0, W: width, H: height - detailsHeight - 1})
+// 		h.repoView.NotifyChanged()
+// 		h.detailsView.SetBounds(ui.Rect{X: 0, Y: height - detailsHeight - 1, W: width, H: detailsHeight + 1})
+// 		h.detailsView.NotifyChanged()
+//
+// 		if h.diffView != nil {
+// 			h.diffView.SetBounds(ui.Rect{X: 1, Y: 1, W: width - 2, H: height - 2})
+// 			h.diffView.SetTop()
+// 			h.diffView.NotifyChanged()
+// 		}
+// 	}
+// }
 
 func (h *MainWindow) getWorkingFolder() (string, error) {
 	folderPath := h.configService.FolderPath

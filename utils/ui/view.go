@@ -12,6 +12,39 @@ const (
 	currentLineMarker = '│' // The marker for current line (left)
 )
 
+type BoundFunc func(ww, wh int) Rect
+
+func FullScreen() BoundFunc {
+	return func(ww, wh int) Rect { return Rect{0, 0, ww, wh} }
+}
+
+func Bounds(b Rect) BoundFunc {
+	return func(_, _ int) Rect { return b }
+}
+
+func CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) BoundFunc {
+	return func(ww, wh int) Rect {
+		width := maxWidth
+		height := maxHeight
+		if maxWidth == 0 {
+			width = ww
+		}
+		if maxHeight == 0 {
+			height = wh
+		}
+
+		if width > ww-minWidth {
+			width = ww - minWidth
+		}
+		if height > wh-minHeight {
+			height = wh - minHeight
+		}
+		x := (ww - width) / 2
+		y := (wh - height) / 2
+		return Rect{X: x, Y: y, W: width, H: height}
+	}
+}
+
 // Properties that adjust view behavior and can be accessed via View.Properties()
 type ViewProperties struct {
 	Title                   string
@@ -53,8 +86,8 @@ type Viewer interface {
 
 type View interface {
 	Properties() *ViewProperties
-	Show(bounds Rect)
-	SetBounds(bounds Rect)
+	Show(BoundFunc)
+	SetBounds(BoundFunc)
 	SyncWithView(view View)
 	SetCurrentView()
 	SetTop()
@@ -75,6 +108,7 @@ type view struct {
 	properties         *ViewProperties
 	viewName           string
 	viewData           func(viewPort ViewPage) ViewText
+	boundFunc          BoundFunc
 	firstIndex         int
 	linesCount         int
 	currentIndex       int
@@ -134,9 +168,10 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 	}
 }
 
-func (h *view) Show(bounds Rect) {
+func (h *view) Show(bf BoundFunc) {
 	log.Infof("Show %s %s", h.viewName, h.properties.Name)
-	mb := h.mainBounds(bounds)
+	h.boundFunc = bf
+	mb := h.viewBounds()
 
 	guiView := h.ui.createView(h, mb)
 
@@ -286,8 +321,9 @@ func (h *view) toViewTextBytes(lines []string) []byte {
 	return []byte(sb.String())
 }
 
-func (h *view) SetBounds(bounds Rect) {
-	mb := h.mainBounds(bounds)
+func (h *view) SetBounds(bf BoundFunc) {
+	h.boundFunc = bf
+	mb := h.viewBounds()
 	h.ui.setBounds(h, mb)
 }
 
@@ -469,7 +505,13 @@ func (h *view) toggleScrollDirection() {
 	}
 }
 
-func (h *view) mainBounds(bounds Rect) Rect {
+func (h *view) viewBounds() Rect {
+	ww, wh := h.ui.WindowSize()
+	return h.mainBounds(ww, wh)
+}
+
+func (h *view) mainBounds(ww, wh int) Rect {
+	bounds := h.boundFunc(ww, wh)
 	b := Rect{X: bounds.X - 1, Y: bounds.Y - 1, W: bounds.X + bounds.W + 1, H: bounds.Y + bounds.H}
 	if b.W < 0 {
 		b.W = 0
@@ -478,6 +520,11 @@ func (h *view) mainBounds(bounds Rect) Rect {
 		b.H = 0
 	}
 	return b
+}
+
+func (h *view) resize(width int, height int) {
+	b := h.mainBounds(width, height)
+	h.ui.setBounds(h, b)
 }
 
 func maxTextWidth(lines []string) int {

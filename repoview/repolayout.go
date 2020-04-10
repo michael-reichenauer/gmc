@@ -134,7 +134,7 @@ func (t *repoLayout) writeAuthor(sb *strings.Builder, commit viewmodel.Commit, l
 }
 
 func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
-	if c.ID == viewmodel.StatusID {
+	if c.ID == viewmodel.UncommittedID {
 		sb.WriteString(ui.Dark(utils.Text("", length)))
 		return
 	}
@@ -147,7 +147,7 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, le
 
 func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int) {
 	subject := utils.Text(c.Subject, length)
-	if c.ID == viewmodel.StatusID {
+	if c.ID == viewmodel.UncommittedID {
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}

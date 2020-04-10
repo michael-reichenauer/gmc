@@ -24,9 +24,9 @@ func (h *MessageBox) Show() {
 	h.textView = h.newTextView()
 
 	bb, tb, bbb := h.getBounds()
-	h.boxView.Show(bb)
-	h.buttonsView.Show(bbb)
-	h.textView.Show(tb)
+	h.boxView.Show(Bounds(bb))
+	h.buttonsView.Show(Bounds(bbb))
+	h.textView.Show(Bounds(tb))
 
 	h.boxView.SetTop()
 	h.buttonsView.SetTop()
@@ -82,7 +82,7 @@ func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
 		height = 20
 	}
 
-	vb := h.ui.CenterBounds(width, height)
+	vb := h.ui.CenterBounds(30, 4, 70, 20)
 	return vb, Rect{vb.X, vb.Y, vb.W, vb.H - 2}, Rect{vb.X, vb.Y + vb.H - 1, vb.W, 1}
 }
 

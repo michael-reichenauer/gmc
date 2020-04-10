@@ -24,10 +24,10 @@ type UI struct {
 	gui               *gocui.Gui
 	isInitialized     bool
 	runFunc           func()
-	maxX              int
-	maxY              int
-	OnResizeWindow    func()
+	windowWidth       int
+	windowHeight      int
 	currentViewsStack []*view
+	shownViews        []*view
 }
 
 func NewUI() *UI {
@@ -78,28 +78,6 @@ func (h *UI) PostOnUIThread(f func()) {
 	})
 }
 
-func (h *UI) CenterBounds(maxWidth, maxHeight int) Rect {
-	windowWidth, windowHeight := h.WindowSize()
-	width := maxWidth
-	height := maxHeight
-	if maxWidth == 0 {
-		width = windowWidth
-	}
-	if maxHeight == 0 {
-		height = windowHeight
-	}
-
-	if width > windowWidth-4 {
-		width = windowWidth - 4
-	}
-	if height > windowHeight-4 {
-		height = windowHeight - 4
-	}
-	x := (windowWidth - width) / 2
-	y := (windowHeight - height) / 2
-	return Rect{X: x, Y: y, W: width, H: height}
-}
-
 func (h *UI) NewViewName() string {
 	return utils.RandomString(10)
 }
@@ -130,6 +108,7 @@ func (h *UI) setCurrentView(v *view) {
 	if _, err := h.gui.SetCurrentView(v.viewName); err != nil {
 		panic(log.Fatal(err))
 	}
+	h.gui.Cursor = v.properties.IsEditable
 	log.Infof("Set current %q %q", v.viewName, v.properties.Name)
 	h.addCurrentView(v)
 	if previousCurrentView != nil {
@@ -155,12 +134,13 @@ func (h *UI) removeCurrentView(v *view) {
 
 func (h *UI) layout(gui *gocui.Gui) error {
 	// Resize window and notify all views if console window is resized
-	maxX, maxY := gui.Size()
-	if maxX != h.maxX || maxY != h.maxY {
-		h.maxX = maxX
-		h.maxY = maxY
-		if h.OnResizeWindow != nil {
-			h.OnResizeWindow()
+	windowWidth, windowHeight := gui.Size()
+	if windowWidth != h.windowWidth || windowHeight != h.windowHeight {
+		h.windowWidth = windowWidth
+		h.windowHeight = windowHeight
+		for _, v := range h.shownViews {
+			v.resize(windowWidth, windowHeight)
+			v.NotifyChanged()
 		}
 		termbox.SetCursor(0, 0) // workaround for hiding the cursor
 	}
@@ -171,6 +151,12 @@ func (h *UI) layout(gui *gocui.Gui) error {
 	h.isInitialized = true
 	go h.runFunc()
 	return nil
+}
+
+func (h *UI) CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) Rect {
+	bf := CenterBounds(minWidth, minHeight, maxWidth, maxHeight)
+	ww, wh := h.WindowSize()
+	return bf(ww, wh)
 }
 
 func (h *UI) Quit() {
@@ -196,9 +182,8 @@ func (h *UI) closeView(v *view) {
 			h.setCurrentView(cv)
 			h.ShowCursor(cv.properties.IsEditable)
 		}
-	} else {
-		h.removeCurrentView(v)
 	}
+	h.removeShownView(v)
 }
 
 func (h *UI) deleteKey(v *view, key interface{}) {
@@ -239,7 +224,24 @@ func (h *UI) createView(v *view, mb Rect) *gocui.View {
 		if err != gocui.ErrUnknownView {
 			panic(log.Fatalf(err, "%s %+v,%d,%d,%d", v.viewName, mb))
 		}
+		h.addShownView(v)
 		return guiView
 	}
 	panic(log.Fatalf(fmt.Errorf("view altready created"), "%s %+v,%d,%d,%d", v.viewName, mb))
+}
+
+func (h *UI) addShownView(v *view) {
+	h.removeShownView(v)
+	h.shownViews = append(h.shownViews, v)
+}
+
+func (h *UI) removeShownView(v *view) {
+	var views []*view
+	for _, sv := range h.shownViews {
+		if sv == v {
+			continue
+		}
+		views = append(views, sv)
+	}
+	h.shownViews = views
 }

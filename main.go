@@ -79,7 +79,6 @@ func main() {
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
 		mainWindow := program.NewMainWindow(uiHandler, configService)
-		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})
 }
