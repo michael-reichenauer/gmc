@@ -33,15 +33,43 @@ func CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) BoundFunc {
 			height = wh
 		}
 
-		if width > ww-minWidth {
-			width = ww - minWidth
+		if width > ww {
+			width = ww
 		}
-		if height > wh-minHeight {
-			height = wh - minHeight
+		if width < minWidth {
+			width = minWidth
 		}
+		if width < 1 {
+			width = 1
+		}
+
+		if height > wh {
+			height = wh
+		}
+		if height < minHeight {
+			height = minHeight
+		}
+		if height < 1 {
+			height = 1
+		}
+
 		x := (ww - width) / 2
 		y := (wh - height) / 2
-		return Rect{X: x, Y: y, W: width, H: height}
+		if x < 1 {
+			x = 1
+		}
+		if y < 1 {
+			y = 1
+		}
+		b := Rect{X: x, Y: y, W: width, H: height}
+		return b
+	}
+}
+
+func Relative(bf BoundFunc, relative func(b Rect) Rect) BoundFunc {
+	return func(w, h int) Rect {
+		vb := bf(w, h)
+		return relative(vb)
 	}
 }
 
@@ -87,11 +115,9 @@ type Viewer interface {
 type View interface {
 	Properties() *ViewProperties
 	Show(BoundFunc)
-	SetBounds(BoundFunc)
 	SyncWithView(view View)
 	SetCurrentView()
 	SetTop()
-	SetBottom()
 	SetTitle(title string)
 	NotifyChanged()
 	SetKey(key interface{}, handler func())
@@ -105,8 +131,9 @@ type View interface {
 
 type view struct {
 	guiView            *gocui.View
+	vertScrlView       *gocui.View
+	horzScrlView       *gocui.View
 	properties         *ViewProperties
-	viewName           string
 	viewData           func(viewPort ViewPage) ViewText
 	boundFunc          BoundFunc
 	firstIndex         int
@@ -120,14 +147,13 @@ type view struct {
 	firstCharIndex     int
 	notifyThrottler    *semaphore.Weighted
 	maxLineWidth       int
-	//	previousView       View
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPage) ViewText) *view {
 	return &view{
 		ui:              ui,
-		viewName:        ui.NewViewName(),
 		viewData:        viewData,
+		guiView:         ui.createView(),
 		notifyThrottler: semaphore.NewWeighted(int64(1)),
 		properties:      &ViewProperties{}}
 }
@@ -169,13 +195,12 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 }
 
 func (h *view) Show(bf BoundFunc) {
-	log.Infof("Show %s %s", h.viewName, h.properties.Name)
 	h.boundFunc = bf
 	mb := h.viewBounds()
 
-	guiView := h.ui.createView(h, mb)
-
-	h.guiView = guiView
+	h.ui.setBounds(h.guiView, mb)
+	h.ui.addShownView(h)
+	log.Infof("Show %s %s", h.guiView.Name(), h.properties.Name)
 	h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
 	h.guiView.Editable = false
 	h.guiView.Wrap = false
@@ -208,6 +233,10 @@ func (h *view) Show(bf BoundFunc) {
 		// Let the actual view handle load to initialise view data
 		h.properties.OnLoad()
 	}
+
+	// h.vertScrlView = h.createVerticalScrollView()
+	// h.horzScrlView = h.createHorizontalScrollView()
+
 	h.NotifyChanged()
 }
 
@@ -321,12 +350,6 @@ func (h *view) toViewTextBytes(lines []string) []byte {
 	return []byte(sb.String())
 }
 
-func (h *view) SetBounds(bf BoundFunc) {
-	h.boundFunc = bf
-	mb := h.viewBounds()
-	h.ui.setBounds(h, mb)
-}
-
 func (h *view) SetTitle(title string) {
 	h.guiView.Title = title
 }
@@ -336,11 +359,9 @@ func (h *view) SetCurrentView() {
 }
 
 func (h *view) SetTop() {
-	h.ui.setTop(h)
-}
-
-func (h *view) SetBottom() {
-	h.ui.setBottom(h)
+	h.ui.setTop(h.guiView)
+	h.ui.setTop(h.vertScrlView)
+	h.ui.setTop(h.horzScrlView)
 }
 
 func (h view) ViewPage() ViewPage {
@@ -370,19 +391,21 @@ func (h *view) PostOnUIThread(f func()) {
 }
 
 func (h *view) Close() {
-	log.Infof("Close %s", h.viewName)
+	log.Infof("Close %s %s", h.guiView.Name(), h.properties.Name)
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}
+	h.ui.deleteView(h.vertScrlView)
+	h.ui.deleteView(h.horzScrlView)
 	h.ui.closeView(h)
 }
 
 func (h *view) SetKey(key interface{}, handler func()) {
-	h.ui.SetKey(h, key, handler)
+	h.ui.setKey(h.guiView, key, handler)
 }
 
 func (h *view) DeleteKey(key interface{}) {
-	h.ui.deleteKey(h, key)
+	h.ui.deleteKey(h.guiView, key)
 }
 
 func (h *view) Clear() {
@@ -542,7 +565,7 @@ func (h *view) mainBounds(ww, wh int) Rect {
 
 func (h *view) resize(width int, height int) {
 	b := h.mainBounds(width, height)
-	h.ui.setBounds(h, b)
+	h.ui.setBounds(h.guiView, b)
 }
 
 func maxTextWidth(lines []string) int {

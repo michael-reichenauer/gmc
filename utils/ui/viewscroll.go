@@ -10,6 +10,20 @@ const (
 	scrollBarHorizontalHandle = '━' // The horizontal scrollbar handle (down)
 )
 
+func (h *view) createHorizontalScrollView() *gocui.View {
+	return nil
+}
+
+func (h *view) createVerticalScrollView() *gocui.View {
+	// bf := Relative(h.boundFunc, func(b Rect) Rect {
+	// 	return b
+	// })
+	// ww, wh := h.ui.WindowSize()
+	// b := bf(ww, wh)
+	view := h.ui.createView()
+	return view
+}
+
 func (h *view) moveVertically(move int) {
 	if h.total <= 0 {
 		// Cannot scroll empty view

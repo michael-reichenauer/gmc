@@ -24,9 +24,9 @@ func (h *MessageBox) Show() {
 	h.textView = h.newTextView()
 
 	bb, tb, bbb := h.getBounds()
-	h.boxView.Show(Bounds(bb))
-	h.buttonsView.Show(Bounds(bbb))
-	h.textView.Show(Bounds(tb))
+	h.boxView.Show(bb)
+	h.buttonsView.Show(bbb)
+	h.textView.Show(tb)
 
 	h.boxView.SetTop()
 	h.buttonsView.SetTop()
@@ -63,7 +63,7 @@ func (h *MessageBox) Close() {
 	h.boxView.Close()
 }
 
-func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
+func (h *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
 	lines := strings.Split(h.text, "\n")
 
 	width := h.maxTextWidth(lines)
@@ -82,8 +82,15 @@ func (h *MessageBox) getBounds() (Rect, Rect, Rect) {
 		height = 20
 	}
 
-	vb := h.ui.CenterBounds(30, 4, 70, 20)
-	return vb, Rect{vb.X, vb.Y, vb.W, vb.H - 2}, Rect{vb.X, vb.Y + vb.H - 1, vb.W, 1}
+	box := CenterBounds(width, height, width, height)
+	text := Relative(box, func(b Rect) Rect {
+		return Rect{b.X, b.Y, b.W, b.H - 2}
+	})
+	buttons := Relative(box, func(b Rect) Rect {
+		return Rect{b.X, b.Y + b.H - 1, b.W, 1}
+	})
+
+	return box, text, buttons
 }
 
 func (h *MessageBox) maxTextWidth(lines []string) int {

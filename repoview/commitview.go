@@ -34,14 +34,13 @@ func (h *CommitView) Show() {
 	h.textView = h.newTextView()
 
 	bb, tb, bbb := h.getBounds()
-	h.boxView.Show(ui.Bounds(bb))
-	h.buttonsView.Show(ui.Bounds(bbb))
-	h.textView.Show(ui.Bounds(tb))
+	h.boxView.Show(bb)
+	h.buttonsView.Show(bbb)
+	h.textView.Show(tb)
 
 	h.boxView.SetTop()
 	h.buttonsView.SetTop()
 	h.textView.SetTop()
-
 	h.textView.SetCurrentView()
 }
 
@@ -74,11 +73,15 @@ func (h *CommitView) Close() {
 	h.boxView.Close()
 }
 
-func (h *CommitView) getBounds() (ui.Rect, ui.Rect, ui.Rect) {
-	vb := h.ui.CenterBounds(70, 15, 70, 15)
-	return vb,
-		ui.Rect{X: vb.X, Y: vb.Y, W: vb.W, H: vb.H - 2},
-		ui.Rect{X: vb.X, Y: vb.Y + vb.H - 1, W: vb.W, H: 1}
+func (h *CommitView) getBounds() (ui.BoundFunc, ui.BoundFunc, ui.BoundFunc) {
+	box := ui.CenterBounds(10, 5, 70, 15)
+	text := ui.Relative(box, func(b ui.Rect) ui.Rect {
+		return ui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - 2}
+	})
+	buttons := ui.Relative(box, func(b ui.Rect) ui.Rect {
+		return ui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
+	})
+	return box, text, buttons
 }
 
 func (h *CommitView) maxTextWidth(lines []string) int {

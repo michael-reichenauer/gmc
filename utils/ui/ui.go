@@ -78,18 +78,8 @@ func (h *UI) PostOnUIThread(f func()) {
 	})
 }
 
-func (h *UI) NewViewName() string {
-	return utils.RandomString(10)
-}
-
 func (h *UI) WindowSize() (width, height int) {
 	return h.gui.Size()
-}
-
-func (h *UI) SetKeyBinding(viewName string, key interface{}, mod gocui.Modifier, handler func(*gocui.Gui, *gocui.View) error) {
-	if err := h.gui.SetKeybinding(viewName, key, mod, handler); err != nil {
-		panic(log.Fatal(err))
-	}
 }
 
 func SetWindowTitle(text string) {
@@ -105,11 +95,11 @@ func (h *UI) currentView() *view {
 
 func (h *UI) setCurrentView(v *view) {
 	previousCurrentView := h.currentView()
-	if _, err := h.gui.SetCurrentView(v.viewName); err != nil {
+	if _, err := h.gui.SetCurrentView(v.guiView.Name()); err != nil {
 		panic(log.Fatal(err))
 	}
 	h.gui.Cursor = v.properties.IsEditable
-	log.Infof("Set current %q %q", v.viewName, v.properties.Name)
+	log.Infof("Set current %q %q", v.guiView.Name(), v.properties.Name)
 	h.addCurrentView(v)
 	if previousCurrentView != nil {
 		previousCurrentView.NotifyChanged()
@@ -173,10 +163,29 @@ func (h *UI) ShowCursor(isShow bool) {
 	h.gui.Cursor = isShow
 }
 
-func (h *UI) closeView(v *view) {
-	if err := h.gui.DeleteView(v.viewName); err != nil {
+func (h *UI) createView() *gocui.View {
+	mb := Rect{0, 0, 1, 1}
+	name := utils.RandomString(10)
+	if guiView, err := h.gui.SetView(name, mb.X, mb.Y, mb.W, mb.H); err != nil {
+		if err != gocui.ErrUnknownView {
+			panic(log.Fatalf(err, "%s %+v,%d,%d,%d", name, mb))
+		}
+		return guiView
+	}
+	panic(log.Fatalf(fmt.Errorf("view already created"), "%s %+v,%d,%d,%d", name, mb))
+}
+
+func (h *UI) setBounds(v *gocui.View, bounds Rect) {
+	if v == nil {
+		return
+	}
+	if _, err := h.gui.SetView(v.Name(), bounds.X, bounds.Y, bounds.W, bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
+}
+
+func (h *UI) closeView(v *view) {
+	h.deleteView(v.guiView)
 
 	isCurrent := h.currentView() == v
 	h.removeCurrentView(v)
@@ -190,14 +199,23 @@ func (h *UI) closeView(v *view) {
 	h.removeShownView(v)
 }
 
-func (h *UI) deleteKey(v *view, key interface{}) {
-	if err := h.gui.DeleteKeybinding(v.viewName, key, gocui.ModNone); err != nil {
+func (h *UI) deleteView(v *gocui.View) {
+	if v == nil {
+		return
+	}
+	if err := h.gui.DeleteView(v.Name()); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
-func (h *UI) SetKey(v *view, key interface{}, handler func()) {
-	if err := h.gui.SetKeybinding(v.viewName, key, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+func (h *UI) deleteKey(v *gocui.View, key interface{}) {
+	if err := h.gui.DeleteKeybinding(v.Name(), key, gocui.ModNone); err != nil {
+		panic(log.Fatal(err))
+	}
+}
+
+func (h *UI) setKey(v *gocui.View, key interface{}, handler func()) {
+	if err := h.gui.SetKeybinding(v.Name(), key, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		handler()
 		return nil
 	}); err != nil {
@@ -205,33 +223,13 @@ func (h *UI) SetKey(v *view, key interface{}, handler func()) {
 	}
 }
 
-func (h *UI) setBottom(v *view) {
-	if _, err := h.gui.SetViewOnBottom(v.viewName); err != nil {
+func (h *UI) setTop(v *gocui.View) {
+	if v == nil {
+		return
+	}
+	if _, err := h.gui.SetViewOnTop(v.Name()); err != nil {
 		panic(log.Fatal(err))
 	}
-}
-
-func (h *UI) setBounds(v *view, bounds Rect) {
-	if _, err := h.gui.SetView(v.viewName, bounds.X, bounds.Y, bounds.W, bounds.H); err != nil {
-		panic(log.Fatal(err))
-	}
-}
-
-func (h *UI) setTop(v *view) {
-	if _, err := h.gui.SetViewOnTop(v.viewName); err != nil {
-		panic(log.Fatal(err))
-	}
-}
-
-func (h *UI) createView(v *view, mb Rect) *gocui.View {
-	if guiView, err := h.gui.SetView(v.viewName, mb.X, mb.Y, mb.W, mb.H); err != nil {
-		if err != gocui.ErrUnknownView {
-			panic(log.Fatalf(err, "%s %+v,%d,%d,%d", v.viewName, mb))
-		}
-		h.addShownView(v)
-		return guiView
-	}
-	panic(log.Fatalf(fmt.Errorf("view altready created"), "%s %+v,%d,%d,%d", v.viewName, mb))
 }
 
 func (h *UI) addShownView(v *view) {
