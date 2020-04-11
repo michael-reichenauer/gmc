@@ -164,7 +164,7 @@ func (h *UI) ShowCursor(isShow bool) {
 }
 
 func (h *UI) createView() *gocui.View {
-	mb := Rect{0, 0, 1, 1}
+	mb := Rect{-2, -2, -1, -1}
 	name := utils.RandomString(10)
 	if guiView, err := h.gui.SetView(name, mb.X, mb.Y, mb.W, mb.H); err != nil {
 		if err != gocui.ErrUnknownView {

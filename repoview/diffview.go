@@ -105,8 +105,8 @@ func (t *diffView) Show() {
 }
 
 func (t *diffView) SetTop() {
-	t.rightSide.SetTop()
 	t.leftSide.SetTop()
+	t.rightSide.SetTop()
 }
 
 func (t *diffView) SetCurrentView() {
@@ -136,7 +136,7 @@ func (t *diffView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
 			return ui.Rect{W: 1, H: 1}
 		}
 		wl := w/2 - 2
-		wr := w - wl - 2
+		wr := w - wl - 3
 		return ui.Rect{X: wl + 2, Y: 1, W: wr, H: h - 1}
 	}
 	return left, right

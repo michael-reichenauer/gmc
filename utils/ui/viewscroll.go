@@ -2,7 +2,9 @@ package ui
 
 import (
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"math"
+	"strings"
 )
 
 const (
@@ -10,18 +12,94 @@ const (
 	scrollBarHorizontalHandle = '━' // The horizontal scrollbar handle (down)
 )
 
-func (h *view) createHorizontalScrollView() *gocui.View {
-	return nil
+func (h *view) createVerticalScrollView() *gocui.View {
+	view := h.ui.createView()
+	view.Frame = false
+	h.ui.setKey(view, gocui.MouseLeft, h.onVerticalScrollMouseLeftClick)
+	return view
 }
 
-func (h *view) createVerticalScrollView() *gocui.View {
-	// bf := Relative(h.boundFunc, func(b Rect) Rect {
-	// 	return b
-	// })
-	// ww, wh := h.ui.WindowSize()
-	// b := bf(ww, wh)
+func (h *view) createHorizontalScrollView() *gocui.View {
 	view := h.ui.createView()
+	view.Frame = false
+	h.ui.setKey(view, gocui.MouseLeft, h.onHorizontalScrollMouseLeftClick)
 	return view
+}
+
+func (h *view) onVerticalScrollMouseLeftClick() {
+	_, cy := h.vertScrlView.Cursor()
+
+	currentView := h.ui.currentView()
+	if h != currentView && currentView.properties.OnMouseOutside != nil {
+		// Mouse down, but this is not the current view, inform the current view
+		currentView.properties.OnMouseOutside()
+		return
+	}
+
+	if h.hasVerticalScrollbar() {
+		// Mouse down in vertical scrollbar, set scrollbar to that position
+		if h.isScrollHorizontal {
+			// Vertical scrollbar not active, let activate first
+			h.toggleScrollDirection()
+			return
+		}
+		h.setVerticalScroll(cy)
+		return
+	}
+}
+func (h *view) onHorizontalScrollMouseLeftClick() {
+	cx, _ := h.horzScrlView.Cursor()
+
+	currentView := h.ui.currentView()
+	if h != currentView && currentView.properties.OnMouseOutside != nil {
+		// Mouse down, but this is not the current view, inform the current view
+		currentView.properties.OnMouseOutside()
+		return
+	}
+
+	if h.hasHorizontalScrollbar() {
+		// Mouse down in horizontal scrollbar, set scrollbar to that position
+		if !h.isScrollHorizontal {
+			// Horizontal scrollbar not active, let activate first
+			h.toggleScrollDirection()
+			return
+		}
+		h.setHorizontalScroll(cx)
+		return
+	}
+}
+
+func (h *view) toggleScrollDirection() {
+	log.Infof("toggleScrollDirection")
+	if !h.isScrollHorizontal && !h.hasHorizontalScrollbar() {
+		// Do not toggle to horizontal if no need for horizontal scroll
+		return
+	}
+	if h.isScrollHorizontal && !h.hasVerticalScrollbar() {
+		// Do not toggle to vertical if no need for vertical scroll
+		return
+	}
+	log.Infof("toggle")
+	h.isScrollHorizontal = !h.isScrollHorizontal
+	h.NotifyChanged()
+	if h.properties.OnMoved != nil {
+		h.properties.OnMoved()
+	}
+}
+
+func (h *view) setScrollbarBounds(b Rect) {
+	if h.vertScrlView != nil {
+		vb := Rect{X: b.W - 3, Y: b.Y, W: b.W - 1, H: b.H}
+		if h.guiView.Frame {
+			vb.X = vb.X + 1
+			vb.W = vb.W + 1
+		}
+		h.ui.setBounds(h.vertScrlView, vb)
+	}
+	if h.horzScrlView != nil {
+		hb := Rect{X: b.X, Y: b.H - 2, W: b.W, H: b.H - 0}
+		h.ui.setBounds(h.horzScrlView, hb)
+	}
 }
 
 func (h *view) moveVertically(move int) {
@@ -112,70 +190,56 @@ func (h *view) drawVerticalScrollbar(linesCount int) {
 	if !h.hasVerticalScrollbar() {
 		return
 	}
-	// Remember original values
-	x, y := h.guiView.Cursor()
-	fg := h.guiView.FgColor
-
+	h.vertScrlView.Clear()
 	// Set scrollbar handle color
-	h.guiView.FgColor = gocui.ColorMagenta
+	color := CMagentaDk
 	if h.isScrollHorizontal {
-		h.guiView.FgColor = gocui.ColorWhite
+		color = CDark
 	}
 
-	sx := h.width - 2
 	sbStart, sbEnd := h.getVerticalScrollbarIndexes()
 
 	// Draw the scrollbar
+	var sb strings.Builder
 	for i := 0; i < linesCount; i++ {
-		_ = h.guiView.SetCursor(sx, i)
 		if i >= sbStart && i <= sbEnd {
-			// Within scrollbar, draw the scrollbar handle
-			h.guiView.EditWrite(scrollBarVerticalHandle)
+			sb.WriteString(ColorRune(color, scrollBarVerticalHandle))
 		} else {
-			h.guiView.EditWrite(' ')
+			sb.WriteString(" ")
 		}
+		sb.WriteString("\n")
 	}
-
-	// Restore values
-	_ = h.guiView.SetCursor(x, y)
-	h.guiView.FgColor = fg
+	if _, err := h.vertScrlView.Write([]byte(sb.String())); err != nil {
+		panic(log.Fatal(err))
+	}
 }
 
 func (h *view) drawHorizontalScrollbar() {
 	if !h.hasHorizontalScrollbar() {
 		return
 	}
-	// Remember original values
-	x, y := h.guiView.Cursor()
-	fg := h.guiView.FgColor
-
+	h.horzScrlView.Clear()
 	// Set scrollbar handle color
-	h.guiView.FgColor = gocui.ColorMagenta
-	handle := scrollBarHorizontalHandle
-
+	color := CMagentaDk
 	if !h.isScrollHorizontal {
-		h.guiView.FgColor = gocui.ColorWhite
-		handle = scrollBarHorizontalHandle
+		color = CDark
 	}
 
-	sy := h.height - 1
 	sbStart, sbEnd := h.getHorizontalScrollbarIndexes()
 
 	// Draw the scrollbar
+	var sb strings.Builder
 	for i := 1; i < h.width-1; i++ {
-		_ = h.guiView.SetCursor(i, sy)
-		h.guiView.EditDelete(true)
 		if i >= sbStart && i <= sbEnd {
 			// Within scrollbar, draw the scrollbar handle
-			h.guiView.EditWrite(handle)
+			sb.WriteString(ColorRune(color, scrollBarHorizontalHandle))
 		} else {
-			h.guiView.EditWrite(' ')
+			sb.WriteString(" ")
 		}
 	}
-
-	// Restore values
-	_ = h.guiView.SetCursor(x, y)
-	h.guiView.FgColor = fg
+	if _, err := h.horzScrlView.Write([]byte(sb.String())); err != nil {
+		panic(log.Fatal(err))
+	}
 }
 
 func (h *view) getVerticalScrollbarIndexes() (start, end int) {
@@ -215,7 +279,7 @@ func (h *view) getHorizontalScrollbarIndexes() (start, end int) {
 }
 
 func (h *view) setVerticalScroll(cy int) {
-	if !h.hasHorizontalScrollbar() {
+	if !h.hasVerticalScrollbar() {
 		return
 	}
 	setLine := h.total
@@ -248,9 +312,9 @@ func (h *view) setHorizontalScroll(cx int) {
 }
 
 func (h *view) hasHorizontalScrollbar() bool {
-	return !h.properties.HideHorizontalScrollbar && h.maxLineWidth > h.width
+	return h.horzScrlView != nil && !h.properties.HideHorizontalScrollbar && h.maxLineWidth > h.width
 }
 
 func (h *view) hasVerticalScrollbar() bool {
-	return !h.properties.HideVerticalScrollbar && h.total > h.height
+	return h.vertScrlView != nil && !h.properties.HideVerticalScrollbar && h.total > h.height
 }

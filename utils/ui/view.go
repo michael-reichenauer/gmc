@@ -196,9 +196,7 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 
 func (h *view) Show(bf BoundFunc) {
 	h.boundFunc = bf
-	mb := h.viewBounds()
 
-	h.ui.setBounds(h.guiView, mb)
 	h.ui.addShownView(h)
 	log.Infof("Show %s %s", h.guiView.Name(), h.properties.Name)
 	h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
@@ -234,9 +232,16 @@ func (h *view) Show(bf BoundFunc) {
 		h.properties.OnLoad()
 	}
 
-	// h.vertScrlView = h.createVerticalScrollView()
-	// h.horzScrlView = h.createHorizontalScrollView()
+	if !h.properties.HideVerticalScrollbar {
+		log.Infof("Show virt scr %s %s", h.guiView.Name(), h.properties.Name)
+		h.vertScrlView = h.createVerticalScrollView()
+	}
+	if !h.properties.HideHorizontalScrollbar {
+		h.horzScrlView = h.createHorizontalScrollView()
+	}
 
+	mb := h.viewBounds()
+	h.setBounds(mb)
 	h.NotifyChanged()
 }
 
@@ -492,27 +497,6 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 		return
 	}
 
-	if h.hasVerticalScrollbar() && cx == h.width-2 {
-		// Mouse down in vertical scrollbar, set scrollbar to that position
-		if h.isScrollHorizontal {
-			// Vertical scrollbar not active, let activate first
-			h.toggleScrollDirection()
-			return
-		}
-		h.setVerticalScroll(cy)
-		return
-	}
-	if h.hasHorizontalScrollbar() && cy == h.height-1 {
-		// Mouse down in horizontal scrollbar, set scrollbar to that position
-		if !h.isScrollHorizontal {
-			// Horizontal scrollbar not active, let activate first
-			h.toggleScrollDirection()
-			return
-		}
-		h.setHorizontalScroll(cx)
-		return
-	}
-
 	if isSetCurrentLine || mouseHandler == nil {
 		// Setting current line to the line that user clicked on
 		p := h.ViewPage()
@@ -525,24 +509,6 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 		h.PostOnUIThread(func() {
 			mouseHandler(cx, cy)
 		})
-	}
-}
-
-func (h *view) toggleScrollDirection() {
-	log.Infof("toggleScrollDirection")
-	if !h.isScrollHorizontal && !h.hasHorizontalScrollbar() {
-		// Do not toggle to horizontal if no need for horizontal scroll
-		return
-	}
-	if h.isScrollHorizontal && !h.hasVerticalScrollbar() {
-		// Do not toggle to vertical if no need for vertical scroll
-		return
-	}
-	log.Infof("toggle")
-	h.isScrollHorizontal = !h.isScrollHorizontal
-	h.NotifyChanged()
-	if h.properties.OnMoved != nil {
-		h.properties.OnMoved()
 	}
 }
 
@@ -565,7 +531,24 @@ func (h *view) mainBounds(ww, wh int) Rect {
 
 func (h *view) resize(width int, height int) {
 	b := h.mainBounds(width, height)
+	h.setBounds(b)
+}
+
+func (h *view) setBounds(b Rect) {
 	h.ui.setBounds(h.guiView, b)
+	h.setScrollbarBounds(b)
+	if h.vertScrlView != nil {
+		vb := Rect{X: b.W - 3, Y: b.Y, W: b.W - 1, H: b.H}
+		if h.guiView.Frame {
+			vb.X = vb.X + 1
+			vb.W = vb.W + 1
+		}
+		h.ui.setBounds(h.vertScrlView, vb)
+	}
+	if h.horzScrlView != nil {
+		hb := Rect{X: b.X, Y: b.H - 2, W: b.W, H: b.H - 0}
+		h.ui.setBounds(h.horzScrlView, hb)
+	}
 }
 
 func maxTextWidth(lines []string) int {

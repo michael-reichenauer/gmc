@@ -38,6 +38,7 @@ func NewRepoView(uiHandler *ui.UI, configService *config.Service, mainService ma
 	h.Properties().OnClose = h.vm.close
 	h.Properties().Name = "RepoView"
 	h.Properties().OnMouseRight = h.vm.showContextMenu
+	h.Properties().HideHorizontalScrollbar = true
 	return h
 }
 
