@@ -86,6 +86,10 @@ func (s *Service) SwitchToBranch(name string) {
 	s.gitRepo.SwitchToBranch(name)
 }
 
+func (s *Service) Commit(Commit string) error {
+	return s.gitRepo.Commit(Commit)
+}
+
 func (s *Service) showBranches(branchIds []string) {
 	log.Event("vms-load-repo")
 	select {

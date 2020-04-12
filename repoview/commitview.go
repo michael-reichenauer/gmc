@@ -10,6 +10,7 @@ import (
 
 type Committer interface {
 	GetCommitDiff(id string) (git.CommitDiff, error)
+	Commit(message string) error
 }
 
 func NewCommitView(ui *ui.UI, committer Committer) *CommitView {
@@ -115,7 +116,14 @@ func (h *CommitView) onCancel() {
 
 func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
+	err := h.committer.Commit(msg)
+	if err != nil {
+		log.Warnf("Failed to commit, %v", err)
+		h.Close()
+		return
+	}
 	log.Infof("OK in commit dialog:\n%q", msg)
+	h.Close()
 }
 
 func (h *CommitView) showDiff() {

@@ -109,6 +109,6 @@ func logProgramInfo(configService *config.Service) {
 	log.Infof("Go version: %q", runtime.Version())
 	log.Infof("Folder path: %q", configService.FolderPath)
 	log.Infof("Working Folder: %q", utils.CurrentDir())
-	log.Infof("Git version: %q", git.GitVersion())
+	log.Infof("Git version: %q", git.Version())
 	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
 }

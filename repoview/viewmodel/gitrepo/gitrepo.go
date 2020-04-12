@@ -63,6 +63,10 @@ func (s *GitRepo) SwitchToBranch(name string) {
 	s.git.Checkout(name)
 }
 
+func (s *GitRepo) Commit(message string) error {
+	return s.git.Commit(message)
+}
+
 func (s *GitRepo) TriggerManualRefresh() {
 	select {
 	case s.manualRefresh <- struct{}{}:
