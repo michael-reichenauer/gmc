@@ -34,6 +34,23 @@ func NewUI() *UI {
 	return &UI{}
 }
 
+func (h *UI) ShowMessageBox(text, title string) {
+	msgBox := NewMessageBox(h, text, title)
+	msgBox.Show()
+}
+
+func (h *UI) ShowErrorMessageBox(text string) {
+	text = Red(text)
+	msgBox := NewMessageBox(h, text, "Error !")
+	msgBox.Show()
+}
+
+func (h *UI) ShowWarningMessageBox(text string) {
+	text = Yellow(text)
+	msgBox := NewMessageBox(h, text, "Warning !")
+	msgBox.Show()
+}
+
 func (h *UI) NewView(text string) View {
 	return newView(h, viewDataFromText(text))
 }
@@ -159,7 +176,7 @@ func (h *UI) Quit() {
 	})
 }
 
-func (h *UI) ShowCursor(isShow bool) {
+func (h *UI) showCursor(isShow bool) {
 	h.gui.Cursor = isShow
 }
 
@@ -193,7 +210,7 @@ func (h *UI) closeView(v *view) {
 		cv := h.currentView()
 		if cv != nil {
 			h.setCurrentView(cv)
-			h.ShowCursor(cv.properties.IsEditable)
+			h.showCursor(cv.properties.IsEditable)
 		}
 	}
 	h.removeShownView(v)

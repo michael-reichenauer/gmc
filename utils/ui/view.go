@@ -234,7 +234,6 @@ func (h *view) Show(bf BoundFunc) {
 	}
 
 	if !h.properties.HideVerticalScrollbar {
-		log.Infof("Show virt scr %s %s", h.guiView.Name(), h.properties.Name)
 		h.vertScrlView = h.createVerticalScrollView()
 	}
 	if !h.properties.HideHorizontalScrollbar {

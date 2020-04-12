@@ -68,7 +68,6 @@ func (h *MainWindow) MainMenuItem() ui.MenuItem {
 }
 
 func (h *MainWindow) showAbout() {
-	msgBox := ui.NewMessageBox(h.ui,
-		fmt.Sprintf("gmc version %s\n%s", h.configService.ProgramVersion, git.Version()), "About")
-	msgBox.Show()
+	aboutText := fmt.Sprintf("gmc version %s\n%s", h.configService.ProgramVersion, git.Version())
+	h.ui.ShowMessageBox(aboutText, "About")
 }
