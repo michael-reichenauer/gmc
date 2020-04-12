@@ -26,7 +26,7 @@ func (h *commitService) commitAllChanges(message string) error {
 		}
 	}
 
-	_, err := h.cmd.Git("commit", "-am", fmt.Sprintf("\"%s\"", message))
+	_, err := h.cmd.Git("commit", "-am", message)
 	if err != nil {
 		return fmt.Errorf("failed to commit, %v", err)
 	}
