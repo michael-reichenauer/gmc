@@ -13,27 +13,27 @@ type mainService interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
-	ShowDiff(diffGetter DiffGetter, commitID string)
-	HideDiff()
-	HideCommit()
+	// ShowDiff(diffGetter DiffGetter, commitID string)
+	// HideDiff()
+	// HideCommit()
 	NewMenu(title string) *ui.Menu
-	Commit(committer Committer)
+	//Commit(committer Committer)
 }
 
 type RepoView struct {
 	ui.View
-	uiHandler   *ui.UI
+	ui          *ui.UI
 	mainService mainService
 	vm          *repoVM
 }
 
-func NewRepoView(uiHandler *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
+func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
 	h := &RepoView{
-		uiHandler:   uiHandler,
+		ui:          ui,
 		mainService: mainService,
 	}
-	h.vm = newRepoVM(h, mainService, configService, workingFolder)
-	h.View = uiHandler.NewViewFromPageFunc(h.viewPageData)
+	h.vm = newRepoVM(ui, h, mainService, configService, workingFolder)
+	h.View = ui.NewViewFromPageFunc(h.viewPageData)
 	h.Properties().OnLoad = h.onLoad
 	h.Properties().OnClose = h.vm.close
 	h.Properties().Name = "RepoView"
@@ -65,10 +65,10 @@ func (h *RepoView) onLoad() {
 	h.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	h.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 	h.SetKey(gocui.KeyCtrlD, h.vm.showDiff)
-	h.SetKey(gocui.KeyEsc, h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlC, h.uiHandler.Quit)
-	h.SetKey('q', h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlQ, h.uiHandler.Quit)
+	h.SetKey(gocui.KeyEsc, h.ui.Quit)
+	h.SetKey(gocui.KeyCtrlC, h.ui.Quit)
+	h.SetKey('q', h.ui.Quit)
+	h.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
 
 	h.vm.load()
 	log.Infof("Load trigger refresh")

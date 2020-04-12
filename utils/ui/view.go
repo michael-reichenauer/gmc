@@ -123,6 +123,7 @@ type View interface {
 	SetKey(key interface{}, handler func())
 	DeleteKey(key interface{})
 	ViewPage() ViewPage
+	ReadLines() []string
 	Clear()
 	PostOnUIThread(func())
 	Close()
@@ -257,7 +258,9 @@ func (h *view) NotifyChanged() {
 	go func() {
 		h.ui.PostOnUIThread(func() {
 			h.notifyThrottler.Release(1)
-
+			if h.properties.IsEditable {
+				return
+			}
 			// Clear the view to make room for the new data
 			h.guiView.Clear()
 

@@ -20,6 +20,7 @@ type repoPage struct {
 }
 
 type repoVM struct {
+	ui               *ui.UI
 	repoViewer       ui.Viewer
 	mainService      mainService
 	viewModelService *viewmodel.Service
@@ -40,12 +41,14 @@ type trace struct {
 }
 
 func newRepoVM(
+	ui *ui.UI,
 	repoViewer ui.Viewer,
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
 	viewModelService := viewmodel.NewService(configService, workingFolder)
 	return &repoVM{
+		ui:               ui,
 		repoViewer:       repoViewer,
 		mainService:      mainService,
 		viewModelService: viewModelService,
@@ -138,10 +141,10 @@ func (h *repoVM) showContextMenu(x, y int) {
 	menu.Add(ui.SeparatorMenuItem)
 	c := h.repo.Commits[h.firstIndex+y]
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
-		h.mainService.ShowDiff(h.viewModelService, c.ID)
+		h.ShowDiff(c.ID)
 	}})
 	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: func() {
-		h.mainService.Commit(h.viewModelService)
+		h.commit()
 	}})
 	switchItems := h.GetSwitchBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
@@ -272,7 +275,7 @@ func (h *repoVM) ToggleDetails() {
 
 func (h *repoVM) showDiff() {
 	c := h.repo.Commits[h.currentIndex]
-	h.mainService.ShowDiff(h.viewModelService, c.ID)
+	h.ShowDiff(c.ID)
 }
 
 func (h *repoVM) saveTotalDebugState() {
@@ -280,5 +283,13 @@ func (h *repoVM) saveTotalDebugState() {
 }
 
 func (h *repoVM) commit() {
-	h.mainService.Commit(h.viewModelService)
+	commitView := NewCommitView(h.ui, h.viewModelService)
+	commitView.Show()
+}
+
+func (h *repoVM) ShowDiff(commitID string) {
+	diffView := NewDiffView(h.ui, h.viewModelService, commitID)
+	diffView.Show()
+	diffView.SetTop()
+	diffView.SetCurrentView()
 }

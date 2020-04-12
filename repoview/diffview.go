@@ -14,29 +14,22 @@ type DiffView interface {
 }
 
 type diffView struct {
-	ui          *ui.UI
-	vm          *diffVM
-	mainService mainService
-	leftSide    ui.View
-	rightSide   ui.View
-	commitID    string
-	isUnified   bool
+	ui        *ui.UI
+	vm        *diffVM
+	leftSide  ui.View
+	rightSide ui.View
+	commitID  string
+	isUnified bool
 }
 
 func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewDiffView(
-	ui *ui.UI,
-	mainService mainService,
-	diffGetter DiffGetter,
-	commitID string,
-) DiffView {
+func NewDiffView(ui *ui.UI, diffGetter DiffGetter, commitID string) DiffView {
 	t := &diffView{
-		ui:          ui,
-		mainService: mainService,
-		commitID:    commitID,
+		ui:       ui,
+		commitID: commitID,
 	}
 	t.vm = newDiffVM(t, diffGetter, commitID)
 	t.vm.setUnified(t.isUnified)
@@ -57,11 +50,10 @@ func (t *diffView) newLeftSide() ui.View {
 	view.Properties().Title = "Before " + t.commitID[:6]
 
 	// Only need to set key on left side since left side is always current
-	view.SetKey(gocui.KeyEsc, t.mainService.HideDiff)
-	view.SetKey(gocui.KeyCtrlC, t.mainService.HideDiff)
-	view.SetKey(gocui.KeyCtrlC, t.mainService.HideDiff)
-	view.SetKey(gocui.KeyCtrlQ, t.mainService.HideDiff)
-	view.SetKey('q', t.mainService.HideDiff)
+	view.SetKey(gocui.KeyEsc, t.Close)
+	view.SetKey(gocui.KeyCtrlC, t.Close)
+	view.SetKey(gocui.KeyCtrlQ, t.Close)
+	view.SetKey('q', t.Close)
 	view.SetKey('1', t.ToUnified)
 	view.SetKey('2', t.ToSideBySide)
 	view.SetKey(gocui.KeyArrowLeft, t.scrollHorizontalLeft)
@@ -189,6 +181,6 @@ func (t *diffView) showContextMenu(x int, y int) {
 		cm.Add(ui.MenuItem{Text: "Show Unified Diff", Key: "1", Action: func() { t.ToUnified() }})
 	}
 
-	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: func() { t.mainService.HideDiff() }})
+	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: t.Close})
 	cm.Show(x+3, y+2)
 }

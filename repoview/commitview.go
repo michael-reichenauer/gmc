@@ -2,25 +2,24 @@ package repoview
 
 import (
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"strings"
 )
 
 type Committer interface {
 	GetCommitDiff(id string) (git.CommitDiff, error)
 }
 
-func NewCommitView(ui *ui.UI, mainService mainService, committer Committer) *CommitView {
-	h := &CommitView{ui: ui, vm: NewCommitVM(), mainService: mainService, committer: committer}
+func NewCommitView(ui *ui.UI, committer Committer) *CommitView {
+	h := &CommitView{ui: ui, vm: NewCommitVM(), committer: committer}
 	return h
 }
 
 type CommitView struct {
 	ui          *ui.UI
 	vm          *commitVM
-	mainService mainService
 	committer   Committer
 	boxView     ui.View
 	textView    ui.View
@@ -111,14 +110,18 @@ func (h *CommitView) onButtonsClick(x int, y int) {
 
 func (h *CommitView) onCancel() {
 	log.Infof("Cancel commit dialog")
-	h.mainService.HideCommit()
+	h.Close()
 }
 
 func (h *CommitView) onOk() {
-	log.Infof("OK in commit dialog")
+	msg := strings.Join(h.textView.ReadLines(), "\n")
+	log.Infof("OK in commit dialog:\n%q", msg)
 }
 
 func (h *CommitView) showDiff() {
 	log.Infof("Show diff")
-	h.mainService.ShowDiff(h.committer, viewmodel.UncommittedID)
+	diffView := NewDiffView(h.ui, h.committer, git.UncommittedID)
+	diffView.Show()
+	diffView.SetTop()
+	diffView.SetCurrentView()
 }

@@ -41,15 +41,11 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 	}
 	log.Infof("Got repo %q ...", workingFolder)
 
-	if h.repoView != nil {
-		h.repoView.Close()
-	}
-	h.repoView = repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
-	h.repoView.Properties().HasFrame = false
-	h.repoView.Show(ui.FullScreen())
-	h.repoView.SetTop()
-	h.repoView.SetCurrentView()
-	//h.OnResizeWindow()
+	repoView := repoview.NewRepoView(h.ui, h.configService, h, workingFolder)
+	repoView.Properties().HasFrame = false
+	repoView.Show(ui.FullScreen())
+	repoView.SetTop()
+	repoView.SetCurrentView()
 
 	parent := filepath.Dir(workingFolder)
 	h.configService.SetState(func(s *config.State) {
