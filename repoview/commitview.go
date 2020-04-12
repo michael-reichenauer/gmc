@@ -48,12 +48,16 @@ func (h *CommitView) newCommitView() ui.View {
 	view := h.ui.NewView("")
 	view.Properties().Title = "Commit on: " + "branch name"
 	view.Properties().Name = "CommitView"
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HideVerticalScrollbar = true
 	return view
 }
 
 func (h *CommitView) newButtonsView() ui.View {
 	view := h.ui.NewView("[OK] [Cancel]")
 	view.Properties().OnMouseLeft = h.onButtonsClick
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HideVerticalScrollbar = true
 	return view
 }
 
@@ -64,6 +68,8 @@ func (h *CommitView) newTextView() ui.View {
 	view.SetKey(gocui.KeyEsc, h.onCancel)
 	view.SetKey(gocui.KeyCtrlSpace, h.onOk)
 	view.SetKey(gocui.KeyCtrlD, h.showDiff)
+	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideHorizontalScrollbar = true
 	return view
 }
 

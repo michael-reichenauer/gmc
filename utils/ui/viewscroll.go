@@ -70,7 +70,6 @@ func (h *view) onHorizontalScrollMouseLeftClick() {
 }
 
 func (h *view) toggleScrollDirection() {
-	log.Infof("toggleScrollDirection")
 	if !h.isScrollHorizontal && !h.hasHorizontalScrollbar() {
 		// Do not toggle to horizontal if no need for horizontal scroll
 		return
@@ -79,7 +78,7 @@ func (h *view) toggleScrollDirection() {
 		// Do not toggle to vertical if no need for vertical scroll
 		return
 	}
-	log.Infof("toggle")
+
 	h.isScrollHorizontal = !h.isScrollHorizontal
 	h.NotifyChanged()
 	if h.properties.OnMoved != nil {
@@ -190,6 +189,7 @@ func (h *view) drawVerticalScrollbar(linesCount int) {
 	if !h.hasVerticalScrollbar() {
 		return
 	}
+
 	h.vertScrlView.Clear()
 	// Set scrollbar handle color
 	color := CMagentaDk
@@ -218,6 +218,7 @@ func (h *view) drawHorizontalScrollbar() {
 	if !h.hasHorizontalScrollbar() {
 		return
 	}
+
 	h.horzScrlView.Clear()
 	// Set scrollbar handle color
 	color := CMagentaDk

@@ -315,12 +315,9 @@ func (h *view) NotifyChanged() {
 				panic(log.Fatal(err))
 			}
 
-			if !h.properties.HideVerticalScrollbar {
-				h.drawVerticalScrollbar(len(viewData.Lines))
-			}
-			if !h.properties.HideHorizontalScrollbar {
-				h.drawHorizontalScrollbar()
-			}
+			h.drawVerticalScrollbar(len(viewData.Lines))
+			h.drawHorizontalScrollbar()
+
 			return
 		})
 	}()
@@ -369,6 +366,12 @@ func (h *view) SetTop() {
 	h.ui.setTop(h.horzScrlView)
 }
 
+func (h *view) SetBottom() {
+	h.ui.setBottom(h.guiView)
+	h.ui.setBottom(h.vertScrlView)
+	h.ui.setBottom(h.horzScrlView)
+}
+
 func (h view) ViewPage() ViewPage {
 	// Get the view size to calculate the view port
 	width, height := h.guiView.Size()
@@ -401,7 +404,9 @@ func (h *view) Close() {
 		h.properties.OnClose()
 	}
 	h.ui.deleteView(h.vertScrlView)
+	h.vertScrlView = nil
 	h.ui.deleteView(h.horzScrlView)
+	h.horzScrlView = nil
 	h.ui.closeView(h)
 }
 

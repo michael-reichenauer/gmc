@@ -38,6 +38,8 @@ func (h *MessageBox) newBoxView() View {
 	view := h.ui.NewView("")
 	view.Properties().Title = h.title
 	view.Properties().Name = "MessageBox"
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HideVerticalScrollbar = true
 	return view
 }
 
@@ -45,6 +47,8 @@ func (h *MessageBox) newButtonsView() View {
 	view := h.ui.NewView("[OK]")
 	view.Properties().Name = "MessageBoxButtons"
 	view.Properties().OnMouseLeft = h.onButtonsClick
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HideVerticalScrollbar = true
 	return view
 }
 
@@ -54,6 +58,7 @@ func (h *MessageBox) newTextView() View {
 	view.Properties().HideCurrentLineMarker = true
 	view.SetKey(gocui.KeyEsc, h.Close)
 	view.SetKey(gocui.KeyEnter, h.Close)
+	view.Properties().HideHorizontalScrollbar = true
 	return view
 }
 
@@ -74,7 +79,7 @@ func (h *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
 		width = 70
 	}
 
-	height := len(lines)
+	height := len(lines) + 3
 	if height < 4 {
 		height = 4
 	}

@@ -227,8 +227,18 @@ func (h *UI) setTop(v *gocui.View) {
 	if v == nil {
 		return
 	}
+
 	if _, err := h.gui.SetViewOnTop(v.Name()); err != nil {
-		panic(log.Fatal(err))
+		panic(log.Fatalf(err, "failed for %q", v.Name()))
+	}
+}
+
+func (h *UI) setBottom(v *gocui.View) {
+	if v == nil {
+		return
+	}
+	if _, err := h.gui.SetViewOnBottom(v.Name()); err != nil {
+		panic(log.Fatalf(err, "failed for %q", v.Name()))
 	}
 }
 

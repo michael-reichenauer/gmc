@@ -30,6 +30,7 @@ func newMenuView(ui *UI, title string, parent *menuView) *menuView {
 	h.View.Properties().Title = title
 	h.View.Properties().OnMouseOutside = h.onClose
 	h.View.Properties().OnMouseLeft = h.onMouseLeft
+	h.View.Properties().HideHorizontalScrollbar = true
 	return h
 }
 
@@ -39,7 +40,6 @@ func (h *menuView) addItems(items []MenuItem) {
 
 func (h *menuView) show(bounds Rect) {
 	h.bounds = h.getBounds(h.items, bounds)
-
 	h.SetKey(gocui.KeyEsc, h.onClose)
 	h.SetKey(gocui.KeyEnter, h.onEnter)
 	h.SetKey(gocui.KeyArrowLeft, h.onClose)

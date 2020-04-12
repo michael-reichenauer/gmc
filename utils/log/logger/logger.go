@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"runtime"
+	"runtime/debug"
 	"strings"
 )
 
@@ -64,7 +65,7 @@ func (l *Logger) Warnf(format string, v ...interface{}) {
 
 func (l *Logger) Fatalf(err error, format string, v ...interface{}) string {
 	msg := fmt.Sprintf(format, v...)
-	emsg := fmt.Sprintf("%s, %v", msg, err)
+	emsg := fmt.Sprintf("%s, %v\n%s", msg, err, debug.Stack())
 	l.Output(Fatal, emsg)
 	l.FatalError(err, msg)
 	return emsg
@@ -74,7 +75,7 @@ func (l *Logger) Fatal(err error, v ...interface{}) string {
 	msg := fmt.Sprint(v...)
 	emsg := err.Error()
 	if len(v) > 0 {
-		emsg = fmt.Sprintf("%s, %v", msg, err)
+		emsg = fmt.Sprintf("%s, %v\n%s", msg, err, debug.Stack())
 	}
 	l.Output(Fatal, emsg)
 	l.FatalError(err, msg)
