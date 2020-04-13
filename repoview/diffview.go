@@ -94,6 +94,8 @@ func (t *diffView) Show() {
 	lbf, rbf := t.getBounds()
 	t.leftSide.Show(lbf)
 	t.rightSide.Show(rbf)
+	t.SetTop()
+	t.SetCurrentView()
 }
 
 func (t *diffView) SetTop() {

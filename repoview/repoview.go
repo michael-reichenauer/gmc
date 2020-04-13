@@ -16,11 +16,10 @@ type mainService interface {
 }
 
 type RepoView struct {
-	ui.View
+	view        ui.View
 	ui          *ui.UI
 	mainService mainService
 	vm          *repoVM
-	progress    *ui.Progress
 }
 
 func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
@@ -29,13 +28,25 @@ func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainServi
 		mainService: mainService,
 	}
 	h.vm = newRepoVM(ui, h, mainService, configService, workingFolder)
-	h.View = ui.NewViewFromPageFunc(h.viewPageData)
-	h.Properties().OnLoad = h.onLoad
-	h.Properties().OnClose = h.vm.close
-	h.Properties().Name = "RepoView"
-	h.Properties().OnMouseRight = h.vm.showContextMenu
-	h.Properties().HideHorizontalScrollbar = true
+	view := ui.NewViewFromPageFunc(h.viewPageData)
+	view.Properties().OnLoad = h.onLoad
+	view.Properties().OnClose = h.vm.close
+	view.Properties().Name = "RepoView"
+	view.Properties().OnMouseRight = h.vm.showContextMenu
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HasFrame = false
+	h.view = view
 	return h
+}
+
+func (h *RepoView) Show() {
+	h.view.Show(ui.FullScreen())
+	h.view.SetCurrentView()
+	h.view.SetTop()
+}
+
+func (h *RepoView) NotifyChanged() {
+	h.view.NotifyChanged()
 }
 
 func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
@@ -54,17 +65,17 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 }
 
 func (h *RepoView) onLoad() {
-	h.SetKey(gocui.KeyF5, h.vm.refresh)
-	h.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
-	h.SetKey(gocui.KeyCtrlSpace, h.vm.commit)
-	h.SetKey(gocui.KeyArrowRight, h.showContextMenu)
-	h.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
-	h.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
-	h.SetKey(gocui.KeyCtrlD, h.vm.showDiff)
-	h.SetKey(gocui.KeyEsc, h.ui.Quit)
-	h.SetKey(gocui.KeyCtrlC, h.ui.Quit)
-	h.SetKey('q', h.ui.Quit)
-	h.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
+	h.view.SetKey(gocui.KeyF5, h.vm.refresh)
+	h.view.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
+	h.view.SetKey(gocui.KeyCtrlSpace, h.vm.commit)
+	h.view.SetKey(gocui.KeyArrowRight, h.showContextMenu)
+	h.view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
+	h.view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
+	h.view.SetKey(gocui.KeyCtrlD, h.vm.showDiff)
+	h.view.SetKey(gocui.KeyEsc, h.ui.Quit)
+	h.view.SetKey(gocui.KeyCtrlC, h.ui.Quit)
+	h.view.SetKey('q', h.ui.Quit)
+	h.view.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
 
 	h.vm.load()
 	log.Infof("Load trigger refresh")
@@ -80,11 +91,11 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 }
 
 func (h *RepoView) showContextMenu() {
-	p := h.ViewPage()
-	h.vm.showContextMenu(10, p.CurrentLine-p.FirstLine)
+	vp := h.view.ViewPage()
+	h.vm.showContextMenu(10, vp.CurrentLine-vp.FirstLine)
 }
 
 func (h *RepoView) showProgress() {
 
-	h.progress = h.ui.ShowProgress("Some Progress")
+	//h.progress = h.ui.ShowProgress("Some Progress")
 }

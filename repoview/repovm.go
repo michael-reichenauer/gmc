@@ -21,7 +21,8 @@ type repoPage struct {
 
 type repoVM struct {
 	ui               *ui.UI
-	repoViewer       ui.Viewer
+	repoViewer       *RepoView
+	progress         *ui.Progress
 	mainService      mainService
 	viewModelService *viewmodel.Service
 	repoLayout       *repoLayout
@@ -31,7 +32,6 @@ type repoVM struct {
 	repo             viewmodel.ViewRepo
 	firstIndex       int
 	currentIndex     int
-	isLoading        bool
 }
 
 type trace struct {
@@ -42,7 +42,7 @@ type trace struct {
 
 func newRepoVM(
 	ui *ui.UI,
-	repoViewer ui.Viewer,
+	repoViewer *RepoView,
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
@@ -58,7 +58,6 @@ func newRepoVM(
 }
 
 func (h *repoVM) load() {
-	h.isLoading = true
 	ctx, cancel := context.WithCancel(context.Background())
 	h.cancel = cancel
 	go h.monitorModelRoutine(ctx)
@@ -73,8 +72,11 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 
 	for vr := range h.viewModelService.ViewRepos {
 		log.Infof("Detected model change")
-		h.repoViewer.PostOnUIThread(func() {
-			h.isLoading = false
+		h.ui.PostOnUIThread(func() {
+			if h.progress != nil {
+				h.progress.Close()
+				h.progress = nil
+			}
 			h.repo = vr
 			h.repoViewer.NotifyChanged()
 		})
@@ -84,13 +86,9 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 	//t := timer.Start()
 	//defer log.Infof("GetRepoPage %d %d %v", viewPage.FirstLine, viewPage.CurrentLine, t)
-	if h.isLoading {
-		return repoPage{
-			repoPath: h.repo.RepoPath,
-			lines:    []string{fmt.Sprintf("Loading %s ...", h.workingFolder)},
-			total:    1,
-		}, nil
-	}
+	// if h.isLoading {
+	// 	return repoPage{repoPath: h.repo.RepoPath,lines:    []string{""},	total:    1,}, nil
+	// }
 
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
@@ -244,7 +242,11 @@ func (h *repoVM) branchItemText(branch viewmodel.Branch) string {
 }
 
 func (h *repoVM) refresh() {
-	log.Infof("refresh")
+	log.Event("repoview-refresh")
+	h.ui.PostOnUIThread(func() {
+		h.progress = h.ui.ShowProgress(fmt.Sprintf("Loading repository:\n%s", h.workingFolder))
+	})
+
 	h.viewModelService.TriggerRefreshModel()
 }
 
@@ -283,7 +285,7 @@ func (h *repoVM) saveTotalDebugState() {
 }
 
 func (h *repoVM) commit() {
-	commitView := NewCommitView(h.ui, h.viewModelService)
+	commitView := NewCommitView(h.ui, h.viewModelService, h)
 	commitView.Show()
 }
 
@@ -292,4 +294,11 @@ func (h *repoVM) ShowDiff(commitID string) {
 	diffView.Show()
 	diffView.SetTop()
 	diffView.SetCurrentView()
+}
+
+func (h *repoVM) showProgress(text string) {
+	if h.progress == nil {
+		h.progress = h.ui.ShowProgress(text)
+	}
+	h.progress.SetText(text)
 }

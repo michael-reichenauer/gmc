@@ -52,7 +52,7 @@ func main() {
 	if *pauseFlag {
 		// The process was started with 'pause' flag, e.g. from Goland,
 		// wait until enter is clicked, this can be used for attaching a debugger
-		fmt.Printf("Click 'enter' to proceed ...\n")
+		fmt.Printf("Attach a debugger and click 'enter' to proceed ...\n")
 		utils.ReadLine()
 	}
 

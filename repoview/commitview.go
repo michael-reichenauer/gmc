@@ -14,7 +14,7 @@ type Committer interface {
 	Commit(message string) error
 }
 
-func NewCommitView(ui *ui.UI, committer Committer) *CommitView {
+func NewCommitView(ui *ui.UI, committer Committer, repoView *repoVM) *CommitView {
 	h := &CommitView{ui: ui, vm: NewCommitVM(), committer: committer}
 	return h
 }
@@ -22,6 +22,7 @@ func NewCommitView(ui *ui.UI, committer Committer) *CommitView {
 type CommitView struct {
 	ui          *ui.UI
 	vm          *commitVM
+	repoView    *repoVM
 	committer   Committer
 	boxView     ui.View
 	textView    ui.View
@@ -91,16 +92,6 @@ func (h *CommitView) getBounds() (ui.BoundFunc, ui.BoundFunc, ui.BoundFunc) {
 	return box, text, buttons
 }
 
-func (h *CommitView) maxTextWidth(lines []string) int {
-	maxWidth := 0
-	for _, line := range lines {
-		if len(line) > maxWidth {
-			maxWidth = len(line)
-		}
-	}
-	return maxWidth
-}
-
 func (h *CommitView) onButtonsClick(x int, y int) {
 	if x > 0 && x < 5 {
 		h.onOk()
@@ -111,7 +102,7 @@ func (h *CommitView) onButtonsClick(x int, y int) {
 }
 
 func (h *CommitView) onCancel() {
-	log.Infof("Cancel commit dialog")
+	log.Event("commit-cancel")
 	h.Close()
 }
 
@@ -119,18 +110,18 @@ func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
 	err := h.committer.Commit(msg)
 	if err != nil {
+		log.Eventf("commit-error", "failed to commit, %v", err)
 		h.ui.ShowErrorMessageBox(fmt.Sprintf("Failed to commit,\n%v", err))
 		h.Close()
 		return
 	}
-	log.Infof("OK in commit dialog:\n%q", msg)
+	log.Event("commit-ok")
 	h.Close()
+	h.repoView.showProgress("Updating view after commit ...")
 }
 
 func (h *CommitView) showDiff() {
-	log.Infof("Show diff")
+	log.Event("commit-show-diff")
 	diffView := NewDiffView(h.ui, h.committer, git.UncommittedID)
 	diffView.Show()
-	diffView.SetTop()
-	diffView.SetCurrentView()
 }

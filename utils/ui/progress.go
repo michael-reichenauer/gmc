@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 	"time"
 )
@@ -22,7 +23,9 @@ func newProgress(ui *UI) *Progress {
 }
 
 func (t *Progress) show() {
+	log.Infof("Show progress %q", t.text)
 	t.view.Show(CenterBounds(30, 3, 30, 3))
+	t.view.SetTop()
 	t.view.SetCurrentView()
 	time.AfterFunc(progressInterval, t.elapsed)
 }
