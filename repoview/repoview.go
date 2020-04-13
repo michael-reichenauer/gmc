@@ -13,36 +13,46 @@ type mainService interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
-	ShowDiff(diffGetter DiffGetter, commitID string)
-	HideDiff()
-	NewMenu(title string) *ui.Menu
 }
 
 type RepoView struct {
-	ui.View
-	uiHandler   *ui.UI
+	view        ui.View
+	ui          *ui.UI
 	mainService mainService
 	vm          *repoVM
 }
 
-func NewRepoView(uiHandler *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
+func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
 	h := &RepoView{
-		uiHandler:   uiHandler,
+		ui:          ui,
 		mainService: mainService,
 	}
-	h.vm = newRepoVM(h, mainService, configService, workingFolder)
-	h.View = uiHandler.NewViewFromPageFunc(h.viewPageData)
-	h.Properties().OnLoad = h.onLoad
-	h.Properties().OnClose = h.vm.close
-	h.Properties().Name = "RepoView"
-	h.Properties().OnMouseRight = h.vm.showContextMenu
+	h.vm = newRepoVM(ui, h, mainService, configService, workingFolder)
+	view := ui.NewViewFromPageFunc(h.viewPageData)
+	view.Properties().OnLoad = h.onLoad
+	view.Properties().OnClose = h.vm.close
+	view.Properties().Name = "RepoView"
+	view.Properties().OnMouseRight = h.vm.showContextMenu
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HasFrame = false
+	h.view = view
 	return h
 }
 
-func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
+func (h *RepoView) Show() {
+	h.view.Show(ui.FullScreen())
+	h.view.SetCurrentView()
+	h.view.SetTop()
+}
+
+func (h *RepoView) NotifyChanged() {
+	h.view.NotifyChanged()
+}
+
+func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 	repoPage, err := h.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewPageData{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
+		return ui.ViewText{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
 	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
@@ -51,20 +61,21 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewPageData {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
 	}
 
-	return ui.ViewPageData{Lines: repoPage.lines, Total: repoPage.total}
+	return ui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
 }
 
 func (h *RepoView) onLoad() {
-	h.SetKey(gocui.KeyF5, gocui.ModNone, h.vm.refresh)
-	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.vm.ToggleDetails)
-	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.showContextMenu)
-	h.SetKey(gocui.KeyCtrlS, gocui.ModNone, h.vm.saveTotalDebugState)
-	h.SetKey(gocui.KeyCtrlB, gocui.ModNone, h.vm.ChangeBranchColor)
-	h.SetKey(gocui.KeyCtrlD, gocui.ModNone, h.vm.showDiff)
-	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlC, gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey('q', gocui.ModNone, h.uiHandler.Quit)
-	h.SetKey(gocui.KeyCtrlQ, gocui.ModNone, h.uiHandler.Quit)
+	h.view.SetKey(gocui.KeyF5, h.vm.refresh)
+	h.view.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
+	h.view.SetKey(gocui.KeyCtrlSpace, h.vm.commit)
+	h.view.SetKey(gocui.KeyArrowRight, h.showContextMenu)
+	h.view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
+	h.view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
+	h.view.SetKey(gocui.KeyCtrlD, h.vm.showDiff)
+	h.view.SetKey(gocui.KeyEsc, h.ui.Quit)
+	h.view.SetKey(gocui.KeyCtrlC, h.ui.Quit)
+	h.view.SetKey('q', h.ui.Quit)
+	h.view.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
 
 	h.vm.load()
 	log.Infof("Load trigger refresh")
@@ -80,6 +91,11 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 }
 
 func (h *RepoView) showContextMenu() {
-	p := h.ViewPage()
-	h.vm.showContextMenu(10, p.CurrentLine-p.FirstLine)
+	vp := h.view.ViewPage()
+	h.vm.showContextMenu(10, vp.CurrentLine-vp.FirstLine)
+}
+
+func (h *RepoView) showProgress() {
+
+	//h.progress = h.ui.ShowProgress("Some Progress")
 }

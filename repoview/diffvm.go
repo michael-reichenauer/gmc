@@ -11,12 +11,6 @@ type DiffGetter interface {
 	GetCommitDiff(id string) (git.CommitDiff, error)
 }
 
-// type diffPage struct {
-// 	lines      []string
-// 	//firstIndex int
-// 	total      int
-// }
-
 type diffVM struct {
 	diffViewer     ui.Viewer
 	diffGetter     DiffGetter
@@ -28,6 +22,7 @@ type diffVM struct {
 	rightLines     []string
 	isUnified      bool
 	firstCharIndex int
+	maxWidth       int
 }
 
 const viewWidth = 200
@@ -54,15 +49,15 @@ func (h *diffVM) setUnified(isUnified bool) {
 	h.rightLines = nil
 }
 
-func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (ui.ViewPageData, error) {
+func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (ui.ViewText, error) {
 	return h.getCommitDiff(viewPort, true)
 }
 
-func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (ui.ViewPageData, error) {
+func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (ui.ViewText, error) {
 	return h.getCommitDiff(viewPort, false)
 }
 
-func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewPageData, error) {
+func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewText, error) {
 	if !h.isDiffReady {
 		return h.loadingText(isLeft), nil
 	}
@@ -73,9 +68,10 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewPageDa
 
 	lines, firstIndex, lastIndex := h.getLines(isLeft, viewPort.FirstLine, viewPort.Height)
 
-	return ui.ViewPageData{
-		Lines: lines[firstIndex:lastIndex],
-		Total: len(lines),
+	return ui.ViewText{
+		Lines:    lines[firstIndex:lastIndex],
+		Total:    len(lines),
+		MaxWidth: h.maxWidth,
 	}, nil
 }
 
@@ -102,17 +98,18 @@ func (h *diffVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, i
 	return lines, firstIndex, lastIndex
 }
 
-func (h *diffVM) loadingText(isLeft bool) ui.ViewPageData {
+func (h *diffVM) loadingText(isLeft bool) ui.ViewText {
 	text := "Loading diff for " + h.commitID[:6]
 	if !isLeft {
 		text = ""
 	}
-	return ui.ViewPageData{Lines: []string{text}}
+	return ui.ViewText{Lines: []string{text}}
 }
 
 func (h *diffVM) setDiffSides(firstCharIndex int) {
 	h.leftLines = nil
 	h.rightLines = nil
+	h.maxWidth = 0
 	// Adding diff summery with changed files list, count, ...
 	h.firstCharIndex = firstCharIndex
 	h.addDiffSummery()
@@ -183,6 +180,9 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
 	for _, dl := range ds.LinesDiffs {
+		if len(dl.Line) > h.maxWidth {
+			h.maxWidth = len(dl.Line)
+		}
 		l := h.line(dl.Line)
 		switch dl.DiffMode {
 		case git.DiffRemoved:

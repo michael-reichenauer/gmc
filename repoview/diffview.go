@@ -6,91 +6,101 @@ import (
 )
 
 type DiffView interface {
-	Show(rect ui.Rect)
+	Show()
 	SetTop()
 	SetCurrentView()
 	Close()
-	SetBounds(rect ui.Rect)
 	NotifyChanged()
 }
 
 type diffView struct {
-	ui          *ui.UI
-	vm          *diffVM
-	mainService mainService
-	leftSide    *DiffSideView
-	rightSide   *DiffSideView
-	commitID    string
-	isUnified   bool
-	lastBounds  ui.Rect
+	ui        *ui.UI
+	vm        *diffVM
+	leftSide  ui.View
+	rightSide ui.View
+	commitID  string
+	isUnified bool
 }
 
 func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewDiffView(
-	ui *ui.UI,
-	mainService mainService,
-	diffGetter DiffGetter,
-	commitID string,
-) DiffView {
+func NewDiffView(ui *ui.UI, diffGetter DiffGetter, commitID string) DiffView {
 	t := &diffView{
-		ui:          ui,
-		mainService: mainService,
-		commitID:    commitID,
+		ui:       ui,
+		commitID: commitID,
 	}
 	t.vm = newDiffVM(t, diffGetter, commitID)
 	t.vm.setUnified(t.isUnified)
-	t.leftSide = newDiffSideView(ui, t.viewDataLeft, t.onLoadLeft, t.onMovedLeft)
-	t.rightSide = newDiffSideView(ui, t.viewDataRight, nil, t.onMovedRight)
-
-	t.leftSide.Properties().HideScrollbar = true
-	t.leftSide.Properties().OnMouseRight = t.showContextMenu
-	t.leftSide.Properties().Title = "Before " + commitID[:6]
-	t.rightSide.Properties().Title = "After " + commitID[:6]
+	t.leftSide = t.newLeftSide()
+	t.rightSide = t.newRightSide()
 	return t
 }
 
-func (t *diffView) onLoadLeft() {
-	t.leftSide.SetKey(gocui.KeyEsc, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey(gocui.KeyCtrlC, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey(gocui.KeyCtrlQ, gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey('q', gocui.ModNone, t.mainService.HideDiff)
-	t.leftSide.SetKey('1', gocui.ModNone, t.ToUnified)
-	t.leftSide.SetKey('2', gocui.ModNone, t.ToSideBySide)
-	t.leftSide.SetKey(gocui.KeyArrowLeft, gocui.ModNone, t.scrollHorizontalLeft)
-	t.leftSide.SetKey(gocui.KeyArrowRight, gocui.ModNone, t.scrollHorizontalRight)
+func (t *diffView) newLeftSide() ui.View {
+	view := t.ui.NewViewFromPageFunc(t.viewDataLeft)
+	view.Properties().OnLoad = t.vm.load
+	view.Properties().OnMoved = t.onMovedLeft
+	view.Properties().Name = "DiffViewLeft"
+	view.Properties().HasFrame = true
+	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
+	view.Properties().OnMouseRight = t.showContextMenu
+	view.Properties().Title = "Before " + t.commitID[:6]
 
-	t.vm.load()
+	// Only need to set key on left side since left side is always current
+	view.SetKey(gocui.KeyEsc, t.Close)
+	view.SetKey(gocui.KeyCtrlC, t.Close)
+	view.SetKey(gocui.KeyCtrlQ, t.Close)
+	view.SetKey('q', t.Close)
+	view.SetKey('1', t.ToUnified)
+	view.SetKey('2', t.ToSideBySide)
+	view.SetKey(gocui.KeyArrowLeft, t.scrollHorizontalLeft)
+	view.SetKey(gocui.KeyArrowRight, t.scrollHorizontalRight)
+
+	return view
 }
 
-func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewPageData {
+func (t *diffView) newRightSide() ui.View {
+	view := t.ui.NewViewFromPageFunc(t.viewDataRight)
+	view.Properties().OnMoved = t.onMovedRight
+	view.Properties().Name = "DiffViewRight"
+	view.Properties().HasFrame = true
+	view.Properties().Title = "After " + t.commitID[:6]
+	view.Properties().OnMouseRight = t.showContextMenu
+
+	// No need to set key on right side since left side is always current
+	return view
+}
+
+func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewText {
 	diff, err := t.vm.getCommitDiffLeft(viewPort)
 	if err != nil {
-		return ui.ViewPageData{}
+		return ui.ViewText{}
 	}
 	return diff
 }
 
-func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewPageData {
+func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewText {
 	diff, err := t.vm.getCommitDiffRight(viewPort)
 	if err != nil {
-		return ui.ViewPageData{}
+		return ui.ViewText{}
 	}
 	return diff
 }
 
-func (t *diffView) Show(bounds ui.Rect) {
-	lb, rb := t.getSplitBounds(bounds)
-	t.leftSide.Show(lb)
-	t.rightSide.Show(rb)
+func (t *diffView) Show() {
+	lbf, rbf := t.getBounds()
+	t.leftSide.Show(lbf)
+	t.rightSide.Show(rbf)
+	t.SetTop()
+	t.SetCurrentView()
 }
 
 func (t *diffView) SetTop() {
-	t.rightSide.SetTop()
 	t.leftSide.SetTop()
+	t.rightSide.SetTop()
 }
 
 func (t *diffView) SetCurrentView() {
@@ -102,35 +112,36 @@ func (t *diffView) Close() {
 	t.rightSide.Close()
 }
 
-func (t *diffView) SetBounds(bounds ui.Rect) {
-	lb, rb := t.getSplitBounds(bounds)
-	t.leftSide.SetBounds(lb)
-	t.rightSide.SetBounds(rb)
-}
-
 func (t *diffView) NotifyChanged() {
 	t.leftSide.NotifyChanged()
 	t.rightSide.NotifyChanged()
 }
 
-func (t *diffView) getSplitBounds(bounds ui.Rect) (ui.Rect, ui.Rect) {
-	t.lastBounds = bounds
-	if t.isUnified {
-		return bounds, ui.Rect{W: 1, H: 1}
+func (t *diffView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
+	left := func(w, h int) ui.Rect {
+		if t.isUnified {
+			return ui.Rect{X: 0, Y: 1, W: w, H: h - 1}
+		}
+		wl := w/2 - 2
+		return ui.Rect{X: 0, Y: 1, W: wl, H: h - 1}
 	}
-	wl := bounds.W / 2
-	wr := bounds.W - wl - 1
-	lb := ui.Rect{X: bounds.X, Y: bounds.Y, W: wl, H: bounds.H}
-	rb := ui.Rect{X: bounds.X + wl + 1, Y: bounds.Y, W: wr, H: bounds.H}
-	return lb, rb
+	right := func(w, h int) ui.Rect {
+		if t.isUnified {
+			return ui.Rect{W: 1, H: 1}
+		}
+		wl := w/2 - 2
+		wr := w - wl - 3
+		return ui.Rect{X: wl + 2, Y: 1, W: wr, H: h - 1}
+	}
+	return left, right
 }
 
 func (t *diffView) onMovedLeft() {
-	t.rightSide.SetPage(t.leftSide.ViewPage())
+	t.rightSide.SyncWithView(t.leftSide)
 }
 
 func (t *diffView) onMovedRight() {
-	t.leftSide.SetPage(t.rightSide.ViewPage())
+	t.leftSide.SyncWithView(t.rightSide)
 }
 
 func (t *diffView) ToUnified() {
@@ -138,11 +149,10 @@ func (t *diffView) ToUnified() {
 		return
 	}
 	t.isUnified = true
-	t.leftSide.Properties().HideScrollbar = false
+	t.leftSide.Properties().HideVerticalScrollbar = false
 	t.leftSide.Properties().Title = "Unified diff " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
-	t.SetBounds(t.lastBounds)
-	t.NotifyChanged()
+	t.ui.ResizeAllViews()
 }
 
 func (t *diffView) ToSideBySide() {
@@ -150,12 +160,11 @@ func (t *diffView) ToSideBySide() {
 		return
 	}
 	t.isUnified = false
-	t.leftSide.Properties().HideScrollbar = true
+	t.leftSide.Properties().HideVerticalScrollbar = true
 	t.leftSide.Properties().Title = "Before " + t.commitID[:6]
 	t.rightSide.Properties().Title = "After " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
-	t.SetBounds(t.lastBounds)
-	t.NotifyChanged()
+	t.ui.ResizeAllViews()
 }
 
 func (t *diffView) scrollHorizontalLeft() {
@@ -174,6 +183,6 @@ func (t *diffView) showContextMenu(x int, y int) {
 		cm.Add(ui.MenuItem{Text: "Show Unified Diff", Key: "1", Action: func() { t.ToUnified() }})
 	}
 
-	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: func() { t.mainService.HideDiff() }})
+	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: t.Close})
 	cm.Show(x+3, y+2)
 }
