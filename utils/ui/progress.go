@@ -49,6 +49,7 @@ func (t *Progress) SetText(text string) {
 	margin := strings.Repeat("\n", 2-len(lines))
 
 	t.text = text + margin
+	t.view.NotifyChanged()
 }
 
 func (t *Progress) Close() {
