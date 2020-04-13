@@ -13,7 +13,6 @@ type mainService interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
-	NewMenu(title string) *ui.Menu
 }
 
 type RepoView struct {

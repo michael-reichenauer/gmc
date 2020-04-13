@@ -130,7 +130,7 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 }
 
 func (h *repoVM) showContextMenu(x, y int) {
-	menu := h.mainService.NewMenu("")
+	menu := h.ui.NewMenu("")
 
 	showItems := h.GetOpenBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Show Branch", SubItems: showItems})
