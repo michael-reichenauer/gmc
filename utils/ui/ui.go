@@ -51,12 +51,19 @@ func (h *UI) ShowWarningMessageBox(text string) {
 	msgBox.Show()
 }
 
-func (h *UI) NewView(text string) View {
-	return newView(h, viewDataFromText(text))
+func (h *UI) ShowProgress(text string) *Progress {
+	p := newProgress(h)
+	p.SetText(text)
+	p.show()
+	return p
 }
 
 func (h *UI) NewMenu(title string) *Menu {
 	return newMenu(h, title)
+}
+
+func (h *UI) NewView(text string) View {
+	return newView(h, viewDataFromText(text))
 }
 
 func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewText) View {

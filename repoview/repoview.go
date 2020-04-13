@@ -13,11 +13,7 @@ type mainService interface {
 	MainMenuItem() ui.MenuItem
 	OpenRepoMenuItems() []ui.MenuItem
 	RecentReposMenuItem() ui.MenuItem
-	// ShowDiff(diffGetter DiffGetter, commitID string)
-	// HideDiff()
-	// HideCommit()
 	NewMenu(title string) *ui.Menu
-	//Commit(committer Committer)
 }
 
 type RepoView struct {
@@ -25,6 +21,7 @@ type RepoView struct {
 	ui          *ui.UI
 	mainService mainService
 	vm          *repoVM
+	progress    *ui.Progress
 }
 
 func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
@@ -86,4 +83,9 @@ func (h *RepoView) setWindowTitle(path, branch string, changes int) {
 func (h *RepoView) showContextMenu() {
 	p := h.ViewPage()
 	h.vm.showContextMenu(10, p.CurrentLine-p.FirstLine)
+}
+
+func (h *RepoView) showProgress() {
+
+	h.progress = h.ui.ShowProgress("Some Progress")
 }

@@ -148,6 +148,7 @@ type view struct {
 	firstCharIndex     int
 	notifyThrottler    *semaphore.Weighted
 	maxLineWidth       int
+	isClosed           bool
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPage) ViewText) *view {
@@ -257,7 +258,7 @@ func (h *view) NotifyChanged() {
 	go func() {
 		h.ui.PostOnUIThread(func() {
 			h.notifyThrottler.Release(1)
-			if h.properties.IsEditable {
+			if h.isClosed || h.properties.IsEditable {
 				return
 			}
 			// Clear the view to make room for the new data
@@ -410,6 +411,7 @@ func (h *view) Close() {
 	h.ui.deleteView(h.horzScrlView)
 	h.horzScrlView = nil
 	h.ui.closeView(h)
+	h.isClosed = true
 }
 
 func (h *view) SetKey(key interface{}, handler func()) {

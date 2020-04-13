@@ -265,12 +265,12 @@ func (h *repoVM) ChangeBranchColor() {
 }
 
 func (h *repoVM) ToggleDetails() {
-	h.isDetails = !h.isDetails
-	if h.isDetails {
-		log.Event("details-view-show")
-	} else {
-		log.Event("details-view-hide")
-	}
+	// h.isDetails = !h.isDetails
+	// if h.isDetails {
+	// 	log.Event("details-view-show")
+	// } else {
+	// 	log.Event("details-view-hide")
+	// }
 }
 
 func (h *repoVM) showDiff() {
