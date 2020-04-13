@@ -15,7 +15,7 @@ type Committer interface {
 }
 
 func NewCommitView(ui *ui.UI, committer Committer, repoView *repoVM) *CommitView {
-	h := &CommitView{ui: ui, vm: NewCommitVM(), committer: committer}
+	h := &CommitView{ui: ui, vm: NewCommitVM(), committer: committer, repoView: repoView}
 	return h
 }
 
