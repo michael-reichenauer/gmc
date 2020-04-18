@@ -252,7 +252,6 @@ func (s *Service) BranchColor(name string) ui.Color {
 // }
 //
 func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
-
 	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
@@ -309,11 +308,8 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 	return false
 }
 
-func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Branch {
-	c := viewRepo.viewRepo.Commits[commitIndex]
-	if c.More == MoreNone {
-		return nil
-	}
+func (s *Service) GetCommitOpenBranches(commitID string, viewRepo ViewRepo) []Branch {
+	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
 	var branches []*gitrepo.Branch
 
 	if len(c.ParentIDs) > 1 {
@@ -328,13 +324,13 @@ func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Br
 			continue
 		}
 		cc := viewRepo.viewRepo.gitRepo.CommitById[ccId]
-		if cc.Branch.Name != c.Branch.name {
+		if cc.Branch.Name != c.Branch.Name {
 			branches = append(branches, cc.Branch)
 		}
 	}
 
 	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
+		if b.TipID == b.BottomID && b.BottomID == c.Id && b.ParentBranch.Name == c.Branch.Name {
 			// empty branch with no own branch commit, (branch start)
 			branches = append(branches, b)
 		}
