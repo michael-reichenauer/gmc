@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	version = "0.26"
+	version = "0.27"
 )
 
 var (
@@ -52,7 +52,7 @@ func main() {
 	if *pauseFlag {
 		// The process was started with 'pause' flag, e.g. from Goland,
 		// wait until enter is clicked, this can be used for attaching a debugger
-		fmt.Printf("Click 'enter' to proceed ...\n")
+		fmt.Printf("Attach a debugger and click 'enter' to proceed ...\n")
 		utils.ReadLine()
 	}
 
@@ -79,7 +79,6 @@ func main() {
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
 		mainWindow := program.NewMainWindow(uiHandler, configService)
-		uiHandler.OnResizeWindow = mainWindow.OnResizeWindow
 		mainWindow.Show()
 	})
 }
@@ -110,6 +109,6 @@ func logProgramInfo(configService *config.Service) {
 	log.Infof("Go version: %q", runtime.Version())
 	log.Infof("Folder path: %q", configService.FolderPath)
 	log.Infof("Working Folder: %q", utils.CurrentDir())
-	log.Infof("Git version: %q", git.GitVersion())
+	log.Infof("Git version: %q", git.Version())
 	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
 }

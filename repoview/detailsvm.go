@@ -26,7 +26,7 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(h.toViewLine(width, c.Branch) + "\n")
 	id := c.ID
-	if id == viewmodel.StatusID {
+	if id == viewmodel.UncommittedID {
 		id = " "
 	}
 	sb.WriteString(toHeader("Id:") + ui.Dark(id) + "\n")
@@ -37,7 +37,7 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 	sb.WriteString(toHeader("Branch tips:") + ui.Dark(toBranchTips(c.BranchTips)) + "\n")
 
 	color := ui.CDark
-	if c.ID == viewmodel.StatusID {
+	if c.ID == viewmodel.UncommittedID {
 		color = ui.CYellowDk
 	}
 
@@ -93,7 +93,7 @@ func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 		typeText = ui.Dark(" (multiple) >")
 	case !c.Branch.IsGitBranch:
 		typeText = ui.Dark(" ()")
-	case c.ID == viewmodel.StatusID:
+	case c.ID == viewmodel.UncommittedID:
 		typeText = ui.Dark(" (local)")
 	case c.IsLocalOnly:
 		typeText = ui.Dark(" (local)")
@@ -108,7 +108,7 @@ func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 	default:
 		typeText = ui.Dark(" (local)")
 	}
-	if c.ID == viewmodel.StatusID {
+	if c.ID == viewmodel.UncommittedID {
 		typeText = typeText + ", changes not yet committed"
 	} else if c.IsRemoteOnly {
 		typeText = typeText + ", commit not yet pulled"

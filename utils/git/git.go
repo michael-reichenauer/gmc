@@ -18,6 +18,7 @@ type Git struct {
 	fetchService  *fetchService
 	ignoreHandler *ignoreHandler
 	diffService   *diffService
+	commitService *commitService
 }
 
 func NewGit(path string) *Git {
@@ -31,6 +32,7 @@ func NewGit(path string) *Git {
 		fetchService:  newFetch(cmd),
 		ignoreHandler: newIgnoreHandler(path),
 		diffService:   newDiff(cmd, status),
+		commitService: newCommit(cmd),
 	}
 }
 func (h *Git) RepoPath() string {
@@ -65,7 +67,12 @@ func (h *Git) Checkout(name string) {
 	h.branches.checkout(name)
 }
 
-func GitVersion() string {
+func (h *Git) Commit(message string) error {
+	return h.commitService.commitAllChanges(message)
+}
+
+// GitVersion returns the git version
+func Version() string {
 	out, _ := exec.Command("git", "version").Output()
 	return strings.TrimSpace(string(out))
 }

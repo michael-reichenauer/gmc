@@ -20,7 +20,6 @@ type menuView struct {
 	moreWidth    int
 	keyWidth     int
 	marginsWidth int
-	currentView  View
 }
 
 func newMenuView(ui *UI, title string, parent *menuView) *menuView {
@@ -31,6 +30,7 @@ func newMenuView(ui *UI, title string, parent *menuView) *menuView {
 	h.View.Properties().Title = title
 	h.View.Properties().OnMouseOutside = h.onClose
 	h.View.Properties().OnMouseLeft = h.onMouseLeft
+	h.View.Properties().HideHorizontalScrollbar = true
 	return h
 }
 
@@ -40,18 +40,16 @@ func (h *menuView) addItems(items []MenuItem) {
 
 func (h *menuView) show(bounds Rect) {
 	h.bounds = h.getBounds(h.items, bounds)
-
-	h.currentView = h.ui.CurrentView()
-	h.SetKey(gocui.KeyEsc, gocui.ModNone, h.onClose)
-	h.SetKey(gocui.KeyEnter, gocui.ModNone, h.onEnter)
-	h.SetKey(gocui.KeyArrowLeft, gocui.ModNone, h.onClose)
-	h.SetKey(gocui.KeyArrowRight, gocui.ModNone, h.onSubItem)
-	h.Show(Rect{X: h.bounds.X, Y: h.bounds.Y, W: h.bounds.W, H: h.bounds.H})
+	h.SetKey(gocui.KeyEsc, h.onClose)
+	h.SetKey(gocui.KeyEnter, h.onEnter)
+	h.SetKey(gocui.KeyArrowLeft, h.onClose)
+	h.SetKey(gocui.KeyArrowRight, h.onSubItem)
+	h.Show(Bounds(Rect{X: h.bounds.X, Y: h.bounds.Y, W: h.bounds.W, H: h.bounds.H}))
 	h.SetCurrentView()
 	h.NotifyChanged()
 }
 
-func (h *menuView) viewData(viewPort ViewPage) ViewPageData {
+func (h *menuView) viewData(viewPort ViewPage) ViewText {
 	var lines []string
 	length := viewPort.FirstLine + viewPort.Height
 	if length > len(h.items) {
@@ -62,7 +60,7 @@ func (h *menuView) viewData(viewPort ViewPage) ViewPageData {
 		line := h.toItemText(viewPort.Width, h.items[i])
 		lines = append(lines, line)
 	}
-	return ViewPageData{Lines: lines, Total: len(h.items)}
+	return ViewText{Lines: lines, Total: len(h.items)}
 }
 
 func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
@@ -216,10 +214,10 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 func (h *menuView) onClose() {
 	log.Infof("On close")
 	h.Close()
-	h.ui.SetCurrentView(h.currentView)
 }
 
 func (h *menuView) closeAll() {
+	log.Infof("Close all from")
 	if h.parent == nil {
 		h.onClose()
 		return
