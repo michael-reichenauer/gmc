@@ -16,6 +16,8 @@ type branch struct {
 	isMultiBranch    bool
 	isRemote         bool
 	isCurrent        bool
+	HasLocalOnly     bool
+	HasRemoteOnly    bool
 }
 
 func (b *branch) String() string {

@@ -59,8 +59,8 @@ func (s *GitRepo) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return s.git.CommitDiff(id)
 }
 
-func (s *GitRepo) SwitchToBranch(name string) {
-	s.git.Checkout(name)
+func (s *GitRepo) SwitchToBranch(name string) error {
+	return s.git.Checkout(name)
 }
 
 func (s *GitRepo) Commit(message string) error {
@@ -241,4 +241,8 @@ func (s *GitRepo) fetchRoutine(ctx context.Context) {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
+}
+
+func (s *GitRepo) PushBranch(name string) error {
+	return s.git.PushBranch(name)
 }

@@ -142,21 +142,19 @@ func (r *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
 	var branch = r.BranchByName(c.Branch.Name)
 
 	return &commit{
-		ID:           c.Id,
-		SID:          c.Sid,
-		Subject:      c.Subject,
-		Message:      c.Message,
-		Author:       c.Author,
-		AuthorTime:   c.AuthorTime,
-		ParentIDs:    c.ParentIDs,
-		ChildIDs:     c.ChildIDs,
-		IsCurrent:    c.IsCurrent,
-		Branch:       branch,
-		Index:        index,
-		graph:        make([]GraphColumn, len(r.Branches)),
-		BranchTips:   c.BranchTipNames,
-		IsLocalOnly:  false,
-		IsRemoteOnly: false,
+		ID:         c.Id,
+		SID:        c.Sid,
+		Subject:    c.Subject,
+		Message:    c.Message,
+		Author:     c.Author,
+		AuthorTime: c.AuthorTime,
+		ParentIDs:  c.ParentIDs,
+		ChildIDs:   c.ChildIDs,
+		IsCurrent:  c.IsCurrent,
+		Branch:     branch,
+		Index:      index,
+		graph:      make([]GraphColumn, len(r.Branches)),
+		BranchTips: c.BranchTipNames,
 	}
 }
 

@@ -197,8 +197,15 @@ func (h *repoVM) GetCommitOpenBranches() []viewmodel.Branch {
 	return h.viewModelService.GetCommitOpenBranches(c.ID, h.repo)
 }
 
+func (h *repoVM) CurrentNotShownBranch() (viewmodel.Branch, bool) {
+	current, ok := h.viewModelService.CurrentNotShownBranch(h.repo)
+
+	return current, ok
+}
+
 func (h *repoVM) CurrentBranch() (viewmodel.Branch, bool) {
-	return h.viewModelService.CurrentBranch(h.repo)
+	current, ok := h.viewModelService.CurrentBranch(h.repo)
+	return current, ok
 }
 
 func (h *repoVM) GetActiveBranches() []viewmodel.Branch {
@@ -222,5 +229,33 @@ func (h *repoVM) HideBranch(name string) {
 }
 
 func (h *repoVM) SwitchToBranch(name string) {
-	h.viewModelService.SwitchToBranch(name)
+	h.showProgress(fmt.Sprintf("Switch/checkout:\n%s", name))
+	h.startCommand(
+		func() error { return h.viewModelService.SwitchToBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
+}
+
+func (h *repoVM) PushBranch(name string) {
+	h.showProgress(fmt.Sprintf("Push:\n%s", name))
+	h.startCommand(
+		func() error { return h.viewModelService.PushBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
+}
+
+func (h *repoVM) startCommand(doFunc func() error, errorFunc func(err error) string) {
+	go func() {
+		err := doFunc()
+		if err != nil {
+			h.ui.PostOnUIThread(func() {
+				h.ui.ShowErrorMessageBox(errorFunc(err))
+				h.closeProgress()
+			})
+		}
+	}()
+}
+
+func (h *repoVM) closeProgress() {
+	if h.progress != nil {
+		h.progress.Close()
+	}
 }

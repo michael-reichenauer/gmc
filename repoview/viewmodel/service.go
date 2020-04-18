@@ -79,11 +79,11 @@ func (s *Service) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return s.gitRepo.GetCommitDiff(id)
 }
 
-func (s *Service) SwitchToBranch(name string) {
+func (s *Service) SwitchToBranch(name string) error {
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}
-	s.gitRepo.SwitchToBranch(name)
+	return s.gitRepo.SwitchToBranch(name)
 }
 
 func (s *Service) Commit(Commit string) error {
@@ -251,13 +251,28 @@ func (s *Service) BranchColor(name string) ui.Color {
 // 	return toCommit(s.currentViewModel.Commits[index]), nil
 // }
 //
-func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
+func (s *Service) CurrentNotShownBranch(viewRepo ViewRepo) (Branch, bool) {
 	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
 	}
 	if containsBranch(viewRepo.viewRepo.Branches, current.Name) {
 		return Branch{}, false
+	}
+
+	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
+}
+
+func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
+	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
+	if !ok {
+		return Branch{}, false
+	}
+
+	for _, b := range viewRepo.viewRepo.Branches {
+		if current.Name == b.name {
+			return toBranch(b), true
+		}
 	}
 
 	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
@@ -520,8 +535,10 @@ func (s *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
 			break
 		}
 		c.IsRemoteOnly = true
+		b.HasRemoteOnly = true
 	}
 }
+
 func (s *Service) setLocalOnlyCommits(b *branch) {
 	count := 0
 	for c := b.tip; c != nil && c.Branch == b && count < 50; c = c.Parent {
@@ -530,6 +547,7 @@ func (s *Service) setLocalOnlyCommits(b *branch) {
 		}
 		count++
 		c.IsLocalOnly = true
+		b.HasLocalOnly = true
 	}
 }
 
@@ -546,6 +564,10 @@ func (s *Service) tryGetRealLocalTip(localBranch *branch) *commit {
 
 func (s *Service) isSynced(b *branch) bool {
 	return b.isRemote && b.localName == "" || !b.isRemote && b.remoteName == ""
+}
+
+func (s *Service) PushBranch(name string) error {
+	return s.gitRepo.PushBranch(name)
 }
 
 //

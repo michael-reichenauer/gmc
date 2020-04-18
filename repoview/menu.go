@@ -32,9 +32,15 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: func() {
 		t.vm.commit()
 	}})
-	switchItems := t.GetSwitchBranchMenuItems()
 
+	pushItems := t.getPushBranchMenuItems()
+	if pushItems != nil {
+		menu.Add(ui.MenuItem{Text: "Push", SubItems: pushItems})
+	}
+
+	switchItems := t.GetSwitchBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
+
 	menu.Add(t.vm.mainService.RecentReposMenuItem())
 	menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
@@ -43,7 +49,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 func (t *menuService) getOpenBranchMenuItems() []ui.MenuItem {
 	branches := t.vm.GetCommitOpenBranches()
 
-	current, ok := t.vm.CurrentBranch()
+	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
 		if nil == funk.Find(branches, func(b viewmodel.Branch) bool {
 			return current.DisplayName == b.DisplayName
@@ -89,7 +95,10 @@ func (t *menuService) GetCloseBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(true)
 	for _, b := range commitBranches {
-		items = append(items, t.toCloseBranchMenuItem(b))
+		closeItem := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
+			t.vm.HideBranch(b.Name)
+		}}
+		items = append(items, closeItem)
 	}
 	return items
 }
@@ -98,7 +107,10 @@ func (t *menuService) GetSwitchBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
-		items = append(items, t.toSwitchBranchMenuItem(b))
+		switchItem := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
+			t.vm.HideBranch(b.Name)
+		}}
+		items = append(items, switchItem)
 	}
 	return items
 }
@@ -109,22 +121,22 @@ func (t *menuService) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem 
 	}}
 }
 
-func (t *menuService) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: t.branchItemText(branch), Action: func() {
-		t.vm.HideBranch(branch.Name)
-	}}
-}
-
-func (t *menuService) toSwitchBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: t.branchItemText(branch), Action: func() {
-		t.vm.SwitchToBranch(branch.Name)
-	}}
-}
-
 func (t *menuService) branchItemText(branch viewmodel.Branch) string {
 	if branch.IsCurrent {
 		return "●" + branch.DisplayName
 	} else {
 		return " " + branch.DisplayName
 	}
+}
+
+func (t *menuService) getPushBranchMenuItems() []ui.MenuItem {
+	var items []ui.MenuItem
+	current, ok := t.vm.CurrentBranch()
+	if ok && current.HasLocalOnly {
+		pushItem := ui.MenuItem{Text: t.branchItemText(current), Action: func() {
+			t.vm.PushBranch(current.Name)
+		}}
+		items = append(items, pushItem)
+	}
+	return items
 }

@@ -178,8 +178,8 @@ func (h *gitCmd) runGitCommand(cmd command) command {
 			errorText = string(ee.Stderr)
 			errorText = strings.ReplaceAll(errorText, "\t", "   ")
 		}
-		msg := fmt.Sprintf("Failed: git %s (%v), %v\n%v", strings.Join(cmd.Args, " "), time.Since(t), err, errorText)
-		log.Warnf(msg)
+		msg := fmt.Sprintf("error: git %s\n%v\n%v", strings.Join(cmd.Args, " "), err, errorText)
+		log.Warnf("%s (%v)", msg, time.Since(t))
 		cmd.Err = msg
 		return cmd
 	}
