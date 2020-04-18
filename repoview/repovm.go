@@ -229,14 +229,14 @@ func (h *repoVM) HideBranch(name string) {
 }
 
 func (h *repoVM) SwitchToBranch(name string) {
-	h.showProgress(fmt.Sprintf("Switch/checkout:\n%s", name))
+	h.showProgress(fmt.Sprintf("Switch/checkout\n%s", name))
 	h.startCommand(
 		func() error { return h.viewModelService.SwitchToBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
 func (h *repoVM) PushBranch(name string) {
-	h.showProgress(fmt.Sprintf("Push:\n%s", name))
+	h.showProgress(fmt.Sprintf("Pushing Branch\n%s", name))
 	h.startCommand(
 		func() error { return h.viewModelService.PushBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
