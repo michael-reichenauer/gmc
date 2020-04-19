@@ -67,6 +67,9 @@ func (r *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	}
 	allChanges := gRepo.Status.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
+	if gRepo.Status.Conflicted > 0 {
+		statusText = fmt.Sprintf("CONFLICTS: %d, %s", gRepo.Status.Conflicted, statusText)
+	}
 	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
 		statusText = statusText + ", " + gRepo.Status.MergeMessage
 	}
