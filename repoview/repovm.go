@@ -214,16 +214,23 @@ func (h *repoVM) HideBranch(name string) {
 
 func (h *repoVM) SwitchToBranch(name string) {
 	h.startCommand(
-		fmt.Sprintf("Switch/checkout\n%s", name),
+		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error { return h.viewModelService.SwitchToBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
 func (h *repoVM) PushBranch(name string) {
 	h.startCommand(
-		fmt.Sprintf("Pushing Branch\n%s", name),
+		fmt.Sprintf("Pushing Branch:\n%s", name),
 		func() error { return h.viewModelService.PushBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
+}
+
+func (h *repoVM) MergeFromBranch(name string) {
+	h.startCommand(
+		fmt.Sprintf("Merging to Branch:\n%s", name),
+		func() error { return h.viewModelService.MergeBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) })
 }
 
 func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc func(err error) string) {

@@ -244,3 +244,7 @@ func (s *GitRepo) fetchRoutine(ctx context.Context) {
 func (s *GitRepo) PushBranch(name string) error {
 	return s.git.PushBranch(name)
 }
+
+func (s *GitRepo) MergeBranch(name string) error {
+	return s.git.MergeBranch(name)
+}

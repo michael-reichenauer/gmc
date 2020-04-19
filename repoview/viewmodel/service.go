@@ -591,6 +591,13 @@ func (s *Service) PushBranch(name string) error {
 	return s.gitRepo.PushBranch(name)
 }
 
+func (s *Service) MergeBranch(name string) error {
+	if strings.HasPrefix(name, "origin/") {
+		name = name[7:]
+	}
+	return s.gitRepo.MergeBranch(name)
+}
+
 //
 // func (s *Service) ChangeBranchColor(index int) {
 // 	log.Event("vms-branches-change-color")

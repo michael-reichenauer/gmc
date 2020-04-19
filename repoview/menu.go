@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
@@ -37,7 +38,8 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	}
 
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: t.getSwitchBranchMenuItems()})
-	menu.Add(ui.MenuItem{Text: "Merge", SubItems: t.getMergeMenuItems()})
+	mergeItems, mergeTitle := t.getMergeMenuItems()
+	menu.Add(ui.MenuItem{Text: "Merge", Title: mergeTitle, SubItems: mergeItems})
 
 	menu.Add(t.vm.mainService.RecentReposMenuItem())
 	menu.Add(t.vm.mainService.MainMenuItem())
@@ -141,15 +143,22 @@ func (t *menuService) getPushBranchMenuItems() []ui.MenuItem {
 	return items
 }
 
-func (t *menuService) getMergeMenuItems() []ui.MenuItem {
+func (t *menuService) getMergeMenuItems() ([]ui.MenuItem, string) {
+	current, ok := t.vm.CurrentBranch()
+	if !ok {
+		return nil, ""
+	}
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
 		name := b.Name // closure save
-		switchItem := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.SwitchToBranch(name)
+		if b.DisplayName == current.DisplayName {
+			continue
+		}
+		item := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
+			t.vm.MergeFromBranch(name)
 		}}
-		items = append(items, switchItem)
+		items = append(items, item)
 	}
-	return items
+	return items, fmt.Sprintf("Merge to: %s", current.DisplayName)
 }
