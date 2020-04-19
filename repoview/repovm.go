@@ -73,7 +73,7 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 		h.ui.PostOnUIThread(func() {
 			if rc.IsStarting {
 				log.Warnf("Show progress ...")
-				progress = h.ui.ShowProgress("Loading repo ...")
+				progress = h.ui.ShowProgress(fmt.Sprintf("Loading repo:\n%s", h.workingFolder))
 				return
 			}
 
