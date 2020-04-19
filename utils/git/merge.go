@@ -11,7 +11,7 @@ func newMerge(cmd GitCommander) *mergeService {
 
 func (h *mergeService) mergeBranch(name string) error {
 	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
-	_, err := h.cmd.Git("merge", "--no-ff", "-no-commit", "--stat", name)
+	_, err := h.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
 	if err != nil {
 		return err
 	}
