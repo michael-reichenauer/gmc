@@ -149,7 +149,7 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 	subject := utils.Text(c.Subject, length)
 	if c.ID == viewmodel.UncommittedID {
 		if strings.HasPrefix(c.Message, "CONFLICTS:") {
-			sb.WriteString(ui.RedDk(subject))
+			sb.WriteString(ui.Red(subject))
 			return
 		}
 		sb.WriteString(ui.YellowDk(subject))
