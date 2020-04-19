@@ -108,7 +108,7 @@ func (t *menuService) GetSwitchBranchMenuItems() []ui.MenuItem {
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
 		switchItem := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.HideBranch(b.Name)
+			t.vm.SwitchToBranch(b.Name)
 		}}
 		items = append(items, switchItem)
 	}
