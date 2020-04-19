@@ -89,6 +89,7 @@ type ViewProperties struct {
 	OnMoved        func()
 	Name           string
 	IsEditable     bool
+	IsWrap         bool
 }
 
 type ViewPage struct {
@@ -216,6 +217,7 @@ func (h *view) Show(bf BoundFunc) {
 		h.SetKey(gocui.KeyArrowDown, h.onKeyArrowDown)
 		h.SetKey(gocui.KeySpace, h.onKeyPageDown)
 	}
+	h.guiView.Wrap = h.properties.IsWrap
 
 	h.SetKey(gocui.MouseMiddle, h.toggleScrollDirection)
 	h.SetKey(gocui.MouseWheelDown, h.onMouseWheelRollDown)

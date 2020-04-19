@@ -19,6 +19,7 @@ type Git struct {
 	ignoreHandler *ignoreHandler
 	diffService   *diffService
 	commitService *commitService
+	pushService   *pushService
 }
 
 func NewGit(path string) *Git {
@@ -33,6 +34,7 @@ func NewGit(path string) *Git {
 		ignoreHandler: newIgnoreHandler(path),
 		diffService:   newDiff(cmd, status),
 		commitService: newCommit(cmd),
+		pushService:   newPush(cmd),
 	}
 }
 func (h *Git) RepoPath() string {
@@ -63,12 +65,16 @@ func (h *Git) IsIgnored(path string) bool {
 	return h.ignoreHandler.isIgnored(path)
 }
 
-func (h *Git) Checkout(name string) {
-	h.branches.checkout(name)
+func (h *Git) Checkout(name string) error {
+	return h.branches.checkout(name)
 }
 
 func (h *Git) Commit(message string) error {
 	return h.commitService.commitAllChanges(message)
+}
+
+func (h *Git) PushBranch(name string) error {
+	return h.pushService.pushBranch(name)
 }
 
 // GitVersion returns the git version

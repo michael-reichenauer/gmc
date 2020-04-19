@@ -59,6 +59,7 @@ func (h *MessageBox) newTextView() View {
 	view.SetKey(gocui.KeyEsc, h.Close)
 	view.SetKey(gocui.KeyEnter, h.Close)
 	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().IsWrap = true
 	return view
 }
 
@@ -75,16 +76,16 @@ func (h *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
 	if width < 30 {
 		width = 30
 	}
-	if width > 70 {
-		width = 70
+	if width > 100 {
+		width = 100
 	}
 
 	height := len(lines) + 3
 	if height < 4 {
 		height = 4
 	}
-	if height > 20 {
-		height = 20
+	if height > 40 {
+		height = 40
 	}
 
 	box := CenterBounds(width, height, width, height)

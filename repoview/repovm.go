@@ -8,7 +8,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
-	"github.com/thoas/go-funk"
 )
 
 type repoPage struct {
@@ -22,7 +21,6 @@ type repoPage struct {
 type repoVM struct {
 	ui               *ui.UI
 	repoViewer       *RepoView
-	progress         *ui.Progress
 	mainService      mainService
 	viewModelService *viewmodel.Service
 	repoLayout       *repoLayout
@@ -69,27 +67,28 @@ func (h *repoVM) close() {
 
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
-
-	for vr := range h.viewModelService.ViewRepos {
+	var progress *ui.Progress
+	for rc := range h.viewModelService.RepoChanges {
 		log.Infof("Detected model change")
 		h.ui.PostOnUIThread(func() {
-			if h.progress != nil {
-				h.progress.Close()
-				h.progress = nil
+			if rc.IsStarting {
+				log.Infof("Show progress ...")
+				progress = h.ui.ShowProgress(fmt.Sprintf("Loading repo:\n%s", h.workingFolder))
+				return
 			}
-			h.repo = vr
+
+			if progress != nil {
+				log.Infof("Close progress")
+				progress.Close()
+				progress = nil
+			}
+			h.repo = rc.ViewRepo
 			h.repoViewer.NotifyChanged()
 		})
 	}
 }
 
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
-	//t := timer.Start()
-	//defer log.Infof("GetRepoPage %d %d %v", viewPage.FirstLine, viewPage.CurrentLine, t)
-	// if h.isLoading {
-	// 	return repoPage{repoPath: h.repo.RepoPath,lines:    []string{""},	total:    1,}, nil
-	// }
-
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
 	h.currentIndex = viewPage.CurrentLine
@@ -104,11 +103,6 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
-	// var currentLineCommit viewmodel.Commit
-	// if len(commits) > 0 {
-	// 	currentLineCommit = commits[viewPage.CurrentLine-viewPage.FirstLine]
-	// }
-
 	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "")
 }
 
@@ -127,126 +121,8 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 	return firstIndex, h.repo.Commits[firstIndex : firstIndex+count]
 }
 
-func (h *repoVM) showContextMenu(x, y int) {
-	menu := h.ui.NewMenu("")
-
-	showItems := h.GetOpenBranchMenuItems()
-	menu.Add(ui.MenuItem{Text: "Show Branch", SubItems: showItems})
-
-	hideItems := h.GetCloseBranchMenuItems()
-	menu.Add(ui.MenuItem{Text: "Hide Branch", SubItems: hideItems})
-
-	menu.Add(ui.SeparatorMenuItem)
-	c := h.repo.Commits[h.firstIndex+y]
-	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
-		h.ShowDiff(c.ID)
-	}})
-	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: func() {
-		h.commit()
-	}})
-	switchItems := h.GetSwitchBranchMenuItems()
-	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
-	menu.Add(h.mainService.RecentReposMenuItem())
-	menu.Add(h.mainService.MainMenuItem())
-	//
-	menu.Show(x+1, y+2)
-}
-
-func (h *repoVM) GetOpenBranchMenuItems() []ui.MenuItem {
-	branches := h.viewModelService.GetCommitOpenBranches(h.currentIndex, h.repo)
-
-	current, ok := h.viewModelService.CurrentBranch(h.repo)
-	if ok {
-		if nil == funk.Find(branches, func(b viewmodel.Branch) bool {
-			return current.DisplayName == b.DisplayName
-		}) {
-			branches = append(branches, current)
-		}
-	}
-
-	var items []ui.MenuItem
-	for _, b := range branches {
-		items = append(items, h.toOpenBranchMenuItem(b))
-	}
-
-	if len(items) > 0 {
-		items = append(items, ui.SeparatorMenuItem)
-	}
-
-	var activeSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetActiveBranches(h.repo) {
-		activeSubItems = append(activeSubItems, h.toOpenBranchMenuItem(b))
-	}
-	items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
-
-	var allGitSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetAllBranches(h.repo) {
-		if b.IsGitBranch {
-			allGitSubItems = append(allGitSubItems, h.toOpenBranchMenuItem(b))
-		}
-	}
-	items = append(items, ui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
-
-	var allSubItems []ui.MenuItem
-	for _, b := range h.viewModelService.GetAllBranches(h.repo) {
-		allSubItems = append(allSubItems, h.toOpenBranchMenuItem(b))
-	}
-	items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
-
-	return items
-
-}
-
-func (h *repoVM) GetCloseBranchMenuItems() []ui.MenuItem {
-	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetShownBranches(h.repo, true)
-	for _, b := range commitBranches {
-		items = append(items, h.toCloseBranchMenuItem(b))
-	}
-	return items
-}
-
-func (h *repoVM) GetSwitchBranchMenuItems() []ui.MenuItem {
-	var items []ui.MenuItem
-	commitBranches := h.viewModelService.GetShownBranches(h.repo, false)
-	for _, b := range commitBranches {
-		items = append(items, h.toSwitchBranchMenuItem(b))
-	}
-	return items
-}
-
-func (h *repoVM) toOpenBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
-		h.viewModelService.ShowBranch(branch.Name, h.repo)
-	}}
-}
-
-func (h *repoVM) toCloseBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
-		h.viewModelService.HideBranch(h.repo, branch.Name)
-	}}
-}
-
-func (h *repoVM) toSwitchBranchMenuItem(branch viewmodel.Branch) ui.MenuItem {
-	return ui.MenuItem{Text: h.branchItemText(branch), Action: func() {
-		h.viewModelService.SwitchToBranch(branch.Name)
-	}}
-}
-
-func (h *repoVM) branchItemText(branch viewmodel.Branch) string {
-	if branch.IsCurrent {
-		return "●" + branch.DisplayName
-	} else {
-		return " " + branch.DisplayName
-	}
-}
-
 func (h *repoVM) refresh() {
 	log.Event("repoview-refresh")
-	h.ui.PostOnUIThread(func() {
-		h.progress = h.ui.ShowProgress(fmt.Sprintf("Loading repository:\n%s", h.workingFolder))
-	})
-
 	h.viewModelService.TriggerRefreshModel()
 }
 
@@ -275,11 +151,6 @@ func (h *repoVM) ToggleDetails() {
 	// }
 }
 
-func (h *repoVM) showDiff() {
-	c := h.repo.Commits[h.currentIndex]
-	h.ShowDiff(c.ID)
-}
-
 func (h *repoVM) saveTotalDebugState() {
 	//	h.vm.RefreshTrace(h.ViewPage())
 }
@@ -289,16 +160,81 @@ func (h *repoVM) commit() {
 	commitView.Show()
 }
 
-func (h *repoVM) ShowDiff(commitID string) {
+func (h *repoVM) showCommitDiff(commitID string) {
 	diffView := NewDiffView(h.ui, h.viewModelService, commitID)
 	diffView.Show()
 	diffView.SetTop()
 	diffView.SetCurrentView()
 }
 
-func (h *repoVM) showProgress(text string) {
-	if h.progress == nil {
-		h.progress = h.ui.ShowProgress(text)
+func (h *repoVM) showSelectedCommitDiff() {
+	c := h.repo.Commits[h.currentIndex]
+	h.showCommitDiff(c.ID)
+}
+
+func (h *repoVM) GetCommitOpenBranches() []viewmodel.Branch {
+	c := h.repo.Commits[h.currentIndex]
+	if c.More == viewmodel.MoreNone {
+		return nil
 	}
-	h.progress.SetText(text)
+
+	return h.viewModelService.GetCommitOpenBranches(c.ID, h.repo)
+}
+
+func (h *repoVM) CurrentNotShownBranch() (viewmodel.Branch, bool) {
+	current, ok := h.viewModelService.CurrentNotShownBranch(h.repo)
+
+	return current, ok
+}
+
+func (h *repoVM) CurrentBranch() (viewmodel.Branch, bool) {
+	current, ok := h.viewModelService.CurrentBranch(h.repo)
+	return current, ok
+}
+
+func (h *repoVM) GetActiveBranches() []viewmodel.Branch {
+	return h.viewModelService.GetActiveBranches(h.repo)
+}
+
+func (h *repoVM) GetAllBranches() []viewmodel.Branch {
+	return h.viewModelService.GetAllBranches(h.repo)
+}
+
+func (h *repoVM) GetShownBranches(skipMaster bool) []viewmodel.Branch {
+	return h.viewModelService.GetShownBranches(h.repo, skipMaster)
+}
+
+func (h *repoVM) ShowBranch(name string) {
+	h.viewModelService.ShowBranch(name, h.repo)
+}
+
+func (h *repoVM) HideBranch(name string) {
+	h.viewModelService.HideBranch(h.repo, name)
+}
+
+func (h *repoVM) SwitchToBranch(name string) {
+	h.startCommand(
+		fmt.Sprintf("Switch/checkout\n%s", name),
+		func() error { return h.viewModelService.SwitchToBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
+}
+
+func (h *repoVM) PushBranch(name string) {
+	h.startCommand(
+		fmt.Sprintf("Pushing Branch\n%s", name),
+		func() error { return h.viewModelService.PushBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
+}
+
+func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc func(err error) string) {
+	progress := h.ui.ShowProgress(prsText)
+	go func() {
+		err := doFunc()
+		h.ui.PostOnUIThread(func() {
+			if err != nil {
+				h.ui.ShowErrorMessageBox(errorFunc(err))
+			}
+			progress.Close()
+		})
+	}()
 }

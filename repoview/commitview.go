@@ -118,7 +118,6 @@ func (h *CommitView) onOk() {
 
 	log.Event("commit-ok")
 	h.Close()
-	h.repoView.showProgress("Updating view after commit ...")
 }
 
 func (h *CommitView) showDiff() {

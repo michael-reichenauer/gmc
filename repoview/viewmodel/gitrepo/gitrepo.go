@@ -13,8 +13,9 @@ const (
 )
 
 type RepoChange struct {
-	Repo  Repo
-	Error error
+	IsStarting bool
+	Repo       Repo
+	Error      error
 }
 
 type GitRepo struct {
@@ -59,8 +60,8 @@ func (s *GitRepo) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return s.git.CommitDiff(id)
 }
 
-func (s *GitRepo) SwitchToBranch(name string) {
-	s.git.Checkout(name)
+func (s *GitRepo) SwitchToBranch(name string) error {
+	return s.git.Checkout(name)
 }
 
 func (s *GitRepo) Commit(message string) error {
@@ -116,6 +117,12 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 				// First change event, ensure we do wait a while before acting on the event
 				// This is to avoid that multiple change events in a short interval is batched
 				wait = time.After(batchInterval)
+				log.Infof("Got repo start change ...")
+				select {
+				case s.RepoChanges <- RepoChange{IsStarting: true}:
+				case <-ctx.Done():
+					return
+				}
 			}
 			if change != repoChange {
 				// Do not downgrade from repo to status event, status is included in repo change
@@ -136,6 +143,11 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 		case <-s.manualRefresh:
 			// A refresh repo request, trigger repo change immediately
 			log.Infof("refresh repo request")
+			select {
+			case s.RepoChanges <- RepoChange{IsStarting: true}:
+			case <-ctx.Done():
+				return
+			}
 			wait = time.After(batchInterval)
 			change = noChange
 			s.triggerRepo()
@@ -175,20 +187,6 @@ func (s *GitRepo) internalPostRepo(repo Repo) {
 	default:
 		log.Infof("repo channel done")
 	}
-}
-
-func (s *GitRepo) TriggerRefreshRepo() {
-	log.Infof("TriggerRefreshRepo")
-	go func() {
-		repo, err := s.getFreshRepo()
-		if err != nil {
-			return
-		}
-		s.internalPostRepo(repo)
-		if err := s.git.Fetch(); err != nil {
-			log.Warnf("Failed to fetch %v", err)
-		}
-	}()
 }
 
 func (s *GitRepo) getFreshStatus(repo Repo) (Repo, error) {
@@ -241,4 +239,8 @@ func (s *GitRepo) fetchRoutine(ctx context.Context) {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
+}
+
+func (s *GitRepo) PushBranch(name string) error {
+	return s.git.PushBranch(name)
 }
