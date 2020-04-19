@@ -21,7 +21,6 @@ type repoPage struct {
 type repoVM struct {
 	ui               *ui.UI
 	repoViewer       *RepoView
-	progress         *ui.Progress
 	mainService      mainService
 	viewModelService *viewmodel.Service
 	repoLayout       *repoLayout
@@ -68,27 +67,28 @@ func (h *repoVM) close() {
 
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
-
-	for vr := range h.viewModelService.ViewRepos {
+	var progress *ui.Progress
+	for rc := range h.viewModelService.RepoChanges {
 		log.Infof("Detected model change")
 		h.ui.PostOnUIThread(func() {
-			if h.progress != nil {
-				h.progress.Close()
-				h.progress = nil
+			if rc.IsStarting {
+				log.Warnf("Show progress ...")
+				progress = h.ui.ShowProgress("Loading repo ...")
+				return
 			}
-			h.repo = vr
+
+			if progress != nil {
+				log.Warnf("Close progress")
+				progress.Close()
+				progress = nil
+			}
+			h.repo = rc.ViewRepo
 			h.repoViewer.NotifyChanged()
 		})
 	}
 }
 
 func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
-	//t := timer.Start()
-	//defer log.Infof("GetRepoPage %d %d %v", viewPage.FirstLine, viewPage.CurrentLine, t)
-	// if h.isLoading {
-	// 	return repoPage{repoPath: h.repo.RepoPath,lines:    []string{""},	total:    1,}, nil
-	// }
-
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
 	h.currentIndex = viewPage.CurrentLine
@@ -103,11 +103,6 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
-	// var currentLineCommit viewmodel.Commit
-	// if len(commits) > 0 {
-	// 	currentLineCommit = commits[viewPage.CurrentLine-viewPage.FirstLine]
-	// }
-
 	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "")
 }
 
@@ -128,10 +123,6 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 
 func (h *repoVM) refresh() {
 	log.Event("repoview-refresh")
-	h.ui.PostOnUIThread(func() {
-		h.progress = h.ui.ShowProgress(fmt.Sprintf("Loading repository:\n%s", h.workingFolder))
-	})
-
 	h.viewModelService.TriggerRefreshModel()
 }
 
@@ -181,13 +172,6 @@ func (h *repoVM) showSelectedCommitDiff() {
 	h.showCommitDiff(c.ID)
 }
 
-func (h *repoVM) showProgress(text string) {
-	if h.progress == nil {
-		h.progress = h.ui.ShowProgress(text)
-	}
-	h.progress.SetText(text)
-}
-
 func (h *repoVM) GetCommitOpenBranches() []viewmodel.Branch {
 	c := h.repo.Commits[h.currentIndex]
 	if c.More == viewmodel.MoreNone {
@@ -229,33 +213,28 @@ func (h *repoVM) HideBranch(name string) {
 }
 
 func (h *repoVM) SwitchToBranch(name string) {
-	h.showProgress(fmt.Sprintf("Switch/checkout\n%s", name))
 	h.startCommand(
+		fmt.Sprintf("Switch/checkout\n%s", name),
 		func() error { return h.viewModelService.SwitchToBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
 func (h *repoVM) PushBranch(name string) {
-	h.showProgress(fmt.Sprintf("Pushing Branch\n%s", name))
 	h.startCommand(
+		fmt.Sprintf("Pushing Branch\n%s", name),
 		func() error { return h.viewModelService.PushBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
 }
 
-func (h *repoVM) startCommand(doFunc func() error, errorFunc func(err error) string) {
+func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc func(err error) string) {
+	progress := h.ui.ShowProgress(prsText)
 	go func() {
 		err := doFunc()
-		if err != nil {
-			h.ui.PostOnUIThread(func() {
+		h.ui.PostOnUIThread(func() {
+			if err != nil {
 				h.ui.ShowErrorMessageBox(errorFunc(err))
-				h.closeProgress()
-			})
-		}
+			}
+			progress.Close()
+		})
 	}()
-}
-
-func (h *repoVM) closeProgress() {
-	if h.progress != nil {
-		h.progress.Close()
-	}
 }

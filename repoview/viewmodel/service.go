@@ -39,8 +39,13 @@ type Status struct {
 	GraphWidth int
 }
 
+type RepoChange struct {
+	IsStarting bool
+	ViewRepo   ViewRepo
+}
+
 type Service struct {
-	ViewRepos chan ViewRepo
+	RepoChanges chan RepoChange
 
 	gitRepo       *gitrepo.GitRepo
 	configService *config.Service
@@ -53,7 +58,7 @@ type Service struct {
 
 func NewService(configService *config.Service, workingFolder string) *Service {
 	return &Service{
-		ViewRepos:     make(chan ViewRepo),
+		RepoChanges:   make(chan RepoChange),
 		showRequests:  make(chan []string),
 		branchesGraph: newBranchesGraph(),
 		gitRepo:       gitrepo.NewGitRepo(workingFolder),
@@ -72,7 +77,7 @@ func (s *Service) StartMonitor(ctx context.Context) {
 
 func (s *Service) TriggerRefreshModel() {
 	log.Event("vms-refresh")
-	s.gitRepo.TriggerRefreshRepo()
+	s.gitRepo.TriggerManualRefresh()
 }
 
 func (s *Service) GetCommitDiff(id string) (git.CommitDiff, error) {
@@ -112,6 +117,16 @@ func (s *Service) monitorViewModelRoutine(ctx context.Context) {
 			if !ok {
 				return
 			}
+			if change.IsStarting {
+				log.Infof("Got repo start change ...")
+				select {
+				case s.RepoChanges <- RepoChange{IsStarting: true}:
+				case <-ctx.Done():
+					return
+				}
+				break
+			}
+
 			log.Infof("Got repo change")
 			log.Event("vms-changed-repo")
 			if change.Error != nil {
@@ -121,11 +136,12 @@ func (s *Service) monitorViewModelRoutine(ctx context.Context) {
 			repo = change.Repo
 			s.triggerFreshViewRepo(ctx, repo, branchNames)
 		case names := <-s.showRequests:
+			log.Infof("Manual start change")
 			if names == nil {
 				// A manual refresh, trigger new repo
 				log.Infof("Manual refresh")
 				s.gitRepo.TriggerManualRefresh()
-				continue
+				break
 			}
 			log.Infof("Refresh of %v", names)
 			branchNames = names
@@ -140,14 +156,19 @@ func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, b
 	log.Infof("triggerFreshViewRepo")
 	go func() {
 		vRepo := s.getViewModel(repo, branchNames)
+		repoChange := RepoChange{ViewRepo: newViewRepo(vRepo)}
 		select {
-		case s.ViewRepos <- newViewRepo(vRepo):
-			s.configService.SetRepo(s.gitRepo.RepoPath(), func(r *config.Repo) {
-				r.ShownBranches = branchNames
-			})
+		case s.RepoChanges <- repoChange:
+			s.storeShownBranchesInConfig(branchNames)
 		case <-ctx.Done():
 		}
 	}()
+}
+
+func (s *Service) storeShownBranchesInConfig(branchNames []string) {
+	s.configService.SetRepo(s.gitRepo.RepoPath(), func(r *config.Repo) {
+		r.ShownBranches = branchNames
+	})
 }
 
 func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {

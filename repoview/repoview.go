@@ -90,7 +90,7 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 func (h *RepoView) onLoad() {
 	h.vm.load()
 	log.Infof("Load trigger refresh")
-	h.vm.refresh()
+	h.ui.PostOnUIThread(func() { h.vm.refresh() })
 }
 
 func (h *RepoView) setWindowTitle(path, branch string, changes int) {
