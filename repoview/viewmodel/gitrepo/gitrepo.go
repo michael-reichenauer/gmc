@@ -117,7 +117,7 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 				// First change event, ensure we do wait a while before acting on the event
 				// This is to avoid that multiple change events in a short interval is batched
 				wait = time.After(batchInterval)
-				log.Warnf("Got repo start change ...")
+				log.Infof("Got repo start change ...")
 				select {
 				case s.RepoChanges <- RepoChange{IsStarting: true}:
 				case <-ctx.Done():
@@ -143,7 +143,6 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 		case <-s.manualRefresh:
 			// A refresh repo request, trigger repo change immediately
 			log.Infof("refresh repo request")
-			log.Warnf("Got repo start change ...")
 			select {
 			case s.RepoChanges <- RepoChange{IsStarting: true}:
 			case <-ctx.Done():
