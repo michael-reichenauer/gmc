@@ -67,11 +67,11 @@ func (r *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	}
 	allChanges := gRepo.Status.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
+	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
+		statusText = fmt.Sprintf("MERGING: %s, %s", gRepo.Status.MergeMessage, statusText)
+	}
 	if gRepo.Status.Conflicted > 0 {
 		statusText = fmt.Sprintf("CONFLICTS: %d, %s", gRepo.Status.Conflicted, statusText)
-	}
-	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
-		statusText = statusText + ", " + gRepo.Status.MergeMessage
 	}
 
 	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))

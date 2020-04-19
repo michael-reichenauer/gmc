@@ -157,7 +157,8 @@ func (h *repoVM) saveTotalDebugState() {
 
 func (h *repoVM) commit() {
 	commitView := NewCommitView(h.ui, h.viewModelService, h)
-	commitView.Show()
+	message := h.repo.MergeMessage
+	commitView.Show(message)
 }
 
 func (h *repoVM) showCommitDiff(commitID string) {

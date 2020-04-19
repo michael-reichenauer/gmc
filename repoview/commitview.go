@@ -27,13 +27,12 @@ type CommitView struct {
 	boxView     ui.View
 	textView    ui.View
 	buttonsView ui.View
-	text        string
 }
 
-func (h *CommitView) Show() {
+func (h *CommitView) Show(message string) {
 	h.boxView = h.newCommitView()
 	h.buttonsView = h.newButtonsView()
-	h.textView = h.newTextView()
+	h.textView = h.newTextView(message)
 
 	bb, tb, bbb := h.getBounds()
 	h.boxView.Show(bb)
@@ -63,8 +62,8 @@ func (h *CommitView) newButtonsView() ui.View {
 	return view
 }
 
-func (h *CommitView) newTextView() ui.View {
-	view := h.ui.NewView(h.text)
+func (h *CommitView) newTextView(text string) ui.View {
+	view := h.ui.NewView(text)
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().IsEditable = true
 	view.SetKey(gocui.KeyEsc, h.onCancel)
