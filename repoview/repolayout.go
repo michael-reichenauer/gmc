@@ -148,6 +148,10 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, le
 func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int) {
 	subject := utils.Text(c.Subject, length)
 	if c.ID == viewmodel.UncommittedID {
+		if strings.HasPrefix(c.Message, "CONFLICTS:") {
+			sb.WriteString(ui.RedDk(subject))
+			return
+		}
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}
