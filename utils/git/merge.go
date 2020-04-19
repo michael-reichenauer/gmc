@@ -22,7 +22,7 @@ func (h *mergeService) mergeBranch(name string) error {
 		log.Infof("output %q", output)
 		if strings.Contains(err.Error(), "exit status 1") &&
 			strings.Contains(output, "CONFLICT") {
-			return fmt.Errorf("merge of %s resulted in conflict(s)", name)
+			return fmt.Errorf("merge resulted in conflict(s)")
 		}
 		return err
 	}
