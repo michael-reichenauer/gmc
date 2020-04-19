@@ -21,7 +21,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	showItems := t.getOpenBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Show Branch", SubItems: showItems})
 
-	hideItems := t.GetCloseBranchMenuItems()
+	hideItems := t.getCloseBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Hide Branch", SubItems: hideItems})
 
 	menu.Add(ui.SeparatorMenuItem)
@@ -38,7 +38,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 		menu.Add(ui.MenuItem{Text: "Push", SubItems: pushItems})
 	}
 
-	switchItems := t.GetSwitchBranchMenuItems()
+	switchItems := t.getSwitchBranchMenuItems()
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
 
 	menu.Add(t.vm.mainService.RecentReposMenuItem())
@@ -91,24 +91,26 @@ func (t *menuService) getOpenBranchMenuItems() []ui.MenuItem {
 
 }
 
-func (t *menuService) GetCloseBranchMenuItems() []ui.MenuItem {
+func (t *menuService) getCloseBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(true)
 	for _, b := range commitBranches {
+		name := b.Name // closure save
 		closeItem := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.HideBranch(b.Name)
+			t.vm.HideBranch(name)
 		}}
 		items = append(items, closeItem)
 	}
 	return items
 }
 
-func (t *menuService) GetSwitchBranchMenuItems() []ui.MenuItem {
+func (t *menuService) getSwitchBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
+		name := b.Name // closure save
 		switchItem := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.SwitchToBranch(b.Name)
+			t.vm.SwitchToBranch(name)
 		}}
 		items = append(items, switchItem)
 	}
