@@ -351,7 +351,7 @@ func (h *view) toViewTextBytes(lines []string) []byte {
 		// Draw the current line marker
 		if !h.properties.HideCurrentLineMarker && isCurrentView && i+h.firstIndex == h.currentIndex {
 			sb.WriteString(ColorRune(CWhite, currentLineMarker))
-		} else {
+		} else if !h.properties.HideCurrentLineMarker {
 			sb.WriteString(" ")
 		}
 

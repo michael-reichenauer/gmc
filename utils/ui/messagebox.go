@@ -40,15 +40,17 @@ func (h *MessageBox) newBoxView() View {
 	view.Properties().Name = "MessageBox"
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
 	return view
 }
 
 func (h *MessageBox) newButtonsView() View {
-	view := h.ui.NewView("[OK]")
+	view := h.ui.NewView(" [OK]")
 	view.Properties().Name = "MessageBoxButtons"
 	view.Properties().OnMouseLeft = h.onButtonsClick
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
 	return view
 }
 

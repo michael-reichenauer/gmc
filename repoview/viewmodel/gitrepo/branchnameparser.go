@@ -73,6 +73,7 @@ func (h *branchNameParser) branchName(id string) string {
 }
 
 func (h *branchNameParser) parseMergeBranchNames(subject string) fromInto {
+	subject = strings.TrimSpace(subject)
 	matches := nameRegExp.FindAllStringSubmatch(subject, -1)
 	if len(matches) == 0 {
 		return fromInto{}
