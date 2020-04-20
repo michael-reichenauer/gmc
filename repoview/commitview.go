@@ -30,6 +30,7 @@ type CommitView struct {
 }
 
 func (h *CommitView) Show(message string) {
+	log.Infof("Commit message %q", message)
 	h.boxView = h.newCommitView()
 	h.buttonsView = h.newButtonsView()
 	h.textView = h.newTextView(message)

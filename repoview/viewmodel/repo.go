@@ -22,6 +22,8 @@ type viewRepo struct {
 	WorkingFolder      string
 	UncommittedChanges int
 	gitRepo            gitrepo.Repo
+	Conflicts          int
+	MergeMessage       string
 }
 
 func newRepo() *viewRepo {
@@ -68,7 +70,7 @@ func (r *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	allChanges := gRepo.Status.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
 	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
-		statusText = fmt.Sprintf("MERGING: %s, %s", gRepo.Status.MergeMessage, statusText)
+		statusText = fmt.Sprintf("%s, %s", gRepo.Status.MergeMessage, statusText)
 	}
 	if gRepo.Status.Conflicted > 0 {
 		statusText = fmt.Sprintf("CONFLICTS: %d, %s", gRepo.Status.Conflicted, statusText)

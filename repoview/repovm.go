@@ -103,7 +103,7 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
-	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "")
+	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "", h.repo)
 }
 
 func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {

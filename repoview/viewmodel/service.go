@@ -178,6 +178,8 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
 	repo.UncommittedChanges = grepo.Status.AllChanges()
+	repo.Conflicts = grepo.Status.Conflicted
+	repo.MergeMessage = grepo.Status.MergeMessage
 
 	branches := s.getGitModelBranches(branchNames, grepo)
 	for _, b := range branches {
