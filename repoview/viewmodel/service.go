@@ -52,7 +52,7 @@ type Service struct {
 	branchesGraph *branchesGraph
 
 	showRequests chan []string
-
+	currentBranches    chan []string
 	customBranchColors map[string]int
 }
 
@@ -60,6 +60,7 @@ func NewService(configService *config.Service, workingFolder string) *Service {
 	return &Service{
 		RepoChanges:   make(chan RepoChange),
 		showRequests:  make(chan []string),
+		currentBranches: make(chan []string),
 		branchesGraph: newBranchesGraph(),
 		gitRepo:       gitrepo.NewGitRepo(workingFolder),
 		configService: configService,
@@ -146,6 +147,8 @@ func (s *Service) monitorViewModelRoutine(ctx context.Context) {
 			log.Infof("Refresh of %v", names)
 			branchNames = names
 			s.triggerFreshViewRepo(ctx, repo, branchNames)
+		case names := <-s.currentBranches:
+			branchNames = names
 		case <-ctx.Done():
 			return
 		}
@@ -160,6 +163,11 @@ func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, b
 		select {
 		case s.RepoChanges <- repoChange:
 			s.storeShownBranchesInConfig(branchNames)
+		case <-ctx.Done():
+		}
+		branchNames := s.getBranchNames(vRepo)
+		select {
+		case s.currentBranches <- branchNames:
 		case <-ctx.Done():
 		}
 	}()
@@ -591,6 +599,14 @@ func (s *Service) isSynced(b *branch) bool {
 
 func (s *Service) PushBranch(name string) error {
 	return s.gitRepo.PushBranch(name)
+}
+
+func (s *Service) getBranchNames(repo *viewRepo) []string {
+	var names []string
+	for _, b := range repo.Branches {
+		names = append(names, b.name)
+	}
+	return names
 }
 
 func (s *Service) MergeBranch(name string) error {
