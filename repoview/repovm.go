@@ -156,10 +156,10 @@ func (h *repoVM) saveTotalDebugState() {
 }
 
 func (h *repoVM) commit() {
-	// if h.repo.Conflicts>0{
-	// 	h.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
-	// 	return
-	// }
+	if h.repo.Conflicts > 0 {
+		h.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
+		return
+	}
 	commitView := NewCommitView(h.ui, h.viewModelService, h)
 	message := h.repo.MergeMessage
 	commitView.Show(message)
