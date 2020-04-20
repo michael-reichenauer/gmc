@@ -103,7 +103,7 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 
 func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
-	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "")
+	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "", h.repo)
 }
 
 func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
@@ -156,8 +156,13 @@ func (h *repoVM) saveTotalDebugState() {
 }
 
 func (h *repoVM) commit() {
+	if h.repo.Conflicts > 0 {
+		h.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
+		return
+	}
 	commitView := NewCommitView(h.ui, h.viewModelService, h)
-	commitView.Show()
+	message := h.repo.MergeMessage
+	commitView.Show(message)
 }
 
 func (h *repoVM) showCommitDiff(commitID string) {
@@ -214,16 +219,23 @@ func (h *repoVM) HideBranch(name string) {
 
 func (h *repoVM) SwitchToBranch(name string) {
 	h.startCommand(
-		fmt.Sprintf("Switch/checkout\n%s", name),
+		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error { return h.viewModelService.SwitchToBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
 func (h *repoVM) PushBranch(name string) {
 	h.startCommand(
-		fmt.Sprintf("Pushing Branch\n%s", name),
+		fmt.Sprintf("Pushing Branch:\n%s", name),
 		func() error { return h.viewModelService.PushBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
+}
+
+func (h *repoVM) MergeFromBranch(name string) {
+	h.startCommand(
+		fmt.Sprintf("Merging to Branch:\n%s", name),
+		func() error { return h.viewModelService.MergeBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) })
 }
 
 func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc func(err error) string) {

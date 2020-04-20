@@ -78,6 +78,7 @@ func (h *statusHandler) getMergeStatus() (string, bool) {
 	if err != nil {
 		return "", false
 	}
-	mergeMessage = strings.TrimSpace(msg)
+	lines := strings.Split(msg, "\n")
+	mergeMessage = strings.TrimSpace(lines[0])
 	return mergeMessage, true
 }

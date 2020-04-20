@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
@@ -18,13 +19,11 @@ func newMenuService(ui *ui.UI, vm *repoVM) *menuService {
 func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	menu := t.ui.NewMenu("")
 
-	showItems := t.getOpenBranchMenuItems()
-	menu.Add(ui.MenuItem{Text: "Show Branch", SubItems: showItems})
-
-	hideItems := t.getCloseBranchMenuItems()
-	menu.Add(ui.MenuItem{Text: "Hide Branch", SubItems: hideItems})
+	menu.Add(ui.MenuItem{Text: "Show Branch", SubItems: t.getOpenBranchMenuItems()})
+	menu.Add(ui.MenuItem{Text: "Hide Branch", SubItems: t.getCloseBranchMenuItems()})
 
 	menu.Add(ui.SeparatorMenuItem)
+
 	c := t.vm.repo.Commits[currentLineIndex]
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
@@ -38,8 +37,9 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 		menu.Add(ui.MenuItem{Text: "Push", SubItems: pushItems})
 	}
 
-	switchItems := t.getSwitchBranchMenuItems()
-	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: switchItems})
+	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: t.getSwitchBranchMenuItems()})
+	mergeItems, mergeTitle := t.getMergeMenuItems()
+	menu.Add(ui.MenuItem{Text: "Merge", Title: mergeTitle, SubItems: mergeItems})
 
 	menu.Add(t.vm.mainService.RecentReposMenuItem())
 	menu.Add(t.vm.mainService.MainMenuItem())
@@ -141,4 +141,24 @@ func (t *menuService) getPushBranchMenuItems() []ui.MenuItem {
 		items = append(items, pushItem)
 	}
 	return items
+}
+
+func (t *menuService) getMergeMenuItems() ([]ui.MenuItem, string) {
+	current, ok := t.vm.CurrentBranch()
+	if !ok {
+		return nil, ""
+	}
+	var items []ui.MenuItem
+	commitBranches := t.vm.GetShownBranches(false)
+	for _, b := range commitBranches {
+		name := b.Name // closure save
+		if b.DisplayName == current.DisplayName {
+			continue
+		}
+		item := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
+			t.vm.MergeFromBranch(name)
+		}}
+		items = append(items, item)
+	}
+	return items, fmt.Sprintf("Merge to: %s", current.DisplayName)
 }

@@ -150,6 +150,7 @@ type view struct {
 	notifyThrottler    *semaphore.Weighted
 	maxLineWidth       int
 	isClosed           bool
+	hasWritten         bool
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPage) ViewText) *view {
@@ -260,7 +261,10 @@ func (h *view) NotifyChanged() {
 	go func() {
 		h.ui.PostOnUIThread(func() {
 			h.notifyThrottler.Release(1)
-			if h.isClosed || h.properties.IsEditable {
+			if h.isClosed {
+				return
+			}
+			if h.properties.IsEditable && h.hasWritten {
 				return
 			}
 			// Clear the view to make room for the new data
@@ -319,6 +323,7 @@ func (h *view) NotifyChanged() {
 			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines)); err != nil {
 				panic(log.Fatal(err))
 			}
+			h.hasWritten = true
 
 			h.drawVerticalScrollbar(len(viewData.Lines))
 			h.drawHorizontalScrollbar()

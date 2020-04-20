@@ -11,6 +11,8 @@ type ViewRepo struct {
 	RepoPath           string
 	UncommittedChanges int
 	viewRepo           *viewRepo
+	MergeMessage       string
+	Conflicts          int
 }
 
 const (
@@ -70,6 +72,8 @@ func newViewRepo(repo *viewRepo) ViewRepo {
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
 		viewRepo:           repo,
+		MergeMessage:       repo.MergeMessage,
+		Conflicts:          repo.Conflicts,
 	}
 }
 

@@ -21,7 +21,11 @@ func newRepoLayout(viewModelService *viewmodel.Service) *repoLayout {
 	return &repoLayout{viewModelService: viewModelService, repoGraph: newRepoGraph()}
 }
 
-func (t *repoLayout) getPageLines(commits []viewmodel.Commit, viewWidth int, currentBranchDisplayName string) []string {
+func (t *repoLayout) getPageLines(
+	commits []viewmodel.Commit,
+	viewWidth int,
+	currentBranchDisplayName string,
+	repo viewmodel.ViewRepo) []string {
 	if len(commits) < 1 {
 		return nil
 	}
@@ -38,7 +42,7 @@ func (t *repoLayout) getPageLines(commits []viewmodel.Commit, viewWidth int, cur
 		t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
 		t.writeAheadBehindMarker(&sb, c)
-		t.writeSubject(&sb, c, currentBranchDisplayName, messageWidth)
+		t.writeSubject(&sb, c, currentBranchDisplayName, messageWidth, repo)
 		sb.WriteString(" ")
 		t.writeAuthor(&sb, c, authorWidth)
 		sb.WriteString(" ")
@@ -145,9 +149,17 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, le
 	sb.WriteString(ui.Dark(utils.Text(tt, length)))
 }
 
-func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int) {
+func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int, repo viewmodel.ViewRepo) {
 	subject := utils.Text(c.Subject, length)
 	if c.ID == viewmodel.UncommittedID {
+		if repo.Conflicts > 0 {
+			sb.WriteString(ui.Red(subject))
+			return
+		}
+		if repo.MergeMessage != "" {
+			sb.WriteString(ui.RedDk(subject))
+			return
+		}
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}

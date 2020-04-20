@@ -156,7 +156,7 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 	lock.Unlock()
 
 	if cmd.Err != "" {
-		return "", fmt.Errorf(cmd.Err)
+		return cmd.Output, fmt.Errorf(cmd.Err)
 	}
 	return cmd.Output, nil
 }
@@ -180,6 +180,7 @@ func (h *gitCmd) runGitCommand(cmd command) command {
 		}
 		msg := fmt.Sprintf("error: git %s\n%v\n%v", strings.Join(cmd.Args, " "), err, errorText)
 		log.Warnf("%s (%v)", msg, time.Since(t))
+		cmd.Output = string(out)
 		cmd.Err = msg
 		return cmd
 	}
