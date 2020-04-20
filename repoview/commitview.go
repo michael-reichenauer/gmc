@@ -52,14 +52,16 @@ func (h *CommitView) newCommitView() ui.View {
 	view.Properties().Name = "CommitView"
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
 	return view
 }
 
 func (h *CommitView) newButtonsView() ui.View {
-	view := h.ui.NewView("[OK] [Cancel]")
+	view := h.ui.NewView(" [OK] [Cancel]")
 	view.Properties().OnMouseLeft = h.onButtonsClick
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
 	return view
 }
 
