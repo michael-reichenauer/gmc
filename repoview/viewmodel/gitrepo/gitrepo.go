@@ -94,12 +94,12 @@ func (s *GitRepo) monitorRoutine(ctx context.Context) {
 			// This is to avoid that multiple change events in a short interval is batched
 			if change != noChange {
 				log.Infof("waited for %v", change)
-				change = noChange
 				if change == statusChange && hasRepo {
 					s.triggerStatus(repo)
 				} else {
 					s.triggerRepo()
 				}
+				change = noChange
 			}
 			wait = time.After(batchInterval)
 
