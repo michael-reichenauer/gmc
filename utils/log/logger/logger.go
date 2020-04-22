@@ -74,9 +74,8 @@ func (l *Logger) Fatalf(err error, format string, v ...interface{}) string {
 func (l *Logger) Fatal(err error, v ...interface{}) string {
 	msg := fmt.Sprint(v...)
 	emsg := err.Error()
-	if len(v) > 0 {
-		emsg = fmt.Sprintf("%s, %v\n%s", msg, err, debug.Stack())
-	}
+	emsg = fmt.Sprintf("%s, %v\n%s", msg, err, debug.Stack())
+
 	l.Output(Fatal, emsg)
 	l.FatalError(err, msg)
 	return emsg
