@@ -42,15 +42,17 @@ func (h *RepoView) newView() ui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
-	view.SetKey(gocui.KeyF5, h.vm.refresh)
-	view.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
-	view.SetKey(gocui.KeyCtrlSpace, h.vm.commit)
-	view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
-	view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
+	view.SetKey(gocui.KeyF5, h.vm.triggerRefresh)
 	view.SetKey(gocui.KeyCtrlD, h.vm.showSelectedCommitDiff)
+	view.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
+	view.SetKey(gocui.KeyCtrlS, h.vm.showCommitDialog)
+	view.SetKey(gocui.KeyCtrlB, h.vm.showCreateBranchDialog)
+	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
+	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
+
+	view.SetKey('m', h.showContextMenu)
 	view.SetKey(gocui.KeyEsc, h.ui.Quit)
 	view.SetKey(gocui.KeyCtrlC, h.ui.Quit)
-	view.SetKey('m', h.showContextMenu)
 	view.SetKey('q', h.ui.Quit)
 	view.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
 
@@ -88,9 +90,9 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 }
 
 func (h *RepoView) onLoad() {
-	h.vm.load()
+	h.vm.startRepoMonitor()
 	log.Infof("Load trigger refresh")
-	h.ui.PostOnUIThread(func() { h.vm.refresh() })
+	h.vm.triggerRefresh()
 }
 
 func (h *RepoView) setWindowTitle(path, branch string, changes int) {

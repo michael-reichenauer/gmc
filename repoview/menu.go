@@ -28,9 +28,8 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
-	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: func() {
-		t.vm.commit()
-	}})
+	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: t.vm.showCommitDialog})
+	menu.Add(ui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
 
 	pushItems := t.getPushBranchMenuItems()
 	if pushItems != nil {

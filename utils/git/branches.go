@@ -57,6 +57,24 @@ func (h *branchesHandler) getBranches() ([]Branch, error) {
 	return h.parseBranchesOutput(branchesText)
 }
 
+func (h *branchesHandler) mergeBranch(name string) error {
+	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
+	output, err := h.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 1") &&
+			strings.Contains(output, "CONFLICT") {
+			return fmt.Errorf("merge resulted in conflict(s)")
+		}
+		return err
+	}
+	return nil
+}
+
+func (h *branchesHandler) createBranch(name string) error {
+	_, err := h.cmd.Git("checkout", "-b", name)
+	return err
+}
+
 func (h *branchesHandler) parseBranchesOutput(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")

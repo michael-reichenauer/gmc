@@ -51,19 +51,19 @@ type Service struct {
 	configService *config.Service
 	branchesGraph *branchesGraph
 
-	showRequests chan []string
+	showRequests       chan []string
 	currentBranches    chan []string
 	customBranchColors map[string]int
 }
 
 func NewService(configService *config.Service, workingFolder string) *Service {
 	return &Service{
-		RepoChanges:   make(chan RepoChange),
-		showRequests:  make(chan []string),
+		RepoChanges:     make(chan RepoChange),
+		showRequests:    make(chan []string),
 		currentBranches: make(chan []string),
-		branchesGraph: newBranchesGraph(),
-		gitRepo:       gitrepo.NewGitRepo(workingFolder),
-		configService: configService,
+		branchesGraph:   newBranchesGraph(),
+		gitRepo:         gitrepo.NewGitRepo(workingFolder),
+		configService:   configService,
 		//	customBranchColors: make(map[string]int),
 	}
 }
@@ -614,6 +614,10 @@ func (s *Service) MergeBranch(name string) error {
 		name = name[7:]
 	}
 	return s.gitRepo.MergeBranch(name)
+}
+
+func (s *Service) CreateBranch(name string) error {
+	return s.gitRepo.CreateBranch(name)
 }
 
 //

@@ -20,7 +20,6 @@ type Git struct {
 	diffService   *diffService
 	commitService *commitService
 	pushService   *pushService
-	mergeService  *mergeService
 }
 
 func NewGit(path string) *Git {
@@ -36,7 +35,6 @@ func NewGit(path string) *Git {
 		diffService:   newDiff(cmd, status),
 		commitService: newCommit(cmd),
 		pushService:   newPush(cmd),
-		mergeService:  newMerge(cmd),
 	}
 }
 func (h *Git) RepoPath() string {
@@ -80,7 +78,11 @@ func (h *Git) PushBranch(name string) error {
 }
 
 func (h *Git) MergeBranch(name string) error {
-	return h.mergeService.mergeBranch(name)
+	return h.branches.mergeBranch(name)
+}
+
+func (h *Git) CreateBranch(name string) error {
+	return h.branches.createBranch(name)
 }
 
 // GitVersion returns the git version

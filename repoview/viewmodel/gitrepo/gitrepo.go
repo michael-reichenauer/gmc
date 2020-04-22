@@ -40,9 +40,9 @@ func NewGitRepo(workingFolder string) *GitRepo {
 		branchesService: newBranchesService(),
 		git:             g,
 		folderMonitor:   newMonitor(workingFolder, g),
-		RepoChanges:     make(chan RepoChange),
-		repo:            make(chan Repo),
-		manualRefresh:   make(chan struct{}),
+		RepoChanges:     make(chan RepoChange, 1),
+		repo:            make(chan Repo, 1),
+		manualRefresh:   make(chan struct{}, 1),
 	}
 }
 
@@ -72,6 +72,7 @@ func (s *GitRepo) TriggerManualRefresh() {
 	select {
 	case s.manualRefresh <- struct{}{}:
 	default:
+		log.Infof("TriggerManualRefresh full")
 	}
 }
 
@@ -247,4 +248,8 @@ func (s *GitRepo) PushBranch(name string) error {
 
 func (s *GitRepo) MergeBranch(name string) error {
 	return s.git.MergeBranch(name)
+}
+
+func (s *GitRepo) CreateBranch(name string) error {
+	return s.git.CreateBranch(name)
 }
