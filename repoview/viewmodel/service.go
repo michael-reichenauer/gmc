@@ -47,7 +47,7 @@ type RepoChange struct {
 type Service struct {
 	RepoChanges chan RepoChange
 
-	gitRepo       *gitrepo.GitRepo
+	gitRepo       gitrepo.GitRepo
 	configService *config.Service
 	branchesGraph *branchesGraph
 
@@ -114,7 +114,7 @@ func (s *Service) monitorViewModelRoutine(ctx context.Context) {
 
 	for {
 		select {
-		case change, ok := <-s.gitRepo.RepoChanges:
+		case change, ok := <-s.gitRepo.RepoChanges():
 			if !ok {
 				return
 			}
