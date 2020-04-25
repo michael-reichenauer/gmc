@@ -257,6 +257,16 @@ func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc fun
 func (h *repoVM) CreateBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
-		func() error { return h.viewModelService.CreateBranch(name) },
+		func() error {
+			err := h.viewModelService.CreateBranch(name)
+			if err != nil {
+				return err
+			}
+			err = h.viewModelService.PushBranch(name)
+			if err != nil {
+				return err
+			}
+			return err
+		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) })
 }
