@@ -41,11 +41,11 @@ type LinesDiff struct {
 
 // fetches from remote origin
 type diffService struct {
-	cmd           GitCommander
-	statusHandler *statusHandler
+	cmd           gitCommander
+	statusHandler *statusService
 }
 
-func newDiff(cmd GitCommander, statusHandler *statusHandler) *diffService {
+func newDiff(cmd gitCommander, statusHandler *statusService) *diffService {
 	return &diffService{cmd: cmd, statusHandler: statusHandler}
 }
 

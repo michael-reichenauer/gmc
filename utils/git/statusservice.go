@@ -16,19 +16,19 @@ type Status struct {
 	AddedFiles   []string
 }
 
-type statusHandler struct {
-	cmd GitCommander
+type statusService struct {
+	cmd gitCommander
 }
 
-func newStatus(cmd GitCommander) *statusHandler {
-	return &statusHandler{cmd: cmd}
+func newStatus(cmd gitCommander) *statusService {
+	return &statusService{cmd: cmd}
 }
 
 func (s *Status) String() string {
 	return fmt.Sprintf("M:%d,A:%d,D:%d,C:%d", s.Modified, s.Added, s.Deleted, s.Conflicted)
 }
 
-func (h *statusHandler) getStatus() (Status, error) {
+func (h *statusService) getStatus() (Status, error) {
 	gitStatus, err := h.cmd.Git("status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
 	if err != nil {
 		return Status{}, err
@@ -36,7 +36,7 @@ func (h *statusHandler) getStatus() (Status, error) {
 	return h.parseStatus(gitStatus)
 }
 
-func (h *statusHandler) parseStatus(statusText string) (Status, error) {
+func (h *statusService) parseStatus(statusText string) (Status, error) {
 	status := Status{}
 	lines := strings.Split(statusText, "\n")
 	for _, line := range lines {
@@ -70,7 +70,7 @@ func (h *statusHandler) parseStatus(statusText string) (Status, error) {
 	return status, nil
 }
 
-func (h *statusHandler) getMergeStatus() (string, bool) {
+func (h *statusService) getMergeStatus() (string, bool) {
 	mergeMessage := ""
 	//mergeIpPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_HEAD")
 	mergeMsgPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_MSG")

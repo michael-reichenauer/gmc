@@ -38,7 +38,7 @@ type gitRepo struct {
 
 	branchesService *branchesService
 	folderMonitor   *monitor
-	git             *git.Git
+	git             git.Git
 	rootPath        string
 	repo            chan Repo
 	manualRefresh   chan struct{}
@@ -226,21 +226,14 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
-	gitCommits, err := s.git.GetLog()
+	gitRepo, err := s.git.GetRepo()
 	if err != nil {
 		return Repo{}, err
 	}
-	gitBranches, err := s.git.GetBranches()
-	if err != nil {
-		return Repo{}, err
-	}
-	gitStatus, err := s.git.GetStatus()
-	if err != nil {
-		return Repo{}, err
-	}
-	repo.Status = newStatus(gitStatus)
-	repo.setGitBranches(gitBranches)
-	repo.setGitCommits(gitCommits)
+
+	repo.Status = newStatus(gitRepo.Status)
+	repo.setGitBranches(gitRepo.Branches)
+	repo.setGitCommits(gitRepo.Commits)
 
 	s.branchesService.setBranchForAllCommits(repo)
 	log.Infof("Git repo %v", time.Since(t))

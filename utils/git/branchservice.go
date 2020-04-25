@@ -33,15 +33,15 @@ const (
 
 var branchesRegexp = utils.CompileRegexp(branchesRegexpText)
 
-type branchesHandler struct {
-	cmd GitCommander
+type branchesService struct {
+	cmd gitCommander
 }
 
-func newBranches(cmd GitCommander) *branchesHandler {
-	return &branchesHandler{cmd: cmd}
+func newBranchService(cmd gitCommander) *branchesService {
+	return &branchesService{cmd: cmd}
 }
 
-func (h *branchesHandler) checkout(name string) error {
+func (h *branchesService) checkout(name string) error {
 	_, err := h.cmd.Git("checkout", name)
 	if err != nil {
 		return fmt.Errorf("failed to get checkout %q, %v", name, err)
@@ -49,7 +49,7 @@ func (h *branchesHandler) checkout(name string) error {
 	return nil
 }
 
-func (h *branchesHandler) getBranches() ([]Branch, error) {
+func (h *branchesService) getBranches() ([]Branch, error) {
 	branchesText, err := h.cmd.Git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
@@ -57,7 +57,7 @@ func (h *branchesHandler) getBranches() ([]Branch, error) {
 	return h.parseBranchesOutput(branchesText)
 }
 
-func (h *branchesHandler) mergeBranch(name string) error {
+func (h *branchesService) mergeBranch(name string) error {
 	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
 	output, err := h.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
 	if err != nil {
@@ -70,12 +70,12 @@ func (h *branchesHandler) mergeBranch(name string) error {
 	return nil
 }
 
-func (h *branchesHandler) createBranch(name string) error {
+func (h *branchesService) createBranch(name string) error {
 	_, err := h.cmd.Git("checkout", "-b", name)
 	return err
 }
 
-func (h *branchesHandler) parseBranchesOutput(branchesText string) ([]Branch, error) {
+func (h *branchesService) parseBranchesOutput(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")
 	for _, line := range lines {
@@ -95,7 +95,7 @@ func (h *branchesHandler) parseBranchesOutput(branchesText string) ([]Branch, er
 	return branches, nil
 }
 
-func (h *branchesHandler) parseBranchLine(line string) (Branch, bool, error) {
+func (h *branchesService) parseBranchLine(line string) (Branch, bool, error) {
 	match := branchesRegexp.FindStringSubmatch(line)
 	if match == nil {
 		return Branch{}, true, fmt.Errorf("failed to parse branch line %q", line)
@@ -145,4 +145,4 @@ func (h *branchesHandler) parseBranchLine(line string) (Branch, bool, error) {
 	}, false, nil
 }
 
-func (*branchesHandler) isPointBranch(matches []string) bool { return matches[5] == "->" }
+func (*branchesService) isPointBranch(matches []string) bool { return matches[5] == "->" }

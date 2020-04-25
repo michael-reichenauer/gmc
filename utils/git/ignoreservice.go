@@ -8,23 +8,23 @@ import (
 	"strings"
 )
 
-type ignoreHandler struct {
+type ignoreService struct {
 	dirPrefixLen int
 	patters      []string
 }
 
-func newIgnoreHandler(repoPath string) *ignoreHandler {
+func newIgnoreHandler(repoPath string) *ignoreService {
 	rootPath, err := WorkingFolderRoot(repoPath)
 	if err == nil {
 		repoPath = rootPath
 	}
 
-	h := &ignoreHandler{dirPrefixLen: len(repoPath)}
+	h := &ignoreService{dirPrefixLen: len(repoPath)}
 	h.parseIgnoreFile(repoPath)
 	return h
 }
 
-func (h *ignoreHandler) isIgnored(path string) bool {
+func (h *ignoreService) isIgnored(path string) bool {
 	if filepath.IsAbs(path) && len(path) > h.dirPrefixLen {
 		path = path[h.dirPrefixLen+1:]
 	}
@@ -43,7 +43,7 @@ func (h *ignoreHandler) isIgnored(path string) bool {
 	return false
 }
 
-func (h *ignoreHandler) parseIgnoreFile(repoPath string) {
+func (h *ignoreService) parseIgnoreFile(repoPath string) {
 	ignorePath := filepath.Join(repoPath, ".gitignore")
 	file, err := utils.FileRead(ignorePath)
 	if err != nil {

@@ -13,7 +13,7 @@ var branchesText = `
 `
 
 func Test(t *testing.T) {
-	branches, err := newBranches(newGitCmd(utils.CurrentDir())).getBranches()
+	branches, err := newBranchService(newGitCmd(utils.CurrentDir())).getBranches()
 	assert.NoError(t, err)
 	for _, b := range branches {
 		log.Infof("%+v", b)
@@ -22,7 +22,7 @@ func Test(t *testing.T) {
 }
 
 func TestParseBranchesText(t *testing.T) {
-	branches, err := newBranches(newGitCmd(utils.CurrentDir())).parseBranchesOutput(branchesText)
+	branches, err := newBranchService(newGitCmd(utils.CurrentDir())).parseBranchesOutput(branchesText)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(branches))
 }

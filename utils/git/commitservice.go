@@ -9,10 +9,10 @@ import (
 
 // commits
 type commitService struct {
-	cmd GitCommander
+	cmd gitCommander
 }
 
-func newCommit(cmd GitCommander) *commitService {
+func newCommit(cmd gitCommander) *commitService {
 	return &commitService{cmd: cmd}
 }
 

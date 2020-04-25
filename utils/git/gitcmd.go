@@ -21,7 +21,7 @@ var (
 	replayDir string
 )
 
-type GitCommander interface {
+type gitCommander interface {
 	Git(arg ...string) (string, error)
 	RepoPath() string
 	ReadFile(path string) (string, error)
@@ -39,7 +39,7 @@ type command struct {
 	Output   string
 }
 
-func newGitCmd(repoPath string) *gitCmd {
+func newGitCmd(repoPath string) gitCommander {
 	rootPath, err := WorkingFolderRoot(repoPath)
 	if err == nil {
 		repoPath = rootPath
