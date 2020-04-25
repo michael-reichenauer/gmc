@@ -28,7 +28,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	menu.Add(ui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
-	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-Space", Action: t.vm.showCommitDialog})
+	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-S", Action: t.vm.showCommitDialog})
 	menu.Add(ui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
 
 	pushItems := t.getPushBranchMenuItems()
@@ -134,7 +134,7 @@ func (t *menuService) getPushBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasLocalOnly {
-		pushItem := ui.MenuItem{Text: t.branchItemText(current), Action: func() {
+		pushItem := ui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-P", Action: func() {
 			t.vm.PushBranch(current.Name)
 		}}
 		items = append(items, pushItem)
