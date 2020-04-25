@@ -24,19 +24,19 @@ func newStatus(cmd gitCommander) *statusService {
 	return &statusService{cmd: cmd}
 }
 
-func (s *Status) String() string {
-	return fmt.Sprintf("M:%d,A:%d,D:%d,C:%d", s.Modified, s.Added, s.Deleted, s.Conflicted)
+func (t *Status) String() string {
+	return fmt.Sprintf("M:%d,A:%d,D:%d,C:%d", t.Modified, t.Added, t.Deleted, t.Conflicted)
 }
 
-func (h *statusService) getStatus() (Status, error) {
-	gitStatus, err := h.cmd.Git("status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
+func (t *statusService) getStatus() (Status, error) {
+	gitStatus, err := t.cmd.Git("status", "-s", "--porcelain", "--ahead-behind", "--untracked-files=all")
 	if err != nil {
 		return Status{}, err
 	}
-	return h.parseStatus(gitStatus)
+	return t.parseStatus(gitStatus)
 }
 
-func (h *statusService) parseStatus(statusText string) (Status, error) {
+func (t *statusService) parseStatus(statusText string) (Status, error) {
 	status := Status{}
 	lines := strings.Split(statusText, "\n")
 	for _, line := range lines {
@@ -66,15 +66,15 @@ func (h *statusService) parseStatus(statusText string) (Status, error) {
 			status.Modified++
 		}
 	}
-	status.MergeMessage, status.IsMerging = h.getMergeStatus()
+	status.MergeMessage, status.IsMerging = t.getMergeStatus()
 	return status, nil
 }
 
-func (h *statusService) getMergeStatus() (string, bool) {
+func (t *statusService) getMergeStatus() (string, bool) {
 	mergeMessage := ""
 	//mergeIpPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_HEAD")
-	mergeMsgPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_MSG")
-	msg, err := h.cmd.ReadFile(mergeMsgPath)
+	mergeMsgPath := path.Join(t.cmd.RepoPath(), ".git", "MERGE_MSG")
+	msg, err := t.cmd.ReadFile(mergeMsgPath)
 	if err != nil {
 		return "", false
 	}
