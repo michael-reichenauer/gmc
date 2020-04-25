@@ -49,27 +49,27 @@ func newDiff(cmd gitCommander, statusHandler *statusService) *diffService {
 	return &diffService{cmd: cmd, statusHandler: statusHandler}
 }
 
-func (s *diffService) commitDiff(id string) (CommitDiff, error) {
+func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 	if id == UncommittedID {
-		return s.unCommittedDiff()
+		return t.unCommittedDiff()
 	}
 
-	diffText, err := s.cmd.Git("show",
+	diffText, err := t.cmd.Git("show",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6", id)
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	diffs, err := s.parse(diffText)
+	diffs, err := t.parse(diffText)
 	if err != nil {
 		return CommitDiff{}, err
 	}
 	return CommitDiff{FileDiffs: diffs}, nil
 }
 
-func (s *diffService) unCommittedDiff() (CommitDiff, error) {
-	diffText, err := s.cmd.Git("diff",
+func (t *diffService) unCommittedDiff() (CommitDiff, error) {
+	diffText, err := t.cmd.Git("diff",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6")
@@ -77,16 +77,16 @@ func (s *diffService) unCommittedDiff() (CommitDiff, error) {
 		return CommitDiff{}, err
 	}
 
-	fileDiffs, err := s.parse(diffText)
+	fileDiffs, err := t.parse(diffText)
 	if err != nil {
 		return CommitDiff{}, err
 	}
 
-	status, err := s.statusHandler.getStatus()
+	status, err := t.statusHandler.getStatus()
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	fileDiffs, err = s.addAddedFiles(fileDiffs, status, s.cmd.RepoPath())
+	fileDiffs, err = t.addAddedFiles(fileDiffs, status, t.cmd.RepoPath())
 	if err != nil {
 		return CommitDiff{}, err
 	}
@@ -96,7 +96,7 @@ func (s *diffService) unCommittedDiff() (CommitDiff, error) {
 	return CommitDiff{FileDiffs: fileDiffs}, err
 }
 
-func (s *diffService) parse(text string) ([]FileDiff, error) {
+func (t *diffService) parse(text string) ([]FileDiff, error) {
 	lines := strings.Split(text, "\n")
 
 	var fileDiffs []FileDiff
@@ -130,7 +130,7 @@ func (s *diffService) parse(text string) ([]FileDiff, error) {
 	return fileDiffs, nil
 }
 
-func (s *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath string) ([]FileDiff, error) {
+func (t *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath string) ([]FileDiff, error) {
 	for _, name := range status.AddedFiles {
 		filePath := filepath.Join(dirPath, name)
 		file, err := utils.FileRead(filePath)

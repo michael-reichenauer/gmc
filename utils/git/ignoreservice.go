@@ -24,14 +24,14 @@ func newIgnoreHandler(repoPath string) *ignoreService {
 	return h
 }
 
-func (h *ignoreService) isIgnored(path string) bool {
-	if filepath.IsAbs(path) && len(path) > h.dirPrefixLen {
-		path = path[h.dirPrefixLen+1:]
+func (t *ignoreService) isIgnored(path string) bool {
+	if filepath.IsAbs(path) && len(path) > t.dirPrefixLen {
+		path = path[t.dirPrefixLen+1:]
 	}
 	if strings.Contains(path, "shelf") {
 		log.Infof("")
 	}
-	for _, pattern := range h.patters {
+	for _, pattern := range t.patters {
 		match, err := doublestar.Match(pattern, path)
 		if err != nil {
 			return false
@@ -43,7 +43,7 @@ func (h *ignoreService) isIgnored(path string) bool {
 	return false
 }
 
-func (h *ignoreService) parseIgnoreFile(repoPath string) {
+func (t *ignoreService) parseIgnoreFile(repoPath string) {
 	ignorePath := filepath.Join(repoPath, ".gitignore")
 	file, err := utils.FileRead(ignorePath)
 	if err != nil {
@@ -60,6 +60,6 @@ func (h *ignoreService) parseIgnoreFile(repoPath string) {
 		if strings.HasSuffix(line, "/") {
 			line = line + "**"
 		}
-		h.patters = append(h.patters, line)
+		t.patters = append(t.patters, line)
 	}
 }

@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 )
 
 var (
@@ -94,24 +94,24 @@ func TracePath(name string) string {
 	return path
 }
 
-func (h *gitCmd) RepoPath() string {
-	return h.repoPath
+func (t *gitCmd) RepoPath() string {
+	return t.repoPath
 }
 
-func (h *gitCmd) ReadFile(path string) (string, error) {
-	cmd := command{RepoPath: h.repoPath, Name: "ReadFile", Args: []string{path}}
-	return h.runCommand(cmd)
+func (t *gitCmd) ReadFile(path string) (string, error) {
+	cmd := command{RepoPath: t.repoPath, Name: "ReadFile", Args: []string{path}}
+	return t.runCommand(cmd)
 }
 
-func (h *gitCmd) Git(arg ...string) (string, error) {
-	cmd := command{RepoPath: h.repoPath, Name: "git", Args: arg}
-	return h.runCommand(cmd)
+func (t *gitCmd) Git(arg ...string) (string, error) {
+	cmd := command{RepoPath: t.repoPath, Name: "git", Args: arg}
+	return t.runCommand(cmd)
 }
 
-func (h *gitCmd) runCommand(cmd command) (string, error) {
+func (t *gitCmd) runCommand(cmd command) (string, error) {
 	lock.Lock()
 	if traceDir == "" && replayDir != "" {
-		fileName := h.fileName(cmd)
+		fileName := t.fileName(cmd)
 		path := filepath.Join(replayDir, fileName)
 		cmdBytes, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -132,16 +132,16 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 
 	switch cmd.Name {
 	case "git":
-		cmd = h.runGitCommand(cmd)
+		cmd = t.runGitCommand(cmd)
 	case "ReadFile":
-		cmd = h.runReadFileCommand(cmd)
+		cmd = t.runReadFileCommand(cmd)
 	default:
 		panic(log.Fatal(fmt.Errorf("unknown command %s", cmd.Name)))
 	}
 
 	lock.Lock()
 	if replayDir == "" && traceDir != "" {
-		fileName := h.fileName(cmd)
+		fileName := t.fileName(cmd)
 		cmdBytes, err := json.Marshal(cmd)
 		if err != nil {
 			panic(log.Fatal(err))
@@ -161,16 +161,16 @@ func (h *gitCmd) runCommand(cmd command) (string, error) {
 	return cmd.Output, nil
 }
 
-func (h *gitCmd) fileName(cmd command) string {
+func (t *gitCmd) fileName(cmd command) string {
 	return fmt.Sprintf("%s_%x", cmd.Name, sha256.Sum256([]byte(fmt.Sprintf("%s %v", cmd.Name, cmd.Args))))
 }
-func (h *gitCmd) runGitCommand(cmd command) command {
+func (t *gitCmd) runGitCommand(cmd command) command {
 	log.Infof("Cmd: %s %s (%s) ...", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
 	//fmt.Printf("Cmd: %s %s (%s) ...\n", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
 	// Get the git cmd output
-	t := time.Now()
+	st := timer.Start()
 	c := exec.Command(cmd.Name, cmd.Args...)
-	c.Dir = h.repoPath
+	c.Dir = t.repoPath
 	out, err := c.Output()
 	if err != nil {
 		errorText := ""
@@ -179,17 +179,17 @@ func (h *gitCmd) runGitCommand(cmd command) command {
 			errorText = strings.ReplaceAll(errorText, "\t", "   ")
 		}
 		msg := fmt.Sprintf("error: git %s\n%v\n%v", strings.Join(cmd.Args, " "), err, errorText)
-		log.Warnf("%s (%v)", msg, time.Since(t))
+		log.Warnf("%s (%v)", msg, st)
 		cmd.Output = string(out)
 		cmd.Err = msg
 		return cmd
 	}
 	cmd.Output = string(out)
-	log.Infof("OK: git %s (%v)", strings.Join(cmd.Args, " "), time.Since(t))
+	log.Infof("OK: git %s (%v)", strings.Join(cmd.Args, " "), st)
 	return cmd
 }
 
-func (h *gitCmd) runReadFileCommand(cmd command) command {
+func (t *gitCmd) runReadFileCommand(cmd command) command {
 	bytes, err := ioutil.ReadFile(cmd.Args[0])
 	cmd.Output = string(bytes)
 	if err != nil {
