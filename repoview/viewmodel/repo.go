@@ -61,12 +61,15 @@ func (r *viewRepo) addBranch(gb *gitrepo.Branch) {
 
 func (r *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	if gRepo.Status.OK() {
+		// No uncommitted changes,
 		return
 	}
 	cb, ok := gRepo.CurrentBranch()
 	if !ok || !r.containsBranch(cb) {
+		// No current branch, or view repo does not show the current branch
 		return
 	}
+
 	allChanges := gRepo.Status.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
 	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
