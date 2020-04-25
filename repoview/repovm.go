@@ -55,10 +55,15 @@ func newRepoVM(
 	}
 }
 
-func (h *repoVM) load() {
+func (h *repoVM) startRepoMonitor() {
 	ctx, cancel := context.WithCancel(context.Background())
 	h.cancel = cancel
 	go h.monitorModelRoutine(ctx)
+}
+
+func (h *repoVM) triggerRefresh() {
+	log.Event("repoview-refresh")
+	h.viewModelService.TriggerRefreshModel()
 }
 
 func (h *repoVM) close() {
@@ -121,11 +126,6 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 	return firstIndex, h.repo.Commits[firstIndex : firstIndex+count]
 }
 
-func (h *repoVM) refresh() {
-	log.Event("repoview-refresh")
-	h.viewModelService.TriggerRefreshModel()
-}
-
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
 	git.EnableTracing("")
 	// traceBytes := utils.MustJsonMarshal(trace{
@@ -155,21 +155,24 @@ func (h *repoVM) saveTotalDebugState() {
 	//	h.vm.RefreshTrace(h.ViewPage())
 }
 
-func (h *repoVM) commit() {
+func (h *repoVM) showCommitDialog() {
 	if h.repo.Conflicts > 0 {
 		h.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
 	}
-	commitView := NewCommitView(h.ui, h.viewModelService, h)
+	commitView := NewCommitView(h.ui, h.viewModelService)
 	message := h.repo.MergeMessage
 	commitView.Show(message)
+}
+
+func (h *repoVM) showCreateBranchDialog() {
+	branchView := NewBranchView(h.ui, h)
+	branchView.Show()
 }
 
 func (h *repoVM) showCommitDiff(commitID string) {
 	diffView := NewDiffView(h.ui, h.viewModelService, commitID)
 	diffView.Show()
-	diffView.SetTop()
-	diffView.SetCurrentView()
 }
 
 func (h *repoVM) showSelectedCommitDiff() {
@@ -249,4 +252,11 @@ func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc fun
 			progress.Close()
 		})
 	}()
+}
+
+func (h *repoVM) CreateBranch(name string) {
+	h.startCommand(
+		fmt.Sprintf("Creating Branch:\n%s", name),
+		func() error { return h.viewModelService.CreateBranch(name) },
+		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) })
 }

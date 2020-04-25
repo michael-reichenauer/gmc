@@ -58,10 +58,12 @@ func (h *MessageBox) newTextView() View {
 	view := h.ui.NewView(h.text)
 	view.Properties().Name = "MessageBoxText"
 	view.Properties().HideCurrentLineMarker = true
-	view.SetKey(gocui.KeyEsc, h.Close)
-	view.SetKey(gocui.KeyEnter, h.Close)
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().IsWrap = true
+	view.SetKey(gocui.KeyEnter, h.Close)
+	view.SetKey(gocui.KeyCtrlO, h.Close)
+	view.SetKey(gocui.KeyEsc, h.Close)
+	view.SetKey(gocui.KeyCtrlC, h.Close)
 	return view
 }
 

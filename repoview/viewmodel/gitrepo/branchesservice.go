@@ -20,7 +20,6 @@ func (h *branchesService) setBranchForAllCommits(repo *Repo) {
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo)
 	h.determineBranchHierarchy(repo)
-
 }
 
 func (h *branchesService) setGitBranchTips(repo *Repo) {

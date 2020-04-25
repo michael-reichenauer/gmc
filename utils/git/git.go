@@ -10,77 +10,118 @@ const (
 	UncommittedSID = "000000"
 )
 
-type Git struct {
-	cmd           GitCommander
-	status        *statusHandler
-	logHandler    *logHandler
-	branches      *branchesHandler
-	fetchService  *fetchService
-	ignoreHandler *ignoreHandler
-	diffService   *diffService
-	commitService *commitService
-	pushService   *pushService
-	mergeService  *mergeService
+type Repo struct {
+	RootPath string
+	Commits  []Commit
+	Branches []Branch
+	Status   Status
 }
 
-func NewGit(path string) *Git {
+type Git interface {
+	GetRepo() (Repo, error)
+	RepoPath() string
+	GetLog() ([]Commit, error)
+	GetStatus() (Status, error)
+	GetBranches() ([]Branch, error)
+
+	IsIgnored(path string) bool
+	CommitDiff(id string) (CommitDiff, error)
+	Checkout(name string) error
+	Commit(message string) error
+	Fetch() error
+	PushBranch(name string) error
+	CreateBranch(name string) error
+	MergeBranch(name string) error
+}
+
+type git struct {
+	cmd           gitCommander
+	statusService *statusService
+	logService    *logService
+	branchService *branchesService
+	ignoreService *ignoreService
+	diffService   *diffService
+	commitService *commitService
+	remoteService *remoteService
+}
+
+func NewGit(path string) Git {
 	cmd := newGitCmd(path)
 	status := newStatus(cmd)
-	return &Git{
+	return &git{
 		cmd:           cmd,
-		status:        status,
-		logHandler:    newLog(cmd),
-		branches:      newBranches(cmd),
-		fetchService:  newFetch(cmd),
-		ignoreHandler: newIgnoreHandler(path),
+		statusService: status,
+		logService:    newLog(cmd),
+		branchService: newBranchService(cmd),
+		remoteService: newRemoteService(cmd),
+		ignoreService: newIgnoreHandler(path),
 		diffService:   newDiff(cmd, status),
 		commitService: newCommit(cmd),
-		pushService:   newPush(cmd),
-		mergeService:  newMerge(cmd),
 	}
 }
-func (h *Git) RepoPath() string {
+func (h *git) GetRepo() (Repo, error) {
+	commits, err := h.logService.getLog()
+	if err != nil {
+		return Repo{}, err
+	}
+	branches, err := h.branchService.getBranches()
+	if err != nil {
+		return Repo{}, err
+	}
+	status, err := h.statusService.getStatus()
+	if err != nil {
+		return Repo{}, err
+	}
+
+	return Repo{RootPath: h.cmd.RepoPath(), Commits: commits, Branches: branches, Status: status}, nil
+}
+
+func (h *git) RepoPath() string {
 	return h.cmd.RepoPath()
 }
 
-func (h *Git) GetLog() ([]Commit, error) {
-	return h.logHandler.getLog()
+func (h *git) GetLog() ([]Commit, error) {
+	return h.logService.getLog()
 }
 
-func (h *Git) GetBranches() ([]Branch, error) {
-	return h.branches.getBranches()
+func (h *git) GetBranches() ([]Branch, error) {
+	return h.branchService.getBranches()
 }
 
-func (h *Git) GetStatus() (Status, error) {
-	return h.status.getStatus()
+func (h *git) GetStatus() (Status, error) {
+	return h.statusService.getStatus()
 }
 
-func (h *Git) Fetch() error {
-	return h.fetchService.fetch()
+func (h *git) Fetch() error {
+	return h.remoteService.fetch()
 }
 
-func (h *Git) CommitDiff(id string) (CommitDiff, error) {
+func (h *git) CommitDiff(id string) (CommitDiff, error) {
 	return h.diffService.commitDiff(id)
 }
 
-func (h *Git) IsIgnored(path string) bool {
-	return h.ignoreHandler.isIgnored(path)
+func (h *git) IsIgnored(path string) bool {
+	return h.ignoreService.isIgnored(path)
 }
 
-func (h *Git) Checkout(name string) error {
-	return h.branches.checkout(name)
+func (h *git) Checkout(name string) error {
+	return h.branchService.checkout(name)
 }
 
-func (h *Git) Commit(message string) error {
+func (h *git) Commit(message string) error {
 	return h.commitService.commitAllChanges(message)
 }
 
-func (h *Git) PushBranch(name string) error {
-	return h.pushService.pushBranch(name)
+func (h *git) PushBranch(name string) error {
+	return h.remoteService.pushBranch(name)
 }
 
-func (h *Git) MergeBranch(name string) error {
-	return h.mergeService.mergeBranch(name)
+func (h *git) MergeBranch(name string) error {
+	return h.branchService.mergeBranch(name)
+}
+
+func (h *git) CreateBranch(name string) error {
+	return h.branchService.createBranch(name)
 }
 
 // GitVersion returns the git version

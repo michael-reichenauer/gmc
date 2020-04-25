@@ -26,8 +26,8 @@ func TestViewCurrent(t *testing.T) {
 	cs := config.NewConfig("0.0", "")
 	m := &mock{uiWork: make(chan func())}
 	vm := newRepoVM(m, nil, cs, "")
-	vm.load()
-	vm.refresh()
+	vm.startRepoMonitor()
+	vm.triggerRefresh()
 	for f := range m.uiWork {
 		f()
 	}
@@ -39,8 +39,8 @@ func TestViewAcst(t *testing.T) {
 	cs := config.NewConfig("0.0", "c:/code/AcmAcs")
 	m := &mock{uiWork: make(chan func())}
 	vm := newRepoVM(m, nil, cs, "c:/code/AcmAcs")
-	vm.load()
-	vm.refresh()
+	vm.startRepoMonitor()
+	vm.triggerRefresh()
 	for f := range m.uiWork {
 		f()
 	}

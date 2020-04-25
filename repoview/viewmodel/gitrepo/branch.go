@@ -31,6 +31,31 @@ func newBranch(gb git.Branch) *Branch {
 	}
 }
 
-func (b *Branch) String() string {
-	return b.Name
+func (t *Branch) IsAncestorBranch(name string) bool {
+	for b := t; b != nil && b.ParentBranch != nil; b = b.ParentBranch {
+		if name == b.ParentBranch.Name {
+			return true
+		}
+	}
+	return false
+}
+
+func (t *Branch) GetAncestorsAndSelf() []*Branch {
+	var branches []*Branch
+	for b := t; b != nil; b = b.ParentBranch {
+		branches = append(branches, b)
+	}
+	return branches
+}
+
+func (t *Branch) GetAncestors() []*Branch {
+	var branches []*Branch
+	for b := t.ParentBranch; b != nil; b = b.ParentBranch {
+		branches = append(branches, b)
+	}
+	return branches
+}
+
+func (t *Branch) String() string {
+	return t.Name
 }
