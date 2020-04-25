@@ -41,8 +41,8 @@ func (h *BranchView) Show() {
 }
 
 func (h *BranchView) newBranchView() ui.View {
-	view := h.ui.NewView("")
-	view.Properties().Title = "Create Branch:"
+	view := h.ui.NewView("\n\nName:")
+	view.Properties().Title = "Create Branch"
 	view.Properties().Name = "CreateBranchDlg"
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
@@ -61,6 +61,7 @@ func (h *BranchView) newButtonsView() ui.View {
 
 func (h *BranchView) newTextView() ui.View {
 	view := h.ui.NewView("")
+	view.Properties().HasFrame = true
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().IsEditable = true
 	view.SetKey(gocui.KeyCtrlO, h.onOk)
@@ -79,9 +80,9 @@ func (h *BranchView) Close() {
 }
 
 func (h *BranchView) getBounds() (ui.BoundFunc, ui.BoundFunc, ui.BoundFunc) {
-	box := ui.CenterBounds(35, 3, 35, 3)
+	box := ui.CenterBounds(35, 5, 35, 5)
 	text := ui.Relative(box, func(b ui.Rect) ui.Rect {
-		return ui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - 2}
+		return ui.Rect{X: b.X + 7, Y: b.Y + 1, W: b.W - 9, H: 1}
 	})
 	buttons := ui.Relative(box, func(b ui.Rect) ui.Rect {
 		return ui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
