@@ -239,7 +239,7 @@ func (t *Service) adjustCurrentBranchIfStatus(repo *viewRepo) {
 }
 
 func (t *Service) BranchColor(name string) ui.Color {
-	if strings.HasPrefix(name, "multi:") {
+	if strings.HasPrefix(name, "multiple@") {
 		return ui.CWhite
 	}
 	color, ok := t.customBranchColors[name]

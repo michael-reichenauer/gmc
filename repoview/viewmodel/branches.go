@@ -8,29 +8,32 @@ import (
 
 // getGitModelBranches returns the git branches based on the name together with ancestor branches
 // If no named branches, the current branch (with ancestors is returned)
-func (t *Service) getGitRepoBranches(branchNames []string, gmRepo gitrepo.Repo) []*gitrepo.Branch {
-	if len(branchNames) == 0 {
-		// No specified branches, default to current, or master
-		rc := t.configService.GetRepo(t.gitRepo.RepoPath())
-		branchNames = rc.ShownBranches
-		if len(branchNames) == 0 {
-			branchNames = t.getDefaultBranchIDs(gmRepo)
-		}
-	}
+func (t *Service) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo) []*gitrepo.Branch {
+	branchNames = t.getBranchNamesToShow(branchNames, gitRepo)
 
 	var branches []*gitrepo.Branch
 	for _, name := range branchNames {
-		branch, ok := gmRepo.BranchByName(name)
+		branch, ok := gitRepo.BranchByName(name)
 		if ok {
-			branches = append(branches, branch)
+			for _, b := range branch.GetAncestorsAndSelf() {
+				branches = t.appendIfNotAppended(branches, b)
+			}
 		}
 	}
 
-	branches = t.addLocalBranches(branches, gmRepo)
-	branches = t.addRemoteBranches(branches, gmRepo)
-	// branches = s.removeSameLocalAsRemotes(branches, gmRepo, gmStatus)
+	branches = t.addLocalBranches(branches, gitRepo)
+	branches = t.addRemoteBranches(branches, gitRepo)
 	t.sortBranches(branches)
 	return branches
+}
+
+func (t *Service) appendIfNotAppended(branches []*gitrepo.Branch, branch *gitrepo.Branch) []*gitrepo.Branch {
+	for _, b := range branches {
+		if b == branch {
+			return branches
+		}
+	}
+	return append(branches, branch)
 }
 
 func (t *Service) addLocalBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo) []*gitrepo.Branch {
@@ -47,6 +50,21 @@ func (t *Service) addLocalBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Re
 		}
 	}
 	return bs
+}
+
+func (t *Service) getBranchNamesToShow(branchNames []string, gitRepo gitrepo.Repo) []string {
+	if len(branchNames) > 0 {
+		return branchNames
+	}
+
+	// No specified branches, default to current, or master
+	rc := t.configService.GetRepo(t.gitRepo.RepoPath())
+	branchNames = rc.ShownBranches
+	if len(branchNames) == 0 {
+		branchNames = t.getDefaultBranchIDs(gitRepo)
+	}
+
+	return branchNames
 }
 
 func (t *Service) addRemoteBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo) []*gitrepo.Branch {
@@ -85,6 +103,9 @@ func (t *Service) sortBranches(branches []*gitrepo.Branch) {
 		ir := utils.StringsIndex(gitrepo.DefaultBranchPriority, branches[r].Name)
 		if il != -1 && (il < ir || ir == -1) {
 			// Left item is known branch with higher priority
+			return true
+		}
+		if branches[r].IsAncestorBranch(branches[l].Name) {
 			return true
 		}
 		// no known order for the pair
