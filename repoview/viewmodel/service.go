@@ -611,9 +611,6 @@ func (t *Service) getBranchNames(repo *viewRepo) []string {
 }
 
 func (t *Service) MergeBranch(name string) error {
-	if strings.HasPrefix(name, "origin/") {
-		name = name[7:]
-	}
 	return t.gitRepo.MergeBranch(name)
 }
 

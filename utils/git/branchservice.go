@@ -58,6 +58,7 @@ func (t *branchesService) getBranches() ([]Branch, error) {
 }
 
 func (t *branchesService) mergeBranch(name string) error {
+	name = stripRemotePrefix(name)
 	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
 	output, err := t.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
 	if err != nil {

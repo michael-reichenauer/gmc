@@ -138,3 +138,10 @@ func Version() string {
 	out, _ := exec.Command("git", "version").Output()
 	return strings.TrimSpace(string(out))
 }
+
+func stripRemotePrefix(name string) string {
+	if strings.HasPrefix(name, "origin/") {
+		name = name[7:]
+	}
+	return name
+}
