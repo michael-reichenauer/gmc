@@ -166,7 +166,6 @@ func (t *gitCmd) fileName(cmd command) string {
 }
 func (t *gitCmd) runGitCommand(cmd command) command {
 	log.Infof("Cmd: %s %s (%s) ...", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
-	//fmt.Printf("Cmd: %s %s (%s) ...\n", cmd.Name, strings.Join(cmd.Args, " "), cmd.RepoPath)
 	// Get the git cmd output
 	st := timer.Start()
 	c := exec.Command(cmd.Name, cmd.Args...)
@@ -179,13 +178,13 @@ func (t *gitCmd) runGitCommand(cmd command) command {
 			errorText = strings.ReplaceAll(errorText, "\t", "   ")
 		}
 		msg := fmt.Sprintf("error: git %s\n%v\n%v", strings.Join(cmd.Args, " "), err, errorText)
-		log.Warnf("%s (%v)", msg, st)
+		log.Warnf("%s %v", msg, st)
 		cmd.Output = string(out)
 		cmd.Err = msg
 		return cmd
 	}
 	cmd.Output = string(out)
-	log.Infof("OK: git %s (%v)", strings.Join(cmd.Args, " "), st)
+	log.Infof("OK: git %s %v", strings.Join(cmd.Args, " "), st)
 	return cmd
 }
 
