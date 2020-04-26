@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
@@ -625,6 +626,9 @@ func (t *Service) DeleteBranch(name string, repo ViewRepo) error {
 	}
 	if !branch.IsGitBranch {
 		return fmt.Errorf("not a git branch %q", name)
+	}
+	if utils.StringsContains(gitrepo.DefaultBranchPriority, name) {
+		return fmt.Errorf("branch is protected %q", name)
 	}
 
 	var localBranch *gitrepo.Branch
