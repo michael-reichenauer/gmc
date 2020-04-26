@@ -58,6 +58,7 @@ func (t *branchesService) getBranches() ([]Branch, error) {
 }
 
 func (t *branchesService) mergeBranch(name string) error {
+	name = stripRemotePrefix(name)
 	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
 	output, err := t.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
 	if err != nil {
@@ -72,6 +73,11 @@ func (t *branchesService) mergeBranch(name string) error {
 
 func (t *branchesService) createBranch(name string) error {
 	_, err := t.cmd.Git("checkout", "-b", name)
+	return err
+}
+
+func (t *branchesService) deleteLocalBranch(name string) error {
+	_, err := t.cmd.Git("branch", "--delete", name)
 	return err
 }
 
@@ -145,4 +151,6 @@ func (t *branchesService) parseBranchLine(line string) (Branch, bool, error) {
 	}, false, nil
 }
 
-func (*branchesService) isPointBranch(matches []string) bool { return matches[5] == "->" }
+func (*branchesService) isPointBranch(matches []string) bool {
+	return matches[5] == "->"
+}

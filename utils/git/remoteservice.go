@@ -14,18 +14,20 @@ func newRemoteService(cmd gitCommander) *remoteService {
 }
 
 func (t *remoteService) fetch() error {
-	_, err := t.cmd.Git("fetch", "-f", "--prune", "--tags", "--prune-tags", "origin")
-	if err != nil {
-		return err
-	}
-	return nil
+	// fetch force, prune deleted remote refs, fetch tags, prune deleted tags,
+	_, err := t.cmd.Git("fetch", "--force", "--prune", "--tags", "--prune-tags", "origin")
+	return err
 }
 
 func (t *remoteService) pushBranch(name string) error {
+	// push set upstream
 	refs := fmt.Sprintf("refs/heads/%s:refs/heads/%s", name, name)
-	_, err := t.cmd.Git("push", "--porcelain", "origin", "-u", refs)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err := t.cmd.Git("push", "--porcelain", "origin", "--set-upstream", refs)
+	return err
+}
+
+func (t *remoteService) deleteRemoteBranch(name string) error {
+	name = stripRemotePrefix(name)
+	_, err := t.cmd.Git("push", "--porcelain", "origin", "--delete", name)
+	return err
 }
