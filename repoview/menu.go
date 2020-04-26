@@ -30,7 +30,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	}})
 	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-S", Action: t.vm.showCommitDialog})
 	menu.Add(ui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
-
+	menu.Add(ui.MenuItem{Text: "Delete Branch", SubItems: t.getDeleteBranchMenuItems()})
 	pushItems := t.getPushBranchMenuItems()
 	if pushItems != nil {
 		menu.Add(ui.MenuItem{Text: "Push", SubItems: pushItems})
@@ -160,4 +160,19 @@ func (t *menuService) getMergeMenuItems() ([]ui.MenuItem, string) {
 		items = append(items, item)
 	}
 	return items, fmt.Sprintf("Merge to: %s", current.DisplayName)
+}
+
+func (t *menuService) getDeleteBranchMenuItems() []ui.MenuItem {
+
+	var items []ui.MenuItem
+	branches := t.vm.GetAllBranches()
+	for _, b := range branches {
+		name := b.Name // closure save
+		item := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
+			t.vm.DeleteBranch(name)
+		}}
+		items = append(items, item)
+	}
+	return items
+
 }

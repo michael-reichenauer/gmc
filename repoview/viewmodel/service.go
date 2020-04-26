@@ -2,6 +2,7 @@ package viewmodel
 
 import (
 	"context"
+	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils/git"
@@ -618,6 +619,56 @@ func (t *Service) MergeBranch(name string) error {
 
 func (t *Service) CreateBranch(name string) error {
 	return t.gitRepo.CreateBranch(name)
+}
+
+func (t *Service) DeleteBranch(name string, repo ViewRepo) error {
+	branch, ok := repo.viewRepo.gitRepo.BranchByName(name)
+	if !ok {
+		return fmt.Errorf("unknown git branch %q", name)
+	}
+	if !branch.IsGitBranch {
+		return fmt.Errorf("not a git branch %q", name)
+	}
+
+	var localBranch *gitrepo.Branch
+	var remoteBranch *gitrepo.Branch
+
+	if branch.IsRemote {
+		// Remote branch, check if there is a corresponding local branch
+		remoteBranch = branch
+		if branch.LocalName != "" {
+			if b, ok := repo.viewRepo.gitRepo.BranchByName(branch.LocalName); ok {
+				localBranch = b
+			}
+		}
+	}
+
+	if !branch.IsRemote {
+		// Local branch, check if there is a corresponding remote branch
+		localBranch = branch
+		if branch.RemoteName != "" {
+			if b, ok := repo.viewRepo.gitRepo.BranchByName(branch.RemoteName); ok {
+				remoteBranch = b
+			}
+		}
+	}
+
+	if remoteBranch != nil {
+		// Deleting remote branch
+		err := t.gitRepo.DeleteRemoteBranch(remoteBranch.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	if localBranch != nil {
+		// Deleting local branch
+		err := t.gitRepo.DeleteLocalBranch(localBranch.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 //

@@ -75,6 +75,11 @@ func (t *branchesService) createBranch(name string) error {
 	return err
 }
 
+func (t *branchesService) deleteLocalBranch(name string) error {
+	_, err := t.cmd.Git("branch", "--delete", name)
+	return err
+}
+
 func (t *branchesService) parseBranchesOutput(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")
@@ -145,4 +150,6 @@ func (t *branchesService) parseBranchLine(line string) (Branch, bool, error) {
 	}, false, nil
 }
 
-func (*branchesService) isPointBranch(matches []string) bool { return matches[5] == "->" }
+func (*branchesService) isPointBranch(matches []string) bool {
+	return matches[5] == "->"
+}

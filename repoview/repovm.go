@@ -281,3 +281,10 @@ func (h *repoVM) CreateBranch(name string) {
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) })
 }
+
+func (h *repoVM) DeleteBranch(name string) {
+	h.startCommand(
+		fmt.Sprintf("Deleting Branch:\n%s", name),
+		func() error { return h.viewModelService.DeleteBranch(name, h.repo) },
+		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) })
+}

@@ -32,6 +32,8 @@ type Git interface {
 	PushBranch(name string) error
 	CreateBranch(name string) error
 	MergeBranch(name string) error
+	DeleteRemoteBranch(name string) error
+	DeleteLocalBranch(name string) error
 }
 
 type git struct {
@@ -122,6 +124,13 @@ func (h *git) MergeBranch(name string) error {
 
 func (h *git) CreateBranch(name string) error {
 	return h.branchService.createBranch(name)
+}
+
+func (h *git) DeleteRemoteBranch(name string) error {
+	return h.remoteService.deleteRemoteBranch(name)
+}
+func (h *git) DeleteLocalBranch(name string) error {
+	return h.branchService.deleteLocalBranch(name)
 }
 
 // GitVersion returns the git version
