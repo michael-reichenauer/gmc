@@ -3,6 +3,7 @@ package viewmodel
 import (
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"sort"
 )
 
@@ -12,11 +13,27 @@ func (t *Service) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo)
 	branchNames = t.getBranchNamesToShow(branchNames, gitRepo)
 
 	var branches []*gitrepo.Branch
+	var notFound []string
 	for _, name := range branchNames {
 		branch, ok := gitRepo.BranchByName(name)
 		if ok {
 			for _, b := range branch.GetAncestorsAndSelf() {
 				branches = t.appendIfNotAppended(branches, b)
+			}
+		} else {
+			notFound = append(notFound, name)
+		}
+	}
+	// Check if some names may have been deleted branches, which now have different names,
+	// but same display name
+	for _, name := range notFound {
+		n := git.StripRemotePrefix(name)
+		for _, b := range gitRepo.Branches {
+			if n == b.DisplayName {
+				for _, b := range b.GetAncestorsAndSelf() {
+					branches = t.appendIfNotAppended(branches, b)
+				}
+				break
 			}
 		}
 	}

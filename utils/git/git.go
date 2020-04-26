@@ -139,7 +139,7 @@ func Version() string {
 	return strings.TrimSpace(string(out))
 }
 
-func stripRemotePrefix(name string) string {
+func StripRemotePrefix(name string) string {
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}

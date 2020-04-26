@@ -27,7 +27,7 @@ func (t *remoteService) pushBranch(name string) error {
 }
 
 func (t *remoteService) deleteRemoteBranch(name string) error {
-	name = stripRemotePrefix(name)
+	name = StripRemotePrefix(name)
 	_, err := t.cmd.Git("push", "--porcelain", "origin", "--delete", name)
 	return err
 }
