@@ -163,10 +163,12 @@ func (t *menuService) getMergeMenuItems() ([]ui.MenuItem, string) {
 }
 
 func (t *menuService) getDeleteBranchMenuItems() []ui.MenuItem {
-
 	var items []ui.MenuItem
 	branches := t.vm.GetAllBranches()
 	for _, b := range branches {
+		if !b.IsGitBranch {
+			continue
+		}
 		name := b.Name // closure save
 		item := ui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.DeleteBranch(name)
