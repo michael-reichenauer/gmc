@@ -310,13 +310,13 @@ func (t *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
 	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
 }
 
-func (t *Service) GetAllBranches(viewRepo ViewRepo) []Branch {
+func (t *Service) GetAllBranches(viewRepo ViewRepo, skipShown bool) []Branch {
 	var branches []Branch
 	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
 		if containsDisplayNameBranch(branches, b.DisplayName) {
 			continue
 		}
-		if containsBranch(viewRepo.viewRepo.Branches, b.Name) {
+		if skipShown && containsBranch(viewRepo.viewRepo.Branches, b.Name) {
 			continue
 		}
 		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))

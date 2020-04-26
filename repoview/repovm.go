@@ -204,8 +204,8 @@ func (h *repoVM) GetActiveBranches() []viewmodel.Branch {
 	return h.viewModelService.GetActiveBranches(h.repo)
 }
 
-func (h *repoVM) GetAllBranches() []viewmodel.Branch {
-	return h.viewModelService.GetAllBranches(h.repo)
+func (h *repoVM) GetAllBranches(skipShown bool) []viewmodel.Branch {
+	return h.viewModelService.GetAllBranches(h.repo, skipShown)
 }
 
 func (h *repoVM) GetShownBranches(skipMaster bool) []viewmodel.Branch {

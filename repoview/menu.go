@@ -73,7 +73,7 @@ func (t *menuService) getOpenBranchMenuItems() []ui.MenuItem {
 	items = append(items, ui.MenuItem{Text: "Active Branches", SubItems: activeSubItems})
 
 	var allGitSubItems []ui.MenuItem
-	for _, b := range t.vm.GetAllBranches() {
+	for _, b := range t.vm.GetAllBranches(true) {
 		if b.IsGitBranch {
 			allGitSubItems = append(allGitSubItems, t.toOpenBranchMenuItem(b))
 		}
@@ -81,7 +81,7 @@ func (t *menuService) getOpenBranchMenuItems() []ui.MenuItem {
 	items = append(items, ui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
 
 	var allSubItems []ui.MenuItem
-	for _, b := range t.vm.GetAllBranches() {
+	for _, b := range t.vm.GetAllBranches(true) {
 		allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
 	}
 	items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
@@ -164,7 +164,7 @@ func (t *menuService) getMergeMenuItems() ([]ui.MenuItem, string) {
 
 func (t *menuService) getDeleteBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
-	branches := t.vm.GetAllBranches()
+	branches := t.vm.GetAllBranches(false)
 	for _, b := range branches {
 		if !b.IsGitBranch {
 			continue
