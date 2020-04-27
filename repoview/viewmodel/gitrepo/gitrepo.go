@@ -234,6 +234,7 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	}
 
 	repo.Status = newStatus(gitRepo.Status)
+	repo.Tags = s.toTags(gitRepo.Tags)
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
@@ -274,4 +275,12 @@ func (s *gitRepo) DeleteRemoteBranch(name string) error {
 
 func (s *gitRepo) DeleteLocalBranch(name string) error {
 	return s.git.DeleteLocalBranch(name)
+}
+
+func (s *gitRepo) toTags(gitTags []git.Tag) []Tag {
+	tags := make([]Tag, len(gitTags))
+	for i, tag := range gitTags {
+		tags[i] = Tag{CommitID: tag.CommitID, TagName: tag.TagName}
+	}
+	return tags
 }

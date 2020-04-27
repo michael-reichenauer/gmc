@@ -15,6 +15,7 @@ type Repo struct {
 	Commits  []Commit
 	Branches []Branch
 	Status   Status
+	Tags     []Tag
 }
 
 type Git interface {
@@ -34,6 +35,7 @@ type Git interface {
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
+	GetTags() ([]Tag, error)
 }
 
 type git struct {
@@ -45,6 +47,7 @@ type git struct {
 	diffService   *diffService
 	commitService *commitService
 	remoteService *remoteService
+	tagService    *tagService
 }
 
 func NewGit(path string) Git {
@@ -59,6 +62,7 @@ func NewGit(path string) Git {
 		ignoreService: newIgnoreHandler(path),
 		diffService:   newDiff(cmd, status),
 		commitService: newCommit(cmd),
+		tagService:    newTagService(cmd),
 	}
 }
 func (h *git) GetRepo() (Repo, error) {
@@ -74,8 +78,18 @@ func (h *git) GetRepo() (Repo, error) {
 	if err != nil {
 		return Repo{}, err
 	}
+	tags, err := h.tagService.getTags()
+	if err != nil {
+		return Repo{}, err
+	}
 
-	return Repo{RootPath: h.cmd.RepoPath(), Commits: commits, Branches: branches, Status: status}, nil
+	return Repo{
+		RootPath: h.cmd.RepoPath(),
+		Commits:  commits,
+		Branches: branches,
+		Status:   status,
+		Tags:     tags,
+	}, nil
 }
 
 func (h *git) RepoPath() string {
@@ -129,8 +143,13 @@ func (h *git) CreateBranch(name string) error {
 func (h *git) DeleteRemoteBranch(name string) error {
 	return h.remoteService.deleteRemoteBranch(name)
 }
+
 func (h *git) DeleteLocalBranch(name string) error {
 	return h.branchService.deleteLocalBranch(name)
+}
+
+func (h *git) GetTags() ([]Tag, error) {
+	return h.tagService.getTags()
 }
 
 // GitVersion returns the git version
