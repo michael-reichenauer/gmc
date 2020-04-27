@@ -356,7 +356,7 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 	return false
 }
 
-func (t *Service) GetCommitOpenBranches(commitID string, viewRepo ViewRepo) []Branch {
+func (t *Service) GetCommitOpenInBranches(commitID string, viewRepo ViewRepo) []Branch {
 	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
 	var branches []*gitrepo.Branch
 
@@ -365,6 +365,32 @@ func (t *Service) GetCommitOpenBranches(commitID string, viewRepo ViewRepo) []Br
 		mergeParent := viewRepo.viewRepo.gitRepo.CommitById[c.ParentIDs[1]]
 		branches = append(branches, mergeParent.Branch)
 	}
+
+	var bs []Branch
+	for _, b := range branches {
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
+				b.Name == bsb.RemoteName
+		}) {
+			// Skip duplicates
+			continue
+		}
+		if nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
+			// Skip branches already shown
+			continue
+		}
+
+		bs = append(bs, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+	}
+
+	return bs
+}
+
+func (t *Service) GetCommitOpenOutBranches(commitID string, viewRepo ViewRepo) []Branch {
+	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
+	var branches []*gitrepo.Branch
 
 	for _, ccId := range c.ChildIDs {
 		// commit has children (i.e.), other branches have merged from this branch

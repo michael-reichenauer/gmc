@@ -12,7 +12,7 @@ type repoGraph struct {
 var (
 	currentCommitMarker = ui.White("●")
 	mergeInMarker       = ui.Dark("╮")
-	branchOurMarker     = ui.Dark("╯")
+	branchOurMarker     = ui.Dark("╭")
 	inOutMarker         = ui.Dark("<")
 )
 
