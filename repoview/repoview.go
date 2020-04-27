@@ -81,7 +81,7 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 		return ui.ViewText{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
-	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
+	h.setWindowTitle(repoPage)
 
 	if len(repoPage.lines) > 0 {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
@@ -96,12 +96,13 @@ func (h *RepoView) onLoad() {
 	h.vm.triggerRefresh()
 }
 
-func (h *RepoView) setWindowTitle(path, branch string, changes int) {
+func (h *RepoView) setWindowTitle(port repoPage) {
 	changesText := ""
-	if changes > 0 {
-		changesText = fmt.Sprintf(" (*%d)", changes)
+	if port.uncommittedChanges > 0 {
+		changesText = fmt.Sprintf(" (*%d)", port.uncommittedChanges)
 	}
-	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s   (%s)",
+		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
 func (h *RepoView) showContextMenu() {

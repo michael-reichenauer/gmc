@@ -133,7 +133,7 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	}
 
 	if name := h.branchNames.branchName(c.Id); name != "" {
-		// The commit branch name could be parsed form the subject (or a child subject)
+		// The commit branch name could be parsed form the subject (or a child subject).
 		// Lets use that as a branch and also let children use that branch if they only are multi branch
 		branch := h.tryGetBranchFromName(c, name)
 		var current *Commit
@@ -144,21 +144,15 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsMultiBranch; current = current.Children[0] {
 			}
 		}
-		if branch == nil {
-			branch = repo.addNamedBranch(current, name)
+		if branch != nil {
+			for ; current != c.FirstParent; current = current.FirstParent {
+				current.Branch = branch
+				current.isLikely = true
+				current.addBranch(branch)
+			}
+			c.Branch.BottomID = c.Id
+			return
 		}
-		// for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsMultiBranch; current = current.Children[0] {
-		// }
-		// if branch == nil {
-		// 	branch = repo.addNamedBranch(current, name)
-		// }
-		for ; current != c.FirstParent; current = current.FirstParent {
-			current.Branch = branch
-			current.isLikely = true
-			current.addBranch(branch)
-		}
-		c.Branch.BottomID = c.Id
-		return
 	}
 
 	if branch := h.isChildMultiBranch(c); branch != nil {
@@ -188,7 +182,7 @@ func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 
 func (h *branchesService) isChildMultiBranch(c *Commit) *Branch {
 	for _, cc := range c.Children {
-		if cc.Branch.IsMultiBranch {
+		if cc.Branch != nil && cc.Branch.IsMultiBranch {
 			// one of the commit children is a multi branch
 			return cc.Branch
 		}
@@ -213,6 +207,7 @@ func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
 			return b
 		}
 	}
+	// Try find a branch with the display name
 	for _, b := range c.Branches {
 		if name == b.DisplayName {
 			return b

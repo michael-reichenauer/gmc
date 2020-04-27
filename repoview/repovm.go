@@ -16,6 +16,7 @@ type repoPage struct {
 	repoPath           string
 	currentBranchName  string
 	uncommittedChanges int
+	selectedBranchName string
 }
 
 type repoVM struct {
@@ -97,12 +98,18 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
 	h.currentIndex = viewPage.CurrentLine
+
+	var sbn string
+	if viewPage.CurrentLine < len(h.repo.Commits) {
+		sbn = h.repo.Commits[viewPage.CurrentLine].Branch.Name
+	}
 	return repoPage{
 		repoPath:           h.repo.RepoPath,
 		lines:              lines,
 		total:              len(h.repo.Commits),
 		uncommittedChanges: h.repo.UncommittedChanges,
 		currentBranchName:  h.repo.CurrentBranchName,
+		selectedBranchName: sbn,
 	}, nil
 }
 
