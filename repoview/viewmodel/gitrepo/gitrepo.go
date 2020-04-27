@@ -250,6 +250,10 @@ func (s *gitRepo) fetchRoutine(ctx context.Context) {
 		fetchTicker.Stop()
 	}()
 
+	if err := s.git.Fetch(); err != nil {
+		log.Warnf("Failed to fetch %v", err)
+	}
+
 	for range fetchTicker.C {
 		if err := s.git.Fetch(); err != nil {
 			log.Warnf("Failed to fetch %v", err)
