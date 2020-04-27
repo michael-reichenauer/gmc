@@ -118,7 +118,7 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 				if change == statusChange && hasRepo {
 					s.triggerStatus(repo)
 				} else {
-					s.triggerRepo()
+					s.triggerRepo(false)
 				}
 				change = noChange
 			}
@@ -172,7 +172,7 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 			}
 			wait = time.After(batchInterval)
 			change = noChange
-			s.triggerRepo()
+			s.triggerRepo(true)
 
 		case <-ctx.Done():
 			// Closing this repo
@@ -191,7 +191,7 @@ func (s *gitRepo) triggerStatus(repo Repo) {
 	}()
 }
 
-func (s *gitRepo) triggerRepo() {
+func (s *gitRepo) triggerRepo(isTriggerFetch bool) {
 	log.Infof("TriggerRefreshRepo")
 	go func() {
 		repo, err := s.getFreshRepo()
@@ -199,6 +199,13 @@ func (s *gitRepo) triggerRepo() {
 			return
 		}
 		s.internalPostRepo(repo)
+		if isTriggerFetch {
+			go func() {
+				if err := s.git.Fetch(); err != nil {
+					log.Warnf("Failed to fetch %v", err)
+				}
+			}()
+		}
 	}()
 }
 
