@@ -188,7 +188,7 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 		c.Branch.DisplayName != currentBranchDisplayName {
 		color = ui.CDark
 	}
-	sb.WriteString(ui.GreenDk(tagsText))
+	sb.WriteString(ui.Green(tagsText))
 	sb.WriteString(ui.ColorText(color, subject))
 	log.Infof("Tags %s %v", c.SID, c.Tags)
 }
