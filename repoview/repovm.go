@@ -118,6 +118,11 @@ func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
 	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "", h.repo)
 }
 
+func (h *repoVM) isMoreClick(x int, y int) bool {
+	moreX := h.repoLayout.getMoreIndex(h.repo)
+	return x == moreX
+}
+
 func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
@@ -187,13 +192,22 @@ func (h *repoVM) showSelectedCommitDiff() {
 	h.showCommitDiff(c.ID)
 }
 
-func (h *repoVM) GetCommitOpenBranches() []viewmodel.Branch {
-	c := h.repo.Commits[h.currentIndex]
+func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []viewmodel.Branch {
+	c := h.repo.Commits[selectedIndex]
 	if c.More == viewmodel.MoreNone {
 		return nil
 	}
 
-	return h.viewModelService.GetCommitOpenBranches(c.ID, h.repo)
+	return h.viewModelService.GetCommitOpenInBranches(c.ID, h.repo)
+}
+
+func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []viewmodel.Branch {
+	c := h.repo.Commits[selectedIndex]
+	if c.More == viewmodel.MoreNone {
+		return nil
+	}
+
+	return h.viewModelService.GetCommitOpenOutBranches(c.ID, h.repo)
 }
 
 func (h *repoVM) CurrentNotShownBranch() (viewmodel.Branch, bool) {

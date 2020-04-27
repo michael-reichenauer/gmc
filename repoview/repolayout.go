@@ -30,7 +30,7 @@ func (t *repoLayout) getPageLines(
 		return nil
 	}
 
-	graphWidth := len(commits[0].Graph)*2 + markersWidth
+	graphWidth := t.getGraphWidth(commits)
 	commitWidth := viewWidth - graphWidth
 	messageWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
 
@@ -51,7 +51,18 @@ func (t *repoLayout) getPageLines(
 		lines = append(lines, sb.String())
 	}
 	return lines
+}
 
+func (t *repoLayout) getMoreIndex(repo viewmodel.ViewRepo) int {
+	graphWidth := t.getGraphWidth(repo.Commits)
+	return graphWidth - 2
+}
+
+func (t *repoLayout) getGraphWidth(commits []viewmodel.Commit) int {
+	if len(commits) == 0 {
+		return 0
+	}
+	return len(commits[0].Graph)*2 + markersWidth
 }
 
 func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, timeWidth int) {

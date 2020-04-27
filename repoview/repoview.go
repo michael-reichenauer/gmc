@@ -38,6 +38,7 @@ func (h *RepoView) newView() ui.View {
 	view := h.ui.NewViewFromPageFunc(h.viewPageData)
 	view.Properties().OnLoad = h.onLoad
 	view.Properties().Name = "RepoView"
+	view.Properties().OnMouseLeft = h.mouseLeft
 	view.Properties().OnMouseRight = h.showContextMenuAt
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
@@ -115,4 +116,16 @@ func (h *RepoView) showContextMenuAt(x int, y int) {
 	vp := h.view.ViewPage()
 	menu := h.menuService.getContextMenu(vp.FirstLine + y)
 	menu.Show(x+1, vp.CurrentLine-vp.FirstLine)
+}
+
+func (h *RepoView) mouseLeft(x int, y int) {
+	vp := h.view.ViewPage()
+	selectedLine := vp.FirstLine + y
+	h.view.SetCurrentLine(selectedLine)
+	if !h.vm.isMoreClick(x, y) {
+		return
+	}
+
+	menu := h.menuService.getShowMoreMenu(selectedLine)
+	menu.Show(x+3, y+2)
 }

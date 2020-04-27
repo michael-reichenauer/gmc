@@ -129,6 +129,7 @@ type View interface {
 	PostOnUIThread(func())
 	Close()
 	ScrollHorizontal(scroll int)
+	SetCurrentLine(line int)
 }
 
 type view struct {
@@ -515,9 +516,7 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 
 	if isSetCurrentLine || mouseHandler == nil {
 		// Setting current line to the line that user clicked on
-		p := h.ViewPage()
-		line := p.FirstLine + cy - p.CurrentLine
-		h.moveVertically(line)
+		h.SetCurrentLine(h.firstIndex + cy)
 	}
 
 	// Handle mouse down event if mouse custom handler
@@ -526,6 +525,10 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 			mouseHandler(cx, cy)
 		})
 	}
+}
+
+func (h *view) SetCurrentLine(line int) {
+	h.moveVertically(line - h.currentIndex)
 }
 
 func (h *view) viewBounds() Rect {
