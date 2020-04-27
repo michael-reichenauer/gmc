@@ -16,15 +16,17 @@ type branch struct {
 	isMultiBranch    bool
 	isRemote         bool
 	isCurrent        bool
+	HasLocalOnly     bool
+	HasRemoteOnly    bool
 }
 
-func (b *branch) String() string {
-	return b.name
+func (t *branch) String() string {
+	return t.name
 }
 
-func (b *branch) isAncestor(dc *branch) bool {
+func (t *branch) isAncestor(dc *branch) bool {
 	for dc.parentBranch != nil {
-		if dc.parentBranch == b {
+		if dc.parentBranch == t {
 			return true
 		}
 		dc = dc.parentBranch

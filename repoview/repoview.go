@@ -20,6 +20,7 @@ type RepoView struct {
 	ui          *ui.UI
 	mainService mainService
 	vm          *repoVM
+	menuService *menuService
 }
 
 func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
@@ -28,21 +29,47 @@ func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainServi
 		mainService: mainService,
 	}
 	h.vm = newRepoVM(ui, h, mainService, configService, workingFolder)
-	view := ui.NewViewFromPageFunc(h.viewPageData)
+	h.menuService = newMenuService(ui, h.vm)
+	h.view = h.newView()
+	return h
+}
+
+func (h *RepoView) newView() ui.View {
+	view := h.ui.NewViewFromPageFunc(h.viewPageData)
 	view.Properties().OnLoad = h.onLoad
-	view.Properties().OnClose = h.vm.close
 	view.Properties().Name = "RepoView"
-	view.Properties().OnMouseRight = h.vm.showContextMenu
+	view.Properties().OnMouseLeft = h.mouseLeft
+	view.Properties().OnMouseRight = h.showContextMenuAt
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
-	h.view = view
-	return h
+
+	view.SetKey(gocui.KeyF5, h.vm.triggerRefresh)
+	view.SetKey(gocui.KeyCtrlD, h.vm.showSelectedCommitDiff)
+	view.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
+	view.SetKey(gocui.KeyCtrlS, h.vm.showCommitDialog)
+	view.SetKey(gocui.KeyCtrlB, h.vm.showCreateBranchDialog)
+	view.SetKey(gocui.KeyCtrlP, h.vm.PushCurrentBranch)
+	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
+	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
+
+	view.SetKey('m', h.showContextMenu)
+	view.SetKey(gocui.KeyEsc, h.ui.Quit)
+	view.SetKey(gocui.KeyCtrlC, h.ui.Quit)
+	view.SetKey('q', h.ui.Quit)
+	view.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
+
+	return view
 }
 
 func (h *RepoView) Show() {
 	h.view.Show(ui.FullScreen())
 	h.view.SetCurrentView()
 	h.view.SetTop()
+}
+
+func (h *RepoView) Close() {
+	h.vm.close()
+	h.view.Close()
 }
 
 func (h *RepoView) NotifyChanged() {
@@ -55,7 +82,7 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 		return ui.ViewText{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
-	h.setWindowTitle(repoPage.repoPath, repoPage.currentBranchName, repoPage.uncommittedChanges)
+	h.setWindowTitle(repoPage)
 
 	if len(repoPage.lines) > 0 {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
@@ -65,37 +92,40 @@ func (h *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 }
 
 func (h *RepoView) onLoad() {
-	h.view.SetKey(gocui.KeyF5, h.vm.refresh)
-	h.view.SetKey(gocui.KeyEnter, h.vm.ToggleDetails)
-	h.view.SetKey(gocui.KeyCtrlSpace, h.vm.commit)
-	h.view.SetKey(gocui.KeyArrowRight, h.showContextMenu)
-	h.view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
-	h.view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
-	h.view.SetKey(gocui.KeyCtrlD, h.vm.showDiff)
-	h.view.SetKey(gocui.KeyEsc, h.ui.Quit)
-	h.view.SetKey(gocui.KeyCtrlC, h.ui.Quit)
-	h.view.SetKey('q', h.ui.Quit)
-	h.view.SetKey(gocui.KeyCtrlQ, h.ui.Quit)
-
-	h.vm.load()
+	h.vm.startRepoMonitor()
 	log.Infof("Load trigger refresh")
-	h.vm.refresh()
+	h.vm.triggerRefresh()
 }
 
-func (h *RepoView) setWindowTitle(path, branch string, changes int) {
+func (h *RepoView) setWindowTitle(port repoPage) {
 	changesText := ""
-	if changes > 0 {
-		changesText = fmt.Sprintf(" (*%d)", changes)
+	if port.uncommittedChanges > 0 {
+		changesText = fmt.Sprintf(" (*%d)", port.uncommittedChanges)
 	}
-	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s", path, branch, changesText))
+	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s   (%s)",
+		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
 func (h *RepoView) showContextMenu() {
 	vp := h.view.ViewPage()
-	h.vm.showContextMenu(10, vp.CurrentLine-vp.FirstLine)
+	menu := h.menuService.getContextMenu(vp.CurrentLine)
+	menu.Show(11, vp.CurrentLine-vp.FirstLine)
 }
 
-func (h *RepoView) showProgress() {
+func (h *RepoView) showContextMenuAt(x int, y int) {
+	vp := h.view.ViewPage()
+	menu := h.menuService.getContextMenu(vp.FirstLine + y)
+	menu.Show(x+1, vp.CurrentLine-vp.FirstLine)
+}
 
-	//h.progress = h.ui.ShowProgress("Some Progress")
+func (h *RepoView) mouseLeft(x int, y int) {
+	vp := h.view.ViewPage()
+	selectedLine := vp.FirstLine + y
+	h.view.SetCurrentLine(selectedLine)
+	if !h.vm.isMoreClick(x, y) {
+		return
+	}
+
+	menu := h.menuService.getShowMoreMenu(selectedLine)
+	menu.Show(x+3, y+2)
 }

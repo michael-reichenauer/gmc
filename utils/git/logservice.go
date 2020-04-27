@@ -25,36 +25,36 @@ const (
 	customRFC3339 = "2006-01-02T15:04:05Z0700" // Almost RFC3339 but no ':' in the last 4 chars
 )
 
-type logHandler struct {
-	cmd GitCommander
+type logService struct {
+	cmd gitCommander
 }
 
 func ToSid(commitID string) string {
 	return commitID[:6]
 }
 
-func newLog(cmd GitCommander) *logHandler {
-	return &logHandler{cmd: cmd}
+func newLog(cmd gitCommander) *logService {
+	return &logService{cmd: cmd}
 }
 
-func (h *logHandler) getLog() ([]Commit, error) {
-	logText, err := h.cmd.Git("log", "--all", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
+func (t *logService) getLog() ([]Commit, error) {
+	logText, err := t.cmd.Git("log", "--all", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git log, %v", err)
 	}
 
 	// Parse the git output lines into git commits
-	return h.parseCommits(logText)
+	return t.parseCommits(logText)
 }
 
-func (h *logHandler) parseCommits(logText string) ([]Commit, error) {
+func (t *logService) parseCommits(logText string) ([]Commit, error) {
 	var commits []Commit
 	lines := strings.Split(logText, "\x00")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		commit, err := h.parseCommit(line)
+		commit, err := t.parseCommit(line)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse git log output, %v", err)
 		}
@@ -63,17 +63,17 @@ func (h *logHandler) parseCommits(logText string) ([]Commit, error) {
 	return commits, nil
 }
 
-func (h *logHandler) parseCommit(line string) (Commit, error) {
+func (t *logService) parseCommit(line string) (Commit, error) {
 	lineParts := strings.Split(line, "|")
 	if len(lineParts) < 6 {
 		return Commit{}, fmt.Errorf("failed to parse git commit %q", line)
 	}
-	subject, message := h.parseMessage(lineParts)
+	subject, message := t.parseMessage(lineParts)
 	id := lineParts[0]
 	author := lineParts[3]
-	parentIDs := h.parseParentIDs(lineParts)
+	parentIDs := t.parseParentIDs(lineParts)
 
-	authorTime, commitTime, err := h.parseCommitTimes(lineParts)
+	authorTime, commitTime, err := t.parseCommitTimes(lineParts)
 	if err != nil {
 		return Commit{}, fmt.Errorf("failed to parse commit times from commit %q, %v", line, err)
 	}
@@ -81,19 +81,19 @@ func (h *logHandler) parseCommit(line string) (Commit, error) {
 		Message: message, Author: author, AuthorTime: authorTime, CommitTime: commitTime}, nil
 }
 
-func (h *logHandler) parseCommitTimes(lineParts []string) (time.Time, time.Time, error) {
-	authorTime, err := time.Parse(customRFC3339, h.toCustomRFC3339Text(lineParts[1]))
+func (t *logService) parseCommitTimes(lineParts []string) (time.Time, time.Time, error) {
+	authorTime, err := time.Parse(customRFC3339, t.toCustomRFC3339Text(lineParts[1]))
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to parse commit author time, %q, %v", lineParts[1], err)
 	}
-	commitTime, err := time.Parse(customRFC3339, h.toCustomRFC3339Text(lineParts[2]))
+	commitTime, err := time.Parse(customRFC3339, t.toCustomRFC3339Text(lineParts[2]))
 	if err != nil {
 		return time.Time{}, time.Time{}, fmt.Errorf("failed to parse commit commit time, %q, %v", lineParts[2], err)
 	}
 	return authorTime, commitTime, nil
 }
 
-func (h *logHandler) parseParentIDs(lineParts []string) []string {
+func (t *logService) parseParentIDs(lineParts []string) []string {
 	if lineParts[4] == "" {
 		// No parents, (root commit has no parent)
 		return nil
@@ -101,13 +101,13 @@ func (h *logHandler) parseParentIDs(lineParts []string) []string {
 	return strings.Split(lineParts[4], " ")
 }
 
-func (h *logHandler) toCustomRFC3339Text(gitTimeText string) string {
+func (t *logService) toCustomRFC3339Text(gitTimeText string) string {
 	timeText := strings.Replace(gitTimeText, " ", "T", 1)
 	timeText = strings.Replace(timeText, " -", "-", 1)
 	return strings.Replace(timeText, " +", "+", 1)
 }
 
-func (h *logHandler) parseMessage(lineParts []string) (string, string) {
+func (t *logService) parseMessage(lineParts []string) (string, string) {
 	message := lineParts[5]
 	if len(lineParts) > 6 {
 		// The subject contains one or more "|", so rejoin these parts into original subject

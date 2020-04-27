@@ -5,11 +5,16 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
+type Tag struct {
+	CommitID string
+	TagName  string
+}
 type Repo struct {
 	Commits    []*Commit
 	CommitById map[string]*Commit
 	Branches   []*Branch
 	Status     Status
+	Tags       []Tag
 	RepoPath   string
 }
 

@@ -89,6 +89,7 @@ type ViewProperties struct {
 	OnMoved        func()
 	Name           string
 	IsEditable     bool
+	IsWrap         bool
 }
 
 type ViewPage struct {
@@ -128,6 +129,7 @@ type View interface {
 	PostOnUIThread(func())
 	Close()
 	ScrollHorizontal(scroll int)
+	SetCurrentLine(line int)
 }
 
 type view struct {
@@ -149,6 +151,7 @@ type view struct {
 	notifyThrottler    *semaphore.Weighted
 	maxLineWidth       int
 	isClosed           bool
+	hasWritten         bool
 }
 
 func newView(ui *UI, viewData func(viewPort ViewPage) ViewText) *view {
@@ -216,6 +219,7 @@ func (h *view) Show(bf BoundFunc) {
 		h.SetKey(gocui.KeyArrowDown, h.onKeyArrowDown)
 		h.SetKey(gocui.KeySpace, h.onKeyPageDown)
 	}
+	h.guiView.Wrap = h.properties.IsWrap
 
 	h.SetKey(gocui.MouseMiddle, h.toggleScrollDirection)
 	h.SetKey(gocui.MouseWheelDown, h.onMouseWheelRollDown)
@@ -258,7 +262,10 @@ func (h *view) NotifyChanged() {
 	go func() {
 		h.ui.PostOnUIThread(func() {
 			h.notifyThrottler.Release(1)
-			if h.isClosed || h.properties.IsEditable {
+			if h.isClosed {
+				return
+			}
+			if h.properties.IsEditable && h.hasWritten {
 				return
 			}
 			// Clear the view to make room for the new data
@@ -317,6 +324,7 @@ func (h *view) NotifyChanged() {
 			if _, err := h.guiView.Write(h.toViewTextBytes(viewData.Lines)); err != nil {
 				panic(log.Fatal(err))
 			}
+			h.hasWritten = true
 
 			h.drawVerticalScrollbar(len(viewData.Lines))
 			h.drawHorizontalScrollbar()
@@ -344,7 +352,7 @@ func (h *view) toViewTextBytes(lines []string) []byte {
 		// Draw the current line marker
 		if !h.properties.HideCurrentLineMarker && isCurrentView && i+h.firstIndex == h.currentIndex {
 			sb.WriteString(ColorRune(CWhite, currentLineMarker))
-		} else {
+		} else if !h.properties.HideCurrentLineMarker {
 			sb.WriteString(" ")
 		}
 
@@ -508,9 +516,7 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 
 	if isSetCurrentLine || mouseHandler == nil {
 		// Setting current line to the line that user clicked on
-		p := h.ViewPage()
-		line := p.FirstLine + cy - p.CurrentLine
-		h.moveVertically(line)
+		h.SetCurrentLine(h.firstIndex + cy)
 	}
 
 	// Handle mouse down event if mouse custom handler
@@ -519,6 +525,10 @@ func (h *view) mouseDown(mouseHandler func(x, y int), isSetCurrentLine bool) {
 			mouseHandler(cx, cy)
 		})
 	}
+}
+
+func (h *view) SetCurrentLine(line int) {
+	h.moveVertically(line - h.currentIndex)
 }
 
 func (h *view) viewBounds() Rect {

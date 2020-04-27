@@ -27,6 +27,7 @@ type commit struct {
 	ParentIDs    []string
 	ChildIDs     []string
 	IsCurrent    bool
+	Tags         []string
 	More         utils.Bitmask
 	Branch       *branch
 	graph        []GraphColumn

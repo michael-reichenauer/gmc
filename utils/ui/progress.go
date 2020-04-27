@@ -41,6 +41,7 @@ func (t *Progress) newView() View {
 }
 
 func (t *Progress) SetText(text string) {
+	log.Infof("Progress text: %q", text)
 	// Calculate margin between text and progress indicator (max two lines of text)
 	lines := strings.Split(text, "\n")
 	if len(lines) > 2 {
@@ -53,6 +54,7 @@ func (t *Progress) SetText(text string) {
 }
 
 func (t *Progress) Close() {
+	log.Infof("Close Progress")
 	t.view.Close()
 	t.view = nil
 }

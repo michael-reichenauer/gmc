@@ -11,6 +11,8 @@ type ViewRepo struct {
 	RepoPath           string
 	UncommittedChanges int
 	viewRepo           *viewRepo
+	MergeMessage       string
+	Conflicts          int
 }
 
 const (
@@ -28,6 +30,7 @@ type Commit struct {
 	AuthorTime   time.Time
 	IsCurrent    bool
 	Branch       Branch
+	Tags         []string
 	Graph        []GraphColumn
 	More         utils.Bitmask
 	ParentIDs    []string
@@ -48,6 +51,8 @@ type Branch struct {
 	IsGitBranch   bool
 	IsCurrent     bool
 	TipID         string
+	HasLocalOnly  bool
+	HasRemoteOnly bool
 }
 
 type Branches []Branch
@@ -68,6 +73,8 @@ func newViewRepo(repo *viewRepo) ViewRepo {
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
 		viewRepo:           repo,
+		MergeMessage:       repo.MergeMessage,
+		Conflicts:          repo.Conflicts,
 	}
 }
 
@@ -96,6 +103,7 @@ func toCommit(c *commit) Commit {
 		BranchTips:   c.BranchTips,
 		IsLocalOnly:  c.IsLocalOnly,
 		IsRemoteOnly: c.IsRemoteOnly,
+		Tags:         c.Tags,
 	}
 }
 
@@ -111,5 +119,7 @@ func toBranch(b *branch) Branch {
 		IsGitBranch:   b.isGitBranch,
 		TipID:         b.tipId,
 		IsCurrent:     b.isCurrent,
+		HasRemoteOnly: b.HasRemoteOnly,
+		HasLocalOnly:  b.HasLocalOnly,
 	}
 }

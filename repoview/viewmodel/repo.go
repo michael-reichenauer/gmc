@@ -22,6 +22,8 @@ type viewRepo struct {
 	WorkingFolder      string
 	UncommittedChanges int
 	gitRepo            gitrepo.Repo
+	Conflicts          int
+	MergeMessage       string
 }
 
 func newRepo() *viewRepo {
@@ -30,21 +32,21 @@ func newRepo() *viewRepo {
 	}
 }
 
-func (r *viewRepo) CommitById(id string) (*commit, bool) {
-	c, ok := r.commitById[id]
+func (t *viewRepo) CommitById(id string) (*commit, bool) {
+	c, ok := t.commitById[id]
 	return c, ok
 }
 
-func (r *viewRepo) BranchByName(name string) *branch {
-	b := r.tryGetBranchByName(name)
+func (t *viewRepo) BranchByName(name string) *branch {
+	b := t.tryGetBranchByName(name)
 	if b == nil {
 		panic(log.Fatal(fmt.Errorf("unknown branch id %s", name)))
 	}
 	return b
 }
 
-func (r *viewRepo) tryGetBranchByName(name string) *branch {
-	for _, b := range r.Branches {
+func (t *viewRepo) tryGetBranchByName(name string) *branch {
+	for _, b := range t.Branches {
 		if name == b.name {
 			return b
 		}
@@ -52,44 +54,50 @@ func (r *viewRepo) tryGetBranchByName(name string) *branch {
 	return nil
 }
 
-func (r *viewRepo) addBranch(gb *gitrepo.Branch) {
-	b := r.toBranch(gb, len(r.Branches))
-	r.Branches = append(r.Branches, b)
+func (t *viewRepo) addBranch(gb *gitrepo.Branch) {
+	b := t.toBranch(gb, len(t.Branches))
+	t.Branches = append(t.Branches, b)
 }
 
-func (r *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
+func (t *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	if gRepo.Status.OK() {
+		// No uncommitted changes,
 		return
 	}
 	cb, ok := gRepo.CurrentBranch()
-	if !ok || !r.containsBranch(cb) {
+	if !ok || !t.containsBranch(cb) {
+		// No current branch, or view repo does not show the current branch
 		return
 	}
+
 	allChanges := gRepo.Status.AllChanges()
 	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
 	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
-		statusText = statusText + ", " + gRepo.Status.MergeMessage
+		statusText = fmt.Sprintf("%s, %s", gRepo.Status.MergeMessage, statusText)
+	}
+	if gRepo.Status.Conflicted > 0 {
+		statusText = fmt.Sprintf("CONFLICTS: %d, %s", gRepo.Status.Conflicted, statusText)
 	}
 
-	c := r.toVirtualStatusCommit(cb.Name, statusText, len(r.Commits))
-	r.Commits = append(r.Commits, c)
-	r.commitById[c.ID] = c
+	c := t.toVirtualStatusCommit(cb.Name, statusText, len(t.Commits))
+	t.Commits = append(t.Commits, c)
+	t.commitById[c.ID] = c
 }
 
-func (r *viewRepo) addGitCommit(gc *gitrepo.Commit) {
-	if !r.containsBranch(gc.Branch) {
+func (t *viewRepo) addGitCommit(gc *gitrepo.Commit) {
+	if !t.containsBranch(gc.Branch) {
 		return
 	}
-	c := r.toCommit(gc, len(r.Commits))
-	r.Commits = append(r.Commits, c)
-	r.commitById[c.ID] = c
+	c := t.toCommit(gc, len(t.Commits))
+	t.Commits = append(t.Commits, c)
+	t.commitById[c.ID] = c
 	if c.IsCurrent {
-		r.CurrentCommit = c
+		t.CurrentCommit = c
 	}
 }
 
-func (r *viewRepo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
-	for _, rb := range r.Branches {
+func (t *viewRepo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
+	for _, rb := range t.Branches {
 		for _, b := range branches {
 			if rb.name == b.Name {
 				return true
@@ -99,8 +107,8 @@ func (r *viewRepo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	return false
 }
 
-func (r *viewRepo) containsBranch(branch *gitrepo.Branch) bool {
-	for _, b := range r.Branches {
+func (t *viewRepo) containsBranch(branch *gitrepo.Branch) bool {
+	for _, b := range t.Branches {
 		if b.name == branch.Name {
 			return true
 		}
@@ -108,8 +116,8 @@ func (r *viewRepo) containsBranch(branch *gitrepo.Branch) bool {
 	return false
 }
 
-func (r *viewRepo) containsBranchName(name string) bool {
-	for _, b := range r.Branches {
+func (t *viewRepo) containsBranchName(name string) bool {
+	for _, b := range t.Branches {
 		if b.name == name {
 			return true
 		}
@@ -117,7 +125,7 @@ func (r *viewRepo) containsBranchName(name string) bool {
 	return false
 }
 
-func (r *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
+func (t *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 	parentBranchName := ""
 	if b.ParentBranch != nil {
 		parentBranchName = b.ParentBranch.Name
@@ -138,29 +146,27 @@ func (r *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 	}
 }
 
-func (r *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
-	var branch = r.BranchByName(c.Branch.Name)
+func (t *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
+	var branch = t.BranchByName(c.Branch.Name)
 
 	return &commit{
-		ID:           c.Id,
-		SID:          c.Sid,
-		Subject:      c.Subject,
-		Message:      c.Message,
-		Author:       c.Author,
-		AuthorTime:   c.AuthorTime,
-		ParentIDs:    c.ParentIDs,
-		ChildIDs:     c.ChildIDs,
-		IsCurrent:    c.IsCurrent,
-		Branch:       branch,
-		Index:        index,
-		graph:        make([]GraphColumn, len(r.Branches)),
-		BranchTips:   c.BranchTipNames,
-		IsLocalOnly:  false,
-		IsRemoteOnly: false,
+		ID:         c.Id,
+		SID:        c.Sid,
+		Subject:    c.Subject,
+		Message:    c.Message,
+		Author:     c.Author,
+		AuthorTime: c.AuthorTime,
+		ParentIDs:  c.ParentIDs,
+		ChildIDs:   c.ChildIDs,
+		IsCurrent:  c.IsCurrent,
+		Branch:     branch,
+		Index:      index,
+		graph:      make([]GraphColumn, len(t.Branches)),
+		BranchTips: c.BranchTipNames,
 	}
 }
 
-func (r *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
+func (t *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
 			return true
@@ -169,8 +175,8 @@ func (r *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string
 	return false
 }
 
-func (r *viewRepo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
-	branch := r.BranchByName(branchName)
+func (t *viewRepo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
+	branch := t.BranchByName(branchName)
 	return &commit{
 		ID:         UncommittedID,
 		SID:        UncommittedSID,
@@ -183,16 +189,16 @@ func (r *viewRepo) toVirtualStatusCommit(branchName string, statusText string, i
 		IsCurrent:  false,
 		Branch:     branch,
 		Index:      index,
-		graph:      make([]GraphColumn, len(r.Branches)),
+		graph:      make([]GraphColumn, len(t.Branches)),
 	}
 }
 
-func (r *viewRepo) String() string {
-	return fmt.Sprintf("b:%d c:%d", len(r.Branches), len(r.Commits))
+func (t *viewRepo) String() string {
+	return fmt.Sprintf("b:%d c:%d", len(t.Branches), len(t.Commits))
 }
 
-func (r *viewRepo) ToBranchIndex(id string) int {
-	for i, b := range r.Branches {
+func (t *viewRepo) ToBranchIndex(id string) int {
+	for i, b := range t.Branches {
 		if b.name == id {
 			return i
 		}

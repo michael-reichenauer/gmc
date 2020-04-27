@@ -21,8 +21,8 @@ type Branch struct {
 	TipCommitMessage string
 }
 
-func (b *Branch) String() string {
-	return b.Name
+func (t *Branch) String() string {
+	return t.Name
 }
 
 const (
@@ -33,38 +33,62 @@ const (
 
 var branchesRegexp = utils.CompileRegexp(branchesRegexpText)
 
-type branchesHandler struct {
-	cmd GitCommander
+type branchesService struct {
+	cmd gitCommander
 }
 
-func newBranches(cmd GitCommander) *branchesHandler {
-	return &branchesHandler{cmd: cmd}
+func newBranchService(cmd gitCommander) *branchesService {
+	return &branchesService{cmd: cmd}
 }
 
-func (h *branchesHandler) checkout(name string) error {
-	_, err := h.cmd.Git("checkout", name)
+func (t *branchesService) checkout(name string) error {
+	_, err := t.cmd.Git("checkout", name)
 	if err != nil {
 		return fmt.Errorf("failed to get checkout %q, %v", name, err)
 	}
 	return nil
 }
 
-func (h *branchesHandler) getBranches() ([]Branch, error) {
-	branchesText, err := h.cmd.Git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
+func (t *branchesService) getBranches() ([]Branch, error) {
+	branchesText, err := t.cmd.Git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
 	}
-	return h.parseBranchesOutput(branchesText)
+	return t.parseBranchesOutput(branchesText)
 }
 
-func (h *branchesHandler) parseBranchesOutput(branchesText string) ([]Branch, error) {
+func (t *branchesService) mergeBranch(name string) error {
+	name = StripRemotePrefix(name)
+	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
+	output, err := t.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 1") &&
+			strings.Contains(output, "CONFLICT") {
+			return fmt.Errorf("merge resulted in conflict(s)")
+		}
+		return err
+	}
+	return nil
+}
+
+func (t *branchesService) createBranch(name string) error {
+	_, err := t.cmd.Git("checkout", "-b", name)
+	return err
+}
+
+func (t *branchesService) deleteLocalBranch(name string) error {
+	_, err := t.cmd.Git("branch", "--delete", name)
+	return err
+}
+
+func (t *branchesService) parseBranchesOutput(branchesText string) ([]Branch, error) {
 	var branches []Branch
 	lines := strings.Split(branchesText, "\n")
 	for _, line := range lines {
 		if strings.TrimSpace(line) == "" {
 			continue
 		}
-		branch, skip, err := h.parseBranchLine(line)
+		branch, skip, err := t.parseBranchLine(line)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse branch line %q, %v", line, err)
 		}
@@ -77,12 +101,12 @@ func (h *branchesHandler) parseBranchesOutput(branchesText string) ([]Branch, er
 	return branches, nil
 }
 
-func (h *branchesHandler) parseBranchLine(line string) (Branch, bool, error) {
+func (t *branchesService) parseBranchLine(line string) (Branch, bool, error) {
 	match := branchesRegexp.FindStringSubmatch(line)
 	if match == nil {
 		return Branch{}, true, fmt.Errorf("failed to parse branch line %q", line)
 	}
-	if h.isPointBranch(match) {
+	if t.isPointBranch(match) {
 		return Branch{}, true, nil
 	}
 
@@ -127,4 +151,6 @@ func (h *branchesHandler) parseBranchLine(line string) (Branch, bool, error) {
 	}, false, nil
 }
 
-func (*branchesHandler) isPointBranch(matches []string) bool { return matches[5] == "->" }
+func (*branchesService) isPointBranch(matches []string) bool {
+	return matches[5] == "->"
+}

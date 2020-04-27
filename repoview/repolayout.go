@@ -1,8 +1,10 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -21,12 +23,16 @@ func newRepoLayout(viewModelService *viewmodel.Service) *repoLayout {
 	return &repoLayout{viewModelService: viewModelService, repoGraph: newRepoGraph()}
 }
 
-func (t *repoLayout) getPageLines(commits []viewmodel.Commit, viewWidth int, currentBranchDisplayName string) []string {
+func (t *repoLayout) getPageLines(
+	commits []viewmodel.Commit,
+	viewWidth int,
+	currentBranchDisplayName string,
+	repo viewmodel.ViewRepo) []string {
 	if len(commits) < 1 {
 		return nil
 	}
 
-	graphWidth := len(commits[0].Graph)*2 + markersWidth
+	graphWidth := t.getGraphWidth(commits)
 	commitWidth := viewWidth - graphWidth
 	messageWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
 
@@ -38,7 +44,7 @@ func (t *repoLayout) getPageLines(commits []viewmodel.Commit, viewWidth int, cur
 		t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
 		t.writeAheadBehindMarker(&sb, c)
-		t.writeSubject(&sb, c, currentBranchDisplayName, messageWidth)
+		t.writeSubject(&sb, c, currentBranchDisplayName, messageWidth, repo)
 		sb.WriteString(" ")
 		t.writeAuthor(&sb, c, authorWidth)
 		sb.WriteString(" ")
@@ -47,7 +53,18 @@ func (t *repoLayout) getPageLines(commits []viewmodel.Commit, viewWidth int, cur
 		lines = append(lines, sb.String())
 	}
 	return lines
+}
 
+func (t *repoLayout) getMoreIndex(repo viewmodel.ViewRepo) int {
+	graphWidth := t.getGraphWidth(repo.Commits)
+	return graphWidth - 2
+}
+
+func (t *repoLayout) getGraphWidth(commits []viewmodel.Commit) int {
+	if len(commits) == 0 {
+		return 0
+	}
+	return len(commits[0].Graph)*2 + markersWidth
 }
 
 func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, timeWidth int) {
@@ -145,9 +162,19 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, le
 	sb.WriteString(ui.Dark(utils.Text(tt, length)))
 }
 
-func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int) {
-	subject := utils.Text(c.Subject, length)
+func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int, repo viewmodel.ViewRepo) {
+	tagsText := t.toTagsText(c, length)
+
+	subject := utils.Text(c.Subject, length-len(tagsText))
 	if c.ID == viewmodel.UncommittedID {
+		if repo.Conflicts > 0 {
+			sb.WriteString(ui.Red(subject))
+			return
+		}
+		if repo.MergeMessage != "" {
+			sb.WriteString(ui.RedDk(subject))
+			return
+		}
 		sb.WriteString(ui.YellowDk(subject))
 		return
 	}
@@ -161,5 +188,18 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 		c.Branch.DisplayName != currentBranchDisplayName {
 		color = ui.CDark
 	}
+	sb.WriteString(ui.Green(tagsText))
 	sb.WriteString(ui.ColorText(color, subject))
+	log.Infof("Tags %s %v", c.SID, c.Tags)
+}
+
+func (t *repoLayout) toTagsText(c viewmodel.Commit, lenght int) string {
+	if len(c.Tags) == 0 {
+		return ""
+	}
+	text := fmt.Sprintf("%v", c.Tags)
+	if len(text) > lenght/2 {
+		text = text[:lenght/2] + "...]"
+	}
+	return text + " "
 }

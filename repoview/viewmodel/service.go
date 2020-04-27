@@ -2,8 +2,10 @@ package viewmodel
 
 import (
 	"context"
+	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
@@ -39,25 +41,31 @@ type Status struct {
 	GraphWidth int
 }
 
-type Service struct {
-	ViewRepos chan ViewRepo
+type RepoChange struct {
+	IsStarting bool
+	ViewRepo   ViewRepo
+}
 
-	gitRepo       *gitrepo.GitRepo
+type Service struct {
+	RepoChanges chan RepoChange
+
+	gitRepo       gitrepo.GitRepo
 	configService *config.Service
 	branchesGraph *branchesGraph
 
-	showRequests chan []string
-
+	showRequests       chan []string
+	currentBranches    chan []string
 	customBranchColors map[string]int
 }
 
 func NewService(configService *config.Service, workingFolder string) *Service {
 	return &Service{
-		ViewRepos:     make(chan ViewRepo),
-		showRequests:  make(chan []string),
-		branchesGraph: newBranchesGraph(),
-		gitRepo:       gitrepo.NewGitRepo(workingFolder),
-		configService: configService,
+		RepoChanges:     make(chan RepoChange),
+		showRequests:    make(chan []string),
+		currentBranches: make(chan []string),
+		branchesGraph:   newBranchesGraph(),
+		gitRepo:         gitrepo.NewGitRepo(workingFolder),
+		configService:   configService,
 		//	customBranchColors: make(map[string]int),
 	}
 }
@@ -66,52 +74,62 @@ func ToSid(commitID string) string {
 	return gitrepo.ToSid(commitID)
 }
 
-func (s *Service) StartMonitor(ctx context.Context) {
-	go s.monitorViewModelRoutine(ctx)
+func (t *Service) StartMonitor(ctx context.Context) {
+	go t.monitorViewModelRoutine(ctx)
 }
 
-func (s *Service) TriggerRefreshModel() {
+func (t *Service) TriggerRefreshModel() {
 	log.Event("vms-refresh")
-	s.gitRepo.TriggerRefreshRepo()
+	t.gitRepo.TriggerManualRefresh()
 }
 
-func (s *Service) GetCommitDiff(id string) (git.CommitDiff, error) {
-	return s.gitRepo.GetCommitDiff(id)
+func (t *Service) GetCommitDiff(id string) (git.CommitDiff, error) {
+	return t.gitRepo.GetCommitDiff(id)
 }
 
-func (s *Service) SwitchToBranch(name string) {
+func (t *Service) SwitchToBranch(name string) error {
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}
-	s.gitRepo.SwitchToBranch(name)
+	return t.gitRepo.SwitchToBranch(name)
 }
 
-func (s *Service) Commit(Commit string) error {
-	return s.gitRepo.Commit(Commit)
+func (t *Service) Commit(Commit string) error {
+	return t.gitRepo.Commit(Commit)
 }
 
-func (s *Service) showBranches(branchIds []string) {
+func (t *Service) showBranches(branchIds []string) {
 	log.Event("vms-load-repo")
 	select {
-	case s.showRequests <- branchIds:
+	case t.showRequests <- branchIds:
 	default:
 	}
 }
 
-func (s *Service) monitorViewModelRoutine(ctx context.Context) {
+func (t *Service) monitorViewModelRoutine(ctx context.Context) {
 	log.Infof("monitorViewModelRoutine start")
 	defer log.Infof("View model monitor done")
-	s.gitRepo.StartMonitor(ctx)
+	t.gitRepo.StartMonitor(ctx)
 
 	var repo gitrepo.Repo
 	var branchNames []string
 
 	for {
 		select {
-		case change, ok := <-s.gitRepo.RepoChanges:
+		case change, ok := <-t.gitRepo.RepoChanges():
 			if !ok {
 				return
 			}
+			if change.IsStarting {
+				log.Infof("Got repo start change ...")
+				select {
+				case t.RepoChanges <- RepoChange{IsStarting: true}:
+				case <-ctx.Done():
+					return
+				}
+				break
+			}
+
 			log.Infof("Got repo change")
 			log.Event("vms-changed-repo")
 			if change.Error != nil {
@@ -119,46 +137,61 @@ func (s *Service) monitorViewModelRoutine(ctx context.Context) {
 				continue
 			}
 			repo = change.Repo
-			s.triggerFreshViewRepo(ctx, repo, branchNames)
-		case names := <-s.showRequests:
+			t.triggerFreshViewRepo(ctx, repo, branchNames)
+		case names := <-t.showRequests:
+			log.Infof("Manual start change")
 			if names == nil {
 				// A manual refresh, trigger new repo
 				log.Infof("Manual refresh")
-				s.gitRepo.TriggerManualRefresh()
-				continue
+				t.gitRepo.TriggerManualRefresh()
+				break
 			}
 			log.Infof("Refresh of %v", names)
 			branchNames = names
-			s.triggerFreshViewRepo(ctx, repo, branchNames)
+			t.triggerFreshViewRepo(ctx, repo, branchNames)
+		case names := <-t.currentBranches:
+			branchNames = names
 		case <-ctx.Done():
 			return
 		}
 	}
 }
 
-func (s *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, branchNames []string) {
+func (t *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, branchNames []string) {
 	log.Infof("triggerFreshViewRepo")
 	go func() {
-		vRepo := s.getViewModel(repo, branchNames)
+		vRepo := t.getViewModel(repo, branchNames)
+		repoChange := RepoChange{ViewRepo: newViewRepo(vRepo)}
 		select {
-		case s.ViewRepos <- newViewRepo(vRepo):
-			s.configService.SetRepo(s.gitRepo.RepoPath(), func(r *config.Repo) {
-				r.ShownBranches = branchNames
-			})
+		case t.RepoChanges <- repoChange:
+			t.storeShownBranchesInConfig(branchNames)
+		case <-ctx.Done():
+		}
+		branchNames := t.getBranchNames(vRepo)
+		select {
+		case t.currentBranches <- branchNames:
 		case <-ctx.Done():
 		}
 	}()
 }
 
-func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {
+func (t *Service) storeShownBranchesInConfig(branchNames []string) {
+	t.configService.SetRepo(t.gitRepo.RepoPath(), func(r *config.Repo) {
+		r.ShownBranches = branchNames
+	})
+}
+
+func (t *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {
 	log.Infof("getViewModel")
-	t := timer.Start()
+	ti := timer.Start()
 	repo := newRepo()
 	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
 	repo.UncommittedChanges = grepo.Status.AllChanges()
+	repo.Conflicts = grepo.Status.Conflicted
+	repo.MergeMessage = grepo.Status.MergeMessage
 
-	branches := s.getGitModelBranches(branchNames, grepo)
+	branches := t.getGitRepoBranches(branchNames, grepo)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
@@ -172,22 +205,23 @@ func (s *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	for _, c := range grepo.Commits {
 		repo.addGitCommit(c)
 	}
+	t.addTags(repo, grepo.Tags)
 
-	s.adjustCurrentBranchIfStatus(repo)
-	s.setBranchParentChildRelations(repo)
-	s.setParentChildRelations(repo)
-	s.setAheadBehind(repo)
+	t.adjustCurrentBranchIfStatus(repo)
+	t.setBranchParentChildRelations(repo)
+	t.setParentChildRelations(repo)
+	t.setAheadBehind(repo)
 
 	// Draw branch lines
-	s.branchesGraph.drawBranchLines(repo)
+	t.branchesGraph.drawBranchLines(repo)
 
 	// Draw branch connector lines
-	s.branchesGraph.drawConnectorLines(repo)
-	log.Infof("getViewModel done, %s", t)
+	t.branchesGraph.drawConnectorLines(repo)
+	log.Infof("getViewModel done, %s", ti)
 	return repo
 }
 
-func (s *Service) adjustCurrentBranchIfStatus(repo *viewRepo) {
+func (t *Service) adjustCurrentBranchIfStatus(repo *viewRepo) {
 	if len(repo.Commits) < 2 || repo.Commits[0].ID != UncommittedID || repo.CurrentCommit == nil {
 		return
 	}
@@ -207,11 +241,11 @@ func (s *Service) adjustCurrentBranchIfStatus(repo *viewRepo) {
 	}
 }
 
-func (s *Service) BranchColor(name string) ui.Color {
-	if strings.HasPrefix(name, "multi:") {
+func (t *Service) BranchColor(name string) ui.Color {
+	if strings.HasPrefix(name, "multiple@") {
 		return ui.CWhite
 	}
-	color, ok := s.customBranchColors[name]
+	color, ok := t.customBranchColors[name]
 	if ok {
 		return ui.Color(color)
 	}
@@ -251,8 +285,7 @@ func (s *Service) BranchColor(name string) ui.Color {
 // 	return toCommit(s.currentViewModel.Commits[index]), nil
 // }
 //
-func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
-
+func (t *Service) CurrentNotShownBranch(viewRepo ViewRepo) (Branch, bool) {
 	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
@@ -264,13 +297,28 @@ func (s *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
 	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
 }
 
-func (s *Service) GetAllBranches(viewRepo ViewRepo) []Branch {
+func (t *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
+	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
+	if !ok {
+		return Branch{}, false
+	}
+
+	for _, b := range viewRepo.viewRepo.Branches {
+		if current.Name == b.name {
+			return toBranch(b), true
+		}
+	}
+
+	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
+}
+
+func (t *Service) GetAllBranches(viewRepo ViewRepo, skipShown bool) []Branch {
 	var branches []Branch
 	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
 		if containsDisplayNameBranch(branches, b.DisplayName) {
 			continue
 		}
-		if containsBranch(viewRepo.viewRepo.Branches, b.Name) {
+		if skipShown && containsBranch(viewRepo.viewRepo.Branches, b.Name) {
 			continue
 		}
 		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
@@ -282,7 +330,7 @@ func (s *Service) GetAllBranches(viewRepo ViewRepo) []Branch {
 	return branches
 }
 
-func (s *Service) GetActiveBranches(viewRepo ViewRepo) []Branch {
+func (t *Service) GetActiveBranches(viewRepo ViewRepo) []Branch {
 	var branches []Branch
 	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
 		if containsDisplayNameBranch(branches, b.DisplayName) {
@@ -309,11 +357,8 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 	return false
 }
 
-func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Branch {
-	c := viewRepo.viewRepo.Commits[commitIndex]
-	if c.More == MoreNone {
-		return nil
-	}
+func (t *Service) GetCommitOpenInBranches(commitID string, viewRepo ViewRepo) []Branch {
+	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
 	var branches []*gitrepo.Branch
 
 	if len(c.ParentIDs) > 1 {
@@ -322,19 +367,45 @@ func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Br
 		branches = append(branches, mergeParent.Branch)
 	}
 
+	var bs []Branch
+	for _, b := range branches {
+		if nil != funk.Find(bs, func(bsb Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
+				b.Name == bsb.RemoteName
+		}) {
+			// Skip duplicates
+			continue
+		}
+		if nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
+			// Skip branches already shown
+			continue
+		}
+
+		bs = append(bs, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+	}
+
+	return bs
+}
+
+func (t *Service) GetCommitOpenOutBranches(commitID string, viewRepo ViewRepo) []Branch {
+	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
+	var branches []*gitrepo.Branch
+
 	for _, ccId := range c.ChildIDs {
 		// commit has children (i.e.), other branches have merged from this branch
 		if ccId == UncommittedID {
 			continue
 		}
 		cc := viewRepo.viewRepo.gitRepo.CommitById[ccId]
-		if cc.Branch.Name != c.Branch.name {
+		if cc.Branch.Name != c.Branch.Name {
 			branches = append(branches, cc.Branch)
 		}
 	}
 
 	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.ID && b.ParentBranch.Name == c.Branch.name {
+		if b.TipID == b.BottomID && b.BottomID == c.Id && b.ParentBranch.Name == c.Branch.Name {
 			// empty branch with no own branch commit, (branch start)
 			branches = append(branches, b)
 		}
@@ -363,7 +434,7 @@ func (s *Service) GetCommitOpenBranches(commitIndex int, viewRepo ViewRepo) []Br
 }
 
 //
-func (s *Service) GetShownBranches(viewRepo ViewRepo, skipMaster bool) []Branch {
+func (t *Service) GetShownBranches(viewRepo ViewRepo, skipMaster bool) []Branch {
 	var bs []Branch
 	for _, b := range viewRepo.viewRepo.Branches {
 		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
@@ -398,22 +469,22 @@ func containsBranch(branches []*branch, name string) bool {
 	return false
 }
 
-func (s *Service) ShowBranch(name string, viewRepo ViewRepo) {
-	branchNames := s.toBranchNames(viewRepo.viewRepo.Branches)
+func (t *Service) ShowBranch(name string, viewRepo ViewRepo) {
+	branchNames := t.toBranchNames(viewRepo.viewRepo.Branches)
 
 	branch, ok := viewRepo.viewRepo.gitRepo.BranchByName(name)
 	if !ok {
 		return
 	}
 
-	branchNames = s.addBranchWithAncestors(branchNames, branch)
+	branchNames = t.addBranchWithAncestors(branchNames, branch)
 
 	log.Event("vms-branches-open")
-	s.showBranches(branchNames)
+	t.showBranches(branchNames)
 }
 
 //
-func (s *Service) HideBranch(viewRepo ViewRepo, name string) {
+func (t *Service) HideBranch(viewRepo ViewRepo, name string) {
 	hideBranch, ok := funk.Find(viewRepo.viewRepo.Branches, func(b *branch) bool {
 		return name == b.name
 	}).(*branch)
@@ -440,10 +511,10 @@ func (s *Service) HideBranch(viewRepo ViewRepo, name string) {
 	}
 
 	log.Event("vms-branches-close")
-	s.showBranches(branchNames)
+	t.showBranches(branchNames)
 }
 
-func (s *Service) setBranchParentChildRelations(repo *viewRepo) {
+func (t *Service) setBranchParentChildRelations(repo *viewRepo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
 		b.bottom = repo.commitById[b.bottomId]
@@ -453,7 +524,7 @@ func (s *Service) setBranchParentChildRelations(repo *viewRepo) {
 	}
 }
 
-func (s *Service) setParentChildRelations(repo *viewRepo) {
+func (t *Service) setParentChildRelations(repo *viewRepo) {
 	for _, c := range repo.Commits {
 		if len(c.ParentIDs) > 0 {
 			// Commit has a parent
@@ -487,7 +558,7 @@ func (s *Service) setParentChildRelations(repo *viewRepo) {
 	}
 }
 
-func (s *Service) toBranchNames(branches []*branch) []string {
+func (t *Service) toBranchNames(branches []*branch) []string {
 	var ids []string
 	for _, b := range branches {
 		ids = append(ids, b.name)
@@ -495,18 +566,18 @@ func (s *Service) toBranchNames(branches []*branch) []string {
 	return ids
 }
 
-func (s *Service) setAheadBehind(repo *viewRepo) {
+func (t *Service) setAheadBehind(repo *viewRepo) {
 	for _, b := range repo.Branches {
 		if b.isRemote && b.localName != "" {
-			s.setIsRemoteOnlyCommits(repo, b)
+			t.setIsRemoteOnlyCommits(repo, b)
 		} else if !b.isRemote && b.remoteName != "" {
-			s.setLocalOnlyCommits(b)
+			t.setLocalOnlyCommits(b)
 		}
 	}
 }
-func (s *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
+func (t *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
 	localBranch := repo.tryGetBranchByName(b.localName)
-	localTip := s.tryGetRealLocalTip(localBranch)
+	localTip := t.tryGetRealLocalTip(localBranch)
 	localBase := localBranch.bottom.Parent
 
 	count := 0
@@ -524,9 +595,11 @@ func (s *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
 			break
 		}
 		c.IsRemoteOnly = true
+		b.HasRemoteOnly = true
 	}
 }
-func (s *Service) setLocalOnlyCommits(b *branch) {
+
+func (t *Service) setLocalOnlyCommits(b *branch) {
 	count := 0
 	for c := b.tip; c != nil && c.Branch == b && count < 50; c = c.Parent {
 		if c.ID == git.UncommittedID {
@@ -534,10 +607,11 @@ func (s *Service) setLocalOnlyCommits(b *branch) {
 		}
 		count++
 		c.IsLocalOnly = true
+		b.HasLocalOnly = true
 	}
 }
 
-func (s *Service) tryGetRealLocalTip(localBranch *branch) *commit {
+func (t *Service) tryGetRealLocalTip(localBranch *branch) *commit {
 	var localTip *commit
 	if localBranch != nil {
 		localTip = localBranch.tip
@@ -548,8 +622,91 @@ func (s *Service) tryGetRealLocalTip(localBranch *branch) *commit {
 	return localTip
 }
 
-func (s *Service) isSynced(b *branch) bool {
+func (t *Service) isSynced(b *branch) bool {
 	return b.isRemote && b.localName == "" || !b.isRemote && b.remoteName == ""
+}
+
+func (t *Service) PushBranch(name string) error {
+	return t.gitRepo.PushBranch(name)
+}
+
+func (t *Service) getBranchNames(repo *viewRepo) []string {
+	var names []string
+	for _, b := range repo.Branches {
+		names = append(names, b.name)
+	}
+	return names
+}
+
+func (t *Service) MergeBranch(name string) error {
+	return t.gitRepo.MergeBranch(name)
+}
+
+func (t *Service) CreateBranch(name string) error {
+	return t.gitRepo.CreateBranch(name)
+}
+
+func (t *Service) DeleteBranch(name string, repo ViewRepo) error {
+	branch, ok := repo.viewRepo.gitRepo.BranchByName(name)
+	if !ok {
+		return fmt.Errorf("unknown git branch %q", name)
+	}
+	if !branch.IsGitBranch {
+		return fmt.Errorf("not a git branch %q", name)
+	}
+	if utils.StringsContains(gitrepo.DefaultBranchPriority, name) {
+		return fmt.Errorf("branch is protected %q", name)
+	}
+
+	var localBranch *gitrepo.Branch
+	var remoteBranch *gitrepo.Branch
+
+	if branch.IsRemote {
+		// Remote branch, check if there is a corresponding local branch
+		remoteBranch = branch
+		if branch.LocalName != "" {
+			if b, ok := repo.viewRepo.gitRepo.BranchByName(branch.LocalName); ok {
+				localBranch = b
+			}
+		}
+	}
+
+	if !branch.IsRemote {
+		// Local branch, check if there is a corresponding remote branch
+		localBranch = branch
+		if branch.RemoteName != "" {
+			if b, ok := repo.viewRepo.gitRepo.BranchByName(branch.RemoteName); ok {
+				remoteBranch = b
+			}
+		}
+	}
+
+	if remoteBranch != nil {
+		// Deleting remote branch
+		err := t.gitRepo.DeleteRemoteBranch(remoteBranch.Name)
+		if err != nil {
+			return err
+		}
+	}
+
+	if localBranch != nil {
+		// Deleting local branch
+		err := t.gitRepo.DeleteLocalBranch(localBranch.Name)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (t *Service) addTags(repo *viewRepo, tags []gitrepo.Tag) {
+	for _, tag := range tags {
+		c, ok := repo.commitById[tag.CommitID]
+		if !ok {
+			continue
+		}
+		c.Tags = append(c.Tags, tag.TagName)
+	}
 }
 
 //

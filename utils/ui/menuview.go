@@ -255,6 +255,10 @@ func (h *menuView) action(firstLine, index int, isMoreClicked bool) {
 	} else {
 		subItems = item.SubItems
 	}
+	if len(subItems) != 0 && item.Action == nil {
+		h.subItem(firstLine, index)
+		return
+	}
 	if len(subItems) != 0 && isMoreClicked {
 		h.subItem(firstLine, index)
 		return
