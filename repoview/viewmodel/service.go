@@ -205,6 +205,7 @@ func (t *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRe
 	for _, c := range grepo.Commits {
 		repo.addGitCommit(c)
 	}
+	t.addTags(repo, grepo.Tags)
 
 	t.adjustCurrentBranchIfStatus(repo)
 	t.setBranchParentChildRelations(repo)
@@ -696,6 +697,16 @@ func (t *Service) DeleteBranch(name string, repo ViewRepo) error {
 		}
 	}
 	return nil
+}
+
+func (t *Service) addTags(repo *viewRepo, tags []gitrepo.Tag) {
+	for _, tag := range tags {
+		c, ok := repo.commitById[tag.CommitID]
+		if !ok {
+			continue
+		}
+		c.Tags = append(c.Tags, tag.TagName)
+	}
 }
 
 //

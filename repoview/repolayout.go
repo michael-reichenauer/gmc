@@ -1,8 +1,10 @@
 package repoview
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -161,7 +163,9 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, le
 }
 
 func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int, repo viewmodel.ViewRepo) {
-	subject := utils.Text(c.Subject, length)
+	tagsText := t.toTagsText(c, length)
+
+	subject := utils.Text(c.Subject, length-len(tagsText))
 	if c.ID == viewmodel.UncommittedID {
 		if repo.Conflicts > 0 {
 			sb.WriteString(ui.Red(subject))
@@ -184,5 +188,18 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 		c.Branch.DisplayName != currentBranchDisplayName {
 		color = ui.CDark
 	}
+	sb.WriteString(ui.Green(tagsText))
 	sb.WriteString(ui.ColorText(color, subject))
+	log.Infof("Tags %s %v", c.SID, c.Tags)
+}
+
+func (t *repoLayout) toTagsText(c viewmodel.Commit, lenght int) string {
+	if len(c.Tags) == 0 {
+		return ""
+	}
+	text := fmt.Sprintf("%v", c.Tags)
+	if len(text) > lenght/2 {
+		text = text[:lenght/2] + "...]"
+	}
+	return text + " "
 }

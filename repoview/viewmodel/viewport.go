@@ -30,6 +30,7 @@ type Commit struct {
 	AuthorTime   time.Time
 	IsCurrent    bool
 	Branch       Branch
+	Tags         []string
 	Graph        []GraphColumn
 	More         utils.Bitmask
 	ParentIDs    []string
@@ -102,6 +103,7 @@ func toCommit(c *commit) Commit {
 		BranchTips:   c.BranchTips,
 		IsLocalOnly:  c.IsLocalOnly,
 		IsRemoteOnly: c.IsRemoteOnly,
+		Tags:         c.Tags,
 	}
 }
 
