@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -190,7 +189,6 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 	}
 	sb.WriteString(ui.Green(tagsText))
 	sb.WriteString(ui.ColorText(color, subject))
-	log.Infof("Tags %s %v", c.SID, c.Tags)
 }
 
 func (t *repoLayout) toTagsText(c viewmodel.Commit, lenght int) string {
