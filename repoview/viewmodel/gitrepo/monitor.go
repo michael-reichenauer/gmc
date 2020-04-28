@@ -74,6 +74,7 @@ func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 	gitPath := filepath.Join(h.rootFolderPath, ".git")
 	refsPath := filepath.Join(gitPath, "refs")
 	headPath := filepath.Join(gitPath, "HEAD")
+	objectPath := filepath.Join(gitPath, "objects")
 	fetchHeadPath := filepath.Join(gitPath, "FETCH_HEAD")
 	defer close(h.Changes)
 
@@ -83,7 +84,7 @@ func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 			return
 		default:
 		}
-		if h.isNewFolder(event) {
+		if h.isNewFolder(event, objectPath) {
 			log.Infof("New folder detected: %q", event.Name)
 			go h.addWatchFoldersRecursively(ctx, event.Name)
 			continue
@@ -135,7 +136,10 @@ func (h *monitor) isRepoChange(path, fetchHeadPath, headPath, refsPath string) b
 	return false
 }
 
-func (h *monitor) isNewFolder(event fsnotify.Event) bool {
+func (h *monitor) isNewFolder(event fsnotify.Event, objectPath string) bool {
+	if strings.HasPrefix(event.Name, objectPath) {
+		return false
+	}
 	if event.Op != fsnotify.Create {
 		return false
 	}
