@@ -29,6 +29,7 @@ var (
 	workingFolderFlag = flag.String("d", "", "specify working folder")
 	showVersionFlag   = flag.Bool("version", false, "print gmc version")
 	pauseFlag         = flag.Bool("pause", false, "pause until user click enter")
+	externalWindow    = flag.Bool("external", false, "start gmc in external window (used by ide)")
 )
 
 func main() {
@@ -38,8 +39,8 @@ func main() {
 		return
 	}
 
-	if isDebugConsole() {
-		// Seems program is run within a debugger console, which the termbox does not support
+	if *externalWindow {
+		// Seems program is run within a debugger console, which does not support termbox
 		// So a new external process is started and this instance ends
 		startAsExternalProcess()
 		return
@@ -96,6 +97,11 @@ func isDebugConsole() bool {
 func startAsExternalProcess() {
 	args := []string{"/C", "start"}
 	args = append(args, os.Args...)
+	i := utils.StringsIndex(args, "-external")
+	if i != -1 {
+		// Remove the external flag before restarting
+		args = append(args[:i], args[i+1:]...)
+	}
 	cmd := exec.Command("cmd", args...)
 	_ = cmd.Start()
 	_ = cmd.Wait()
@@ -104,6 +110,7 @@ func startAsExternalProcess() {
 func logProgramInfo(configService *config.Service) {
 	log.Infof("Version: %s", configService.ProgramVersion)
 	log.Infof("Binary path: %q", utils.BinPath())
+	log.Infof("Args: %v", os.Args)
 	log.Infof("OS: %q", runtime.GOOS)
 	log.Infof("Arch: %q", runtime.GOARCH)
 	log.Infof("Go version: %q", runtime.Version())
