@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/mattn/go-isatty"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/installation"
 	"github.com/michael-reichenauer/gmc/program"
@@ -39,7 +38,7 @@ func main() {
 		return
 	}
 
-	if *externalWindow {
+	if isDebugConsole() {
 		// Seems program is run within a debugger console, which does not support termbox
 		// So a new external process is started and this instance ends
 		startAsExternalProcess()
@@ -85,13 +84,14 @@ func main() {
 }
 
 func isDebugConsole() bool {
-	// termbox requires a "real" terminal. The GoLand console is not supported.
-	// so check if current terminal is ok (check only on windows)
-	if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) ||
-		runtime.GOOS != "windows" {
-		return false
-	}
-	return true
+	return *externalWindow
+	// // termbox requires a "real" terminal. The GoLand console is not supported.
+	// // so check if current terminal is ok (check only on windows)
+	// if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) ||
+	// 	runtime.GOOS != "windows" {
+	// 	return false
+	// }
+	// return true
 }
 
 func startAsExternalProcess() {
