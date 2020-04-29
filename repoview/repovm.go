@@ -221,8 +221,8 @@ func (h *repoVM) CurrentBranch() (viewmodel.Branch, bool) {
 	return current, ok
 }
 
-func (h *repoVM) GetActiveBranches() []viewmodel.Branch {
-	return h.viewModelService.GetActiveBranches(h.repo)
+func (h *repoVM) GetLatestBranches(skipShown bool) []viewmodel.Branch {
+	return h.viewModelService.GetLatestBranches(h.repo, skipShown)
 }
 
 func (h *repoVM) GetAllBranches(skipShown bool) []viewmodel.Branch {
@@ -244,7 +244,7 @@ func (h *repoVM) HideBranch(name string) {
 func (h *repoVM) SwitchToBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.viewModelService.SwitchToBranch(name) },
+		func() error { return h.viewModelService.SwitchToBranch(name, h.repo) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
