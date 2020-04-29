@@ -42,7 +42,7 @@ func newBranchService(cmd gitCommander) *branchesService {
 }
 
 func (t *branchesService) checkout(name string) error {
-	_, err := t.cmd.Git("checkout", "-b", name)
+	_, err := t.cmd.Git("checkout", name)
 	if err != nil {
 		return fmt.Errorf("failed to get checkout %q, %v", name, err)
 	}
