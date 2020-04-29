@@ -116,18 +116,18 @@ func (t *menuService) getSwitchBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
-		name := b.Name // closure save
+		bb := b // closure save
 		switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
-			t.vm.SwitchToBranch(name)
+			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		items = append(items, switchItem)
 	}
 
 	var activeSubItems []ui.MenuItem
 	for _, b := range t.vm.GetLatestBranches(true) {
-		name := b.Name // closure save
+		bb := b // closure save
 		switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
-			t.vm.SwitchToBranch(name)
+			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		activeSubItems = append(activeSubItems, switchItem)
 	}
@@ -135,10 +135,10 @@ func (t *menuService) getSwitchBranchMenuItems() []ui.MenuItem {
 
 	var allGitSubItems []ui.MenuItem
 	for _, b := range t.vm.GetAllBranches(true) {
-		name := b.Name // closure save
+		bb := b // closure save
 		if b.IsGitBranch {
 			switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
-				t.vm.SwitchToBranch(name)
+				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 			}}
 			allGitSubItems = append(allGitSubItems, switchItem)
 		}
@@ -147,9 +147,9 @@ func (t *menuService) getSwitchBranchMenuItems() []ui.MenuItem {
 
 	var allSubItems []ui.MenuItem
 	for _, b := range t.vm.GetAllBranches(true) {
-		name := b.Name // closure save
+		bb := b // closure save
 		switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
-			t.vm.SwitchToBranch(name)
+			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		allSubItems = append(allSubItems, switchItem)
 	}

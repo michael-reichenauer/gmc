@@ -241,10 +241,10 @@ func (h *repoVM) HideBranch(name string) {
 	h.viewModelService.HideBranch(h.repo, name)
 }
 
-func (h *repoVM) SwitchToBranch(name string) {
+func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.viewModelService.SwitchToBranch(name, h.repo) },
+		func() error { return h.viewModelService.SwitchToBranch(name, displayName, h.repo) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 

@@ -87,12 +87,12 @@ func (t *Service) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return t.gitRepo.GetCommitDiff(id)
 }
 
-func (t *Service) SwitchToBranch(name string, repo ViewRepo) error {
+func (t *Service) SwitchToBranch(name string, displayName string, repo ViewRepo) error {
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}
 	t.ShowBranch(name, repo)
-	return t.gitRepo.SwitchToBranch(name)
+	return t.gitRepo.SwitchToBranch(displayName)
 }
 
 func (t *Service) Commit(Commit string) error {
