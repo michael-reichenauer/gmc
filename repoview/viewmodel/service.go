@@ -92,18 +92,18 @@ func (t *Service) SwitchToBranch(name string, displayName string, repo ViewRepo)
 		name = name[7:]
 	}
 	t.ShowBranch(name, repo)
-	exist := false
-	for _, b := range repo.viewRepo.gitRepo.Branches {
-		if b.IsGitBranch && b.DisplayName == displayName {
-			exist = true
-			break
-		}
-	}
-	if !exist {
-		if err := t.gitRepo.CreateBranch(displayName); err != nil {
-			return err
-		}
-	}
+	// exist := false
+	// for _, b := range repo.viewRepo.gitRepo.Branches {
+	// 	if b.IsGitBranch && b.DisplayName == displayName {
+	// 		exist = true
+	// 		break
+	// 	}
+	// }
+	// if !exist {
+	// 	if err := t.gitRepo.CreateBranch(displayName); err != nil {
+	// 		return err
+	// 	}
+	// }
 	return t.gitRepo.SwitchToBranch(displayName)
 }
 
