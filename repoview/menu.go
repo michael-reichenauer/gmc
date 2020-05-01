@@ -31,10 +31,8 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-S", Action: t.vm.showCommitDialog})
 	menu.Add(ui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
 	menu.Add(ui.MenuItem{Text: "Delete Branch", SubItems: t.getDeleteBranchMenuItems()})
-	pushItems := t.getPushBranchMenuItems()
-	if pushItems != nil {
-		menu.Add(ui.MenuItem{Text: "Push", SubItems: pushItems})
-	}
+	menu.Add(ui.MenuItem{Text: "Push", SubItems: t.getPushBranchMenuItems()})
+	menu.Add(ui.MenuItem{Text: "Pull/Update", SubItems: t.getPullBranchMenuItems()})
 
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: t.getSwitchBranchMenuItems()})
 	mergeItems, mergeTitle := t.getMergeMenuItems()
@@ -77,7 +75,7 @@ func (t *menuService) getOpenBranchMenuItems(selectedIndex int) []ui.MenuItem {
 	}
 
 	var activeSubItems []ui.MenuItem
-	for _, b := range t.vm.GetActiveBranches() {
+	for _, b := range t.vm.GetLatestBranches(true) {
 		activeSubItems = append(activeSubItems, t.toOpenBranchMenuItem(b, ""))
 	}
 	items = append(items, ui.MenuItem{Text: "Latest Branches", SubItems: activeSubItems})
@@ -97,7 +95,6 @@ func (t *menuService) getOpenBranchMenuItems(selectedIndex int) []ui.MenuItem {
 	items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
 
 	return items
-
 }
 
 func (t *menuService) getCloseBranchMenuItems() []ui.MenuItem {
@@ -117,12 +114,45 @@ func (t *menuService) getSwitchBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
-		name := b.Name // closure save
+		bb := b // closure save
 		switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
-			t.vm.SwitchToBranch(name)
+			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		items = append(items, switchItem)
 	}
+
+	var activeSubItems []ui.MenuItem
+	for _, b := range t.vm.GetLatestBranches(true) {
+		bb := b // closure save
+		switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
+		}}
+		activeSubItems = append(activeSubItems, switchItem)
+	}
+	items = append(items, ui.MenuItem{Text: "Latest Branches", SubItems: activeSubItems})
+
+	var allGitSubItems []ui.MenuItem
+	for _, b := range t.vm.GetAllBranches(true) {
+		bb := b // closure save
+		if b.IsGitBranch {
+			switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
+			}}
+			allGitSubItems = append(allGitSubItems, switchItem)
+		}
+	}
+	items = append(items, ui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
+
+	var allSubItems []ui.MenuItem
+	for _, b := range t.vm.GetAllBranches(true) {
+		bb := b // closure save
+		switchItem := ui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
+		}}
+		allSubItems = append(allSubItems, switchItem)
+	}
+	items = append(items, ui.MenuItem{Text: "All Branches", SubItems: allSubItems})
+
 	return items
 }
 
@@ -149,6 +179,18 @@ func (t *menuService) getPushBranchMenuItems() []ui.MenuItem {
 	if ok && current.HasLocalOnly {
 		pushItem := ui.MenuItem{Text: t.branchItemText(current, ""), Key: "Ctrl-P", Action: func() {
 			t.vm.PushBranch(current.Name)
+		}}
+		items = append(items, pushItem)
+	}
+	return items
+}
+
+func (t *menuService) getPullBranchMenuItems() []ui.MenuItem {
+	var items []ui.MenuItem
+	current, ok := t.vm.CurrentBranch()
+	if ok && current.HasRemoteOnly {
+		pushItem := ui.MenuItem{Text: t.branchItemText(current, ""), Key: "Ctrl-U", Action: func() {
+			t.vm.PullCurrentBranch()
 		}}
 		items = append(items, pushItem)
 	}

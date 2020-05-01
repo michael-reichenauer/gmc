@@ -221,8 +221,8 @@ func (h *repoVM) CurrentBranch() (viewmodel.Branch, bool) {
 	return current, ok
 }
 
-func (h *repoVM) GetActiveBranches() []viewmodel.Branch {
-	return h.viewModelService.GetActiveBranches(h.repo)
+func (h *repoVM) GetLatestBranches(skipShown bool) []viewmodel.Branch {
+	return h.viewModelService.GetLatestBranches(h.repo, skipShown)
 }
 
 func (h *repoVM) GetAllBranches(skipShown bool) []viewmodel.Branch {
@@ -241,10 +241,10 @@ func (h *repoVM) HideBranch(name string) {
 	h.viewModelService.HideBranch(h.repo, name)
 }
 
-func (h *repoVM) SwitchToBranch(name string) {
+func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.viewModelService.SwitchToBranch(name) },
+		func() error { return h.viewModelService.SwitchToBranch(name, displayName, h.repo) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
@@ -261,9 +261,20 @@ func (h *repoVM) PushCurrentBranch() {
 		return
 	}
 	h.startCommand(
-		fmt.Sprintf("Pushing Branch:\n%s", current.Name),
+		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
 		func() error { return h.viewModelService.PushBranch(current.Name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) })
+}
+
+func (h *repoVM) PullCurrentBranch() {
+	current, ok := h.CurrentBranch()
+	if !ok || !current.HasLocalOnly {
+		return
+	}
+	h.startCommand(
+		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
+		func() error { return h.viewModelService.PullBranch() },
+		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) })
 }
 
 func (h *repoVM) MergeFromBranch(name string) {

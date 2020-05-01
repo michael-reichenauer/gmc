@@ -49,6 +49,7 @@ func (h *RepoView) newView() ui.View {
 	view.SetKey(gocui.KeyCtrlS, h.vm.showCommitDialog)
 	view.SetKey(gocui.KeyCtrlB, h.vm.showCreateBranchDialog)
 	view.SetKey(gocui.KeyCtrlP, h.vm.PushCurrentBranch)
+	view.SetKey(gocui.KeyCtrlU, h.vm.PullCurrentBranch)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 

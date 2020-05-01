@@ -33,6 +33,7 @@ type GitRepo interface {
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
+	PullBranch() error
 }
 
 type gitRepo struct {
@@ -266,6 +267,10 @@ func (s *gitRepo) fetchRoutine(ctx context.Context) {
 
 func (s *gitRepo) PushBranch(name string) error {
 	return s.git.PushBranch(name)
+}
+
+func (s *gitRepo) PullBranch() error {
+	return s.git.PullBranch()
 }
 
 func (s *gitRepo) MergeBranch(name string) error {

@@ -87,11 +87,24 @@ func (t *Service) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return t.gitRepo.GetCommitDiff(id)
 }
 
-func (t *Service) SwitchToBranch(name string) error {
+func (t *Service) SwitchToBranch(name string, displayName string, repo ViewRepo) error {
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}
-	return t.gitRepo.SwitchToBranch(name)
+	t.ShowBranch(name, repo)
+	// exist := false
+	// for _, b := range repo.viewRepo.gitRepo.Branches {
+	// 	if b.IsGitBranch && b.DisplayName == displayName {
+	// 		exist = true
+	// 		break
+	// 	}
+	// }
+	// if !exist {
+	// 	if err := t.gitRepo.CreateBranch(displayName); err != nil {
+	// 		return err
+	// 	}
+	// }
+	return t.gitRepo.SwitchToBranch(displayName)
 }
 
 func (t *Service) Commit(Commit string) error {
@@ -313,6 +326,24 @@ func (t *Service) CurrentBranch(viewRepo ViewRepo) (Branch, bool) {
 }
 
 func (t *Service) GetAllBranches(viewRepo ViewRepo, skipShown bool) []Branch {
+	branches := t.getAllBranches(viewRepo, skipShown)
+	sort.SliceStable(branches, func(i, j int) bool {
+		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+	})
+
+	return branches
+}
+
+func (t *Service) GetLatestBranches(viewRepo ViewRepo, skipShown bool) []Branch {
+	branches := t.getAllBranches(viewRepo, skipShown)
+	sort.SliceStable(branches, func(i, j int) bool {
+		return viewRepo.viewRepo.gitRepo.CommitById[branches[i].TipID].AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitById[branches[j].TipID].AuthorTime)
+	})
+
+	return branches
+}
+
+func (t *Service) getAllBranches(viewRepo ViewRepo, skipShown bool) []Branch {
 	var branches []Branch
 	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
 		if containsDisplayNameBranch(branches, b.DisplayName) {
@@ -323,27 +354,6 @@ func (t *Service) GetAllBranches(viewRepo ViewRepo, skipShown bool) []Branch {
 		}
 		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
 	}
-	sort.SliceStable(branches, func(i, j int) bool {
-		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
-	})
-
-	return branches
-}
-
-func (t *Service) GetActiveBranches(viewRepo ViewRepo) []Branch {
-	var branches []Branch
-	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
-		if containsDisplayNameBranch(branches, b.DisplayName) {
-			continue
-		}
-		if containsBranch(viewRepo.viewRepo.Branches, b.Name) {
-			continue
-		}
-		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
-	}
-	sort.SliceStable(branches, func(i, j int) bool {
-		return viewRepo.viewRepo.gitRepo.CommitById[branches[i].TipID].AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitById[branches[j].TipID].AuthorTime)
-	})
 
 	return branches
 }
@@ -628,6 +638,10 @@ func (t *Service) isSynced(b *branch) bool {
 
 func (t *Service) PushBranch(name string) error {
 	return t.gitRepo.PushBranch(name)
+}
+
+func (t *Service) PullBranch() error {
+	return t.gitRepo.PullBranch()
 }
 
 func (t *Service) getBranchNames(repo *viewRepo) []string {
