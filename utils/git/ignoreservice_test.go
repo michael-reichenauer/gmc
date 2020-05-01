@@ -3,6 +3,7 @@ package git
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/tests"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,7 @@ import (
 )
 
 func TestIgnoreHandler_IsIgnored(t *testing.T) {
+	tests.ManualTest(t)
 	ih := newIgnoreHandler(utils.CurrentDir())
 
 	err := filepath.Walk(`C:\code\gmc`, func(path string, info os.FileInfo, err error) error {

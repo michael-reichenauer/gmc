@@ -1,5 +1,7 @@
 @echo off&setlocal
 
+go test ./...
+
 del gmc.exe >nul 2>&1
 del gmc_linux >nul 2>&1
 del gmc_mac >nul 2>&1

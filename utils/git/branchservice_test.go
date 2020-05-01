@@ -3,6 +3,7 @@ package git
 import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -13,6 +14,7 @@ var branchesText = `
 `
 
 func Test(t *testing.T) {
+	tests.ManualTest(t)
 	branches, err := newBranchService(newGitCmd(utils.CurrentDir())).getBranches()
 	assert.NoError(t, err)
 	for _, b := range branches {
@@ -22,6 +24,7 @@ func Test(t *testing.T) {
 }
 
 func TestParseBranchesText(t *testing.T) {
+	tests.ManualTest(t)
 	branches, err := newBranchService(newGitCmd(utils.CurrentDir())).parseBranchesOutput(branchesText)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(branches))

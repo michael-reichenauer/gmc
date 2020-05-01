@@ -91,16 +91,16 @@ func (l *Logger) Outputf(level string, format string, v ...interface{}) {
 
 func (l *Logger) output(level, message string) {
 	//now := time.Now()
-	file, line := l.getCallerInfo()
+	file, line, function := l.getCallerInfo()
 
 	if len(file) > baseFilePathLength {
 		file = file[baseFilePathLength:]
 	}
-	StdTelemetry.SendTrace(level, fmt.Sprintf("%s(%d) %s", file, line, message))
+	StdTelemetry.SendTrace(level, fmt.Sprintf("%s:%s(%d) %s", file, function, line, message))
 
 	lines := strings.Split(message, "\n")
 	for _, ml := range lines {
-		txt := fmt.Sprintf("%s%s %s(%d) %s", l.prefix, level, file, line, ml)
+		txt := fmt.Sprintf("%s%s %s:%s(%d) %s", l.prefix, level, file, function, line, ml)
 		//print(txt)
 		_, err := l.udpLogger.Write([]byte(txt))
 		if err != nil {
@@ -109,9 +109,13 @@ func (l *Logger) output(level, message string) {
 	}
 }
 
-func (l *Logger) getCallerInfo() (string, int) {
-	_, file, line, _ := runtime.Caller(5)
-	return file, line
+func (l *Logger) getCallerInfo() (string, int, string) {
+	_, file, line, function, _ := caller(6)
+	i := strings.LastIndex(function, ".")
+	if i != -1 {
+		function = function[i+1:]
+	}
+	return file, line, function
 }
 
 func (l *Logger) FatalError(err error, msg string) {
@@ -128,4 +132,14 @@ func getBaseFileBathLength() int {
 		return len(file) - len(loggerPathPrefix)
 	}
 	return 0
+}
+
+func caller(skip int) (pc uintptr, file string, line int, function string, ok bool) {
+	rpc := make([]uintptr, 1)
+	n := runtime.Callers(skip+1, rpc[:])
+	if n < 1 {
+		return
+	}
+	frame, _ := runtime.CallersFrames(rpc).Next()
+	return frame.PC, frame.File, frame.Line, frame.Function, frame.PC != 0
 }
