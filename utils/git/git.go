@@ -53,6 +53,10 @@ type git struct {
 
 func NewGit(path string) Git {
 	cmd := newGitCmd(path)
+	return NewGitWith(cmd)
+}
+
+func NewGitWith(cmd gitCommander) Git {
 	status := newStatus(cmd)
 	return &git{
 		cmd:           cmd,
@@ -60,12 +64,13 @@ func NewGit(path string) Git {
 		logService:    newLog(cmd),
 		branchService: newBranchService(cmd),
 		remoteService: newRemoteService(cmd),
-		ignoreService: newIgnoreHandler(path),
+		ignoreService: newIgnoreHandler(cmd.RepoPath()),
 		diffService:   newDiff(cmd, status),
 		commitService: newCommit(cmd),
 		tagService:    newTagService(cmd),
 	}
 }
+
 func (h *git) GetRepo() (Repo, error) {
 	commits, err := h.logService.getLog()
 	if err != nil {
