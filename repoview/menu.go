@@ -31,10 +31,8 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	menu.Add(ui.MenuItem{Text: "Commit ...", Key: "Ctrl-S", Action: t.vm.showCommitDialog})
 	menu.Add(ui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
 	menu.Add(ui.MenuItem{Text: "Delete Branch", SubItems: t.getDeleteBranchMenuItems()})
-	pushItems := t.getPushBranchMenuItems()
-	if pushItems != nil {
-		menu.Add(ui.MenuItem{Text: "Push", SubItems: pushItems})
-	}
+	menu.Add(ui.MenuItem{Text: "Push", SubItems: t.getPushBranchMenuItems()})
+	menu.Add(ui.MenuItem{Text: "Pull/Update", SubItems: t.getPullBranchMenuItems()})
 
 	menu.Add(ui.MenuItem{Text: "Switch/Checkout", SubItems: t.getSwitchBranchMenuItems()})
 	mergeItems, mergeTitle := t.getMergeMenuItems()
@@ -181,6 +179,18 @@ func (t *menuService) getPushBranchMenuItems() []ui.MenuItem {
 	if ok && current.HasLocalOnly {
 		pushItem := ui.MenuItem{Text: t.branchItemText(current, ""), Key: "Ctrl-P", Action: func() {
 			t.vm.PushBranch(current.Name)
+		}}
+		items = append(items, pushItem)
+	}
+	return items
+}
+
+func (t *menuService) getPullBranchMenuItems() []ui.MenuItem {
+	var items []ui.MenuItem
+	current, ok := t.vm.CurrentBranch()
+	if ok && current.HasRemoteOnly {
+		pushItem := ui.MenuItem{Text: t.branchItemText(current, ""), Key: "Ctrl-U", Action: func() {
+			t.vm.PullCurrentBranch()
 		}}
 		items = append(items, pushItem)
 	}

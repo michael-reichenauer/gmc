@@ -36,6 +36,7 @@ type Git interface {
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
 	GetTags() ([]Tag, error)
+	PullBranch() error
 }
 
 type git struct {
@@ -130,6 +131,10 @@ func (h *git) Commit(message string) error {
 
 func (h *git) PushBranch(name string) error {
 	return h.remoteService.pushBranch(name)
+}
+
+func (h *git) PullBranch() error {
+	return h.remoteService.pullBranch()
 }
 
 func (h *git) MergeBranch(name string) error {

@@ -640,6 +640,10 @@ func (t *Service) PushBranch(name string) error {
 	return t.gitRepo.PushBranch(name)
 }
 
+func (t *Service) PullBranch() error {
+	return t.gitRepo.PullBranch()
+}
+
 func (t *Service) getBranchNames(repo *viewRepo) []string {
 	var names []string
 	for _, b := range repo.Branches {

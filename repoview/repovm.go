@@ -261,9 +261,20 @@ func (h *repoVM) PushCurrentBranch() {
 		return
 	}
 	h.startCommand(
-		fmt.Sprintf("Pushing Branch:\n%s", current.Name),
+		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
 		func() error { return h.viewModelService.PushBranch(current.Name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) })
+}
+
+func (h *repoVM) PullCurrentBranch() {
+	current, ok := h.CurrentBranch()
+	if !ok || !current.HasLocalOnly {
+		return
+	}
+	h.startCommand(
+		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
+		func() error { return h.viewModelService.PullBranch() },
+		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) })
 }
 
 func (h *repoVM) MergeFromBranch(name string) {
