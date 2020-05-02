@@ -4,6 +4,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
+	"path"
 	"strings"
 	"testing"
 )
@@ -31,4 +32,28 @@ func TestLog(t *testing.T) {
 	assert.Equal(t, 3, len(commits))
 	assert.Equal(t, "e8cbef1cf080fe4b102482157000468fffe45e67", commits[0].ID)
 	assert.Equal(t, "73e01bf288805d247e5c805238e936c6706373cd", commits[0].ParentIDs[0])
+}
+
+func TestSomeCommits(t *testing.T) {
+	wf := tests.CreateTempFolder()
+	defer tests.CleanTemp()
+	assert.NoError(t, InitRepo(wf))
+	gr := OpenRepo(wf)
+
+	assert.NoError(t, utils.FileWrite(path.Join(wf, "a.txt"), []byte("1")))
+	assert.NoError(t, gr.Commit("initial"))
+
+	l, err := gr.GetLog()
+	assert.NoError(t, err)
+	assert.Equal(t, 1, len(l))
+	assert.Equal(t, "initial", l[0].Subject)
+
+	assert.NoError(t, utils.FileWrite(path.Join(wf, "a.txt"), []byte("2")))
+	assert.NoError(t, gr.Commit("second"))
+
+	l, _ = gr.GetLog()
+	assert.Equal(t, 2, len(l))
+	assert.Equal(t, "second", l[0].Subject)
+	assert.Equal(t, "initial", l[1].Subject)
+	assert.Equal(t, l[1].ID, l[0].ParentIDs[0])
 }

@@ -10,15 +10,26 @@ import (
 	"testing"
 )
 
+func TestInit(t *testing.T) {
+	wf := tests.CreateTempFolder()
+	defer tests.CleanTemp()
+	assert.NoError(t, InitRepo(wf))
+	gr := OpenRepo(wf)
+	assert.Equal(t, wf, gr.RepoPath())
+	l, err := gr.GetLog()
+	assert.NoError(t, err)
+	assert.Equal(t, 0, len(l))
+}
+
 func TestGit_GetRepo(t *testing.T) {
 	tests.ManualTest(t)
 
 	cmd := newRecorderCmd(newGitCmd(utils.CurrentDir()))
-	gitService := NewGitWith(cmd)
+	gitService := OpenRepoWith(cmd)
 	_, err := gitService.GetRepo()
 	assert.NoError(t, err)
 
-	gs := NewGitWith(newMockCmd(cmd.String()))
+	gs := OpenRepoWith(newMockCmd(cmd.String()))
 	repo, err := gs.GetRepo()
 	assert.NoError(t, err)
 	t.Logf("%+v", repo)

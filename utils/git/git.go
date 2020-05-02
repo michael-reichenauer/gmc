@@ -1,7 +1,10 @@
 package git
 
 import (
+	"fmt"
+	"github.com/michael-reichenauer/gmc/utils"
 	"os/exec"
+	"path/filepath"
 	"strings"
 )
 
@@ -21,9 +24,9 @@ type Repo struct {
 type Git interface {
 	GetRepo() (Repo, error)
 	RepoPath() string
-	GetLog() ([]Commit, error)
+	GetLog() (Commits, error)
 	GetStatus() (Status, error)
-	GetBranches() ([]Branch, error)
+	GetBranches() (Branches, error)
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
@@ -32,6 +35,7 @@ type Git interface {
 	Fetch() error
 	PushBranch(name string) error
 	CreateBranch(name string) error
+	CreateBranchAt(name string, id string) error
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
@@ -51,12 +55,12 @@ type git struct {
 	tagService    *tagService
 }
 
-func NewGit(path string) Git {
+func OpenRepo(path string) Git {
 	cmd := newGitCmd(path)
-	return NewGitWith(cmd)
+	return OpenRepoWith(cmd)
 }
 
-func NewGitWith(cmd gitCommander) Git {
+func OpenRepoWith(cmd gitCommander) Git {
 	status := newStatus(cmd)
 	return &git{
 		cmd:           cmd,
@@ -71,26 +75,32 @@ func NewGitWith(cmd gitCommander) Git {
 	}
 }
 
-func (h *git) GetRepo() (Repo, error) {
-	commits, err := h.logService.getLog()
+func InitRepo(rootPath string) error {
+	cmd := newGitCmdWithRoot(rootPath)
+	_, err := cmd.Git("init", rootPath)
+	return err
+}
+
+func (t *git) GetRepo() (Repo, error) {
+	commits, err := t.logService.getLog()
 	if err != nil {
 		return Repo{}, err
 	}
-	branches, err := h.branchService.getBranches()
+	branches, err := t.branchService.getBranches()
 	if err != nil {
 		return Repo{}, err
 	}
-	status, err := h.statusService.getStatus()
+	status, err := t.statusService.getStatus()
 	if err != nil {
 		return Repo{}, err
 	}
-	tags, err := h.tagService.getTags()
+	tags, err := t.tagService.getTags()
 	if err != nil {
 		return Repo{}, err
 	}
 
 	return Repo{
-		RootPath: h.cmd.RepoPath(),
+		RootPath: t.cmd.RepoPath(),
 		Commits:  commits,
 		Branches: branches,
 		Status:   status,
@@ -98,68 +108,72 @@ func (h *git) GetRepo() (Repo, error) {
 	}, nil
 }
 
-func (h *git) RepoPath() string {
-	return h.cmd.RepoPath()
+func (t *git) RepoPath() string {
+	return t.cmd.RepoPath()
 }
 
-func (h *git) GetLog() ([]Commit, error) {
-	return h.logService.getLog()
+func (t *git) GetLog() (Commits, error) {
+	return t.logService.getLog()
 }
 
-func (h *git) GetBranches() ([]Branch, error) {
-	return h.branchService.getBranches()
+func (t *git) GetBranches() (Branches, error) {
+	return t.branchService.getBranches()
 }
 
-func (h *git) GetStatus() (Status, error) {
-	return h.statusService.getStatus()
+func (t *git) GetStatus() (Status, error) {
+	return t.statusService.getStatus()
 }
 
-func (h *git) Fetch() error {
-	return h.remoteService.fetch()
+func (t *git) Fetch() error {
+	return t.remoteService.fetch()
 }
 
-func (h *git) CommitDiff(id string) (CommitDiff, error) {
-	return h.diffService.commitDiff(id)
+func (t *git) CommitDiff(id string) (CommitDiff, error) {
+	return t.diffService.commitDiff(id)
 }
 
-func (h *git) IsIgnored(path string) bool {
-	return h.ignoreService.isIgnored(path)
+func (t *git) IsIgnored(path string) bool {
+	return t.ignoreService.isIgnored(path)
 }
 
-func (h *git) Checkout(name string) error {
-	return h.branchService.checkout(name)
+func (t *git) Checkout(name string) error {
+	return t.branchService.checkout(name)
 }
 
-func (h *git) Commit(message string) error {
-	return h.commitService.commitAllChanges(message)
+func (t *git) Commit(message string) error {
+	return t.commitService.commitAllChanges(message)
 }
 
-func (h *git) PushBranch(name string) error {
-	return h.remoteService.pushBranch(name)
+func (t *git) PushBranch(name string) error {
+	return t.remoteService.pushBranch(name)
 }
 
-func (h *git) PullBranch() error {
-	return h.remoteService.pullBranch()
+func (t *git) PullBranch() error {
+	return t.remoteService.pullBranch()
 }
 
-func (h *git) MergeBranch(name string) error {
-	return h.branchService.mergeBranch(name)
+func (t *git) MergeBranch(name string) error {
+	return t.branchService.mergeBranch(name)
 }
 
-func (h *git) CreateBranch(name string) error {
-	return h.branchService.createBranch(name)
+func (t *git) CreateBranch(name string) error {
+	return t.branchService.createBranch(name)
 }
 
-func (h *git) DeleteRemoteBranch(name string) error {
-	return h.remoteService.deleteRemoteBranch(name)
+func (t *git) CreateBranchAt(name string, id string) error {
+	return t.branchService.createBranchAt(name, id)
 }
 
-func (h *git) DeleteLocalBranch(name string) error {
-	return h.branchService.deleteLocalBranch(name)
+func (t *git) DeleteRemoteBranch(name string) error {
+	return t.remoteService.deleteRemoteBranch(name)
 }
 
-func (h *git) GetTags() ([]Tag, error) {
-	return h.tagService.getTags()
+func (t *git) DeleteLocalBranch(name string) error {
+	return t.branchService.deleteLocalBranch(name)
+}
+
+func (t *git) GetTags() ([]Tag, error) {
+	return t.tagService.getTags()
 }
 
 // GitVersion returns the git version
@@ -173,4 +187,25 @@ func StripRemotePrefix(name string) string {
 		name = name[7:]
 	}
 	return name
+}
+
+func WorkingFolderRoot(path string) (string, error) {
+	current := path
+	if strings.HasSuffix(path, ".git") || strings.HasSuffix(path, ".git/") || strings.HasSuffix(path, ".git\\") {
+		current = filepath.Dir(path)
+	}
+
+	for {
+		gitRepoPath := filepath.Join(current, ".git")
+		if utils.DirExists(gitRepoPath) {
+			return current, nil
+		}
+		parent := filepath.Dir(current)
+		if parent == current {
+			// Reached top/root volume folder
+			break
+		}
+		current = parent
+	}
+	return "", fmt.Errorf("could not locater working folder root from " + path)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"time"
 )
 
@@ -52,7 +53,7 @@ func ToSid(commitID string) string {
 }
 
 func NewGitRepo(workingFolder string) GitRepo {
-	g := git.NewGit(workingFolder)
+	g := git.OpenRepo(workingFolder)
 	return &gitRepo{
 		rootPath:        workingFolder,
 		branchesService: newBranchesService(),
@@ -232,7 +233,7 @@ func (s *gitRepo) getFreshStatus(repo Repo) (Repo, error) {
 
 func (s *gitRepo) getFreshRepo() (Repo, error) {
 	log.Infof("Getting fresh repo for %s", s.git.RepoPath())
-	t := time.Now()
+	st := timer.Start()
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
@@ -247,7 +248,7 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	repo.setGitCommits(gitRepo.Commits)
 
 	s.branchesService.setBranchForAllCommits(repo)
-	log.Infof("Git repo %v", time.Since(t))
+	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
 }
 

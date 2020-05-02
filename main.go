@@ -13,7 +13,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	stdlog "log"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
@@ -45,9 +44,9 @@ func main() {
 		return
 	}
 
-	go func() {
-		log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
-	}()
+	// go func() {
+	// 	log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
+	// }()
 
 	if *pauseFlag {
 		// The process was started with 'pause' flag, e.g. from Goland,

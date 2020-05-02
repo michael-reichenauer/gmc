@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
@@ -139,7 +138,7 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 }
 
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
-	git.EnableTracing("")
+	//git.EnableTracing("")
 	// traceBytes := utils.MustJsonMarshal(trace{
 	// 	RepoPath:    h.viewModelService.RepoPath(),
 	// 	ViewPage:    viewPage,

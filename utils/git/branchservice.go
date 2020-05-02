@@ -21,6 +21,8 @@ type Branch struct {
 	TipCommitMessage string
 }
 
+type Branches []Branch
+
 func (t *Branch) String() string {
 	return t.Name
 }
@@ -41,6 +43,24 @@ func newBranchService(cmd gitCommander) *branchesService {
 	return &branchesService{cmd: cmd}
 }
 
+func (bs Branches) MustCurrent() Branch {
+	for _, b := range bs {
+		if b.IsCurrent {
+			return b
+		}
+	}
+	panic("no current branch")
+}
+
+func (bs Branches) MustByName(name string) Branch {
+	for _, b := range bs {
+		if name == b.Name {
+			return b
+		}
+	}
+	panic("no branch: " + name)
+}
+
 func (t *branchesService) checkout(name string) error {
 	_, err := t.cmd.Git("checkout", name)
 	if err != nil {
@@ -49,7 +69,7 @@ func (t *branchesService) checkout(name string) error {
 	return nil
 }
 
-func (t *branchesService) getBranches() ([]Branch, error) {
+func (t *branchesService) getBranches() (Branches, error) {
 	branchesText, err := t.cmd.Git("branch", "-vv", "--no-color", "--no-abbrev", "--all")
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git branches, %v", err)
@@ -73,6 +93,11 @@ func (t *branchesService) mergeBranch(name string) error {
 
 func (t *branchesService) createBranch(name string) error {
 	_, err := t.cmd.Git("checkout", "-b", name)
+	return err
+}
+
+func (t *branchesService) createBranchAt(name string, id string) error {
+	_, err := t.cmd.Git("checkout", "-b", name, id)
 	return err
 }
 

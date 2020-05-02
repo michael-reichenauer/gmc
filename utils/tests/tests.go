@@ -2,7 +2,10 @@ package tests
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"io/ioutil"
 	"os"
+	"path"
 	"runtime"
 	"strings"
 	"testing"
@@ -42,6 +45,7 @@ func caller(skip int) (pc uintptr, file string, line int, function string, ok bo
 func stringsContains(s []string, e string) bool {
 	return stringsIndex(s, e) != -1
 }
+
 func stringsIndex(s []string, e string) int {
 	for i, a := range s {
 		if a == e {
@@ -49,4 +53,27 @@ func stringsIndex(s []string, e string) int {
 		}
 	}
 	return -1
+}
+
+func CreateTempFolder() string {
+	basePath := TempBasePath()
+
+	err := os.Mkdir(basePath, 0700)
+	if err != nil && !os.IsExist(err) {
+		panic(log.Fatal(err))
+	}
+
+	dir, err := ioutil.TempDir(basePath, "folder")
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return dir
+}
+
+func CleanTemp() {
+	_ = os.RemoveAll(TempBasePath())
+}
+
+func TempBasePath() string {
+	return path.Join(os.TempDir(), "gmctmp")
 }
