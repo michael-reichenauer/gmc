@@ -5,16 +5,15 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"path"
 	"testing"
 )
 
 func TestBranches(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
-	file1 := path.Join(wf, "a.txt")
-	assert.NoError(t, InitRepo(wf))
-	gr := OpenRepo(wf)
+	file1 := wf.Path("a.txt")
+	assert.NoError(t, InitRepo(wf.Path()))
+	gr := OpenRepo(wf.Path())
 
 	bs, err := gr.GetBranches()
 	assert.NoError(t, err)

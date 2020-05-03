@@ -2,6 +2,7 @@ package tests
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"os"
@@ -10,6 +11,9 @@ import (
 	"strings"
 	"testing"
 )
+
+type TempFolder string
+type TempFile string
 
 func ManualTest(t *testing.T) {
 	t.Helper()
@@ -55,7 +59,7 @@ func stringsIndex(s []string, e string) int {
 	return -1
 }
 
-func CreateTempFolder() string {
+func CreateTempFolder() TempFolder {
 	basePath := TempBasePath()
 
 	err := os.Mkdir(basePath, 0700)
@@ -67,7 +71,41 @@ func CreateTempFolder() string {
 	if err != nil {
 		panic(log.Fatal(err))
 	}
-	return dir
+	dir = strings.ReplaceAll(dir, "\\", "/")
+	return TempFolder(dir)
+}
+
+func (t TempFolder) Path(elem ...string) string {
+	return path.Join(append([]string{string(t)}, elem...)...)
+}
+
+func (t TempFolder) MkDir(elem ...string) TempFolder {
+	path := t.Path(elem...)
+	err := os.MkdirAll(path, os.ModePerm)
+	if err != nil && !os.IsExist(err) {
+		panic(log.Fatal(err))
+	}
+	return TempFolder(path)
+}
+
+func (t TempFolder) File(elem ...string) TempFile {
+	return TempFile(t.Path(elem...))
+}
+
+func (t TempFile) Write(text string) {
+	if err := utils.FileWrite(string(t), []byte(text)); err != nil {
+		panic(log.Fatal(err))
+	}
+}
+func (t TempFile) Read() string {
+	return string(utils.MustFileRead(string(t)))
+}
+func (t TempFile) TryRead() (string, error) {
+	f, err := utils.FileRead(string(t))
+	if err != nil {
+		return "", err
+	}
+	return string(f), err
 }
 
 func CleanTemp() {
@@ -75,5 +113,6 @@ func CleanTemp() {
 }
 
 func TempBasePath() string {
-	return path.Join(os.TempDir(), "gmctmp")
+	tmpDir := strings.ReplaceAll(os.TempDir(), "\\", "/")
+	return path.Join(tmpDir, "gmctmp")
 }

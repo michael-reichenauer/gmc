@@ -4,7 +4,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"path"
 	"strings"
 	"testing"
 )
@@ -37,10 +36,10 @@ func TestLog(t *testing.T) {
 func TestSomeCommits(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
-	assert.NoError(t, InitRepo(wf))
-	gr := OpenRepo(wf)
+	assert.NoError(t, InitRepo(wf.Path()))
+	gr := OpenRepo(wf.Path())
 
-	assert.NoError(t, utils.FileWrite(path.Join(wf, "a.txt"), []byte("1")))
+	wf.File("a.txt").Write("1")
 	assert.NoError(t, gr.Commit("initial"))
 
 	l, err := gr.GetLog()
@@ -48,7 +47,7 @@ func TestSomeCommits(t *testing.T) {
 	assert.Equal(t, 1, len(l))
 	assert.Equal(t, "initial", l[0].Subject)
 
-	assert.NoError(t, utils.FileWrite(path.Join(wf, "a.txt"), []byte("2")))
+	wf.File("a.txt").Write("2")
 	assert.NoError(t, gr.Commit("second"))
 
 	l, _ = gr.GetLog()

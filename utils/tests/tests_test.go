@@ -5,6 +5,8 @@ import (
 )
 
 func TestGetTempFolder(t *testing.T) {
-	path := GetTempFolder()
+	path := CreateTempFolder()
+	defer CleanTemp()
+
 	t.Log(path)
 }

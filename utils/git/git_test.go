@@ -13,9 +13,9 @@ import (
 func TestInit(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
-	assert.NoError(t, InitRepo(wf))
-	gr := OpenRepo(wf)
-	assert.Equal(t, wf, gr.RepoPath())
+	assert.NoError(t, InitRepo(wf.Path()))
+	gr := OpenRepo(wf.Path())
+	assert.Equal(t, wf.Path(), gr.RepoPath())
 	l, err := gr.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(l))
@@ -40,9 +40,12 @@ type mockCmd struct {
 }
 
 func newMockCmd(text string) *mockCmd {
+	if text == "" {
+		return &mockCmd{responses: responses{Cmds: make(map[string]resp)}}
+	}
 	var responses responses
 	if err := json.Unmarshal([]byte(text), &responses); err != nil {
-		panic(log.Fatal(err))
+		panic(log.Fatalf(err, "%q", text))
 	}
 
 	return &mockCmd{responses: responses}
@@ -122,6 +125,9 @@ func (t *recorderCmd) ReadFile(path string) (string, error) {
 }
 
 func (t *recorderCmd) String() string {
-	text, _ := json.Marshal(t.responses)
+	text, err := json.Marshal(t.responses)
+	if err != nil {
+		panic(log.Fatalf(err, "%q", text))
+	}
 	return string(text)
 }
