@@ -1,5 +1,6 @@
 @echo off&setlocal
 
+echo Running tests ...
 go test ./...
 
 del gmc.exe >nul 2>&1
