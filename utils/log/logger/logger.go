@@ -2,10 +2,14 @@ package logger
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
+	"path"
 	"runtime"
 	"runtime/debug"
 	"strings"
+	"time"
 )
 
 const (
@@ -18,6 +22,7 @@ const (
 
 const (
 	loggerPathPrefix = "utils/log/logger/logger.go"
+	errorsFile       = "gmc_errors.log"
 )
 
 var (
@@ -29,6 +34,35 @@ type Logger struct {
 	prefix    string // prefix to write at beginning of each line
 	isWindows bool
 	udpLogger *net.UDPConn
+}
+
+func RedirectStdErrorToFile() {
+	// The error log file in users home dir
+	home, err := os.UserHomeDir()
+	if err != nil {
+		StdLogger.Fatal(err)
+	}
+	errorsPath := path.Join(home, errorsFile)
+
+	// Log previous error for last instance if it exists
+	previousErrorData, err := ioutil.ReadFile(errorsPath)
+	previousError := string(previousErrorData)
+	if previousError != "" {
+		fileTime := time.Now()
+		info, err2 := os.Stat(errorsPath)
+		if err2 == nil {
+			fileTime = info.ModTime()
+		}
+		StdLogger.Errorf("Previous instance error at %v:\n%s", fileTime, previousError)
+	}
+	_ = os.Remove(errorsPath)
+
+	// Redirect std error to error file
+	ef, err := os.OpenFile(errorsPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0660)
+	if err != nil {
+		StdLogger.Fatal(err)
+	}
+	redirectStdErrToFile(ef)
 }
 
 func NewLogger(prefix string) *Logger {
@@ -61,6 +95,10 @@ func (l *Logger) Infof(format string, v ...interface{}) {
 
 func (l *Logger) Warnf(format string, v ...interface{}) {
 	l.Output(Warn, fmt.Sprintf(format, v...))
+}
+
+func (l *Logger) Errorf(format string, v ...interface{}) {
+	l.Output(Error, fmt.Sprintf(format, v...))
 }
 
 func (l *Logger) Fatalf(err error, format string, v ...interface{}) string {

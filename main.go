@@ -63,6 +63,7 @@ func main() {
 	defer logger.StdTelemetry.Close()
 
 	log.Eventf("program-start", "Starting gmc %s ...", version)
+	logger.RedirectStdErrorToFile()
 	defer log.Event("program-stop")
 
 	configService := config.NewConfig(version, *workingFolderFlag)
