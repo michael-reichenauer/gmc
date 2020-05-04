@@ -73,7 +73,7 @@ func (t *statusService) parseStatus(statusText string) (Status, error) {
 func (t *statusService) getMergeStatus() (string, bool) {
 	mergeMessage := ""
 	//mergeIpPath := path.Join(h.cmd.RepoPath(), ".git", "MERGE_HEAD")
-	mergeMsgPath := path.Join(t.cmd.RepoPath(), ".git", "MERGE_MSG")
+	mergeMsgPath := path.Join(t.cmd.WorkingDir(), ".git", "MERGE_MSG")
 	msg, err := t.cmd.ReadFile(mergeMsgPath)
 	if err != nil {
 		return "", false

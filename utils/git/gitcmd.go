@@ -11,28 +11,20 @@ import (
 
 type gitCommander interface {
 	Git(arg ...string) (string, error)
-	RepoPath() string
+	WorkingDir() string
 	ReadFile(path string) (string, error)
 }
 
 type gitCmd struct {
-	repoPath string
+	workingDir string
 }
 
-func newGitCmd(repoPath string) gitCommander {
-	rootPath, err := WorkingFolderRoot(repoPath)
-	if err == nil {
-		repoPath = rootPath
-	}
-	return &gitCmd{repoPath: repoPath}
+func newGitCmd(workingDir string) gitCommander {
+	return &gitCmd{workingDir: workingDir}
 }
 
-func newGitCmdWithRoot(repoPath string) gitCommander {
-	return &gitCmd{repoPath: repoPath}
-}
-
-func (t *gitCmd) RepoPath() string {
-	return t.repoPath
+func (t *gitCmd) WorkingDir() string {
+	return t.workingDir
 }
 
 func (t *gitCmd) ReadFile(path string) (string, error) {
@@ -42,11 +34,11 @@ func (t *gitCmd) ReadFile(path string) (string, error) {
 
 func (t *gitCmd) Git(args ...string) (string, error) {
 	argsText := strings.Join(args, " ")
-	log.Infof("Cmd: git %s (%s) ...", argsText, t.repoPath)
+	log.Infof("Cmd: git %s (%s) ...", argsText, t.workingDir)
 	// Get the git cmd output
 	st := timer.Start()
 	c := exec.Command("git", args...)
-	c.Dir = t.repoPath
+	c.Dir = t.workingDir
 	out, err := c.Output()
 	if err != nil {
 		errorText := ""

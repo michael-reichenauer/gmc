@@ -53,7 +53,7 @@ func ToSid(commitID string) string {
 }
 
 func NewGitRepo(workingFolder string) GitRepo {
-	g := git.OpenRepo(workingFolder)
+	g := git.New(workingFolder)
 	return &gitRepo{
 		rootPath:        workingFolder,
 		branchesService: newBranchesService(),

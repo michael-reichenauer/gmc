@@ -11,53 +11,53 @@ import (
 func TestBranches(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
-	file1 := wf.Path("a.txt")
-	assert.NoError(t, InitRepo(wf.Path()))
-	gr := OpenRepo(wf.Path())
+	file1 := "a.txt"
+	git := New(wf.Path())
+	assert.NoError(t, git.InitRepo(wf.Path()))
 
-	bs, err := gr.GetBranches()
+	bs, err := git.GetBranches()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(bs))
 
-	assert.NoError(t, utils.FileWrite(file1, []byte("1")))
-	assert.NoError(t, gr.Commit("initial"))
-	assert.Equal(t, "1", string(utils.MustFileRead(file1)))
+	wf.File(file1).Write("1")
+	assert.NoError(t, git.Commit("initial"))
+	assert.Equal(t, "1", wf.File(file1).Read())
 
-	bs, _ = gr.GetBranches()
+	bs, _ = git.GetBranches()
 	assert.Equal(t, 1, len(bs))
 	assert.Equal(t, "master", bs[0].Name)
 	assert.Equal(t, "master", bs.MustCurrent().Name)
 
-	err = gr.CreateBranch("develop")
-	bs, _ = gr.GetBranches()
+	assert.NoError(t, git.CreateBranch("develop"))
+	bs, _ = git.GetBranches()
 	assert.Equal(t, 2, len(bs))
 	assert.Equal(t, "develop", bs.MustCurrent().Name)
-	assert.NoError(t, utils.FileWrite(file1, []byte("2")))
-	assert.NoError(t, gr.Commit("second"))
+	wf.File(file1).Write("2")
+	assert.NoError(t, git.Commit("second"))
 
-	assert.NoError(t, gr.Checkout("master"))
-	assert.Equal(t, "1", string(utils.MustFileRead(file1)))
-	assert.NoError(t, gr.MergeBranch("develop"))
-	assert.NoError(t, gr.Commit("merged"))
-	assert.Equal(t, "2", string(utils.MustFileRead(file1)))
+	assert.NoError(t, git.Checkout("master"))
+	assert.Equal(t, "1", wf.File(file1).Read())
+	assert.NoError(t, git.MergeBranch("develop"))
+	assert.NoError(t, git.Commit("merged"))
+	assert.Equal(t, "2", wf.File(file1).Read())
 
-	cs, _ := gr.GetLog()
+	cs, _ := git.GetLog()
 
-	err = gr.CreateBranchAt("feature", cs.MustBySubject("second").ID)
-	bs, _ = gr.GetBranches()
+	assert.NoError(t, git.CreateBranchAt("feature", cs.MustBySubject("second").ID))
+	bs, _ = git.GetBranches()
 	assert.Equal(t, 3, len(bs))
 
-	assert.NoError(t, utils.FileWrite(file1, []byte("3")))
-	assert.NoError(t, gr.Commit("third"))
+	wf.File(file1).Write("3")
+	assert.NoError(t, git.Commit("third"))
 
-	assert.NoError(t, gr.Checkout("master"))
-	assert.Equal(t, "2", string(utils.MustFileRead(file1)))
+	assert.NoError(t, git.Checkout("master"))
+	assert.Equal(t, "2", wf.File(file1).Read())
 
-	assert.NoError(t, gr.MergeBranch("feature"))
-	assert.NoError(t, gr.Commit("merged2"))
-	assert.Equal(t, "3", string(utils.MustFileRead(file1)))
+	assert.NoError(t, git.MergeBranch("feature"))
+	assert.NoError(t, git.Commit("merged2"))
+	assert.Equal(t, "3", wf.File(file1).Read())
 
-	cs, _ = gr.GetLog()
+	cs, _ = git.GetLog()
 	assert.Equal(t, cs.MustBySubject("merged").ID, cs.MustBySubject("merged2").ParentIDs[0])
 	assert.Equal(t, cs.MustBySubject("third").ID, cs.MustBySubject("merged2").ParentIDs[1])
 	assert.Equal(t, cs.MustBySubject("second").ID, cs.MustBySubject("third").ParentIDs[0])
@@ -68,8 +68,9 @@ func TestBranches(t *testing.T) {
 	// t.Logf("\n%s", cs)
 }
 
-func TestListBranches(t *testing.T) {
+func TestListBranches_Manual(t *testing.T) {
 	tests.ManualTest(t)
+
 	branches, err := newBranchService(newGitCmd(utils.CurrentDir())).getBranches()
 	assert.NoError(t, err)
 	for _, b := range branches {

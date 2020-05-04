@@ -36,21 +36,21 @@ func TestLog(t *testing.T) {
 func TestSomeCommits(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
-	assert.NoError(t, InitRepo(wf.Path()))
-	gr := OpenRepo(wf.Path())
+	git := New(wf.Path())
+	assert.NoError(t, git.InitRepo(wf.Path()))
 
 	wf.File("a.txt").Write("1")
-	assert.NoError(t, gr.Commit("initial"))
+	assert.NoError(t, git.Commit("initial"))
 
-	l, err := gr.GetLog()
+	l, err := git.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(l))
 	assert.Equal(t, "initial", l[0].Subject)
 
 	wf.File("a.txt").Write("2")
-	assert.NoError(t, gr.Commit("second"))
+	assert.NoError(t, git.Commit("second"))
 
-	l, _ = gr.GetLog()
+	l, _ = git.GetLog()
 	assert.Equal(t, 2, len(l))
 	assert.Equal(t, "second", l[0].Subject)
 	assert.Equal(t, "initial", l[1].Subject)

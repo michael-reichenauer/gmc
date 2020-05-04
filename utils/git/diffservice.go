@@ -86,7 +86,7 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	fileDiffs, err = t.addAddedFiles(fileDiffs, status, t.cmd.RepoPath())
+	fileDiffs, err = t.addAddedFiles(fileDiffs, status, t.cmd.WorkingDir())
 	if err != nil {
 		return CommitDiff{}, err
 	}

@@ -7,16 +7,23 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
+	"os"
 	"testing"
 )
+
+func TestMain(m *testing.M) {
+	code := m.Run()
+	tests.CleanTemp()
+	os.Exit(code)
+}
 
 func TestInit(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
-	assert.NoError(t, InitRepo(wf.Path()))
-	gr := OpenRepo(wf.Path())
-	assert.Equal(t, wf.Path(), gr.RepoPath())
-	l, err := gr.GetLog()
+	git := New(wf.Path())
+	assert.NoError(t, git.InitRepo(wf.Path()))
+	assert.Equal(t, wf.Path(), git.RepoPath())
+	l, err := git.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(l))
 }
@@ -25,11 +32,11 @@ func TestGit_GetRepo(t *testing.T) {
 	tests.ManualTest(t)
 
 	cmd := newRecorderCmd(newGitCmd(utils.CurrentDir()))
-	gitService := OpenRepoWith(cmd)
+	gitService := NewWithCmd(cmd)
 	_, err := gitService.GetRepo()
 	assert.NoError(t, err)
 
-	gs := OpenRepoWith(newMockCmd(cmd.String()))
+	gs := NewWithCmd(newMockCmd(cmd.String()))
 	repo, err := gs.GetRepo()
 	assert.NoError(t, err)
 	t.Logf("%+v", repo)
@@ -63,7 +70,7 @@ func (t *mockCmd) Git(args ...string) (string, error) {
 	return rsp.Output, err
 }
 
-func (t *mockCmd) RepoPath() string {
+func (t *mockCmd) WorkingDir() string {
 	return t.responses.Path
 }
 
@@ -95,7 +102,7 @@ type recorderCmd struct {
 }
 
 func newRecorderCmd(cmd gitCommander) *recorderCmd {
-	return &recorderCmd{cmd: cmd, responses: responses{Path: cmd.RepoPath(), Cmds: make(map[string]resp)}}
+	return &recorderCmd{cmd: cmd, responses: responses{Path: cmd.WorkingDir(), Cmds: make(map[string]resp)}}
 }
 
 func (t *recorderCmd) Git(args ...string) (string, error) {
@@ -109,8 +116,8 @@ func (t *recorderCmd) Git(args ...string) (string, error) {
 	return output, err
 }
 
-func (t *recorderCmd) RepoPath() string {
-	t.responses.Path = t.cmd.RepoPath()
+func (t *recorderCmd) WorkingDir() string {
+	t.responses.Path = t.cmd.WorkingDir()
 	return t.responses.Path
 }
 

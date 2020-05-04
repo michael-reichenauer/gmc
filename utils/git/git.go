@@ -28,6 +28,8 @@ type Git interface {
 	GetStatus() (Status, error)
 	GetBranches() (Branches, error)
 
+	InitRepo(rootPath string) error
+
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
 	Checkout(name string) error
@@ -55,12 +57,12 @@ type git struct {
 	tagService    *tagService
 }
 
-func OpenRepo(path string) Git {
+func New(path string) Git {
 	cmd := newGitCmd(path)
-	return OpenRepoWith(cmd)
+	return NewWithCmd(cmd)
 }
 
-func OpenRepoWith(cmd gitCommander) Git {
+func NewWithCmd(cmd gitCommander) Git {
 	status := newStatus(cmd)
 	return &git{
 		cmd:           cmd,
@@ -68,16 +70,15 @@ func OpenRepoWith(cmd gitCommander) Git {
 		logService:    newLog(cmd),
 		branchService: newBranchService(cmd),
 		remoteService: newRemoteService(cmd),
-		ignoreService: newIgnoreHandler(cmd.RepoPath()),
+		ignoreService: newIgnoreHandler(cmd.WorkingDir()),
 		diffService:   newDiff(cmd, status),
 		commitService: newCommit(cmd),
 		tagService:    newTagService(cmd),
 	}
 }
 
-func InitRepo(rootPath string) error {
-	cmd := newGitCmdWithRoot(rootPath)
-	_, err := cmd.Git("init", rootPath)
+func (t *git) InitRepo(rootPath string) error {
+	_, err := t.cmd.Git("init", rootPath)
 	return err
 }
 
@@ -100,7 +101,7 @@ func (t *git) GetRepo() (Repo, error) {
 	}
 
 	return Repo{
-		RootPath: t.cmd.RepoPath(),
+		RootPath: t.cmd.WorkingDir(),
 		Commits:  commits,
 		Branches: branches,
 		Status:   status,
@@ -109,7 +110,7 @@ func (t *git) GetRepo() (Repo, error) {
 }
 
 func (t *git) RepoPath() string {
-	return t.cmd.RepoPath()
+	return t.cmd.WorkingDir()
 }
 
 func (t *git) GetLog() (Commits, error) {
