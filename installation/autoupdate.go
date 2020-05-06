@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-version"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/program"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
@@ -53,6 +54,10 @@ func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
 
 func (h *autoUpdate) Start() {
 	h.cleanTmpFiles()
+	if !program.IsRelease {
+		log.Infof("Auto update disabled, release=%v", program.IsRelease)
+		return
+	}
 	go h.periodicCheckForUpdatesRoutine()
 }
 

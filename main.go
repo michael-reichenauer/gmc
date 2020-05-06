@@ -109,6 +109,7 @@ func startAsExternalProcess() {
 
 func logProgramInfo(configService *config.Service) {
 	log.Infof("Version: %s", configService.ProgramVersion)
+	log.Infof("Build: release=%v", program.IsRelease)
 	log.Infof("Binary path: %q", utils.BinPath())
 	log.Infof("Args: %v", os.Args)
 	log.Infof("OS: %q", runtime.GOOS)
