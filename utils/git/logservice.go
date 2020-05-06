@@ -39,8 +39,13 @@ func newLog(cmd gitCommander) *logService {
 	return &logService{cmd: cmd}
 }
 
-func (t *logService) getLog() (Commits, error) {
-	logText, err := t.cmd.Git("log", "--all", "--date-order", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
+func (t *logService) getLog(maxCount int) (Commits, error) {
+	args := []string{"log", "--all", "--date-order", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B"}
+
+	if maxCount > 0 {
+		args = append(args, fmt.Sprintf("--max-count=%d", maxCount))
+	}
+	logText, err := t.cmd.Git(args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git log, %v", err)
 	}

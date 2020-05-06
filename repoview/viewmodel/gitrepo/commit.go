@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+var partialLogCommit = newPartialLogCommit()
+
 type Commit struct {
 	Id         string
 	Sid        string
@@ -36,6 +38,18 @@ func newCommit(gc git.Commit) *Commit {
 		Message:    gc.Message,
 		Author:     gc.Author,
 		AuthorTime: gc.AuthorTime,
+	}
+}
+
+func newPartialLogCommit() *Commit {
+	return &Commit{
+		Id:         git.PartialLogCommitID,
+		Sid:        git.ToSid(git.PartialLogCommitID),
+		ParentIDs:  []string{},
+		Subject:    "more commits ...",
+		Message:    "more commits ...",
+		Author:     "",
+		AuthorTime: time.Date(2000, 1, 1, 1, 1, 0, 0, time.UTC),
 	}
 }
 

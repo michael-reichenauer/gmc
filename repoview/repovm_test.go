@@ -1,6 +1,7 @@
 package repoview
 
 import (
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"testing"
 )
@@ -29,6 +30,8 @@ func (t *viewerMock) PostOnUIThread(f func()) {
 
 func TestViewCurrent(t *testing.T) {
 	tests.ManualTest(t)
+	viewer := newViewerMock()
+	vm := newRepoVM(ui, viewer, ms, cs, git.CurrentRoot())
 	// cs := config.NewConfig("0.0", "")
 	// m := &mock{uiWork: make(chan func())}
 	// vm := newRepoVM(m, nil, cs, "")

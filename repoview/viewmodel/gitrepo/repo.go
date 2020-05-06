@@ -11,7 +11,7 @@ type Tag struct {
 }
 type Repo struct {
 	Commits    []*Commit
-	CommitById map[string]*Commit
+	commitById map[string]*Commit
 	Branches   []*Branch
 	Status     Status
 	Tags       []Tag
@@ -19,7 +19,16 @@ type Repo struct {
 }
 
 func newRepo() *Repo {
-	return &Repo{CommitById: make(map[string]*Commit)}
+	return &Repo{commitById: make(map[string]*Commit)}
+}
+
+func (r *Repo) CommitByID(id string) *Commit {
+	c, ok := r.commitById[id]
+	if !ok {
+		return partialLogCommit
+	}
+	return c
+
 }
 
 func (r *Repo) BranchByName(name string) (*Branch, bool) {
@@ -35,8 +44,7 @@ func (r *Repo) Parent(commit *Commit, index int) (*Commit, bool) {
 	if index >= len(commit.ParentIDs) {
 		return nil, false
 	}
-	c, ok := r.CommitById[commit.ParentIDs[index]]
-	return c, ok
+	return r.CommitByID(commit.ParentIDs[index]), true
 }
 
 func (r *Repo) CurrentBranch() (*Branch, bool) {
@@ -52,13 +60,13 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 	for _, gc := range gitCommits {
 		commit := newCommit(gc)
 		r.Commits = append(r.Commits, commit)
-		r.CommitById[commit.Id] = commit
+		r.commitById[commit.Id] = commit
 	}
 
 	// Set current commit if there is a current branch
 	currentBranch, ok := r.CurrentBranch()
 	if ok {
-		currentCommit := r.CommitById[currentBranch.TipID]
+		currentCommit := r.CommitByID(currentBranch.TipID)
 		currentCommit.IsCurrent = true
 	}
 }

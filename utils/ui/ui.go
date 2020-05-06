@@ -20,7 +20,20 @@ type Runner interface {
 	PostOnUIThread(func())
 }
 
-type UI struct {
+type UI interface {
+	NewView(text string) View
+	NewViewFromPageFunc(f func(viewPort ViewPage) ViewText) View
+	NewViewFromTextFunc(f func(viewPage ViewPage) string) View
+	PostOnUIThread(f func())
+	ShowProgress(text string) Progress
+	ShowMessageBox(text string, title string)
+	ShowErrorMessageBox(text string)
+	ResizeAllViews()
+	NewMenu(title string) Menu
+	Quit()
+}
+
+type ui struct {
 	gui               *gocui.Gui
 	isInitialized     bool
 	runFunc           func()
@@ -30,51 +43,51 @@ type UI struct {
 	shownViews        []*view
 }
 
-func NewUI() *UI {
-	return &UI{}
+func NewUI() *ui {
+	return &ui{}
 }
 
-func (h *UI) ShowMessageBox(text, title string) {
+func (h *ui) ShowMessageBox(text, title string) {
 	msgBox := NewMessageBox(h, text, title)
 	msgBox.Show()
 }
 
-func (h *UI) ShowErrorMessageBox(text string) {
+func (h *ui) ShowErrorMessageBox(text string) {
 	text = Red(text)
 	msgBox := NewMessageBox(h, text, "Error !")
 	msgBox.Show()
 }
 
-func (h *UI) ShowWarningMessageBox(text string) {
+func (h *ui) ShowWarningMessageBox(text string) {
 	text = Yellow(text)
 	msgBox := NewMessageBox(h, text, "Warning !")
 	msgBox.Show()
 }
 
-func (h *UI) ShowProgress(text string) *Progress {
+func (h *ui) ShowProgress(text string) Progress {
 	p := newProgress(h)
 	p.SetText(text)
 	p.show()
 	return p
 }
 
-func (h *UI) NewMenu(title string) *Menu {
+func (h *ui) NewMenu(title string) Menu {
 	return newMenu(h, title)
 }
 
-func (h *UI) NewView(text string) View {
+func (h *ui) NewView(text string) View {
 	return newView(h, viewDataFromText(text))
 }
 
-func (h *UI) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewText) View {
+func (h *ui) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewText) View {
 	return newView(h, viewData)
 }
 
-func (h *UI) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
+func (h *ui) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
 	return newView(h, viewDataFromTextFunc(viewText))
 }
 
-func (h *UI) Run(runFunc func()) {
+func (h *ui) Run(runFunc func()) {
 	h.runFunc = runFunc
 
 	gui, err := gocui.NewGui(gocui.OutputNormal)
@@ -95,14 +108,14 @@ func (h *UI) Run(runFunc func()) {
 	}
 }
 
-func (h *UI) PostOnUIThread(f func()) {
+func (h *ui) PostOnUIThread(f func()) {
 	h.gui.Update(func(g *gocui.Gui) error {
 		f()
 		return nil
 	})
 }
 
-func (h *UI) WindowSize() (width, height int) {
+func (h *ui) WindowSize() (width, height int) {
 	return h.gui.Size()
 }
 
@@ -110,14 +123,14 @@ func SetWindowTitle(text string) {
 	_, _ = utils.SetConsoleTitle(text)
 }
 
-func (h *UI) currentView() *view {
+func (h *ui) currentView() *view {
 	if len(h.currentViewsStack) == 0 {
 		return nil
 	}
 	return h.currentViewsStack[len(h.currentViewsStack)-1]
 }
 
-func (h *UI) setCurrentView(v *view) {
+func (h *ui) setCurrentView(v *view) {
 	previousCurrentView := h.currentView()
 	if _, err := h.gui.SetCurrentView(v.guiView.Name()); err != nil {
 		panic(log.Fatal(err))
@@ -130,12 +143,12 @@ func (h *UI) setCurrentView(v *view) {
 	}
 }
 
-func (h *UI) addCurrentView(v *view) {
+func (h *ui) addCurrentView(v *view) {
 	h.removeCurrentView(v)
 	h.currentViewsStack = append(h.currentViewsStack, v)
 }
 
-func (h *UI) removeCurrentView(v *view) {
+func (h *ui) removeCurrentView(v *view) {
 	var views []*view
 	for _, cv := range h.currentViewsStack {
 		if cv == v {
@@ -146,7 +159,7 @@ func (h *UI) removeCurrentView(v *view) {
 	h.currentViewsStack = views
 }
 
-func (h *UI) layout(gui *gocui.Gui) error {
+func (h *ui) layout(gui *gocui.Gui) error {
 	// Resize window and notify all views if console window is resized
 	windowWidth, windowHeight := gui.Size()
 	if windowWidth != h.windowWidth || windowHeight != h.windowHeight {
@@ -164,30 +177,30 @@ func (h *UI) layout(gui *gocui.Gui) error {
 	return nil
 }
 
-func (h *UI) ResizeAllViews() {
+func (h *ui) ResizeAllViews() {
 	for _, v := range h.shownViews {
 		v.resize(h.windowWidth, h.windowHeight)
 		v.NotifyChanged()
 	}
 }
 
-func (h *UI) CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) Rect {
+func (h *ui) CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) Rect {
 	bf := CenterBounds(minWidth, minHeight, maxWidth, maxHeight)
 	ww, wh := h.WindowSize()
 	return bf(ww, wh)
 }
 
-func (h *UI) Quit() {
+func (h *ui) Quit() {
 	h.gui.Update(func(gui *gocui.Gui) error {
 		return gocui.ErrQuit
 	})
 }
 
-func (h *UI) showCursor(isShow bool) {
+func (h *ui) showCursor(isShow bool) {
 	h.gui.Cursor = isShow
 }
 
-func (h *UI) createView() *gocui.View {
+func (h *ui) createView() *gocui.View {
 	mb := Rect{-2, -2, -1, -1}
 	name := utils.RandomString(10)
 	if guiView, err := h.gui.SetView(name, mb.X, mb.Y, mb.W, mb.H); err != nil {
@@ -199,7 +212,7 @@ func (h *UI) createView() *gocui.View {
 	panic(log.Fatalf(fmt.Errorf("view already created"), "%s %+v", name, mb))
 }
 
-func (h *UI) setBounds(v *gocui.View, bounds Rect) {
+func (h *ui) setBounds(v *gocui.View, bounds Rect) {
 	if v == nil {
 		return
 	}
@@ -208,7 +221,7 @@ func (h *UI) setBounds(v *gocui.View, bounds Rect) {
 	}
 }
 
-func (h *UI) closeView(v *view) {
+func (h *ui) closeView(v *view) {
 	h.deleteView(v.guiView)
 
 	isCurrent := h.currentView() == v
@@ -223,7 +236,7 @@ func (h *UI) closeView(v *view) {
 	h.removeShownView(v)
 }
 
-func (h *UI) deleteView(v *gocui.View) {
+func (h *ui) deleteView(v *gocui.View) {
 	if v == nil {
 		return
 	}
@@ -232,13 +245,13 @@ func (h *UI) deleteView(v *gocui.View) {
 	}
 }
 
-func (h *UI) deleteKey(v *gocui.View, key interface{}) {
+func (h *ui) deleteKey(v *gocui.View, key interface{}) {
 	if err := h.gui.DeleteKeybinding(v.Name(), key, gocui.ModNone); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
-func (h *UI) setKey(v *gocui.View, key interface{}, handler func()) {
+func (h *ui) setKey(v *gocui.View, key interface{}, handler func()) {
 	if err := h.gui.SetKeybinding(v.Name(), key, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		handler()
 		return nil
@@ -247,7 +260,7 @@ func (h *UI) setKey(v *gocui.View, key interface{}, handler func()) {
 	}
 }
 
-func (h *UI) setTop(v *gocui.View) {
+func (h *ui) setTop(v *gocui.View) {
 	if v == nil {
 		return
 	}
@@ -257,7 +270,7 @@ func (h *UI) setTop(v *gocui.View) {
 	}
 }
 
-func (h *UI) setBottom(v *gocui.View) {
+func (h *ui) setBottom(v *gocui.View) {
 	if v == nil {
 		return
 	}
@@ -266,12 +279,12 @@ func (h *UI) setBottom(v *gocui.View) {
 	}
 }
 
-func (h *UI) addShownView(v *view) {
+func (h *ui) addShownView(v *view) {
 	h.removeShownView(v)
 	h.shownViews = append(h.shownViews, v)
 }
 
-func (h *UI) removeShownView(v *view) {
+func (h *ui) removeShownView(v *view) {
 	var views []*view
 	for _, sv := range h.shownViews {
 		if sv == v {

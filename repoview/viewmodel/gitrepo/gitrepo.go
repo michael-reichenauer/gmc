@@ -237,7 +237,7 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
-	gitRepo, err := s.git.GetRepo()
+	gitRepo, err := s.git.GetRepo(100)
 	if err != nil {
 		return Repo{}, err
 	}

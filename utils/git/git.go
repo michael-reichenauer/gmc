@@ -11,8 +11,9 @@ import (
 )
 
 const (
-	UncommittedID  = "0000000000000000000000000000000000000000"
-	UncommittedSID = "000000"
+	UncommittedID      = "0000000000000000000000000000000000000000"
+	UncommittedSID     = "000000"
+	PartialLogCommitID = "ffffffffffffffffffffffffffffffffffffffff"
 )
 
 var ErrConflicts = errors.New("merge resulted in conflict(s)")
@@ -26,7 +27,7 @@ type Repo struct {
 }
 
 type Git interface {
-	GetRepo() (Repo, error)
+	GetRepo(maxCommitCount int) (Repo, error)
 	RepoPath() string
 	GetLog() (Commits, error)
 	GetStatus() (Status, error)
@@ -86,8 +87,8 @@ func (t *git) InitRepo() error {
 	return err
 }
 
-func (t *git) GetRepo() (Repo, error) {
-	commits, err := t.logService.getLog()
+func (t *git) GetRepo(maxCommitCount int) (Repo, error) {
+	commits, err := t.logService.getLog(maxCommitCount)
 	if err != nil {
 		return Repo{}, err
 	}
@@ -118,7 +119,7 @@ func (t *git) RepoPath() string {
 }
 
 func (t *git) GetLog() (Commits, error) {
-	return t.logService.getLog()
+	return t.logService.getLog(-1)
 }
 
 func (t *git) GetBranches() (Branches, error) {

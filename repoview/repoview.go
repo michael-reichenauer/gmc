@@ -17,13 +17,13 @@ type mainService interface {
 
 type RepoView struct {
 	view        ui.View
-	ui          *ui.UI
+	ui          ui.UI
 	mainService mainService
 	vm          *repoVM
 	menuService *menuService
 }
 
-func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
+func NewRepoView(ui ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
 	h := &RepoView{
 		ui:          ui,
 		mainService: mainService,
