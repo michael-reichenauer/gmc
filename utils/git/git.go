@@ -1,8 +1,10 @@
 package git
 
 import (
+	"errors"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -12,6 +14,8 @@ const (
 	UncommittedID  = "0000000000000000000000000000000000000000"
 	UncommittedSID = "000000"
 )
+
+var ErrConflicts = errors.New("merge resulted in conflict(s)")
 
 type Repo struct {
 	RootPath string
@@ -28,7 +32,7 @@ type Git interface {
 	GetStatus() (Status, error)
 	GetBranches() (Branches, error)
 
-	InitRepo(rootPath string) error
+	InitRepo() error
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
@@ -77,8 +81,8 @@ func NewWithCmd(cmd gitCommander) Git {
 	}
 }
 
-func (t *git) InitRepo(rootPath string) error {
-	_, err := t.cmd.Git("init", rootPath)
+func (t *git) InitRepo() error {
+	_, err := t.cmd.Git("init", t.cmd.WorkingDir())
 	return err
 }
 
@@ -188,6 +192,14 @@ func StripRemotePrefix(name string) string {
 		name = name[7:]
 	}
 	return name
+}
+
+func CurrentRoot() string {
+	root, err := WorkingFolderRoot(utils.CurrentDir())
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return root
 }
 
 func WorkingFolderRoot(path string) (string, error) {

@@ -37,7 +37,7 @@ func TestSomeCommits(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
 	git := New(wf.Path())
-	assert.NoError(t, git.InitRepo(wf.Path()))
+	assert.NoError(t, git.InitRepo())
 
 	wf.File("a.txt").Write("1")
 	assert.NoError(t, git.Commit("initial"))

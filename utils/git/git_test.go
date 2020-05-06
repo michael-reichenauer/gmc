@@ -21,7 +21,7 @@ func TestInit(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	defer tests.CleanTemp()
 	git := New(wf.Path())
-	assert.NoError(t, git.InitRepo(wf.Path()))
+	assert.NoError(t, git.InitRepo())
 	assert.Equal(t, wf.Path(), git.RepoPath())
 	l, err := git.GetLog()
 	assert.NoError(t, err)

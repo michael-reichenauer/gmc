@@ -7,13 +7,14 @@ import (
 )
 
 type Status struct {
-	Modified     int
-	Added        int
-	Deleted      int
-	Conflicted   int
-	IsMerging    bool
-	MergeMessage string
-	AddedFiles   []string
+	Modified       int
+	Added          int
+	Deleted        int
+	Conflicted     int
+	IsMerging      bool
+	MergeMessage   string
+	AddedFiles     []string
+	ConflictsFiles []string
 }
 
 type statusService struct {
@@ -49,14 +50,19 @@ func (t *statusService) parseStatus(statusText string) (Status, error) {
 			strings.HasPrefix(line, "UA ") {
 			// How to reproduce this ???
 			status.Conflicted++
+			status.ConflictsFiles = append(status.ConflictsFiles, line[3:])
 		} else if strings.HasPrefix(line, "UU ") {
 			status.Conflicted++
+			status.ConflictsFiles = append(status.ConflictsFiles, line[3:])
 		} else if strings.HasPrefix(line, "AA ") {
 			status.Conflicted++
+			status.ConflictsFiles = append(status.ConflictsFiles, line[3:])
 		} else if strings.HasPrefix(line, "UD ") {
 			status.Conflicted++
+			status.ConflictsFiles = append(status.ConflictsFiles, line[3:])
 		} else if strings.HasPrefix(line, "DU ") {
 			status.Conflicted++
+			status.ConflictsFiles = append(status.ConflictsFiles, line[3:])
 		} else if strings.HasPrefix(line, "?? ") || strings.HasPrefix(line, " A ") {
 			status.Added++
 			status.AddedFiles = append(status.AddedFiles, line[3:])

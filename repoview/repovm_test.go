@@ -5,18 +5,26 @@ import (
 	"testing"
 )
 
-type mock struct {
+type viewerMock struct {
 	uiWork chan func()
 }
 
-func (m *mock) NotifyChanged() {
-	close(m.uiWork)
+func newViewerMock() *viewerMock {
+	return &viewerMock{uiWork: make(chan func())}
 }
-func (m *mock) PostOnUIThread(f func()) {
-	select {
-	case m.uiWork <- f:
-	default:
+
+func (t *viewerMock) WaitNotifyChanged() {
+	for f := range t.uiWork {
+		f()
 	}
+}
+
+func (t *viewerMock) NotifyChanged() {
+	close(t.uiWork)
+}
+
+func (t *viewerMock) PostOnUIThread(f func()) {
+	t.uiWork <- f
 }
 
 func TestViewCurrent(t *testing.T) {

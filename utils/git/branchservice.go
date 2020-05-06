@@ -84,7 +84,7 @@ func (t *branchesService) mergeBranch(name string) error {
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") &&
 			strings.Contains(output, "CONFLICT") {
-			return fmt.Errorf("merge resulted in conflict(s)")
+			return ErrConflicts
 		}
 		return err
 	}

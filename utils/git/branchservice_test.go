@@ -13,7 +13,7 @@ func TestBranches(t *testing.T) {
 	defer tests.CleanTemp()
 	file1 := "a.txt"
 	git := New(wf.Path())
-	assert.NoError(t, git.InitRepo(wf.Path()))
+	assert.NoError(t, git.InitRepo())
 
 	bs, err := git.GetBranches()
 	assert.NoError(t, err)

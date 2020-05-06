@@ -12,7 +12,7 @@ type DiffGetter interface {
 }
 
 type diffVM struct {
-	diffViewer     ui.Viewer
+	viewer         ui.Viewer
 	diffGetter     DiffGetter
 	commitDiff     git.CommitDiff
 	commitID       string
@@ -27,17 +27,17 @@ type diffVM struct {
 
 const viewWidth = 200
 
-func newDiffVM(diffViewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
-	return &diffVM{diffViewer: diffViewer, diffGetter: diffGetter, commitID: commitID}
+func newDiffVM(viewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
+	return &diffVM{viewer: viewer, diffGetter: diffGetter, commitID: commitID}
 }
 
 func (h *diffVM) load() {
 	go func() {
 		diff, _ := h.diffGetter.GetCommitDiff(h.commitID)
-		h.diffViewer.PostOnUIThread(func() {
+		h.viewer.PostOnUIThread(func() {
 			h.commitDiff = diff
 			h.isDiffReady = true
-			h.diffViewer.NotifyChanged()
+			h.viewer.NotifyChanged()
 		})
 	}()
 }
@@ -129,10 +129,14 @@ func (h *diffVM) setDiffSides(firstCharIndex int) {
 }
 
 func (h *diffVM) addDiffSummery() {
-	h.addLeft(fmt.Sprintf("Changed files: %d", len(h.commitDiff.FileDiffs)))
+	h.addLeft(fmt.Sprintf("%d Files:", len(h.commitDiff.FileDiffs)))
 	for _, df := range h.commitDiff.FileDiffs {
 		diffType := h.toDiffType(df)
-		h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+		if df.DiffMode == git.DiffConflicts {
+			h.addLeft(ui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
+		} else {
+			h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+		}
 	}
 }
 
@@ -179,21 +183,55 @@ func (h *diffVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
 func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
+	diffMode := git.DiffConflictEnd
 	for _, dl := range ds.LinesDiffs {
 		if len(dl.Line) > h.maxWidth {
 			h.maxWidth = len(dl.Line)
 		}
 		l := h.line(dl.Line)
+
 		switch dl.DiffMode {
-		case git.DiffRemoved:
-			leftBlock = append(leftBlock, ui.Red(l))
-		case git.DiffAdded:
-			rightBlock = append(rightBlock, ui.Green(l))
-		case git.DiffSame:
+		case git.DiffConflictStart:
+			diffMode = git.DiffConflictStart
 			h.addBlocks(leftBlock, rightBlock)
 			leftBlock = nil
 			rightBlock = nil
-			h.addLeftAndRight(l)
+			h.addLeftAndRight(ui.Dark("=== Start of conflict "))
+		case git.DiffConflictSplit:
+			diffMode = git.DiffConflictSplit
+		case git.DiffConflictEnd:
+			diffMode = git.DiffConflictEnd
+			h.addBlocks(leftBlock, rightBlock)
+			leftBlock = nil
+			rightBlock = nil
+			h.addLeftAndRight(ui.Dark("=== End of conflict "))
+		case git.DiffRemoved:
+			if diffMode == git.DiffConflictStart {
+				leftBlock = append(leftBlock, ui.Yellow(l))
+			} else if diffMode == git.DiffConflictSplit {
+				rightBlock = append(rightBlock, ui.Yellow(l))
+			} else {
+				leftBlock = append(leftBlock, ui.Red(l))
+			}
+		case git.DiffAdded:
+			if diffMode == git.DiffConflictStart {
+				leftBlock = append(leftBlock, ui.Yellow(l))
+			} else if diffMode == git.DiffConflictSplit {
+				rightBlock = append(rightBlock, ui.Yellow(l))
+			} else {
+				rightBlock = append(rightBlock, ui.Green(l))
+			}
+		case git.DiffSame:
+			if diffMode == git.DiffConflictStart {
+				leftBlock = append(leftBlock, ui.Yellow(l))
+			} else if diffMode == git.DiffConflictSplit {
+				rightBlock = append(rightBlock, ui.Yellow(l))
+			} else {
+				h.addBlocks(leftBlock, rightBlock)
+				leftBlock = nil
+				rightBlock = nil
+				h.addLeftAndRight(l)
+			}
 		}
 	}
 	h.addBlocks(leftBlock, rightBlock)
@@ -239,11 +277,13 @@ func (h *diffVM) add(left, right string) {
 func (h *diffVM) toDiffType(df git.FileDiff) string {
 	switch df.DiffMode {
 	case git.DiffModified:
-		return "Modified:"
+		return "Modified:  "
 	case git.DiffAdded:
-		return "Added:   "
+		return "Added:     "
 	case git.DiffRemoved:
-		return "Removed: "
+		return "Removed:   "
+	case git.DiffConflicts:
+		return "Conflicted:"
 	}
 	return ""
 }

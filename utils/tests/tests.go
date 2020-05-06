@@ -54,7 +54,9 @@ func (t TempFile) Write(text string) {
 	}
 }
 func (t TempFile) Read() string {
-	return string(utils.MustFileRead(string(t)))
+	text := string(utils.MustFileRead(string(t)))
+	text = strings.ReplaceAll(text, "\r", "")
+	return text
 }
 func (t TempFile) TryRead() (string, error) {
 	f, err := utils.FileRead(string(t))

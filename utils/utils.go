@@ -180,6 +180,9 @@ func ListFilesRecursively(path string) ([]string, error) {
 }
 
 func StringsContains(s []string, e string) bool {
+	if s == nil {
+		return false
+	}
 	return StringsIndex(s, e) != -1
 }
 
