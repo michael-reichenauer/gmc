@@ -3,7 +3,6 @@ package git
 import (
 	"github.com/bmatcuk/doublestar"
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"path/filepath"
 	"strings"
 )
@@ -13,23 +12,15 @@ type ignoreService struct {
 	patters      []string
 }
 
-func newIgnoreHandler(repoPath string) *ignoreService {
-	rootPath, err := WorkingFolderRoot(repoPath)
-	if err == nil {
-		repoPath = rootPath
-	}
-
-	h := &ignoreService{dirPrefixLen: len(repoPath)}
-	h.parseIgnoreFile(repoPath)
+func newIgnoreHandler(rootPath string) *ignoreService {
+	h := &ignoreService{dirPrefixLen: len(rootPath)}
+	h.parseIgnoreFile(rootPath)
 	return h
 }
 
 func (t *ignoreService) isIgnored(path string) bool {
 	if filepath.IsAbs(path) && len(path) > t.dirPrefixLen {
 		path = path[t.dirPrefixLen+1:]
-	}
-	if strings.Contains(path, "shelf") {
-		log.Infof("")
 	}
 	for _, pattern := range t.patters {
 		match, err := doublestar.Match(pattern, path)

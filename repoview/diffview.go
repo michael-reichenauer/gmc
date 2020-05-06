@@ -99,6 +99,12 @@ func (t *diffView) Show() {
 }
 
 func (t *diffView) SetTop() {
+	if t.isUnified {
+		t.rightSide.SetTop()
+		t.leftSide.SetTop()
+		return
+	}
+
 	t.leftSide.SetTop()
 	t.rightSide.SetTop()
 }
@@ -120,7 +126,7 @@ func (t *diffView) NotifyChanged() {
 func (t *diffView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
 	left := func(w, h int) ui.Rect {
 		if t.isUnified {
-			return ui.Rect{X: 0, Y: 1, W: w, H: h - 1}
+			return ui.Rect{X: 0, Y: 1, W: w - 1, H: h - 1}
 		}
 		wl := w/2 - 2
 		return ui.Rect{X: 0, Y: 1, W: wl, H: h - 1}
@@ -152,6 +158,7 @@ func (t *diffView) ToUnified() {
 	t.leftSide.Properties().HideVerticalScrollbar = false
 	t.leftSide.Properties().Title = "Unified diff " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
+	t.SetTop()
 	t.ui.ResizeAllViews()
 }
 
@@ -164,6 +171,7 @@ func (t *diffView) ToSideBySide() {
 	t.leftSide.Properties().Title = "Before " + t.commitID[:6]
 	t.rightSide.Properties().Title = "After " + t.commitID[:6]
 	t.vm.setUnified(t.isUnified)
+	t.SetTop()
 	t.ui.ResizeAllViews()
 }
 

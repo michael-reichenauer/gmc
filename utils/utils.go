@@ -150,7 +150,39 @@ func DirExists(filename string) bool {
 	return info.IsDir()
 }
 
+func ReadDirRecursively(path string) ([]os.FileInfo, error) {
+	var entries []os.FileInfo
+	err := filepath.Walk(path,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			entries = append(entries, info)
+			return nil
+		})
+	return entries, err
+}
+
+func ListFilesRecursively(path string) ([]string, error) {
+	var entries []string
+	err := filepath.Walk(path,
+		func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				path := strings.ReplaceAll(path, "\\", "/")
+				entries = append(entries, path)
+			}
+			return nil
+		})
+	return entries, err
+}
+
 func StringsContains(s []string, e string) bool {
+	if s == nil {
+		return false
+	}
 	return StringsIndex(s, e) != -1
 }
 

@@ -21,6 +21,6 @@ gmc_mac
 **/.idea/tasks.xml
 **/.idea/shelf/
 *.swp
-*.log*
+**/*.log*
 **/*.exe
 **/*.exe~

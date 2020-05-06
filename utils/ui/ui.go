@@ -192,11 +192,11 @@ func (h *UI) createView() *gocui.View {
 	name := utils.RandomString(10)
 	if guiView, err := h.gui.SetView(name, mb.X, mb.Y, mb.W, mb.H); err != nil {
 		if err != gocui.ErrUnknownView {
-			panic(log.Fatalf(err, "%s %+v,%d,%d,%d", name, mb))
+			panic(log.Fatalf(err, "%s %+v", name, mb))
 		}
 		return guiView
 	}
-	panic(log.Fatalf(fmt.Errorf("view already created"), "%s %+v,%d,%d,%d", name, mb))
+	panic(log.Fatalf(fmt.Errorf("view already created"), "%s %+v", name, mb))
 }
 
 func (h *UI) setBounds(v *gocui.View, bounds Rect) {

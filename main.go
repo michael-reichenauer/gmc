@@ -13,7 +13,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	stdlog "log"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
@@ -45,9 +44,9 @@ func main() {
 		return
 	}
 
-	go func() {
-		log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
-	}()
+	// go func() {
+	// 	log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
+	// }()
 
 	if *pauseFlag {
 		// The process was started with 'pause' flag, e.g. from Goland,
@@ -64,6 +63,7 @@ func main() {
 	defer logger.StdTelemetry.Close()
 
 	log.Eventf("program-start", "Starting gmc %s ...", version)
+	logger.RedirectStdErrorToFile()
 	defer log.Event("program-stop")
 
 	configService := config.NewConfig(version, *workingFolderFlag)
@@ -109,6 +109,7 @@ func startAsExternalProcess() {
 
 func logProgramInfo(configService *config.Service) {
 	log.Infof("Version: %s", configService.ProgramVersion)
+	log.Infof("Build: release=%v", program.IsRelease)
 	log.Infof("Binary path: %q", utils.BinPath())
 	log.Infof("Args: %v", os.Args)
 	log.Infof("OS: %q", runtime.GOOS)
