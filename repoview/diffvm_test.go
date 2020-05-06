@@ -17,7 +17,8 @@ func (t getterMock) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return t.git.CommitDiff(id)
 }
 
-func TestConflicts(t *testing.T) {
+func TestConflicts_Manual(t *testing.T) {
+	tests.ManualTest(t)
 	wf := tests.CreateTempFolder()
 	g := git.New(wf.Path())
 	viewer := newViewerMock()
