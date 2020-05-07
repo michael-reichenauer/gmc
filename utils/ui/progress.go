@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"strings"
 	"time"
 )
@@ -13,14 +14,15 @@ type Progress interface {
 	Close()
 }
 type progress struct {
-	ui     *ui
-	text   string
-	view   View
-	length int
+	ui        *ui
+	text      string
+	view      View
+	length    int
+	startTime *timer.Timer
 }
 
 func newProgress(ui *ui) *progress {
-	t := &progress{ui: ui, length: 1}
+	t := &progress{ui: ui, length: 1, startTime: timer.Start()}
 	t.view = t.newView()
 	return t
 }
@@ -57,7 +59,7 @@ func (t *progress) SetText(text string) {
 }
 
 func (t *progress) Close() {
-	log.Infof("Close Progress")
+	log.Infof("Close Progress %s", t.startTime)
 	t.view.Close()
 	t.view = nil
 }

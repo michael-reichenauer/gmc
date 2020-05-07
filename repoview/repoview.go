@@ -28,7 +28,7 @@ func NewRepoView(ui ui.UI, configService *config.Service, mainService mainServic
 		ui:          ui,
 		mainService: mainService,
 	}
-	h.vm = newRepoVM(ui, h, mainService, configService, workingFolder)
+	h.vm = newRepoVM(ui, h, configService, workingFolder)
 	h.menuService = newMenuService(ui, h.vm)
 	h.view = h.newView()
 	return h

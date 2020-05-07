@@ -66,7 +66,7 @@ func main() {
 	logger.RedirectStdErrorToFile()
 	defer log.Event("program-stop")
 
-	configService := config.NewConfig(version, *workingFolderFlag)
+	configService := config.NewConfig(version, *workingFolderFlag, "")
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
 	})

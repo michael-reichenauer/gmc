@@ -21,7 +21,7 @@ func TestConflicts_Manual(t *testing.T) {
 	tests.ManualTest(t)
 	wf := tests.CreateTempFolder()
 	g := git.New(wf.Path())
-	viewer := newViewerMock()
+	viewer := newViewerMock(newUIMock(), nil)
 	getter := &getterMock{git: g}
 
 	g.InitRepo()
@@ -59,7 +59,7 @@ func TestConflicts_Manual(t *testing.T) {
 
 	vm := newDiffVM(viewer, getter, git.UncommittedID)
 	vm.load()
-	viewer.WaitNotifyChanged()
+	viewer.Run()
 	vtl, err := vm.getCommitDiffLeft(ui.ViewPage{Width: 10, Height: 1000})
 	assert.NoError(t, err)
 	vtr, err := vm.getCommitDiffRight(ui.ViewPage{Width: 10, Height: 1000})
@@ -72,12 +72,12 @@ func TestDiffVM_Manual(t *testing.T) {
 	tests.ManualTest(t)
 
 	g := git.New(git.CurrentRoot())
-	viewer := newViewerMock()
+	viewer := newViewerMock(newUIMock(), nil)
 	getter := &getterMock{git: g}
 	id := git.UncommittedID
 	vm := newDiffVM(viewer, getter, id)
 	vm.load()
-	viewer.WaitNotifyChanged()
+	viewer.Run()
 	vt, err := vm.getCommitDiffLeft(ui.ViewPage{Width: 100, Height: 1000})
 	assert.NoError(t, err)
 	t.Logf("%s", strings.Join(vt.Lines, "\n"))

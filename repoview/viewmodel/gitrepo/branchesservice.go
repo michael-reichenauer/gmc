@@ -23,13 +23,28 @@ func (h *branchesService) setBranchForAllCommits(repo *Repo) {
 }
 
 func (h *branchesService) setGitBranchTips(repo *Repo) {
+	var missingBranches []string
 	for _, b := range repo.Branches {
-		tip := repo.CommitByID(b.TipID)
+		tip, ok := repo.TryGetCommitByID(b.TipID)
+		if !ok {
+			missingBranches = append(missingBranches, b.Name)
+			continue
+		}
 		tip.addBranch(b)
 		tip.BranchTipNames = append(tip.BranchTipNames, b.Name)
 		if b.IsCurrent {
 			tip.IsCurrent = true
 		}
+	}
+	if missingBranches != nil {
+		var branches []*Branch
+		for _, b := range repo.Branches {
+			if utils.StringsContains(missingBranches, b.Name) {
+				continue
+			}
+			branches = append(branches, b)
+		}
+		repo.Branches = branches
 	}
 }
 
