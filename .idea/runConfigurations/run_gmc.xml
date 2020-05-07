@@ -3,6 +3,7 @@
     <module name="gmc" />
     <working_directory value="$PROJECT_DIR$/" />
     <go_parameters value="-i  -gcflags=&quot;all=-N -l&quot; -o gmc.exe " />
+    <parameters value="-external" />
     <kind value="FILE" />
     <filePath value="$PROJECT_DIR$/main.go" />
     <package value="github.com/michael-reichenauer/gmc" />

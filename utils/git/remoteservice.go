@@ -31,3 +31,9 @@ func (t *remoteService) deleteRemoteBranch(name string) error {
 	_, err := t.cmd.Git("push", "--porcelain", "origin", "--delete", name)
 	return err
 }
+
+func (t *remoteService) pullBranch() error {
+	// "pull --ff --no-rebase --progress"
+	_, err := t.cmd.Git("pull", "--ff", "--no-rebase")
+	return err
+}

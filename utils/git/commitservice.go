@@ -34,6 +34,6 @@ func (t *commitService) commitAllChanges(message string) error {
 }
 
 func (t *commitService) isMergeInProgress() bool {
-	mergeHeadPath := path.Join(t.cmd.RepoPath(), ".git", "MERGE_HEAD")
+	mergeHeadPath := path.Join(t.cmd.WorkingDir(), ".git", "MERGE_HEAD")
 	return utils.FileExists(mergeHeadPath)
 }

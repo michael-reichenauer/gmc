@@ -17,13 +17,13 @@ type mainService interface {
 
 type RepoView struct {
 	view        ui.View
-	ui          *ui.UI
+	ui          ui.UI
 	mainService mainService
 	vm          *repoVM
 	menuService *menuService
 }
 
-func NewRepoView(ui *ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
+func NewRepoView(ui ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
 	h := &RepoView{
 		ui:          ui,
 		mainService: mainService,
@@ -49,6 +49,7 @@ func (h *RepoView) newView() ui.View {
 	view.SetKey(gocui.KeyCtrlS, h.vm.showCommitDialog)
 	view.SetKey(gocui.KeyCtrlB, h.vm.showCreateBranchDialog)
 	view.SetKey(gocui.KeyCtrlP, h.vm.PushCurrentBranch)
+	view.SetKey(gocui.KeyCtrlU, h.vm.PullCurrentBranch)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 

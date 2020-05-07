@@ -18,13 +18,13 @@ func (h *MainWindow) GetOpenRepoMenuItem() ui.MenuItem {
 		SubItems: h.OpenRepoMenuItems()}
 }
 
-func (h *MainWindow) GetOpenRepoMenu() *ui.Menu {
+func (h *MainWindow) GetOpenRepoMenu() ui.Menu {
 	menu := h.ui.NewMenu("Open repo")
 	menu.AddItems(h.OpenRepoMenuItems())
 	return menu
 }
 
-func (h *MainWindow) GetStartMenu() *ui.Menu {
+func (h *MainWindow) GetStartMenu() ui.Menu {
 	menu := h.ui.NewMenu("Open repo")
 	menu.AddItems(h.OpenRepoMenuItems2())
 	return menu

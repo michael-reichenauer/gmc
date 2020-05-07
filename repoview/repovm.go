@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
@@ -20,8 +19,8 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	ui               *ui.UI
-	repoViewer       *RepoView
+	ui               ui.UI
+	repoViewer       ui.Notifier
 	mainService      mainService
 	viewModelService *viewmodel.Service
 	repoLayout       *repoLayout
@@ -40,8 +39,8 @@ type trace struct {
 }
 
 func newRepoVM(
-	ui *ui.UI,
-	repoViewer *RepoView,
+	ui ui.UI,
+	repoViewer ui.Notifier,
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
@@ -73,18 +72,16 @@ func (h *repoVM) close() {
 
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
-	var progress *ui.Progress
+	var progress ui.Progress
 	for rc := range h.viewModelService.RepoChanges {
 		log.Infof("Detected model change")
 		h.ui.PostOnUIThread(func() {
 			if rc.IsStarting {
-				log.Infof("Show progress ...")
 				progress = h.ui.ShowProgress(fmt.Sprintf("Loading repo:\n%s", h.workingFolder))
 				return
 			}
 
 			if progress != nil {
-				log.Infof("Close progress")
 				progress.Close()
 				progress = nil
 			}
@@ -139,7 +136,7 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 }
 
 func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
-	git.EnableTracing("")
+	//git.EnableTracing("")
 	// traceBytes := utils.MustJsonMarshal(trace{
 	// 	RepoPath:    h.viewModelService.RepoPath(),
 	// 	ViewPage:    viewPage,
@@ -221,8 +218,8 @@ func (h *repoVM) CurrentBranch() (viewmodel.Branch, bool) {
 	return current, ok
 }
 
-func (h *repoVM) GetActiveBranches() []viewmodel.Branch {
-	return h.viewModelService.GetActiveBranches(h.repo)
+func (h *repoVM) GetLatestBranches(skipShown bool) []viewmodel.Branch {
+	return h.viewModelService.GetLatestBranches(h.repo, skipShown)
 }
 
 func (h *repoVM) GetAllBranches(skipShown bool) []viewmodel.Branch {
@@ -241,10 +238,10 @@ func (h *repoVM) HideBranch(name string) {
 	h.viewModelService.HideBranch(h.repo, name)
 }
 
-func (h *repoVM) SwitchToBranch(name string) {
+func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.viewModelService.SwitchToBranch(name) },
+		func() error { return h.viewModelService.SwitchToBranch(name, displayName, h.repo) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
@@ -261,9 +258,20 @@ func (h *repoVM) PushCurrentBranch() {
 		return
 	}
 	h.startCommand(
-		fmt.Sprintf("Pushing Branch:\n%s", current.Name),
+		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
 		func() error { return h.viewModelService.PushBranch(current.Name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) })
+}
+
+func (h *repoVM) PullCurrentBranch() {
+	current, ok := h.CurrentBranch()
+	if !ok || !current.HasLocalOnly {
+		return
+	}
+	h.startCommand(
+		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
+		func() error { return h.viewModelService.PullBranch() },
+		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) })
 }
 
 func (h *repoVM) MergeFromBranch(name string) {

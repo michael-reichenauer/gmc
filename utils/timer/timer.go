@@ -13,15 +13,15 @@ type Timer struct {
 
 func Start() *Timer {
 	startTime := time.Now()
-	return &Timer{startTime: time.Now(), lastTime: startTime}
+	return &Timer{startTime: startTime, lastTime: startTime}
 }
 
 func (t *Timer) String() string {
 	t.index++
-	lastTime := time.Now()
-	t.lastTime = lastTime
+	sinceLast := time.Since(t.lastTime)
+	t.lastTime = time.Now()
 	if t.index == 1 {
 		return fmt.Sprintf("(%v)", time.Since(t.startTime))
 	}
-	return fmt.Sprintf("%v (#%d %v)", time.Since(lastTime), t.index, time.Since(t.startTime))
+	return fmt.Sprintf("(#%d %v) (%v)", t.index, sinceLast, time.Since(t.startTime))
 }

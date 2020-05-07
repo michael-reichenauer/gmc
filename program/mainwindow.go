@@ -11,21 +11,17 @@ import (
 )
 
 type MainWindow struct {
-	ui            *ui.UI
+	ui            ui.UI
 	configService *config.Service
 	model         *viewmodel.Service
 	commitView    *repoview.CommitView
 }
 
-func NewMainWindow(ui *ui.UI, configService *config.Service) *MainWindow {
+func NewMainWindow(ui ui.UI, configService *config.Service) *MainWindow {
 	return &MainWindow{
 		ui:            ui,
 		configService: configService,
 	}
-}
-
-func (h *MainWindow) NewMenu(title string) *ui.Menu {
-	return h.ui.NewMenu(title)
 }
 
 func (h *MainWindow) Show() {

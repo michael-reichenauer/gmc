@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/hashicorp/go-version"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/program"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
@@ -52,12 +53,16 @@ func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
 }
 
 func (h *autoUpdate) Start() {
-	h.cleanTmpFiles()
+	if !program.IsRelease {
+		log.Infof("Auto update disabled, release=%v", program.IsRelease)
+		return
+	}
 	go h.periodicCheckForUpdatesRoutine()
 }
 
 func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
 	log.Event("autoupdate-start-periodic-check")
+	h.cleanTmpFiles()
 	for {
 		h.UpdateIfAvailable()
 		time.Sleep(checkUpdateInterval)
@@ -67,17 +72,15 @@ func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
 func (h *autoUpdate) UpdateIfAvailable() {
 	conf := h.config.GetConfig()
 	if conf.DisableAutoUpdate {
-		log.Infof("Auto update disabled")
 		log.Event("autoupdate-disabled")
 		return
 	}
-	log.Infof("Check updates for %s, allow preview=%v ...", h.version, conf.AllowPreview)
-	log.Eventf("autoupdate-check", "local: %s, allow preview=%v", h.version, conf.AllowPreview)
 
 	h.checkRemoteReleases()
+	remoteVersion, isUpdateAvailable := h.isUpdateAvailable(conf.AllowPreview)
+	log.Eventf("autoupdate-check", "local: %s, remote %s, allow preview=%v", h.version, remoteVersion, conf.AllowPreview)
 
-	if !h.isUpdateAvailable(conf.AllowPreview) {
-		log.Event("autoupdate-no-update")
+	if !isUpdateAvailable {
 		return
 	}
 
@@ -85,26 +88,23 @@ func (h *autoUpdate) UpdateIfAvailable() {
 	h.update(conf.AllowPreview)
 }
 
-func (h *autoUpdate) isUpdateAvailable(allowPreview bool) bool {
+func (h *autoUpdate) isUpdateAvailable(allowPreview bool) (string, bool) {
 	state := h.config.GetState()
 	release := h.selectRelease(state, allowPreview)
 	if release.Version == "" {
 		log.Infof("No remote release available")
-		return false
+		return "", false
 	}
 	if len(release.Assets) == 0 {
 		log.Warnf("No binaries for %s", release.Version)
-		return false
+		return "", false
 	}
 
 	if !h.isNewer(release.Version, h.version) {
-		log.Infof("No update available, local %s>=%s remote, allow preview=%v",
-			h.version, release.Version, allowPreview)
-		log.Eventf("autoupdate-remote-version", "local %s, remote %s, preview=%v", h.version, release.Version, allowPreview)
-		return false
+		return release.Version, false
 	}
 	log.Infof("Update available, local %s<%s remote (preview=%v)", h.version, release.Version, release.Preview)
-	return true
+	return release.Version, true
 }
 
 func (h *autoUpdate) update(allowPreview bool) {

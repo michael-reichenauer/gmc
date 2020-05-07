@@ -4,12 +4,14 @@ import (
 	"context"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"time"
 )
 
 const (
 	fetchInterval = 10 * time.Minute
 	batchInterval = 1 * time.Second
+	partialMax    = 30000
 )
 
 type RepoChange struct {
@@ -33,6 +35,7 @@ type GitRepo interface {
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
+	PullBranch() error
 }
 
 type gitRepo struct {
@@ -51,7 +54,7 @@ func ToSid(commitID string) string {
 }
 
 func NewGitRepo(workingFolder string) GitRepo {
-	g := git.NewGit(workingFolder)
+	g := git.New(workingFolder)
 	return &gitRepo{
 		rootPath:        workingFolder,
 		branchesService: newBranchesService(),
@@ -231,11 +234,11 @@ func (s *gitRepo) getFreshStatus(repo Repo) (Repo, error) {
 
 func (s *gitRepo) getFreshRepo() (Repo, error) {
 	log.Infof("Getting fresh repo for %s", s.git.RepoPath())
-	t := time.Now()
+	st := timer.Start()
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
-	gitRepo, err := s.git.GetRepo()
+	gitRepo, err := s.git.GetRepo(partialMax)
 	if err != nil {
 		return Repo{}, err
 	}
@@ -246,7 +249,7 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	repo.setGitCommits(gitRepo.Commits)
 
 	s.branchesService.setBranchForAllCommits(repo)
-	log.Infof("Git repo %v", time.Since(t))
+	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
 }
 
@@ -266,6 +269,10 @@ func (s *gitRepo) fetchRoutine(ctx context.Context) {
 
 func (s *gitRepo) PushBranch(name string) error {
 	return s.git.PushBranch(name)
+}
+
+func (s *gitRepo) PullBranch() error {
+	return s.git.PullBranch()
 }
 
 func (s *gitRepo) MergeBranch(name string) error {

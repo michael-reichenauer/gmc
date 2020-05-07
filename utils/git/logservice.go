@@ -17,6 +17,8 @@ type Commit struct {
 	CommitTime time.Time
 }
 
+type Commits []Commit
+
 func (c *Commit) String() string {
 	return fmt.Sprintf("%s %s", c.SID, c.Subject)
 }
@@ -37,14 +39,43 @@ func newLog(cmd gitCommander) *logService {
 	return &logService{cmd: cmd}
 }
 
-func (t *logService) getLog() ([]Commit, error) {
-	logText, err := t.cmd.Git("log", "--all", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B")
+func (t *logService) getLog(maxCount int) (Commits, error) {
+	args := []string{"log", "--all", "--date-order", "-z", "--pretty=%H|%ai|%ci|%an|%P|%B"}
+
+	if maxCount > 0 {
+		args = append(args, fmt.Sprintf("--max-count=%d", maxCount))
+	}
+	logText, err := t.cmd.Git(args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get git log, %v", err)
 	}
 
 	// Parse the git output lines into git commits
 	return t.parseCommits(logText)
+}
+
+func (cs Commits) MustBySubject(subject string) Commit {
+	for _, c := range cs {
+		if subject == c.Subject {
+			return c
+		}
+	}
+	panic("no commit: " + subject)
+}
+
+func (cs Commits) String() string {
+	var sb strings.Builder
+	for _, c := range cs {
+		ps := ""
+		if len(c.ParentIDs) > 1 {
+			ps = fmt.Sprintf("%s %s", ToSid(c.ParentIDs[0]), ToSid(c.ParentIDs[1]))
+		} else if len(c.ParentIDs) > 0 {
+			ps = ToSid(c.ParentIDs[0])
+		}
+
+		sb.WriteString(fmt.Sprintf("%s %s (%s)\n", c.SID, c.Subject, ps))
+	}
+	return sb.String()
 }
 
 func (t *logService) parseCommits(logText string) ([]Commit, error) {

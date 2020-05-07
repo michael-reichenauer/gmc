@@ -145,7 +145,7 @@ type view struct {
 	total              int
 	width              int
 	height             int
-	ui                 *UI
+	ui                 *ui
 	isScrollHorizontal bool
 	firstCharIndex     int
 	notifyThrottler    *semaphore.Weighted
@@ -154,7 +154,7 @@ type view struct {
 	hasWritten         bool
 }
 
-func newView(ui *UI, viewData func(viewPort ViewPage) ViewText) *view {
+func newView(ui *ui, viewData func(viewPort ViewPage) ViewText) *view {
 	return &view{
 		ui:              ui,
 		viewData:        viewData,

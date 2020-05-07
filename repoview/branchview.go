@@ -11,13 +11,13 @@ type Brancher interface {
 	CreateBranch(name string)
 }
 
-func NewBranchView(ui *ui.UI, brancher Brancher) *BranchView {
+func NewBranchView(ui ui.UI, brancher Brancher) *BranchView {
 	h := &BranchView{ui: ui, brancher: brancher}
 	return h
 }
 
 type BranchView struct {
-	ui          *ui.UI
+	ui          ui.UI
 	brancher    Brancher
 	boxView     ui.View
 	textView    ui.View

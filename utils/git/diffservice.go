@@ -15,6 +15,10 @@ const (
 	DiffAdded
 	DiffRemoved
 	DiffSame
+	DiffConflicts
+	DiffConflictStart
+	DiffConflictSplit
+	DiffConflictEnd
 )
 
 type CommitDiff struct {
@@ -72,7 +76,7 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 	diffText, err := t.cmd.Git("diff",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
-		"--find-renames", "--unified=6")
+		"--find-renames", "--unified=6", "HEAD")
 	if err != nil {
 		return CommitDiff{}, err
 	}
@@ -86,7 +90,8 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	fileDiffs, err = t.addAddedFiles(fileDiffs, status, t.cmd.RepoPath())
+	t.setConflictsFilesMode(fileDiffs, status)
+	fileDiffs, err = t.addAddedFiles(fileDiffs, status, t.cmd.WorkingDir())
 	if err != nil {
 		return CommitDiff{}, err
 	}
@@ -113,7 +118,7 @@ func (t *diffService) parse(text string) ([]FileDiff, error) {
 			currentSectionDiff = nil
 			continue
 		}
-		if fileDiffMode, ok := tryParseFileMode(line); ok && currentFileDiff != nil {
+		if fileDiffMode, ok := tryParseFileMode(line); ok && currentFileDiff != nil && currentFileDiff.DiffMode != DiffConflicts {
 			currentFileDiff.DiffMode = fileDiffMode
 			continue
 		}
@@ -156,6 +161,15 @@ func (t *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath str
 	return diffs, nil
 }
 
+func (t *diffService) setConflictsFilesMode(diffs []FileDiff, status Status) {
+	for i, fd := range diffs {
+		if utils.StringsContains(status.ConflictsFiles, fd.PathAfter) {
+			fd.DiffMode = DiffConflicts
+			diffs[i] = fd
+		}
+	}
+}
+
 func tryParseSectionHead(line string) (SectionDiff, bool) {
 	var sectionDiff SectionDiff
 	if !strings.HasPrefix(line, "@@") {
@@ -181,6 +195,9 @@ func tryParseFileMode(line string) (DiffMode, bool) {
 
 func tryParseFileDiffHead(line string) (FileDiff, bool) {
 	var fileDiff FileDiff
+	if strings.HasPrefix(line, "diff --cc ") {
+		return tryParseFileDiffConflictHead(line)
+	}
 	if !strings.HasPrefix(line, "diff --git ") {
 		return fileDiff, false
 	}
@@ -193,13 +210,29 @@ func tryParseFileDiffHead(line string) (FileDiff, bool) {
 	return fileDiff, true
 }
 
+func tryParseFileDiffConflictHead(line string) (FileDiff, bool) {
+	var fileDiff FileDiff
+	fileDiff.DiffMode = DiffConflicts
+	file := line[10:]
+	fileDiff.PathBefore = file
+	fileDiff.PathAfter = file
+	fileDiff.IsRenamed = false
+	return fileDiff, true
+}
+
 func tryParseLineDiff(line string) (LinesDiff, bool) {
-	switch line[0] {
-	case '>':
+	switch {
+	case strings.HasPrefix(line, "><<<<<<<"):
+		return LinesDiff{DiffMode: DiffConflictStart, Line: asConflictLine(line)}, true
+	case strings.HasPrefix(line, ">======="):
+		return LinesDiff{DiffMode: DiffConflictSplit, Line: asConflictLine(line)}, true
+	case strings.HasPrefix(line, ">>>>>>>>"):
+		return LinesDiff{DiffMode: DiffConflictEnd, Line: asConflictLine(line)}, true
+	case strings.HasPrefix(line, ">"):
 		return LinesDiff{DiffMode: DiffAdded, Line: asLine(line)}, true
-	case '<':
+	case strings.HasPrefix(line, "<"):
 		return LinesDiff{DiffMode: DiffRemoved, Line: asLine(line)}, true
-	case '=':
+	case strings.HasPrefix(line, "="):
 		return LinesDiff{DiffMode: DiffSame, Line: asLine(line)}, true
 	}
 	return LinesDiff{}, false
@@ -207,4 +240,7 @@ func tryParseLineDiff(line string) (LinesDiff, bool) {
 
 func asLine(line string) string {
 	return strings.ReplaceAll(line[1:], "\t", "   ")
+}
+func asConflictLine(line string) string {
+	return strings.ReplaceAll(line[2:], "\t", "   ")
 }

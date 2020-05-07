@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	UncommittedID  = git.UncommittedID
-	UncommittedSID = git.UncommittedSID
+	UncommittedID      = git.UncommittedID
+	UncommittedSID     = git.UncommittedSID
+	PartialLogCommitID = git.PartialLogCommitID
 )
 
 type viewRepo struct {

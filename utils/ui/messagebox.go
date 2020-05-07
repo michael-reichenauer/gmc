@@ -6,7 +6,7 @@ import (
 )
 
 type MessageBox struct {
-	ui          *UI
+	ui          *ui
 	boxView     View
 	textView    View
 	buttonsView View
@@ -14,7 +14,7 @@ type MessageBox struct {
 	title       string
 }
 
-func NewMessageBox(ui *UI, text, title string) *MessageBox {
+func NewMessageBox(ui *ui, text, title string) *MessageBox {
 	return &MessageBox{ui: ui, text: text, title: title}
 }
 
