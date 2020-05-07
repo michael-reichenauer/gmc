@@ -11,6 +11,7 @@ import (
 const (
 	fetchInterval = 10 * time.Minute
 	batchInterval = 1 * time.Second
+	partialMax    = 30000
 )
 
 type RepoChange struct {
@@ -237,7 +238,7 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
-	gitRepo, err := s.git.GetRepo()
+	gitRepo, err := s.git.GetRepo(partialMax)
 	if err != nil {
 		return Repo{}, err
 	}

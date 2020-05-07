@@ -10,7 +10,7 @@ type DetailsView struct {
 	vm *detailsVM
 }
 
-func NewDetailsView(uiHandler *ui.UI) *DetailsView {
+func NewDetailsView(uiHandler ui.UI) *DetailsView {
 	h := &DetailsView{vm: NewDetailsVM()}
 	h.View = uiHandler.NewViewFromTextFunc(h.viewData)
 	h.View.Properties().Name = "DetailsView"

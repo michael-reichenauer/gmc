@@ -33,11 +33,11 @@ func TestGit_GetRepo(t *testing.T) {
 
 	cmd := newRecorderCmd(newGitCmd(utils.CurrentDir()))
 	gitService := NewWithCmd(cmd)
-	_, err := gitService.GetRepo()
+	_, err := gitService.GetRepo(0)
 	assert.NoError(t, err)
 
 	gs := NewWithCmd(newMockCmd(cmd.String()))
-	repo, err := gs.GetRepo()
+	repo, err := gs.GetRepo(0)
 	assert.NoError(t, err)
 	t.Logf("%+v", repo)
 }

@@ -70,16 +70,17 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 	// Default widths (norma and wide view)
 	authorWidth = 15
 	timeWidth = 16
-	if commitWidth < 90 {
-		// Reducing author and and time if narrow view
-		authorWidth = 10
-		timeWidth = 10
-	}
+
 	if commitWidth < 60 {
 		// Disabled author and time if very narrow view
 		authorWidth = 0
 		timeWidth = 0
+	} else if commitWidth < 90 {
+		// Reducing author and and time if narrow view
+		authorWidth = 10
+		timeWidth = 8
 	}
+
 	msgLength = commitWidth - authorWidth - timeWidth
 	if msgLength < 0 {
 		msgLength = 0
@@ -165,6 +166,10 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 	tagsText := t.toTagsText(c, length)
 
 	subject := utils.Text(c.Subject, length-len(tagsText))
+	if c.ID == viewmodel.PartialLogCommitID {
+		sb.WriteString(ui.Dark(subject))
+		return
+	}
 	if c.ID == viewmodel.UncommittedID {
 		if repo.Conflicts > 0 {
 			sb.WriteString(ui.Red(subject))

@@ -14,13 +14,13 @@ type Committer interface {
 	Commit(message string) error
 }
 
-func NewCommitView(ui *ui.UI, committer Committer) *CommitView {
+func NewCommitView(ui ui.UI, committer Committer) *CommitView {
 	h := &CommitView{ui: ui, committer: committer}
 	return h
 }
 
 type CommitView struct {
-	ui          *ui.UI
+	ui          ui.UI
 	committer   Committer
 	boxView     ui.View
 	textView    ui.View

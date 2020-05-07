@@ -19,8 +19,8 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	ui               *ui.UI
-	repoViewer       *RepoView
+	ui               ui.UI
+	repoViewer       ui.Notifier
 	mainService      mainService
 	viewModelService *viewmodel.Service
 	repoLayout       *repoLayout
@@ -39,8 +39,8 @@ type trace struct {
 }
 
 func newRepoVM(
-	ui *ui.UI,
-	repoViewer *RepoView,
+	ui ui.UI,
+	repoViewer ui.Notifier,
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
@@ -72,18 +72,16 @@ func (h *repoVM) close() {
 
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
-	var progress *ui.Progress
+	var progress ui.Progress
 	for rc := range h.viewModelService.RepoChanges {
 		log.Infof("Detected model change")
 		h.ui.PostOnUIThread(func() {
 			if rc.IsStarting {
-				log.Infof("Show progress ...")
 				progress = h.ui.ShowProgress(fmt.Sprintf("Loading repo:\n%s", h.workingFolder))
 				return
 			}
 
 			if progress != nil {
-				log.Infof("Close progress")
 				progress.Close()
 				progress = nil
 			}

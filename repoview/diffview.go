@@ -14,7 +14,7 @@ type DiffView interface {
 }
 
 type diffView struct {
-	ui        *ui.UI
+	ui        ui.UI
 	vm        *diffVM
 	leftSide  ui.View
 	rightSide ui.View
@@ -26,7 +26,7 @@ func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewDiffView(ui *ui.UI, diffGetter DiffGetter, commitID string) DiffView {
+func NewDiffView(ui ui.UI, diffGetter DiffGetter, commitID string) DiffView {
 	t := &diffView{
 		ui:       ui,
 		commitID: commitID,

@@ -53,7 +53,6 @@ func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
 }
 
 func (h *autoUpdate) Start() {
-	h.cleanTmpFiles()
 	if !program.IsRelease {
 		log.Infof("Auto update disabled, release=%v", program.IsRelease)
 		return
@@ -63,6 +62,7 @@ func (h *autoUpdate) Start() {
 
 func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
 	log.Event("autoupdate-start-periodic-check")
+	h.cleanTmpFiles()
 	for {
 		h.UpdateIfAvailable()
 		time.Sleep(checkUpdateInterval)

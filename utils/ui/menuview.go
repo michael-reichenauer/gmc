@@ -12,7 +12,7 @@ const margin = 8
 
 type menuView struct {
 	View
-	ui           *UI
+	ui           *ui
 	parent       *menuView
 	title        string
 	items        []MenuItem
@@ -22,7 +22,7 @@ type menuView struct {
 	marginsWidth int
 }
 
-func newMenuView(ui *UI, title string, parent *menuView) *menuView {
+func newMenuView(ui *ui, title string, parent *menuView) *menuView {
 	h := &menuView{ui: ui, parent: parent, title: title}
 	h.View = ui.NewViewFromPageFunc(h.viewData)
 	h.View.Properties().Name = "Menu"

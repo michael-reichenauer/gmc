@@ -337,7 +337,7 @@ func (t *Service) GetAllBranches(viewRepo ViewRepo, skipShown bool) []Branch {
 func (t *Service) GetLatestBranches(viewRepo ViewRepo, skipShown bool) []Branch {
 	branches := t.getAllBranches(viewRepo, skipShown)
 	sort.SliceStable(branches, func(i, j int) bool {
-		return viewRepo.viewRepo.gitRepo.CommitById[branches[i].TipID].AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitById[branches[j].TipID].AuthorTime)
+		return viewRepo.viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
 	})
 
 	return branches
@@ -368,12 +368,12 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 }
 
 func (t *Service) GetCommitOpenInBranches(commitID string, viewRepo ViewRepo) []Branch {
-	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
+	c := viewRepo.viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it
-		mergeParent := viewRepo.viewRepo.gitRepo.CommitById[c.ParentIDs[1]]
+		mergeParent := viewRepo.viewRepo.gitRepo.CommitByID(c.ParentIDs[1])
 		branches = append(branches, mergeParent.Branch)
 	}
 
@@ -400,7 +400,7 @@ func (t *Service) GetCommitOpenInBranches(commitID string, viewRepo ViewRepo) []
 }
 
 func (t *Service) GetCommitOpenOutBranches(commitID string, viewRepo ViewRepo) []Branch {
-	c := viewRepo.viewRepo.gitRepo.CommitById[commitID]
+	c := viewRepo.viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
 
 	for _, ccId := range c.ChildIDs {
@@ -408,7 +408,7 @@ func (t *Service) GetCommitOpenOutBranches(commitID string, viewRepo ViewRepo) [
 		if ccId == UncommittedID {
 			continue
 		}
-		cc := viewRepo.viewRepo.gitRepo.CommitById[ccId]
+		cc := viewRepo.viewRepo.gitRepo.CommitByID(ccId)
 		if cc.Branch.Name != c.Branch.Name {
 			branches = append(branches, cc.Branch)
 		}

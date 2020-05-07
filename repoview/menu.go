@@ -8,15 +8,15 @@ import (
 )
 
 type menuService struct {
-	ui *ui.UI
+	ui ui.UI
 	vm *repoVM
 }
 
-func newMenuService(ui *ui.UI, vm *repoVM) *menuService {
+func newMenuService(ui ui.UI, vm *repoVM) *menuService {
 	return &menuService{ui: ui, vm: vm}
 }
 
-func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
+func (t *menuService) getContextMenu(currentLineIndex int) ui.Menu {
 	menu := t.ui.NewMenu("")
 
 	menu.Add(ui.MenuItem{Text: "Show Branch", SubItems: t.getOpenBranchMenuItems(currentLineIndex)})
@@ -43,7 +43,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) *ui.Menu {
 	return menu
 }
 
-func (t *menuService) getShowMoreMenu(selectedIndex int) *ui.Menu {
+func (t *menuService) getShowMoreMenu(selectedIndex int) ui.Menu {
 	menu := t.ui.NewMenu("")
 	menu.AddItems(t.getOpenBranchMenuItems(selectedIndex))
 	menu.Add(ui.MenuItem{Text: "Hide Branch", SubItems: t.getCloseBranchMenuItems()})

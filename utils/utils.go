@@ -23,6 +23,14 @@ func CurrentDir() string {
 	return dir
 }
 
+func HomeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return home
+}
+
 func ReadLine() string {
 	var line string
 	fmt.Scanln(&line)
