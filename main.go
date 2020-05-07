@@ -10,6 +10,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	stdlog "log"
@@ -31,6 +32,7 @@ var (
 )
 
 func main() {
+	st := timer.Start()
 	flag.Parse()
 	if *showVersionFlag {
 		fmt.Printf("%s", version)
@@ -54,30 +56,28 @@ func main() {
 		fmt.Printf("Attach a debugger and click 'enter' to proceed ...\n")
 		utils.ReadLine()
 	}
-
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
 	// Set default http client proxy to the system proxy (used by e.g. telemetry)
 	utils.SetDefaultHTTPProxy()
 	logger.StdTelemetry.Enable(version)
 	defer logger.StdTelemetry.Close()
-
 	log.Eventf("program-start", "Starting gmc %s ...", version)
+
 	logger.RedirectStdErrorToFile()
 	defer log.Event("program-stop")
-
 	configService := config.NewConfig(version, *workingFolderFlag, "")
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
 	})
 
 	logProgramInfo(configService)
-
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
 	uiHandler := ui.NewUI()
 	uiHandler.Run(func() {
+		log.Infof("Show main window %s", st)
 		mainWindow := program.NewMainWindow(uiHandler, configService)
 		mainWindow.Show()
 	})
@@ -117,6 +117,6 @@ func logProgramInfo(configService *config.Service) {
 	log.Infof("Go version: %q", runtime.Version())
 	log.Infof("Folder path: %q", configService.FolderPath)
 	log.Infof("Working Folder: %q", utils.CurrentDir())
-	log.Infof("Git version: %q", git.Version())
 	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
+	go func() { log.Infof("Git version: %q", git.Version()) }()
 }
