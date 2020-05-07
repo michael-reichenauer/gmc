@@ -108,7 +108,7 @@ func TestViewCurrent(t *testing.T) {
 
 	uim := newUIMock()
 	viewer := newViewerMock(uim, func() { uim.Close() })
-	vm := newRepoVM(uim, viewer, config.NewConfig("0.1", "", ""), git.CurrentRoot())
+	vm := newRepoVM(uim, viewer, nil, config.NewConfig("0.1", "", ""), git.CurrentRoot())
 	vm.startRepoMonitor()
 	defer vm.close()
 	vm.triggerRefresh()
@@ -124,7 +124,7 @@ func TestViewAcs(t *testing.T) {
 
 	uim := newUIMock()
 	viewer := newViewerMock(uim, func() { uim.Close() })
-	vm := newRepoVM(uim, viewer, config.NewConfig("0.1", "", ""), "C:\\Work Files\\AcmAcs")
+	vm := newRepoVM(uim, viewer, nil, config.NewConfig("0.1", "", ""), "C:\\Work Files\\AcmAcs")
 	vm.startRepoMonitor()
 	defer vm.close()
 	vm.triggerRefresh()

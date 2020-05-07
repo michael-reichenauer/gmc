@@ -21,6 +21,7 @@ type repoPage struct {
 type repoVM struct {
 	ui               ui.UI
 	repoViewer       ui.Notifier
+	mainService      mainService
 	viewModelService *viewmodel.Service
 	repoLayout       *repoLayout
 	isDetails        bool
@@ -40,12 +41,14 @@ type trace struct {
 func newRepoVM(
 	ui ui.UI,
 	repoViewer ui.Notifier,
+	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
 	viewModelService := viewmodel.NewService(configService, workingFolder)
 	return &repoVM{
 		ui:               ui,
 		repoViewer:       repoViewer,
+		mainService:      mainService,
 		viewModelService: viewModelService,
 		repoLayout:       newRepoLayout(viewModelService),
 		workingFolder:    workingFolder,
