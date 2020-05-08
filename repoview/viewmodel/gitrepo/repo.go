@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"strings"
 )
 
 type Tag struct {
@@ -21,6 +22,36 @@ type Repo struct {
 
 func newRepo() *Repo {
 	return &Repo{commitById: make(map[string]*Commit)}
+}
+
+func (r Repo) SearchCommits(searchText string) []*Commit {
+	lowerText := strings.ToLower(searchText)
+
+	tagCommits := make(map[string]bool)
+	for _, tag := range r.Tags {
+		if contains(strings.ToLower(tag.TagName), lowerText) {
+			tagCommits[tag.CommitID] = true
+		}
+	}
+	var commits []*Commit
+	for id, _ := range tagCommits {
+		c, ok := r.TryGetCommitByID(id)
+		if !ok {
+			continue
+		}
+		commits = append(commits, c)
+	}
+
+	for _, c := range r.Commits {
+		if _, ok := tagCommits[c.Id]; ok {
+			// Commit already added because of tag
+			continue
+		}
+		if c.contains(lowerText) {
+			commits = append(commits, c)
+		}
+	}
+	return commits
 }
 
 func (r *Repo) CommitByID(id string) *Commit {

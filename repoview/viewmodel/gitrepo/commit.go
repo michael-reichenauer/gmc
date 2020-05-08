@@ -3,6 +3,7 @@ package gitrepo
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"strings"
 	"time"
 )
 
@@ -49,6 +50,16 @@ func newPartialLogCommit() *Commit {
 		Author:     "",
 		AuthorTime: time.Date(2000, 1, 1, 1, 1, 0, 0, time.UTC),
 	}
+}
+func (c *Commit) contains(lowerText string) bool {
+	return contains(c.Id, lowerText) ||
+		contains(c.Message, lowerText) ||
+		contains(c.Author, lowerText) ||
+		contains(c.Branch.DisplayName, lowerText)
+}
+
+func contains(text, lowerSearch string) bool {
+	return strings.Contains(strings.ToLower(text), lowerSearch)
 }
 
 func (c *Commit) addBranches(branches []*Branch) {
