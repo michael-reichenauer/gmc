@@ -221,7 +221,7 @@ func (t *menuService) getDeleteBranchMenuItems() []ui.MenuItem {
 	var items []ui.MenuItem
 	branches := t.vm.GetAllBranches(false)
 	for _, b := range branches {
-		if !b.IsGitBranch {
+		if !b.IsGitBranch || b.DisplayName == "master" || b.IsCurrent {
 			continue
 		}
 		name := b.Name // closure save
