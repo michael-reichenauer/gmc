@@ -139,11 +139,7 @@ func (l *Logger) output(level, message string) {
 	lines := strings.Split(message, "\n")
 	for _, ml := range lines {
 		txt := fmt.Sprintf("%s%s %s:%s(%d) %s", l.prefix, level, file, function, line, ml)
-		//print(txt)
-		_, err := l.udpLogger.Write([]byte(txt))
-		if err != nil {
-			fmt.Printf("Failed to log %v\n", err)
-		}
+		_, _ = l.udpLogger.Write([]byte(txt))
 	}
 }
 

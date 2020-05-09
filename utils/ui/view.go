@@ -116,6 +116,7 @@ type Viewer interface {
 type View interface {
 	Properties() *ViewProperties
 	Show(BoundFunc)
+	SetBound(BoundFunc)
 	SyncWithView(view View)
 	SetCurrentView()
 	SetTop()
@@ -197,6 +198,11 @@ func viewDataFromTextFunc(viewText func(viewPort ViewPage) string) func(viewPort
 			MaxWidth: maxWidth,
 		}
 	}
+}
+
+func (h *view) SetBound(bf BoundFunc) {
+	h.boundFunc = bf
+	h.ui.ResizeAllViews()
 }
 
 func (h *view) Show(bf BoundFunc) {
