@@ -21,6 +21,7 @@ type RepoView struct {
 	mainService mainService
 	vm          *repoVM
 	menuService *menuService
+	showSearch  bool
 }
 
 func NewRepoView(ui ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
@@ -50,6 +51,7 @@ func (h *RepoView) newView() ui.View {
 	view.SetKey(gocui.KeyCtrlB, h.vm.showCreateBranchDialog)
 	view.SetKey(gocui.KeyCtrlP, h.vm.PushCurrentBranch)
 	view.SetKey(gocui.KeyCtrlU, h.vm.PullCurrentBranch)
+	view.SetKey(gocui.KeyCtrlF, h.Search)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
@@ -129,4 +131,15 @@ func (h *RepoView) mouseLeft(x int, y int) {
 
 	menu := h.menuService.getShowMoreMenu(selectedLine)
 	menu.Show(x+3, y+2)
+}
+
+func (h *RepoView) Search() {
+	h.showSearch = !h.showSearch
+	mb := ui.FullScreen()
+	if h.showSearch {
+		mb = ui.Relative(ui.FullScreen(), func(b ui.Rect) ui.Rect {
+			return ui.Rect{X: b.X, Y: b.Y + 2, W: b.W, H: b.H - 2}
+		})
+	}
+	h.view.SetBound(mb)
 }
