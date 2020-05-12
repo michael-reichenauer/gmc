@@ -56,6 +56,7 @@ func main() {
 		fmt.Printf("Attach a debugger and click 'enter' to proceed ...\n")
 		utils.ReadLine()
 	}
+
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
 	// Set default http client proxy to the system proxy (used by e.g. telemetry)
