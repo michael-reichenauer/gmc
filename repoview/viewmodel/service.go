@@ -581,7 +581,7 @@ func (t *Service) setAheadBehind(repo *viewRepo) {
 		if b.isRemote && b.localName != "" {
 			t.setIsRemoteOnlyCommits(repo, b)
 		} else if !b.isRemote && b.remoteName != "" {
-			t.setLocalOnlyCommits(b)
+			t.setLocalOnlyCommits(repo, b)
 		}
 	}
 }
@@ -607,9 +607,15 @@ func (t *Service) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
 		c.IsRemoteOnly = true
 		b.HasRemoteOnly = true
 	}
+	if b.HasRemoteOnly {
+		bl := repo.BranchByName(b.localName)
+		if bl != nil {
+			bl.HasRemoteOnly = true
+		}
+	}
 }
 
-func (t *Service) setLocalOnlyCommits(b *branch) {
+func (t *Service) setLocalOnlyCommits(repo *viewRepo, b *branch) {
 	count := 0
 	for c := b.tip; c != nil && c.Branch == b && count < 50; c = c.Parent {
 		if c.ID == git.UncommittedID {
@@ -618,6 +624,12 @@ func (t *Service) setLocalOnlyCommits(b *branch) {
 		count++
 		c.IsLocalOnly = true
 		b.HasLocalOnly = true
+	}
+	if b.HasLocalOnly {
+		br := repo.BranchByName(b.remoteName)
+		if br != nil {
+			br.HasLocalOnly = true
+		}
 	}
 }
 

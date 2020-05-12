@@ -50,12 +50,13 @@ func main() {
 	// 	log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
 	// }()
 
-	if *pauseFlag {
-		// The process was started with 'pause' flag, e.g. from Goland,
-		// wait until enter is clicked, this can be used for attaching a debugger
-		fmt.Printf("Attach a debugger and click 'enter' to proceed ...\n")
-		utils.ReadLine()
-	}
+	// if *pauseFlag {
+	// 	// The process was started with 'pause' flag, e.g. from Goland,
+	// 	// wait until enter is clicked, this can be used for attaching a debugger
+	// 	fmt.Printf("Attach a debugger and click 'enter' to proceed ...\n")
+	// 	utils.ReadLine()
+	// }
+
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
 	// Set default http client proxy to the system proxy (used by e.g. telemetry)
@@ -65,7 +66,7 @@ func main() {
 	log.Eventf("program-start", "Starting gmc %s ...", version)
 
 	logger.RedirectStdErrorToFile()
-	defer log.Event("program-stop")
+	//defer log.Event("program-stop")
 	configService := config.NewConfig(version, *workingFolderFlag, "")
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
@@ -84,7 +85,7 @@ func main() {
 }
 
 func isWindowsGolandConsole() bool {
-	return runtime.GOOS == "windows" && *externalWindow
+	return runtime.GOOS == "windows" && *externalWindow && !*pauseFlag
 	// // termbox requires a "real" terminal. The GoLand console is not supported.
 	// // so check if current terminal is ok (check only on windows)
 	// if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) ||
