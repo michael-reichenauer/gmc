@@ -39,7 +39,7 @@ func main() {
 		return
 	}
 
-	if isDebugConsole() {
+	if isWindowsGolandConsole() {
 		// Seems program is run within a debugger console, which does not support termbox
 		// So a new external process is started and this instance ends
 		startAsExternalProcess()
@@ -83,8 +83,8 @@ func main() {
 	})
 }
 
-func isDebugConsole() bool {
-	return *externalWindow
+func isWindowsGolandConsole() bool {
+	return runtime.GOOS == "windows" && *externalWindow
 	// // termbox requires a "real" terminal. The GoLand console is not supported.
 	// // so check if current terminal is ok (check only on windows)
 	// if isatty.IsTerminal(os.Stdout.Fd()) || isatty.IsCygwinTerminal(os.Stdout.Fd()) ||

@@ -2,7 +2,7 @@
   <configuration default="false" name="run gmc" type="GoApplicationRunConfiguration" factoryName="Go Application">
     <module name="gmc" />
     <working_directory value="$PROJECT_DIR$/" />
-    <go_parameters value="-i  -gcflags=&quot;all=-N -l&quot; -o gmc.exe " />
+    <go_parameters value="-gcflags=&quot;all=-N -l&quot; -o gmc.exe " />
     <parameters value="-external" />
     <kind value="FILE" />
     <filePath value="$PROJECT_DIR$/main.go" />
