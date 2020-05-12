@@ -8,6 +8,7 @@
 gmc.exe
 gmc_linux
 gmc_mac
+main
 
 # Test binary, build with `go test -c`
 *.test
