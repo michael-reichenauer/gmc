@@ -77,17 +77,17 @@ func (t uiMock) NewViewFromTextFunc(f func(viewPage ui.ViewPage) string) ui.View
 	panic("implement me")
 }
 
-func (t uiMock) ShowProgress(text string) ui.Progress {
-	log.Infof("Progress %q", text)
+func (t uiMock) ShowProgress(format string, v ...interface{}) ui.Progress {
+	log.Infof("Progress %q", fmt.Sprintf(format, v...))
 	return newProgressMock()
 }
 
-func (t uiMock) ShowMessageBox(text string, title string) {
-	log.Infof("ShowMessageBox: title: %q, msg: %q", title, text)
+func (t uiMock) ShowMessageBox(title, format string, v ...interface{}) {
+	log.Infof("ShowMessageBox: title: %q, msg: %q", title, fmt.Sprintf(format, v...))
 }
 
-func (t uiMock) ShowErrorMessageBox(text string) {
-	log.Warnf("ShowErrorMessageBox: %q", text)
+func (t uiMock) ShowErrorMessageBox(format string, v ...interface{}) {
+	log.Warnf("ShowErrorMessageBox: %q", fmt.Sprintf(format, v...))
 }
 
 func (t uiMock) ResizeAllViews() {
