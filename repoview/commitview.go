@@ -1,7 +1,6 @@
 package repoview
 
 import (
-	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -112,7 +111,7 @@ func (h *CommitView) onOk() {
 	err := h.committer.Commit(msg)
 	if err != nil {
 		log.Eventf("commit-error", "failed to commit, %v", err)
-		h.ui.ShowErrorMessageBox(fmt.Sprintf("Failed to commit,\n%v", err))
+		h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
 		h.Close()
 		return
 	}

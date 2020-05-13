@@ -1,7 +1,6 @@
 package program
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
@@ -64,6 +63,5 @@ func (h *MainWindow) MainMenuItem() ui.MenuItem {
 }
 
 func (h *MainWindow) showAbout() {
-	aboutText := fmt.Sprintf("gmc version %s\n%s", h.configService.ProgramVersion, git.Version())
-	h.ui.ShowMessageBox(aboutText, "About")
+	h.ui.ShowMessageBox("About", "gmc version %s\n%s", h.configService.ProgramVersion, git.Version())
 }

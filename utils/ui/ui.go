@@ -25,9 +25,9 @@ type UI interface {
 	NewViewFromPageFunc(f func(viewPort ViewPage) ViewText) View
 	NewViewFromTextFunc(f func(viewPage ViewPage) string) View
 	PostOnUIThread(f func())
-	ShowProgress(text string) Progress
-	ShowMessageBox(text string, title string)
-	ShowErrorMessageBox(text string)
+	ShowProgress(format string, v ...interface{}) Progress
+	ShowMessageBox(title string, format string, v ...interface{})
+	ShowErrorMessageBox(format string, v ...interface{})
 	ResizeAllViews()
 	NewMenu(title string) Menu
 	Quit()
@@ -47,24 +47,20 @@ func NewUI() *ui {
 	return &ui{}
 }
 
-func (h *ui) ShowMessageBox(text, title string) {
+func (h *ui) ShowMessageBox(title, format string, v ...interface{}) {
+	text := fmt.Sprintf(format, v...)
 	msgBox := NewMessageBox(h, text, title)
 	msgBox.Show()
 }
 
-func (h *ui) ShowErrorMessageBox(text string) {
-	text = Red(text)
+func (h *ui) ShowErrorMessageBox(format string, v ...interface{}) {
+	text := Red(fmt.Sprintf(format, v...))
 	msgBox := NewMessageBox(h, text, "Error !")
 	msgBox.Show()
 }
 
-func (h *ui) ShowWarningMessageBox(text string) {
-	text = Yellow(text)
-	msgBox := NewMessageBox(h, text, "Warning !")
-	msgBox.Show()
-}
-
-func (h *ui) ShowProgress(text string) Progress {
+func (h *ui) ShowProgress(format string, v ...interface{}) Progress {
+	text := fmt.Sprintf(format, v...)
 	p := newProgress(h)
 	p.SetText(text)
 	p.show()

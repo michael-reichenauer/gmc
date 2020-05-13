@@ -44,6 +44,7 @@ type Status struct {
 type RepoChange struct {
 	IsStarting bool
 	ViewRepo   ViewRepo
+	Error      error
 }
 
 type Service struct {
