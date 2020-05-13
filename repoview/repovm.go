@@ -19,17 +19,18 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	ui               ui.UI
-	repoViewer       ui.Notifier
-	mainService      mainService
-	viewModelService *viewmodel.Service
-	repoLayout       *repoLayout
-	isDetails        bool
-	workingFolder    string
-	cancel           context.CancelFunc
-	repo             viewmodel.ViewRepo
-	firstIndex       int
-	currentIndex     int
+	ui                ui.UI
+	repoViewer        ui.Notifier
+	mainService       mainService
+	viewModelService  *viewmodel.Service
+	repoLayout        *repoLayout
+	isDetails         bool
+	workingFolder     string
+	cancel            context.CancelFunc
+	repo              viewmodel.ViewRepo
+	firstIndex        int
+	currentIndex      int
+	onRepoUpdatedFunc func()
 }
 
 type trace struct {
@@ -87,6 +88,12 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 			}
 			h.repo = rc.ViewRepo
 			h.repoViewer.NotifyChanged()
+
+			if h.onRepoUpdatedFunc != nil {
+				f := h.onRepoUpdatedFunc
+				h.onRepoUpdatedFunc = nil
+				h.ui.PostOnUIThread(f)
+			}
 		})
 	}
 }
@@ -242,14 +249,16 @@ func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error { return h.viewModelService.SwitchToBranch(name, displayName, h.repo) },
-		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
+		nil)
 }
 
 func (h *repoVM) PushBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
 		func() error { return h.viewModelService.PushBranch(name) },
-		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
+		nil)
 }
 
 func (h *repoVM) PushCurrentBranch() {
@@ -260,7 +269,8 @@ func (h *repoVM) PushCurrentBranch() {
 	h.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
 		func() error { return h.viewModelService.PushBranch(current.Name) },
-		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
+		nil)
 }
 
 func (h *repoVM) PullCurrentBranch() {
@@ -271,18 +281,25 @@ func (h *repoVM) PullCurrentBranch() {
 	h.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
 		func() error { return h.viewModelService.PullBranch() },
-		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
+		nil)
 }
 
 func (h *repoVM) MergeFromBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
 		func() error { return h.viewModelService.MergeBranch(name) },
-		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
+		nil)
 }
 
-func (h *repoVM) startCommand(prsText string, doFunc func() error, errorFunc func(err error) string) {
-	progress := h.ui.ShowProgress(prsText)
+func (h *repoVM) startCommand(
+	progressText string,
+	doFunc func() error,
+	errorFunc func(err error) string,
+	onRepoUpdatedFunc func()) {
+	progress := h.ui.ShowProgress(progressText)
+	h.onRepoUpdatedFunc = onRepoUpdatedFunc
 	go func() {
 		err := doFunc()
 		h.ui.PostOnUIThread(func() {
@@ -308,12 +325,14 @@ func (h *repoVM) CreateBranch(name string) {
 			}
 			return err
 		},
-		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
+		func() { h.viewModelService.ShowBranch(name, h.repo) })
 }
 
 func (h *repoVM) DeleteBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
 		func() error { return h.viewModelService.DeleteBranch(name, h.repo) },
-		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) })
+		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
+		nil)
 }
