@@ -119,9 +119,9 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 			if change != noChange {
 				log.Infof("waited for %v", change)
 				if change == statusChange && hasRepo {
-					s.triggerStatus(repo)
+					s.triggerStatus(ctx, repo)
 				} else {
-					s.triggerRepo(false)
+					s.triggerRepo(ctx, false)
 				}
 				change = noChange
 			}
@@ -175,7 +175,7 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 			}
 			wait = time.After(batchInterval)
 			change = noChange
-			s.triggerRepo(true)
+			s.triggerRepo(ctx, true)
 
 		case <-ctx.Done():
 			// Closing this repo
@@ -184,21 +184,33 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 	}
 }
 
-func (s *gitRepo) triggerStatus(repo Repo) {
+func (s *gitRepo) triggerStatus(ctx context.Context, repo Repo) {
 	go func() {
 		repo, err := s.getFreshStatus(repo)
 		if err != nil {
+			select {
+			case s.repoChanges <- RepoChange{Error: err}:
+				log.Infof("posted status error")
+			case <-ctx.Done():
+				return
+			}
 			return
 		}
 		s.internalPostRepo(repo)
 	}()
 }
 
-func (s *gitRepo) triggerRepo(isTriggerFetch bool) {
+func (s *gitRepo) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 	log.Infof("TriggerRefreshRepo")
 	go func() {
 		repo, err := s.getFreshRepo()
 		if err != nil {
+			select {
+			case s.repoChanges <- RepoChange{Error: err}:
+				log.Infof("posted repo error")
+			case <-ctx.Done():
+				return
+			}
 			return
 		}
 		s.internalPostRepo(repo)

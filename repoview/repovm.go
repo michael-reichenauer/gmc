@@ -74,12 +74,10 @@ func (h *repoVM) close() {
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
 	var progress ui.Progress
-	for rc := range h.viewModelService.RepoChanges {
+	for r := range h.viewModelService.RepoChanges {
 		log.Infof("Detected model change")
+		rc := r
 		h.ui.PostOnUIThread(func() {
-			if rc.Error != nil {
-				h.ui.ShowErrorMessageBox("Error")
-			}
 			if rc.IsStarting {
 				progress = h.ui.ShowProgress("Loading repo:\n%s", h.workingFolder)
 				return
@@ -89,6 +87,12 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 				progress.Close()
 				progress = nil
 			}
+
+			if rc.Error != nil {
+				h.ui.ShowErrorMessageBox("Error: %v", rc.Error)
+				return
+			}
+
 			h.repo = rc.ViewRepo
 			h.repoViewer.NotifyChanged()
 

@@ -145,11 +145,17 @@ func (t *Service) monitorViewModelRoutine(ctx context.Context) {
 			}
 
 			log.Infof("Got repo change")
-			log.Event("vms-changed-repo")
+
 			if change.Error != nil {
-				log.Warnf("Repo error %v", change.Error)
-				continue
+				log.Event("vms-error-repo")
+				select {
+				case t.RepoChanges <- RepoChange{Error: change.Error}:
+				case <-ctx.Done():
+					return
+				}
+				break
 			}
+			log.Event("vms-changed-repo")
 			repo = change.Repo
 			t.triggerFreshViewRepo(ctx, repo, branchNames)
 		case names := <-t.showRequests:
