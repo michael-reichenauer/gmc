@@ -7,15 +7,22 @@ import (
 	"strings"
 )
 
-func NewSearchView(ui ui.UI) *SearchView {
-	h := &SearchView{ui: ui}
+type Searcher interface {
+	Search(text string)
+	CloseSearch()
+}
+
+func NewSearchView(ui ui.UI, searcher Searcher) *SearchView {
+	h := &SearchView{ui: ui, searcher: searcher}
 	return h
 }
 
 type SearchView struct {
-	ui       ui.UI
-	boxView  ui.View
-	textView ui.View
+	ui         ui.UI
+	boxView    ui.View
+	textView   ui.View
+	searcher   Searcher
+	lastSearch string
 }
 
 func (t *SearchView) Show() {
@@ -57,12 +64,17 @@ func (t *SearchView) newTextView() ui.View {
 
 func (t *SearchView) onEdit() {
 	text := strings.TrimSpace(t.textView.ReadLines()[0])
-	log.Infof("Search in search %q", text)
+	if text == t.lastSearch {
+		return
+	}
+	t.lastSearch = text
+	t.searcher.Search(text)
 }
 
 func (t *SearchView) Close() {
 	t.textView.Close()
 	t.boxView.Close()
+	t.searcher.CloseSearch()
 }
 
 func (t *SearchView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
@@ -76,26 +88,10 @@ func (t *SearchView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
 	return box, text
 }
 
-func (t *SearchView) onButtonsClick(x int, y int) {
-	if x > 0 && x < 5 {
-		t.onOk()
-	}
-	if x > 5 && x < 14 {
-		t.onCancel()
-	}
-}
-
 func (t *SearchView) onCancel() {
 	log.Event("search-cancel")
 	t.Close()
 }
 
 func (t *SearchView) onOk() {
-	log.Event("search-ok")
-	name := t.textView.ReadLines()[0]
-	name = strings.TrimSpace(name)
-	if name == "" {
-		return
-	}
-	t.Close()
 }
