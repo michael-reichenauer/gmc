@@ -22,6 +22,7 @@ type RepoView struct {
 	vm          *repoVM
 	menuService *menuService
 	showSearch  bool
+	searchView  *SearchView
 }
 
 func NewRepoView(ui ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
@@ -136,10 +137,15 @@ func (h *RepoView) mouseLeft(x int, y int) {
 func (h *RepoView) Search() {
 	h.showSearch = !h.showSearch
 	mb := ui.FullScreen()
+	if h.searchView != nil {
+		h.searchView.Close()
+	}
 	if h.showSearch {
 		mb = ui.Relative(ui.FullScreen(), func(b ui.Rect) ui.Rect {
 			return ui.Rect{X: b.X, Y: b.Y + 2, W: b.W, H: b.H - 2}
 		})
+		h.searchView = NewSearchView(h.ui)
+		h.searchView.Show()
 	}
 	h.view.SetBound(mb)
 }

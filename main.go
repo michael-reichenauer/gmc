@@ -113,6 +113,7 @@ func logProgramInfo(configService *config.Service) {
 	log.Infof("Build: release=%v", program.IsRelease)
 	log.Infof("Binary path: %q", utils.BinPath())
 	log.Infof("Args: %v", os.Args)
+	log.Infof("ID: %q", utils.MachineID)
 	log.Infof("OS: %q", runtime.GOOS)
 	log.Infof("Arch: %q", runtime.GOARCH)
 	log.Infof("Go version: %q", runtime.Version())

@@ -90,6 +90,8 @@ type ViewProperties struct {
 	Name           string
 	IsEditable     bool
 	IsWrap         bool
+	OnEdit         func()
+	OnMoveCursor   func()
 }
 
 type ViewPage struct {
@@ -219,6 +221,7 @@ func (h *view) Show(bf BoundFunc) {
 	}
 	if h.properties.IsEditable {
 		h.guiView.Editable = true
+		h.guiView.Editor = gocui.EditorFunc(h.textEditor)
 	}
 	if !h.properties.IsEditable {
 		h.SetKey(gocui.KeyArrowUp, h.onKeyArrowUp)
@@ -584,4 +587,51 @@ func maxTextWidth(lines []string) int {
 		}
 	}
 	return maxWidth
+}
+
+// instant.
+func (h *view) textEditor(v *gocui.View, key gocui.Key, ch rune, mod gocui.Modifier) {
+	switch {
+	case ch != 0 && mod == 0:
+		v.EditWrite(ch)
+		h.onEdit()
+	case key == gocui.KeySpace:
+		v.EditWrite(' ')
+		h.onEdit()
+	case key == gocui.KeyBackspace || key == gocui.KeyBackspace2:
+		v.EditDelete(true)
+		h.onEdit()
+	case key == gocui.KeyDelete:
+		v.EditDelete(false)
+		h.onEdit()
+	case key == gocui.KeyInsert:
+		v.Overwrite = !v.Overwrite
+	case key == gocui.KeyEnter:
+		v.EditNewLine()
+		h.onEdit()
+	case key == gocui.KeyArrowDown:
+		v.MoveCursor(0, 1, false)
+		h.onMoveCursor()
+	case key == gocui.KeyArrowUp:
+		v.MoveCursor(0, -1, false)
+		h.onMoveCursor()
+	case key == gocui.KeyArrowLeft:
+		v.MoveCursor(-1, 0, false)
+		h.onMoveCursor()
+	case key == gocui.KeyArrowRight:
+		v.MoveCursor(1, 0, false)
+		h.onMoveCursor()
+	}
+}
+
+func (h *view) onEdit() {
+	if h.properties.OnEdit != nil {
+		h.properties.OnEdit()
+	}
+}
+
+func (h *view) onMoveCursor() {
+	if h.properties.OnMoveCursor != nil {
+		h.properties.OnMoveCursor()
+	}
 }
