@@ -10,6 +10,8 @@ import (
 type Searcher interface {
 	Search(text string)
 	CloseSearch()
+	ScrollVertical(scroll int)
+	SetCurrentView()
 }
 
 func NewSearchView(ui ui.UI, searcher Searcher) *SearchView {
@@ -56,6 +58,9 @@ func (t *SearchView) newTextView() ui.View {
 	view.SetKey(gocui.KeyEnter, t.onOk)
 	view.SetKey(gocui.KeyCtrlC, t.onCancel)
 	view.SetKey(gocui.KeyEsc, t.onCancel)
+	view.SetKey(gocui.KeyArrowUp, t.scrollUpp)
+	view.SetKey(gocui.KeyArrowDown, t.scrollDown)
+	view.SetKey(gocui.KeyTab, t.searcher.SetCurrentView)
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().OnEdit = t.onEdit
@@ -94,4 +99,17 @@ func (t *SearchView) onCancel() {
 }
 
 func (t *SearchView) onOk() {
+}
+
+func (t *SearchView) scrollUpp() {
+	t.searcher.ScrollVertical(-1)
+}
+
+func (t *SearchView) scrollDown() {
+	t.searcher.ScrollVertical(1)
+}
+
+func (t *SearchView) SetCurrentView() {
+	t.textView.SetCurrentView()
+	t.textView.NotifyChanged()
 }

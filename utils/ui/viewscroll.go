@@ -134,7 +134,7 @@ func (h *view) moveVertically(move int) {
 	}
 }
 
-func (h *view) scrollVertically(scroll int) {
+func (h *view) ScrollVertical(scroll int) {
 	if h.total <= 0 {
 		// Cannot scroll empty view
 		return
@@ -287,7 +287,7 @@ func (h *view) setVerticalScroll(cy int) {
 	if h.height-1 > 0 {
 		setLine = int(math.Ceil((float64(cy) / float64(h.height-1)) * float64(h.total)))
 	}
-	h.scrollVertically(setLine - h.currentIndex)
+	h.ScrollVertical(setLine - h.currentIndex)
 }
 
 func (h *view) setHorizontalScroll(cx int) {

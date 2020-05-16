@@ -44,7 +44,13 @@ type Status struct {
 type RepoChange struct {
 	IsStarting bool
 	ViewRepo   ViewRepo
+	SearchText string
 	Error      error
+}
+
+type ShowRequest struct {
+	branches   []string
+	searchText string
 }
 
 type Service struct {
@@ -54,7 +60,7 @@ type Service struct {
 	configService *config.Service
 	branchesGraph *branchesGraph
 
-	showRequests       chan []string
+	showRequests       chan ShowRequest
 	currentBranches    chan []string
 	customBranchColors map[string]int
 }
@@ -62,7 +68,7 @@ type Service struct {
 func NewService(configService *config.Service, workingFolder string) *Service {
 	return &Service{
 		RepoChanges:     make(chan RepoChange),
-		showRequests:    make(chan []string),
+		showRequests:    make(chan ShowRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
 		gitRepo:         gitrepo.NewGitRepo(workingFolder),
@@ -115,7 +121,7 @@ func (t *Service) Commit(Commit string) error {
 func (t *Service) showBranches(branchIds []string) {
 	log.Event("vms-load-repo")
 	select {
-	case t.showRequests <- branchIds:
+	case t.showRequests <- ShowRequest{branches: branchIds}:
 	default:
 	}
 }
@@ -158,16 +164,20 @@ func (t *Service) monitorViewModelRoutine(ctx context.Context) {
 			log.Event("vms-changed-repo")
 			repo = change.Repo
 			t.triggerFreshViewRepo(ctx, repo, branchNames)
-		case names := <-t.showRequests:
+		case request := <-t.showRequests:
+			if request.searchText != "" {
+				t.triggerSearchRepo(ctx, request.searchText, repo)
+				break
+			}
 			log.Infof("Manual start change")
-			if names == nil {
+			if request.branches == nil {
 				// A manual refresh, trigger new repo
 				log.Infof("Manual refresh")
 				t.gitRepo.TriggerManualRefresh()
 				break
 			}
-			log.Infof("Refresh of %v", names)
-			branchNames = names
+			log.Infof("Refresh of %v", request.branches)
+			branchNames = request.branches
 			t.triggerFreshViewRepo(ctx, repo, branchNames)
 		case names := <-t.currentBranches:
 			branchNames = names
@@ -175,6 +185,18 @@ func (t *Service) monitorViewModelRoutine(ctx context.Context) {
 			return
 		}
 	}
+}
+
+func (t *Service) triggerSearchRepo(ctx context.Context, searchText string, repo gitrepo.Repo) {
+	log.Infof("triggerSearchRepo")
+	go func() {
+		vRepo := t.getSearchModel(repo, searchText)
+		repoChange := RepoChange{SearchText: searchText, ViewRepo: newViewRepo(vRepo)}
+		select {
+		case t.RepoChanges <- repoChange:
+		case <-ctx.Done():
+		}
+	}()
 }
 
 func (t *Service) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, branchNames []string) {
@@ -199,6 +221,24 @@ func (t *Service) storeShownBranchesInConfig(branchNames []string) {
 	t.configService.SetRepo(t.gitRepo.RepoPath(), func(r *config.Repo) {
 		r.ShownBranches = branchNames
 	})
+}
+
+func (t *Service) getSearchModel(grepo gitrepo.Repo, searchText string) *viewRepo {
+	log.Infof("getSearchModel")
+	ti := timer.Start()
+	repo := newRepo()
+	repo.gitRepo = grepo
+	repo.WorkingFolder = grepo.RepoPath
+	for _, b := range grepo.Branches {
+		repo.addBranch(b)
+	}
+
+	for _, c := range grepo.SearchCommits(searchText) {
+		repo.addSearchCommit(c)
+	}
+	t.addTags(repo, grepo.Tags)
+	log.Infof("done, %s", ti)
+	return repo
 }
 
 func (t *Service) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewRepo {
@@ -498,6 +538,14 @@ func (t *Service) ShowBranch(name string, viewRepo ViewRepo) {
 
 	log.Event("vms-branches-open")
 	t.showBranches(branchNames)
+}
+
+func (t *Service) TriggerSearch(text string) {
+	log.Eventf("vms-search", text)
+	select {
+	case t.showRequests <- ShowRequest{searchText: text}:
+	default:
+	}
 }
 
 //

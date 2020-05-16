@@ -54,8 +54,7 @@ func newPartialLogCommit() *Commit {
 func (c *Commit) contains(lowerText string) bool {
 	return contains(c.Id, lowerText) ||
 		contains(c.Message, lowerText) ||
-		contains(c.Author, lowerText) ||
-		contains(c.Branch.DisplayName, lowerText)
+		contains(c.Author, lowerText)
 }
 
 func contains(text, lowerSearch string) bool {

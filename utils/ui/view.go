@@ -132,6 +132,7 @@ type View interface {
 	PostOnUIThread(func())
 	Close()
 	ScrollHorizontal(scroll int)
+	ScrollVertical(scroll int)
 	SetCurrentLine(line int)
 }
 
@@ -457,7 +458,7 @@ func (h *view) Size() (int, int) {
 
 func (h *view) onKeyArrowUp() {
 	if h.properties.HideCurrentLineMarker {
-		h.scrollVertically(-1)
+		h.ScrollVertical(-1)
 		return
 	}
 	h.moveVertically(-1)
@@ -465,7 +466,7 @@ func (h *view) onKeyArrowUp() {
 
 func (h *view) onKeyArrowDown() {
 	if h.properties.HideCurrentLineMarker {
-		h.scrollVertically(1)
+		h.ScrollVertical(1)
 		return
 	}
 	h.moveVertically(1)
@@ -473,12 +474,12 @@ func (h *view) onKeyArrowDown() {
 
 func (h *view) onKeyPageDown() {
 	_, y := h.Size()
-	h.scrollVertically(y - 1)
+	h.ScrollVertical(y - 1)
 }
 
 func (h *view) onKeyPageUp() {
 	_, y := h.Size()
-	h.scrollVertically(-y + 1)
+	h.ScrollVertical(-y + 1)
 }
 
 func (h *view) onMouseWheelRollDown() {
@@ -486,7 +487,7 @@ func (h *view) onMouseWheelRollDown() {
 		h.scrollHorizontal(1)
 		return
 	}
-	h.scrollVertically(1)
+	h.ScrollVertical(1)
 }
 
 func (h *view) onMouseWheelRollUp() {
@@ -494,15 +495,15 @@ func (h *view) onMouseWheelRollUp() {
 		h.scrollHorizontal(-1)
 		return
 	}
-	h.scrollVertically(-1)
+	h.ScrollVertical(-1)
 }
 
 func (h *view) onKeyPageHome() {
-	h.scrollVertically(-h.currentIndex)
+	h.ScrollVertical(-h.currentIndex)
 }
 
 func (h *view) onKeyPageEnd() {
-	h.scrollVertically(h.total)
+	h.ScrollVertical(h.total)
 }
 
 func (h *view) onMouseLeftClick() {

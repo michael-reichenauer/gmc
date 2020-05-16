@@ -85,11 +85,20 @@ func (t *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	t.commitById[c.ID] = c
 }
 
+func (t *viewRepo) addSearchCommit(gc *gitrepo.Commit) {
+	c := t.toCommit(gc, len(t.Commits), false)
+	t.Commits = append(t.Commits, c)
+	t.commitById[c.ID] = c
+	if c.IsCurrent {
+		t.CurrentCommit = c
+	}
+}
+
 func (t *viewRepo) addGitCommit(gc *gitrepo.Commit) {
 	if !t.containsBranch(gc.Branch) {
 		return
 	}
-	c := t.toCommit(gc, len(t.Commits))
+	c := t.toCommit(gc, len(t.Commits), true)
 	t.Commits = append(t.Commits, c)
 	t.commitById[c.ID] = c
 	if c.IsCurrent {
@@ -147,23 +156,27 @@ func (t *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 	}
 }
 
-func (t *viewRepo) toCommit(c *gitrepo.Commit, index int) *commit {
-	var branch = t.BranchByName(c.Branch.Name)
+func (t *viewRepo) toCommit(repo *gitrepo.Commit, index int, includeGraph bool) *commit {
+	var branch = t.BranchByName(repo.Branch.Name)
 
+	var graph []GraphColumn
+	if includeGraph {
+		graph = make([]GraphColumn, len(t.Branches))
+	}
 	return &commit{
-		ID:         c.Id,
-		SID:        c.Sid,
-		Subject:    c.Subject,
-		Message:    c.Message,
-		Author:     c.Author,
-		AuthorTime: c.AuthorTime,
-		ParentIDs:  c.ParentIDs,
-		ChildIDs:   c.ChildIDs,
-		IsCurrent:  c.IsCurrent,
+		ID:         repo.Id,
+		SID:        repo.Sid,
+		Subject:    repo.Subject,
+		Message:    repo.Message,
+		Author:     repo.Author,
+		AuthorTime: repo.AuthorTime,
+		ParentIDs:  repo.ParentIDs,
+		ChildIDs:   repo.ChildIDs,
+		IsCurrent:  repo.IsCurrent,
 		Branch:     branch,
 		Index:      index,
-		graph:      make([]GraphColumn, len(t.Branches)),
-		BranchTips: c.BranchTipNames,
+		graph:      graph,
+		BranchTips: repo.BranchTipNames,
 	}
 }
 

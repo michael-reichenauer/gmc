@@ -28,9 +28,11 @@ type repoVM struct {
 	workingFolder     string
 	cancel            context.CancelFunc
 	repo              viewmodel.ViewRepo
+	searchRepo        viewmodel.ViewRepo
 	firstIndex        int
 	currentIndex      int
 	onRepoUpdatedFunc func()
+	searchText        string
 }
 
 type trace struct {
@@ -67,6 +69,10 @@ func (h *repoVM) triggerRefresh() {
 	h.viewModelService.TriggerRefreshModel()
 }
 
+func (h *repoVM) SetSearch(text string) {
+	h.viewModelService.TriggerSearch(text)
+}
+
 func (h *repoVM) close() {
 	h.cancel()
 }
@@ -90,6 +96,13 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 
 			if rc.Error != nil {
 				h.ui.ShowErrorMessageBox("Error: %v", rc.Error)
+				return
+			}
+
+			if rc.SearchText != "" {
+				log.Infof("commits %d", len(r.ViewRepo.Commits))
+				h.repo = r.ViewRepo
+				h.repoViewer.NotifyChanged()
 				return
 			}
 
@@ -147,35 +160,6 @@ func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
 		firstIndex = len(h.repo.Commits) - count
 	}
 	return firstIndex, h.repo.Commits[firstIndex : firstIndex+count]
-}
-
-func (h *repoVM) RefreshTrace(viewPage ui.ViewPage) {
-	//git.EnableTracing("")
-	// traceBytes := utils.MustJsonMarshal(trace{
-	// 	RepoPath:    h.viewModelService.RepoPath(),
-	// 	ViewPage:    viewPage,
-	// 	BranchNames: h.viewModelService.CurrentBranchNames(),
-	// })
-	// utils.MustFileWrite(filepath.Join(git.CurrentTracePath(), "repovm"), traceBytes)
-
-	//h.viewModelService.TriggerRefreshModel()
-}
-
-func (h *repoVM) ChangeBranchColor() {
-	//h.viewModelService.ChangeBranchColor(index)
-}
-
-func (h *repoVM) ToggleDetails() {
-	// h.isDetails = !h.isDetails
-	// if h.isDetails {
-	// 	log.Event("details-view-show")
-	// } else {
-	// 	log.Event("details-view-hide")
-	// }
-}
-
-func (h *repoVM) saveTotalDebugState() {
-	//	h.vm.RefreshTrace(h.ViewPage())
 }
 
 func (h *repoVM) showCommitDialog() {

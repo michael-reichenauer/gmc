@@ -11,6 +11,7 @@ type Tag struct {
 	CommitID string
 	TagName  string
 }
+
 type Repo struct {
 	Commits    []*Commit
 	commitById map[string]*Commit
@@ -25,30 +26,27 @@ func newRepo() *Repo {
 }
 
 func (r Repo) SearchCommits(searchText string) []*Commit {
-	lowerText := strings.ToLower(searchText)
+	searchText = strings.ToLower(searchText)
 
+	// Remember tag commits which contain the search string
 	tagCommits := make(map[string]bool)
 	for _, tag := range r.Tags {
-		if contains(strings.ToLower(tag.TagName), lowerText) {
+		if contains(tag.TagName, searchText) {
 			tagCommits[tag.CommitID] = true
 		}
 	}
-	var commits []*Commit
-	for id, _ := range tagCommits {
-		c, ok := r.TryGetCommitByID(id)
-		if !ok {
-			continue
-		}
-		commits = append(commits, c)
-	}
 
+	var commits []*Commit
 	for _, c := range r.Commits {
-		if _, ok := tagCommits[c.Id]; ok {
-			// Commit already added because of tag
+		if c.contains(searchText) {
+			// The commit contained the search string
+			commits = append(commits, c)
 			continue
 		}
-		if c.contains(lowerText) {
+		if _, ok := tagCommits[c.Id]; ok {
+			// Tags for the commit contained the search string
 			commits = append(commits, c)
+			continue
 		}
 	}
 	return commits

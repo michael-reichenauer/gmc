@@ -13,13 +13,17 @@ const (
 	markersWidth         = 4
 )
 
-type repoLayout struct {
-	viewModelService *viewmodel.Service
-	repoGraph        *repoGraph
+type branchColors interface {
+	BranchColor(name string) ui.Color
 }
 
-func newRepoLayout(viewModelService *viewmodel.Service) *repoLayout {
-	return &repoLayout{viewModelService: viewModelService, repoGraph: newRepoGraph()}
+type repoLayout struct {
+	branchColors branchColors
+	repoGraph    *repoGraph
+}
+
+func newRepoLayout(branchColors branchColors) *repoLayout {
+	return &repoLayout{branchColors: branchColors, repoGraph: newRepoGraph()}
 }
 
 func (t *repoLayout) getPageLines(
@@ -63,6 +67,7 @@ func (t *repoLayout) getGraphWidth(commits []viewmodel.Commit) int {
 	if len(commits) == 0 {
 		return 0
 	}
+	//return markersWidth
 	return len(commits[0].Graph)*2 + markersWidth
 }
 
@@ -91,13 +96,13 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 func (t *repoLayout) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
 		// Normal branch color
-		bColor := t.viewModelService.BranchColor(c.Graph[i].BranchDisplayName)
+		bColor := t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
 		//	if i != 0 {
 		cColor := bColor
 		if c.Graph[i].Connect == viewmodel.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			cColor = t.viewModelService.BranchColor(c.Graph[i].PassName)
+			cColor = t.branchColors.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
 			cColor = ui.CWhite
 		}
@@ -107,7 +112,7 @@ func (t *repoLayout) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 		if c.Graph[i].Branch == viewmodel.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			bColor = t.viewModelService.BranchColor(c.Graph[i].PassName)
+			bColor = t.branchColors.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Branch == viewmodel.BPass {
 			bColor = ui.CWhite
 		}
