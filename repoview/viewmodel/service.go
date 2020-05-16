@@ -229,6 +229,14 @@ func (t *Service) getSearchModel(grepo gitrepo.Repo, searchText string) *viewRep
 	repo := newRepo()
 	repo.gitRepo = grepo
 	repo.WorkingFolder = grepo.RepoPath
+	currentBranch, ok := grepo.CurrentBranch()
+	repo.UncommittedChanges = grepo.Status.AllChanges()
+	repo.Conflicts = grepo.Status.Conflicted
+
+	if ok {
+		repo.CurrentBranchName = currentBranch.Name
+	}
+
 	for _, b := range grepo.Branches {
 		repo.addBranch(b)
 	}
