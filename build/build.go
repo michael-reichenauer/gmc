@@ -3,6 +3,7 @@ package main
 import (
 	. "github.com/michael-reichenauer/gmc/build/utils"
 	"os"
+	"runtime"
 )
 
 func main() {
@@ -32,9 +33,15 @@ func main() {
 	Echo("")
 
 	Echo("Built version:")
-	Must(Cmd("gmc.exe", "-version"))
+	switch runtime.GOOS {
+	case "linux":
+		Must(Cmd("./gmc_linux", "-version"))
+	case "windows":
+		Must(Cmd("./gmc.exe", "-version"))
+		Must(OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new"))
+	case "darwin":
+		Must(Cmd("./gmc_mac", "-version"))
+	}
 	Echo("")
 	Echo("")
-
-	Must(OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new"))
 }

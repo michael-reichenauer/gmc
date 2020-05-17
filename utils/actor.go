@@ -48,7 +48,10 @@ func (t *Actor) Close() {
 func (t *Actor) workRoutine() {
 	for {
 		select {
-		case w := <-t.out:
+		case w, ok := <-t.out:
+			if !ok {
+				return
+			}
 			work := w.(func())
 			work()
 		case <-t.done:

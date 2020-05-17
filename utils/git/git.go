@@ -34,6 +34,7 @@ type Git interface {
 	GetBranches() (Branches, error)
 
 	InitRepo() error
+	ConfigRepoUser(name, email string) error
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
@@ -85,6 +86,19 @@ func NewWithCmd(cmd gitCommander) Git {
 func (t *git) InitRepo() error {
 	_, err := t.cmd.Git("init", t.cmd.WorkingDir())
 	return err
+}
+
+func (t *git) ConfigRepoUser(name, email string) error {
+	_, err := t.cmd.Git("config", "user.name", name)
+	if err != nil {
+		return err
+	}
+	_, err = t.cmd.Git("config", "user.email", email)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *git) GetRepo(maxCommitCount int) (Repo, error) {

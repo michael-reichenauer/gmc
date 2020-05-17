@@ -25,6 +25,7 @@ func TestConflicts_Manual(t *testing.T) {
 	getter := &getterMock{git: g}
 
 	g.InitRepo()
+	g.ConfigRepoUser("test", "test@test.com")
 
 	file1 := "a.txt"
 	file2 := "b.txt"
