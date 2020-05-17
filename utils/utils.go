@@ -216,3 +216,43 @@ func RandomString(n int) string {
 	}
 	return string(b)
 }
+
+// InfiniteChannel returns infinite in and out channels
+// https://medium.com/capital-one-tech/building-an-unbounded-channel-in-go-789e175cd2cd
+func InfiniteChannel() (chan<- interface{}, <-chan interface{}) {
+	in := make(chan interface{})
+	out := make(chan interface{})
+
+	go func() {
+		var inQueue []interface{}
+		outCh := func() chan interface{} {
+			if len(inQueue) == 0 {
+				return nil
+			}
+			return out
+		}
+		curVal := func() interface{} {
+			if len(inQueue) == 0 {
+				return nil
+			}
+			return inQueue[0]
+		}
+		for len(inQueue) > 0 || in != nil {
+			select {
+			case v, ok := <-in:
+				if !ok {
+					in = nil
+				} else {
+					inQueue = append(inQueue, v)
+				}
+			case outCh() <- curVal():
+				inQueue = inQueue[1:]
+
+			}
+
+		}
+		close(out)
+	}()
+
+	return in, out
+}

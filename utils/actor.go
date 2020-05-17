@@ -1,12 +1,15 @@
 package utils
 
 type Actor struct {
-	work chan func()
+	in   chan<- interface{}
+	out  <-chan interface{}
 	done chan struct{}
 }
 
 func newActor() *Actor {
-	t := &Actor{work: make(chan func()), done: make(chan struct{})}
+	t := &Actor{done: make(chan struct{})}
+	t.in, t.out = InfiniteChannel()
+
 	go t.workRoutine()
 	return t
 }
@@ -14,7 +17,7 @@ func newActor() *Actor {
 // Do runs the specified func in the using the actor routine
 func (t *Actor) Do(f func()) {
 	select {
-	case t.work <- f:
+	case t.in <- f:
 	case <-t.done:
 	}
 }
@@ -23,8 +26,9 @@ func (t *Actor) Do(f func()) {
 func (t *Actor) DoFunc(f func() interface{}) interface{} {
 	result := make(chan interface{})
 	select {
-	case t.work <- func() { result <- f() }:
+	case t.in <- func() { result <- f() }:
 	case <-t.done:
+		return nil
 	}
 	return <-result
 }
@@ -38,12 +42,14 @@ func (t *Actor) WaitAllDone() {
 
 func (t *Actor) Close() {
 	close(t.done)
+	close(t.in)
 }
 
 func (t *Actor) workRoutine() {
 	for {
 		select {
-		case work := <-t.work:
+		case w := <-t.out:
+			work := w.(func())
 			work()
 		case <-t.done:
 			return
