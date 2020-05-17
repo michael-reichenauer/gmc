@@ -64,6 +64,17 @@ func Must(err error) {
 		os.Exit(1)
 	}
 }
+func OpenBrowser(url string) error {
+	switch runtime.GOOS {
+	case "linux":
+		return exec.Command("xdg-open", url).Start()
+	case "windows":
+		return exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		return exec.Command("open", url).Start()
+	}
+	return fmt.Errorf("unsupported platform")
+}
 
 func getRoot() string {
 	_, file, _, _ := runtime.Caller(0)

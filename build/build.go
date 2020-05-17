@@ -35,4 +35,6 @@ func main() {
 	Must(Cmd("gmc.exe", "-version"))
 	Echo("")
 	Echo("")
+
+	Must(OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new"))
 }
