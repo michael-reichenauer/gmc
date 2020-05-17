@@ -33,6 +33,13 @@ func main() {
 	Echo("")
 
 	Echo("Built version:")
+	echoBuiltVersion()
+
+	Echo("")
+	Echo("")
+}
+
+func echoBuiltVersion() {
 	switch runtime.GOOS {
 	case "linux":
 		Must(Cmd("./gmc_linux", "-version"))
@@ -42,6 +49,4 @@ func main() {
 	case "darwin":
 		Must(Cmd("./gmc_mac", "-version"))
 	}
-	Echo("")
-	Echo("")
 }
