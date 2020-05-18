@@ -2,7 +2,7 @@ package program
 
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/cviews"
+	"github.com/michael-reichenauer/gmc/ui/cviews"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
