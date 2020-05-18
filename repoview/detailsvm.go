@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/viewrepo"
 	"strings"
 )
@@ -20,7 +20,7 @@ func NewDetailsVM() *detailsVM {
 	return &detailsVM{}
 }
 
-func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
+func (h detailsVM) getCommitDetails(viewPort cui.ViewPage) (string, error) {
 	width := viewPort.Width
 	c := h.currentCommit
 	var sb strings.Builder
@@ -29,16 +29,16 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 	if id == viewrepo.UncommittedID {
 		id = " "
 	}
-	sb.WriteString(toHeader("Id:") + ui.Dark(id) + "\n")
+	sb.WriteString(toHeader("Id:") + cui.Dark(id) + "\n")
 	sb.WriteString(toHeader("Branch:") + h.toBranchText(c) + "\n")
-	sb.WriteString(toHeader("Files:") + ui.Dark("... >") + "\n")
-	sb.WriteString(toHeader("Parents:") + ui.Dark(toSids(c.ParentIDs)) + "\n")
-	sb.WriteString(toHeader("Children:") + ui.Dark(toSids(c.ChildIDs)) + "\n")
-	sb.WriteString(toHeader("Branch tips:") + ui.Dark(toBranchTips(c.BranchTips)) + "\n")
+	sb.WriteString(toHeader("Files:") + cui.Dark("... >") + "\n")
+	sb.WriteString(toHeader("Parents:") + cui.Dark(toSids(c.ParentIDs)) + "\n")
+	sb.WriteString(toHeader("Children:") + cui.Dark(toSids(c.ChildIDs)) + "\n")
+	sb.WriteString(toHeader("Branch tips:") + cui.Dark(toBranchTips(c.BranchTips)) + "\n")
 
-	color := ui.CDark
+	color := cui.CDark
 	if c.ID == viewrepo.UncommittedID {
-		color = ui.CYellowDk
+		color = cui.CYellowDk
 	}
 
 	messageLines := strings.Split(strings.TrimSpace(c.Message), "\n")
@@ -47,9 +47,9 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 			line = line + " >"
 		}
 		if i == 0 {
-			sb.WriteString(toHeader("Message:") + ui.ColorText(color, line) + "\n")
+			sb.WriteString(toHeader("Message:") + cui.ColorText(color, line) + "\n")
 		} else {
-			sb.WriteString("           " + ui.ColorText(color, line) + "\n")
+			sb.WriteString("           " + cui.ColorText(color, line) + "\n")
 		}
 	}
 	return sb.String(), nil
@@ -64,9 +64,9 @@ func (h detailsVM) toViewLine(width int, branch viewrepo.Branch) string {
 		pointer = branchPointer + " "
 		suffixWidth++
 	}
-	return ui.Dark(strings.Repeat(lineChar, prefixWidth) +
+	return cui.Dark(strings.Repeat(lineChar, prefixWidth) +
 		pointer +
-		ui.Dark(strings.Repeat(lineChar, suffixWidth)))
+		cui.Dark(strings.Repeat(lineChar, suffixWidth)))
 }
 
 func toBranchTips(tips []string) string {
@@ -82,7 +82,7 @@ func toSids(ids []string) string {
 }
 
 func toHeader(text string) string {
-	return ui.White(fmt.Sprintf(" %-13s", text))
+	return cui.White(fmt.Sprintf(" %-13s", text))
 }
 
 func (h detailsVM) toBranchText(c viewrepo.Commit) string {
@@ -90,23 +90,23 @@ func (h detailsVM) toBranchText(c viewrepo.Commit) string {
 
 	switch {
 	case c.Branch.IsMultiBranch:
-		typeText = ui.Dark(" (multiple) >")
+		typeText = cui.Dark(" (multiple) >")
 	case !c.Branch.IsGitBranch:
-		typeText = ui.Dark(" ()")
+		typeText = cui.Dark(" ()")
 	case c.ID == viewrepo.UncommittedID:
-		typeText = ui.Dark(" (local)")
+		typeText = cui.Dark(" (local)")
 	case c.IsLocalOnly:
-		typeText = ui.Dark(" (local)")
+		typeText = cui.Dark(" (local)")
 	case c.IsRemoteOnly:
-		typeText = ui.Dark(" (remote)")
+		typeText = cui.Dark(" (remote)")
 	case c.Branch.IsRemote && c.Branch.LocalName != "":
-		typeText = ui.Dark(" (remote,local)")
+		typeText = cui.Dark(" (remote,local)")
 	case !c.Branch.IsRemote && c.Branch.RemoteName != "":
-		typeText = ui.Dark(" (remote,local)")
+		typeText = cui.Dark(" (remote,local)")
 	case c.Branch.IsRemote && c.Branch.LocalName == "":
-		typeText = ui.Dark(" (remote)")
+		typeText = cui.Dark(" (remote)")
 	default:
-		typeText = ui.Dark(" (local)")
+		typeText = cui.Dark(" (local)")
 	}
 	if c.ID == viewrepo.UncommittedID {
 		typeText = typeText + ", changes not yet committed"
@@ -115,7 +115,7 @@ func (h detailsVM) toBranchText(c viewrepo.Commit) string {
 	} else if c.IsLocalOnly {
 		typeText = typeText + ", commit not yet pushed"
 	}
-	return c.Branch.DisplayName + ui.Dark(typeText)
+	return c.Branch.DisplayName + cui.Dark(typeText)
 }
 
 func (h detailsVM) setCurrentCommit(commit viewrepo.Commit) {

@@ -2,8 +2,8 @@ package repoview
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
 
@@ -12,7 +12,7 @@ type DiffGetter interface {
 }
 
 type diffVM struct {
-	viewer         ui.Viewer
+	viewer         cui.Viewer
 	diffGetter     DiffGetter
 	commitDiff     git.CommitDiff
 	commitID       string
@@ -27,7 +27,7 @@ type diffVM struct {
 
 const viewWidth = 200
 
-func newDiffVM(viewer ui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
+func newDiffVM(viewer cui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
 	return &diffVM{viewer: viewer, diffGetter: diffGetter, commitID: commitID}
 }
 
@@ -49,15 +49,15 @@ func (h *diffVM) setUnified(isUnified bool) {
 	h.rightLines = nil
 }
 
-func (h *diffVM) getCommitDiffLeft(viewPort ui.ViewPage) (ui.ViewText, error) {
+func (h *diffVM) getCommitDiffLeft(viewPort cui.ViewPage) (cui.ViewText, error) {
 	return h.getCommitDiff(viewPort, true)
 }
 
-func (h *diffVM) getCommitDiffRight(viewPort ui.ViewPage) (ui.ViewText, error) {
+func (h *diffVM) getCommitDiffRight(viewPort cui.ViewPage) (cui.ViewText, error) {
 	return h.getCommitDiff(viewPort, false)
 }
 
-func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewText, error) {
+func (h *diffVM) getCommitDiff(viewPort cui.ViewPage, isLeft bool) (cui.ViewText, error) {
 	if !h.isDiffReady {
 		return h.loadingText(isLeft), nil
 	}
@@ -68,7 +68,7 @@ func (h *diffVM) getCommitDiff(viewPort ui.ViewPage, isLeft bool) (ui.ViewText, 
 
 	lines, firstIndex, lastIndex := h.getLines(isLeft, viewPort.FirstLine, viewPort.Height)
 
-	return ui.ViewText{
+	return cui.ViewText{
 		Lines:    lines[firstIndex:lastIndex],
 		Total:    len(lines),
 		MaxWidth: h.maxWidth,
@@ -98,12 +98,12 @@ func (h *diffVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, i
 	return lines, firstIndex, lastIndex
 }
 
-func (h *diffVM) loadingText(isLeft bool) ui.ViewText {
+func (h *diffVM) loadingText(isLeft bool) cui.ViewText {
 	text := "Loading diff for " + h.commitID[:6]
 	if !isLeft {
 		text = ""
 	}
-	return ui.ViewText{Lines: []string{text}}
+	return cui.ViewText{Lines: []string{text}}
 }
 
 func (h *diffVM) setDiffSides(firstCharIndex int) {
@@ -122,7 +122,7 @@ func (h *diffVM) setDiffSides(firstCharIndex int) {
 		for _, ds := range df.SectionDiffs {
 			h.addDiffSectionHeader(ds)
 			h.addDiffSectionLines(ds)
-			h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
+			h.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 		}
 	}
 	h.addLeftAndRight("")
@@ -133,7 +133,7 @@ func (h *diffVM) addDiffSummery() {
 	for _, df := range h.commitDiff.FileDiffs {
 		diffType := h.toDiffType(df)
 		if df.DiffMode == git.DiffConflicts {
-			h.addLeft(ui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
+			h.addLeft(cui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
 		} else {
 			h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
 		}
@@ -153,11 +153,11 @@ func (h *diffVM) line(text string) string {
 func (h *diffVM) addFileHeader(df git.FileDiff) {
 	h.addLeftAndRight("")
 	h.addLeftAndRight("")
-	h.addLeftAndRight(ui.Blue(strings.Repeat("═", viewWidth)))
-	fileText := ui.Cyan(fmt.Sprintf("%s %s", h.toDiffType(df), df.PathAfter))
+	h.addLeftAndRight(cui.Blue(strings.Repeat("═", viewWidth)))
+	fileText := cui.Cyan(fmt.Sprintf("%s %s", h.toDiffType(df), df.PathAfter))
 	h.addLeftAndRight(fileText)
 	if df.IsRenamed {
-		renamedText := ui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
+		renamedText := cui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
 		h.addLeftAndRight(renamedText)
 	}
 }
@@ -165,8 +165,8 @@ func (h *diffVM) addFileHeader(df git.FileDiff) {
 func (h *diffVM) addDiffSectionHeader(ds git.SectionDiff) {
 	h.addLeftAndRight("")
 	leftLines, rightLines := h.parseLinesTexts(ds)
-	h.add(ui.Dark(leftLines), ui.Dark(rightLines))
-	h.addLeftAndRight(ui.Dark(strings.Repeat("─", viewWidth)))
+	h.add(cui.Dark(leftLines), cui.Dark(rightLines))
+	h.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 }
 
 func (h *diffVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
@@ -196,7 +196,7 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 			h.addBlocks(leftBlock, rightBlock)
 			leftBlock = nil
 			rightBlock = nil
-			h.addLeftAndRight(ui.Dark("=== Start of conflict "))
+			h.addLeftAndRight(cui.Dark("=== Start of conflict "))
 		case git.DiffConflictSplit:
 			diffMode = git.DiffConflictSplit
 		case git.DiffConflictEnd:
@@ -204,28 +204,28 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 			h.addBlocks(leftBlock, rightBlock)
 			leftBlock = nil
 			rightBlock = nil
-			h.addLeftAndRight(ui.Dark("=== End of conflict "))
+			h.addLeftAndRight(cui.Dark("=== End of conflict "))
 		case git.DiffRemoved:
 			if diffMode == git.DiffConflictStart {
-				leftBlock = append(leftBlock, ui.Yellow(l))
+				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
-				rightBlock = append(rightBlock, ui.Yellow(l))
+				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
-				leftBlock = append(leftBlock, ui.Red(l))
+				leftBlock = append(leftBlock, cui.Red(l))
 			}
 		case git.DiffAdded:
 			if diffMode == git.DiffConflictStart {
-				leftBlock = append(leftBlock, ui.Yellow(l))
+				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
-				rightBlock = append(rightBlock, ui.Yellow(l))
+				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
-				rightBlock = append(rightBlock, ui.Green(l))
+				rightBlock = append(rightBlock, cui.Green(l))
 			}
 		case git.DiffSame:
 			if diffMode == git.DiffConflictStart {
-				leftBlock = append(leftBlock, ui.Yellow(l))
+				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
-				rightBlock = append(rightBlock, ui.Yellow(l))
+				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
 				h.addBlocks(leftBlock, rightBlock)
 				leftBlock = nil
@@ -242,7 +242,7 @@ func (h *diffVM) addBlocks(left, right []string) {
 		h.leftLines = append(h.leftLines, left...)
 		h.leftLines = append(h.leftLines, right...)
 		for i := 0; i < len(left)+len(right); i++ {
-			h.rightLines = append(h.rightLines, ui.Dark(strings.Repeat("░", viewWidth)))
+			h.rightLines = append(h.rightLines, cui.Dark(strings.Repeat("░", viewWidth)))
 		}
 		return
 	}
@@ -251,12 +251,12 @@ func (h *diffVM) addBlocks(left, right []string) {
 	h.rightLines = append(h.rightLines, right...)
 	if len(left) > len(right) {
 		for i := 0; i < len(left)-len(right); i++ {
-			h.rightLines = append(h.rightLines, ui.Dark(strings.Repeat("░", viewWidth)))
+			h.rightLines = append(h.rightLines, cui.Dark(strings.Repeat("░", viewWidth)))
 		}
 	}
 	if len(right) > len(left) {
 		for i := 0; i < len(right)-len(left); i++ {
-			h.leftLines = append(h.leftLines, ui.Dark(strings.Repeat("░", viewWidth)))
+			h.leftLines = append(h.leftLines, cui.Dark(strings.Repeat("░", viewWidth)))
 		}
 	}
 }

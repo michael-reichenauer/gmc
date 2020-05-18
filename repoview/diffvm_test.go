@@ -1,9 +1,9 @@
 package repoview
 
 import (
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/tests"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -61,9 +61,9 @@ func TestConflicts_Manual(t *testing.T) {
 	vm := newDiffVM(viewer, getter, git.UncommittedID)
 	vm.load()
 	viewer.Run()
-	vtl, err := vm.getCommitDiffLeft(ui.ViewPage{Width: 10, Height: 1000})
+	vtl, err := vm.getCommitDiffLeft(cui.ViewPage{Width: 10, Height: 1000})
 	assert.NoError(t, err)
-	vtr, err := vm.getCommitDiffRight(ui.ViewPage{Width: 10, Height: 1000})
+	vtr, err := vm.getCommitDiffRight(cui.ViewPage{Width: 10, Height: 1000})
 	assert.NoError(t, err)
 	t.Logf("Left:\n%s", strings.Join(vtl.Lines, "\n"))
 	t.Logf("Right:\n%s", strings.Join(vtr.Lines, "\n"))
@@ -79,7 +79,7 @@ func TestDiffVM_Manual(t *testing.T) {
 	vm := newDiffVM(viewer, getter, id)
 	vm.load()
 	viewer.Run()
-	vt, err := vm.getCommitDiffLeft(ui.ViewPage{Width: 100, Height: 1000})
+	vt, err := vm.getCommitDiffLeft(cui.ViewPage{Width: 100, Height: 1000})
 	assert.NoError(t, err)
 	t.Logf("%s", strings.Join(vt.Lines, "\n"))
 }

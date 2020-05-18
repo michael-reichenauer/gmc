@@ -3,10 +3,10 @@ package repoview
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 	"testing"
 )
@@ -65,19 +65,19 @@ func (t uiMock) PostOnUIThread(f func()) {
 	go func() { t.uiWork <- f }()
 }
 
-func (t uiMock) NewView(text string) ui.View {
+func (t uiMock) NewView(text string) cui.View {
 	panic("implement me")
 }
 
-func (t uiMock) NewViewFromPageFunc(f func(viewPort ui.ViewPage) ui.ViewText) ui.View {
+func (t uiMock) NewViewFromPageFunc(f func(viewPort cui.ViewPage) cui.ViewText) cui.View {
 	panic("implement me")
 }
 
-func (t uiMock) NewViewFromTextFunc(f func(viewPage ui.ViewPage) string) ui.View {
+func (t uiMock) NewViewFromTextFunc(f func(viewPage cui.ViewPage) string) cui.View {
 	panic("implement me")
 }
 
-func (t uiMock) ShowProgress(format string, v ...interface{}) ui.Progress {
+func (t uiMock) ShowProgress(format string, v ...interface{}) cui.Progress {
 	log.Infof("Progress %q", fmt.Sprintf(format, v...))
 	return newProgressMock()
 }
@@ -93,7 +93,7 @@ func (t uiMock) ShowErrorMessageBox(format string, v ...interface{}) {
 func (t uiMock) ResizeAllViews() {
 }
 
-func (t uiMock) NewMenu(title string) ui.Menu {
+func (t uiMock) NewMenu(title string) cui.Menu {
 	panic("implement me")
 }
 
@@ -113,7 +113,7 @@ func TestViewCurrent(t *testing.T) {
 	defer vm.close()
 	vm.triggerRefresh()
 	uim.Run()
-	vp, _ := vm.GetRepoPage(ui.ViewPage{Height: 10050, Width: 80})
+	vp, _ := vm.GetRepoPage(cui.ViewPage{Height: 10050, Width: 80})
 	fmt.Printf("%s\n", strings.Join(vp.lines, "\n"))
 }
 
@@ -129,7 +129,7 @@ func TestViewAcs(t *testing.T) {
 	defer vm.close()
 	vm.triggerRefresh()
 	uim.Run()
-	vp, _ := vm.GetRepoPage(ui.ViewPage{Height: 10050, Width: 80})
+	vp, _ := vm.GetRepoPage(cui.ViewPage{Height: 10050, Width: 80})
 	fmt.Printf("%s\n", strings.Join(vp.lines, "\n"))
 }
 

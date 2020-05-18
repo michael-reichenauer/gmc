@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
 type DiffView interface {
@@ -14,10 +14,10 @@ type DiffView interface {
 }
 
 type diffView struct {
-	ui        ui.UI
+	ui        cui.UI
 	vm        *diffVM
-	leftSide  ui.View
-	rightSide ui.View
+	leftSide  cui.View
+	rightSide cui.View
 	commitID  string
 	isUnified bool
 }
@@ -26,7 +26,7 @@ func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewDiffView(ui ui.UI, diffGetter DiffGetter, commitID string) DiffView {
+func NewDiffView(ui cui.UI, diffGetter DiffGetter, commitID string) DiffView {
 	t := &diffView{
 		ui:       ui,
 		commitID: commitID,
@@ -38,7 +38,7 @@ func NewDiffView(ui ui.UI, diffGetter DiffGetter, commitID string) DiffView {
 	return t
 }
 
-func (t *diffView) newLeftSide() ui.View {
+func (t *diffView) newLeftSide() cui.View {
 	view := t.ui.NewViewFromPageFunc(t.viewDataLeft)
 	view.Properties().OnLoad = t.vm.load
 	view.Properties().OnMoved = t.onMovedLeft
@@ -62,7 +62,7 @@ func (t *diffView) newLeftSide() ui.View {
 	return view
 }
 
-func (t *diffView) newRightSide() ui.View {
+func (t *diffView) newRightSide() cui.View {
 	view := t.ui.NewViewFromPageFunc(t.viewDataRight)
 	view.Properties().OnMoved = t.onMovedRight
 	view.Properties().Name = "DiffViewRight"
@@ -74,18 +74,18 @@ func (t *diffView) newRightSide() ui.View {
 	return view
 }
 
-func (t *diffView) viewDataLeft(viewPort ui.ViewPage) ui.ViewText {
+func (t *diffView) viewDataLeft(viewPort cui.ViewPage) cui.ViewText {
 	diff, err := t.vm.getCommitDiffLeft(viewPort)
 	if err != nil {
-		return ui.ViewText{}
+		return cui.ViewText{}
 	}
 	return diff
 }
 
-func (t *diffView) viewDataRight(viewPort ui.ViewPage) ui.ViewText {
+func (t *diffView) viewDataRight(viewPort cui.ViewPage) cui.ViewText {
 	diff, err := t.vm.getCommitDiffRight(viewPort)
 	if err != nil {
-		return ui.ViewText{}
+		return cui.ViewText{}
 	}
 	return diff
 }
@@ -123,21 +123,21 @@ func (t *diffView) NotifyChanged() {
 	t.rightSide.NotifyChanged()
 }
 
-func (t *diffView) getBounds() (ui.BoundFunc, ui.BoundFunc) {
-	left := func(w, h int) ui.Rect {
+func (t *diffView) getBounds() (cui.BoundFunc, cui.BoundFunc) {
+	left := func(w, h int) cui.Rect {
 		if t.isUnified {
-			return ui.Rect{X: 0, Y: 1, W: w - 1, H: h - 1}
+			return cui.Rect{X: 0, Y: 1, W: w - 1, H: h - 1}
 		}
 		wl := w/2 - 2
-		return ui.Rect{X: 0, Y: 1, W: wl, H: h - 1}
+		return cui.Rect{X: 0, Y: 1, W: wl, H: h - 1}
 	}
-	right := func(w, h int) ui.Rect {
+	right := func(w, h int) cui.Rect {
 		if t.isUnified {
-			return ui.Rect{W: 1, H: 1}
+			return cui.Rect{W: 1, H: 1}
 		}
 		wl := w/2 - 2
 		wr := w - wl - 3
-		return ui.Rect{X: wl + 2, Y: 1, W: wr, H: h - 1}
+		return cui.Rect{X: wl + 2, Y: 1, W: wr, H: h - 1}
 	}
 	return left, right
 }
@@ -186,11 +186,11 @@ func (t *diffView) scrollHorizontalRight() {
 func (t *diffView) showContextMenu(x int, y int) {
 	cm := t.ui.NewMenu("")
 	if t.isUnified {
-		cm.Add(ui.MenuItem{Text: "Show Split Diff", Key: "2", Action: func() { t.ToSideBySide() }})
+		cm.Add(cui.MenuItem{Text: "Show Split Diff", Key: "2", Action: func() { t.ToSideBySide() }})
 	} else {
-		cm.Add(ui.MenuItem{Text: "Show Unified Diff", Key: "1", Action: func() { t.ToUnified() }})
+		cm.Add(cui.MenuItem{Text: "Show Unified Diff", Key: "1", Action: func() { t.ToUnified() }})
 	}
 
-	cm.Add(ui.MenuItem{Text: "Close", Key: "Esc", Action: t.Close})
+	cm.Add(cui.MenuItem{Text: "Close", Key: "Esc", Action: t.Close})
 	cm.Show(x+3, y+2)
 }

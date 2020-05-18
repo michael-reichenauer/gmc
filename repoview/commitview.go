@@ -2,9 +2,9 @@ package repoview
 
 import (
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
 
@@ -13,17 +13,17 @@ type Committer interface {
 	Commit(message string) error
 }
 
-func NewCommitView(ui ui.UI, committer Committer) *CommitView {
+func NewCommitView(ui cui.UI, committer Committer) *CommitView {
 	h := &CommitView{ui: ui, committer: committer}
 	return h
 }
 
 type CommitView struct {
-	ui          ui.UI
+	ui          cui.UI
 	committer   Committer
-	boxView     ui.View
-	textView    ui.View
-	buttonsView ui.View
+	boxView     cui.View
+	textView    cui.View
+	buttonsView cui.View
 }
 
 func (h *CommitView) Show(message string) {
@@ -43,7 +43,7 @@ func (h *CommitView) Show(message string) {
 	h.textView.SetCurrentView()
 }
 
-func (h *CommitView) newCommitView() ui.View {
+func (h *CommitView) newCommitView() cui.View {
 	view := h.ui.NewView("")
 	view.Properties().Title = "Commit on: " + "branch name"
 	view.Properties().Name = "CommitView"
@@ -53,7 +53,7 @@ func (h *CommitView) newCommitView() ui.View {
 	return view
 }
 
-func (h *CommitView) newButtonsView() ui.View {
+func (h *CommitView) newButtonsView() cui.View {
 	view := h.ui.NewView(" [OK] [Cancel]")
 	view.Properties().OnMouseLeft = h.onButtonsClick
 	view.Properties().HideHorizontalScrollbar = true
@@ -62,7 +62,7 @@ func (h *CommitView) newButtonsView() ui.View {
 	return view
 }
 
-func (h *CommitView) newTextView(text string) ui.View {
+func (h *CommitView) newTextView(text string) cui.View {
 	view := h.ui.NewView(text)
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().IsEditable = true
@@ -81,13 +81,13 @@ func (h *CommitView) Close() {
 	h.boxView.Close()
 }
 
-func (h *CommitView) getBounds() (ui.BoundFunc, ui.BoundFunc, ui.BoundFunc) {
-	box := ui.CenterBounds(10, 5, 70, 15)
-	text := ui.Relative(box, func(b ui.Rect) ui.Rect {
-		return ui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - 2}
+func (h *CommitView) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
+	box := cui.CenterBounds(10, 5, 70, 15)
+	text := cui.Relative(box, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - 2}
 	})
-	buttons := ui.Relative(box, func(b ui.Rect) ui.Rect {
-		return ui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
+	buttons := cui.Relative(box, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
 	})
 	return box, text, buttons
 }

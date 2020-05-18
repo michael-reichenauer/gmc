@@ -4,27 +4,27 @@ import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	"path/filepath"
 	"sort"
 	"strings"
 )
 
-func (h *MainWindow) GetOpenRepoMenuItem() ui.MenuItem {
-	return ui.MenuItem{Text: "Open repo", Title: "Open Repo", Key: "Ctrl-O",
+func (h *MainWindow) GetOpenRepoMenuItem() cui.MenuItem {
+	return cui.MenuItem{Text: "Open repo", Title: "Open Repo", Key: "Ctrl-O",
 		SubItems: h.OpenRepoMenuItems()}
 }
 
-func (h *MainWindow) GetOpenRepoMenu() ui.Menu {
+func (h *MainWindow) GetOpenRepoMenu() cui.Menu {
 	menu := h.ui.NewMenu("Open repo")
 	menu.AddItems(h.OpenRepoMenuItems())
 	return menu
 }
 
-func (h *MainWindow) GetStartMenu() ui.Menu {
+func (h *MainWindow) GetStartMenu() cui.Menu {
 	menu := h.ui.NewMenu("Open repo")
 	menu.AddItems(h.OpenRepoMenuItems2())
 	return menu
@@ -51,76 +51,76 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 	})
 }
 
-func (h *MainWindow) OpenRepoMenuItems() []ui.MenuItem {
-	return []ui.MenuItem{
+func (h *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
+	return []cui.MenuItem{
 		h.RecentReposMenuItem(),
 		h.getOpenMenuItem(),
 	}
 }
 
-func (h *MainWindow) OpenRepoMenuItems2() []ui.MenuItem {
+func (h *MainWindow) OpenRepoMenuItems2() []cui.MenuItem {
 	items := h.getRecentMenuItems()
 	if len(items) > 0 {
-		items = append(items, ui.SeparatorMenuItem)
+		items = append(items, cui.SeparatorMenuItem)
 	}
 	items = append(items, h.getOpenMenuItem())
 	return items
 }
 
-func (h *MainWindow) RecentReposMenuItem() ui.MenuItem {
-	return ui.MenuItem{Text: "Recent Repos", Title: "Recent Repos", SubItems: h.getRecentMenuItems()}
+func (h *MainWindow) RecentReposMenuItem() cui.MenuItem {
+	return cui.MenuItem{Text: "Recent Repos", Title: "Recent Repos", SubItems: h.getRecentMenuItems()}
 }
 
-func (h *MainWindow) getRecentMenuItems() []ui.MenuItem {
-	var items []ui.MenuItem
+func (h *MainWindow) getRecentMenuItems() []cui.MenuItem {
+	var items []cui.MenuItem
 	for _, f := range h.configService.GetState().RecentFolders {
 		path := f
-		items = append(items, ui.MenuItem{Text: path, Action: func() {
+		items = append(items, cui.MenuItem{Text: path, Action: func() {
 			h.OpenRepo(path)
 		}})
 	}
 	return items
 }
 
-func (h *MainWindow) getOpenMenuItem() ui.MenuItem {
+func (h *MainWindow) getOpenMenuItem() cui.MenuItem {
 	paths := h.configService.GetState().RecentParentFolders
 	paths = append(paths, utils.GetVolumes()...)
 	if len(paths) == 1 {
-		return ui.MenuItem{Text: "Open", Title: paths[0], SubItemsFunc: func() []ui.MenuItem {
+		return cui.MenuItem{Text: "Open", Title: paths[0], SubItemsFunc: func() []cui.MenuItem {
 			return h.getFolderItems(paths[0], func(folder string) { h.OpenRepo(folder) })
 		}}
 	}
 
-	var items []ui.MenuItem
+	var items []cui.MenuItem
 	for _, p := range paths {
 		path := p
 		items = append(items,
-			ui.MenuItem{Text: path, Title: path, SubItemsFunc: func() []ui.MenuItem {
+			cui.MenuItem{Text: path, Title: path, SubItemsFunc: func() []cui.MenuItem {
 				return h.getFolderItems(path, func(folder string) { h.OpenRepo(folder) })
 			}})
 	}
-	return ui.MenuItem{Text: "Open Repo", SubItems: items}
+	return cui.MenuItem{Text: "Open Repo", SubItems: items}
 }
 
-func (h *MainWindow) getFolderItems(folder string, action func(f string)) []ui.MenuItem {
+func (h *MainWindow) getFolderItems(folder string, action func(f string)) []cui.MenuItem {
 	files, err := ioutil.ReadDir(folder)
 	if err != nil {
 		// Folder not readable, might be e.g. access denied
 		return nil
 	}
 
-	var items []ui.MenuItem
+	var items []cui.MenuItem
 
 	for _, f := range files {
 		if !f.IsDir() || f.Name() == "$RECYCLE.BIN" {
 			continue
 		}
 		path := filepath.Join(folder, f.Name())
-		items = append(items, ui.MenuItem{
+		items = append(items, cui.MenuItem{
 			Text:   f.Name(),
 			Title:  path,
 			Action: func() { action(path) },
-			SubItemsFunc: func() []ui.MenuItem {
+			SubItemsFunc: func() []cui.MenuItem {
 				return h.getFolderItems(path, action)
 			},
 			ReuseBounds: true,

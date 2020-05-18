@@ -4,20 +4,20 @@ import (
 	"fmt"
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
 type mainService interface {
 	ToggleShowDetails()
-	MainMenuItem() ui.MenuItem
-	OpenRepoMenuItems() []ui.MenuItem
-	RecentReposMenuItem() ui.MenuItem
+	MainMenuItem() cui.MenuItem
+	OpenRepoMenuItems() []cui.MenuItem
+	RecentReposMenuItem() cui.MenuItem
 }
 
 type RepoView struct {
-	view        ui.View
-	ui          ui.UI
+	view        cui.View
+	ui          cui.UI
 	mainService mainService
 	vm          *repoVM
 	menuService *menuService
@@ -34,7 +34,7 @@ func (t *RepoView) ScrollVertical(scroll int) {
 
 }
 
-func NewRepoView(ui ui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
+func NewRepoView(ui cui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
 	h := &RepoView{
 		ui:          ui,
 		mainService: mainService,
@@ -45,7 +45,7 @@ func NewRepoView(ui ui.UI, configService *config.Service, mainService mainServic
 	return h
 }
 
-func (t *RepoView) newView() ui.View {
+func (t *RepoView) newView() cui.View {
 	view := t.ui.NewViewFromPageFunc(t.viewPageData)
 	view.Properties().OnLoad = t.onLoad
 	view.Properties().Name = "RepoView"
@@ -75,7 +75,7 @@ func (t *RepoView) newView() ui.View {
 }
 
 func (t *RepoView) Show() {
-	t.view.Show(ui.FullScreen())
+	t.view.Show(cui.FullScreen())
 	t.view.SetCurrentView()
 	t.view.SetTop()
 }
@@ -89,10 +89,10 @@ func (t *RepoView) NotifyChanged() {
 	t.view.NotifyChanged()
 }
 
-func (t *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
+func (t *RepoView) viewPageData(viewPort cui.ViewPage) cui.ViewText {
 	repoPage, err := t.vm.GetRepoPage(viewPort)
 	if err != nil {
-		return ui.ViewText{Lines: []string{ui.Red(fmt.Sprintf("Error: %v", err))}}
+		return cui.ViewText{Lines: []string{cui.Red(fmt.Sprintf("Error: %v", err))}}
 	}
 
 	t.setWindowTitle(repoPage)
@@ -101,7 +101,7 @@ func (t *RepoView) viewPageData(viewPort ui.ViewPage) ui.ViewText {
 		//h.detailsView.SetCurrent(repoPage.currentIndex)
 	}
 
-	return ui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
+	return cui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
 }
 
 func (t *RepoView) onLoad() {
@@ -115,7 +115,7 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 	if port.uncommittedChanges > 0 {
 		changesText = fmt.Sprintf(" (*%d)", port.uncommittedChanges)
 	}
-	ui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s   (%s)",
+	cui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s   (%s)",
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
@@ -148,8 +148,8 @@ func (t *RepoView) showSearchView() {
 		return
 	}
 
-	mb := ui.Relative(ui.FullScreen(), func(b ui.Rect) ui.Rect {
-		return ui.Rect{X: b.X, Y: b.Y + 2, W: b.W, H: b.H - 2}
+	mb := cui.Relative(cui.FullScreen(), func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y + 2, W: b.W, H: b.H - 2}
 	})
 	t.view.SetBound(mb)
 
@@ -167,7 +167,7 @@ func (t *RepoView) CloseSearch() {
 		t.searchView = nil
 	}
 	t.vm.SetSearch("")
-	t.view.SetBound(ui.FullScreen())
+	t.view.SetBound(cui.FullScreen())
 }
 
 func (t *RepoView) nextView() {

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/michael-reichenauer/gmc/viewrepo/gitrepo"
 	"github.com/thoas/go-funk"
 	"hash/fnv"
@@ -21,19 +21,19 @@ const (
 	remoteMasterName = "origin/master"
 )
 
-var branchColors = []ui.Color{
-	ui.CRed,
-	ui.CBlue,
-	ui.CYellow,
-	ui.CGreen,
-	ui.CCyan,
-	ui.CRedDk,
-	ui.CGreenDk,
-	ui.CYellowDk,
+var branchColors = []cui.Color{
+	cui.CRed,
+	cui.CBlue,
+	cui.CYellow,
+	cui.CGreen,
+	cui.CCyan,
+	cui.CRedDk,
+	cui.CGreenDk,
+	cui.CYellowDk,
 	//ui.CBlueDk,
-	ui.CMagenta,
-	ui.CMagentaDk,
-	ui.CCyanDk,
+	cui.CMagenta,
+	cui.CMagentaDk,
+	cui.CCyanDk,
 }
 
 type Status struct {
@@ -309,19 +309,19 @@ func (t *Service) adjustCurrentBranchIfStatus(repo *viewRepo) {
 	}
 }
 
-func (t *Service) BranchColor(name string) ui.Color {
+func (t *Service) BranchColor(name string) cui.Color {
 	if strings.HasPrefix(name, "multiple@") {
-		return ui.CWhite
+		return cui.CWhite
 	}
 	color, ok := t.customBranchColors[name]
 	if ok {
-		return ui.Color(color)
+		return cui.Color(color)
 	}
 	if name == "master" {
-		return ui.CMagenta
+		return cui.CMagenta
 	}
 	if name == "develop" {
-		return ui.CRedDk
+		return cui.CRedDk
 	}
 
 	h := fnv.New32a()

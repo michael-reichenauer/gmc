@@ -7,11 +7,11 @@ import (
 	"github.com/michael-reichenauer/gmc/installation"
 	"github.com/michael-reichenauer/gmc/program"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"github.com/michael-reichenauer/gmc/utils/timer"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"io/ioutil"
 	stdlog "log"
 	_ "net/http/pprof"
@@ -76,7 +76,7 @@ func main() {
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
-	uiHandler := ui.NewUI()
+	uiHandler := cui.NewUI()
 	uiHandler.Run(func() {
 		log.Infof("Show main window %s", st)
 		mainWindow := program.NewMainWindow(uiHandler, configService)

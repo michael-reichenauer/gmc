@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/viewrepo"
 )
 
@@ -10,10 +10,10 @@ type repoGraph struct {
 }
 
 var (
-	currentCommitMarker = ui.White("●")
-	mergeInMarker       = ui.Dark("╮")
-	branchOurMarker     = ui.Dark("╭")
-	inOutMarker         = ui.Dark("<")
+	currentCommitMarker = cui.White("●")
+	mergeInMarker       = cui.Dark("╮")
+	branchOurMarker     = cui.Dark("╭")
+	inOutMarker         = cui.Dark("<")
 )
 
 func newRepoGraph() *repoGraph {

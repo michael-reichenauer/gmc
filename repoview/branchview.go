@@ -2,8 +2,8 @@ package repoview
 
 import (
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
 
@@ -11,17 +11,17 @@ type Brancher interface {
 	CreateBranch(name string)
 }
 
-func NewBranchView(ui ui.UI, brancher Brancher) *BranchView {
+func NewBranchView(ui cui.UI, brancher Brancher) *BranchView {
 	h := &BranchView{ui: ui, brancher: brancher}
 	return h
 }
 
 type BranchView struct {
-	ui          ui.UI
+	ui          cui.UI
 	brancher    Brancher
-	boxView     ui.View
-	textView    ui.View
-	buttonsView ui.View
+	boxView     cui.View
+	textView    cui.View
+	buttonsView cui.View
 }
 
 func (h *BranchView) Show() {
@@ -40,7 +40,7 @@ func (h *BranchView) Show() {
 	h.textView.SetCurrentView()
 }
 
-func (h *BranchView) newBranchView() ui.View {
+func (h *BranchView) newBranchView() cui.View {
 	view := h.ui.NewView("\n\nName:")
 	view.Properties().Title = "Create Branch"
 	view.Properties().Name = "CreateBranchDlg"
@@ -50,7 +50,7 @@ func (h *BranchView) newBranchView() ui.View {
 	return view
 }
 
-func (h *BranchView) newButtonsView() ui.View {
+func (h *BranchView) newButtonsView() cui.View {
 	view := h.ui.NewView(" [OK] [Cancel]")
 	view.Properties().OnMouseLeft = h.onButtonsClick
 	view.Properties().HideHorizontalScrollbar = true
@@ -59,7 +59,7 @@ func (h *BranchView) newButtonsView() ui.View {
 	return view
 }
 
-func (h *BranchView) newTextView() ui.View {
+func (h *BranchView) newTextView() cui.View {
 	view := h.ui.NewView("")
 	view.Properties().HasFrame = true
 	view.Properties().HideCurrentLineMarker = true
@@ -79,13 +79,13 @@ func (h *BranchView) Close() {
 	h.boxView.Close()
 }
 
-func (h *BranchView) getBounds() (ui.BoundFunc, ui.BoundFunc, ui.BoundFunc) {
-	box := ui.CenterBounds(35, 5, 35, 5)
-	text := ui.Relative(box, func(b ui.Rect) ui.Rect {
-		return ui.Rect{X: b.X + 7, Y: b.Y + 1, W: b.W - 9, H: 1}
+func (h *BranchView) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
+	box := cui.CenterBounds(35, 5, 35, 5)
+	text := cui.Relative(box, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X + 7, Y: b.Y + 1, W: b.W - 9, H: 1}
 	})
-	buttons := ui.Relative(box, func(b ui.Rect) ui.Rect {
-		return ui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
+	buttons := cui.Relative(box, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
 	})
 	return box, text, buttons
 }

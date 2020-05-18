@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/michael-reichenauer/gmc/viewrepo"
 )
 
@@ -19,8 +19,8 @@ type repoPage struct {
 }
 
 type repoVM struct {
-	ui                ui.UI
-	repoViewer        ui.Notifier
+	ui                cui.UI
+	repoViewer        cui.Notifier
 	mainService       mainService
 	viewModelService  *viewrepo.Service
 	repoLayout        *repoLayout
@@ -37,13 +37,13 @@ type repoVM struct {
 
 type trace struct {
 	RepoPath    string
-	ViewPage    ui.ViewPage
+	ViewPage    cui.ViewPage
 	BranchNames []string
 }
 
 func newRepoVM(
-	ui ui.UI,
-	repoViewer ui.Notifier,
+	ui cui.UI,
+	repoViewer cui.Notifier,
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
@@ -79,7 +79,7 @@ func (h *repoVM) close() {
 
 func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	h.viewModelService.StartMonitor(ctx)
-	var progress ui.Progress
+	var progress cui.Progress
 	for r := range h.viewModelService.RepoChanges {
 		log.Infof("Detected model change")
 		rc := r
@@ -118,7 +118,7 @@ func (h *repoVM) monitorModelRoutine(ctx context.Context) {
 	}
 }
 
-func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
+func (h *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 	firstIndex, lines := h.getLines(viewPage)
 	h.firstIndex = firstIndex
 	h.currentIndex = viewPage.CurrentLine
@@ -137,7 +137,7 @@ func (h *repoVM) GetRepoPage(viewPage ui.ViewPage) (repoPage, error) {
 	}, nil
 }
 
-func (h *repoVM) getLines(viewPage ui.ViewPage) (int, []string) {
+func (h *repoVM) getLines(viewPage cui.ViewPage) (int, []string) {
 	firstIndex, commits := h.getCommits(viewPage)
 	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "", h.repo)
 }
@@ -147,7 +147,7 @@ func (h *repoVM) isMoreClick(x int, y int) bool {
 	return x == moreX
 }
 
-func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewrepo.Commit) {
+func (h *repoVM) getCommits(viewPage cui.ViewPage) (int, []viewrepo.Commit) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
 	if count > len(h.repo.Commits) {

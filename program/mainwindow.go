@@ -4,19 +4,19 @@ import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/michael-reichenauer/gmc/viewrepo"
 )
 
 type MainWindow struct {
-	ui            ui.UI
+	ui            cui.UI
 	configService *config.Service
 	model         *viewrepo.Service
 	commitView    *repoview.CommitView
 }
 
-func NewMainWindow(ui ui.UI, configService *config.Service) *MainWindow {
+func NewMainWindow(ui cui.UI, configService *config.Service) *MainWindow {
 	return &MainWindow{
 		ui:            ui,
 		configService: configService,
@@ -49,11 +49,11 @@ func (h *MainWindow) getWorkingFolder() (string, error) {
 	return path, nil
 }
 
-func (h *MainWindow) MainMenuItem() ui.MenuItem {
-	var subItems []ui.MenuItem
+func (h *MainWindow) MainMenuItem() cui.MenuItem {
+	var subItems []cui.MenuItem
 	subItems = append(subItems, h.OpenRepoMenuItems()...)
-	subItems = append(subItems, ui.MenuItem{Text: "About", Action: h.showAbout})
-	menuItem := ui.MenuItem{
+	subItems = append(subItems, cui.MenuItem{Text: "About", Action: h.showAbout})
+	menuItem := cui.MenuItem{
 		Text:     "Main Menu",
 		Title:    "Main Menu",
 		SubItems: subItems,

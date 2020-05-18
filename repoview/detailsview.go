@@ -1,23 +1,23 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/viewrepo"
 )
 
 type DetailsView struct {
-	ui.View
+	cui.View
 	vm *detailsVM
 }
 
-func NewDetailsView(uiHandler ui.UI) *DetailsView {
+func NewDetailsView(uiHandler cui.UI) *DetailsView {
 	h := &DetailsView{vm: NewDetailsVM()}
 	h.View = uiHandler.NewViewFromTextFunc(h.viewData)
 	h.View.Properties().Name = "DetailsView"
 	return h
 }
 
-func (h *DetailsView) viewData(viewPage ui.ViewPage) string {
+func (h *DetailsView) viewData(viewPage cui.ViewPage) string {
 	details, err := h.vm.getCommitDetails(viewPage)
 	if err != nil {
 		return ""
