@@ -35,6 +35,8 @@ func main() {
 	Echo("Built version:")
 	echoBuiltVersion()
 
+	_ = OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new")
+
 	Echo("")
 	Echo("")
 }
@@ -45,7 +47,6 @@ func echoBuiltVersion() {
 		Must(Cmd("./gmc_linux", "-version"))
 	case "windows":
 		Must(Cmd("./gmc.exe", "-version"))
-		Must(OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new"))
 	case "darwin":
 		Must(Cmd("./gmc_mac", "-version"))
 	}
