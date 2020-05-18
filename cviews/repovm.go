@@ -1,4 +1,4 @@
-package repoview
+package cviews
 
 import (
 	"context"

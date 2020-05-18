@@ -1,4 +1,4 @@
-package repoview
+package cviews
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
