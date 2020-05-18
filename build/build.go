@@ -19,6 +19,8 @@ func main() {
 	Must(Cmd("go", "test", "-count=1", "./..."))
 	Echo("")
 
+	// linker flags "-ldflags", "-s -w" omits debug and symbols to reduce size
+	// ("-H=windowsgui" would disable console on windows)
 	Echo("Building gmc.exe ...")
 	env := []string{"GOOS=windows", "GOARCH=amd64"}
 	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
