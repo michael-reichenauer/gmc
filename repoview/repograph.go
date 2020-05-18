@@ -1,9 +1,9 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/viewrepo"
 )
 
 type repoGraph struct {
