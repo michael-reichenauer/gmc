@@ -1,4 +1,4 @@
-package cviews
+package console
 
 type line rune
 

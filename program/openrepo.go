@@ -2,7 +2,7 @@ package program
 
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/ui/cviews"
+	"github.com/michael-reichenauer/gmc/ui/console"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
@@ -41,7 +41,7 @@ func (h *MainWindow) OpenRepo(folderPath string) {
 	}
 	log.Infof("Got repo %q ...", workingFolder)
 
-	repoView := cviews.NewRepoView(h.ui, h.configService, h, workingFolder)
+	repoView := console.NewRepoView(h.ui, h.configService, h, workingFolder)
 	repoView.Show()
 
 	parent := filepath.Dir(workingFolder)

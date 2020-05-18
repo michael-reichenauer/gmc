@@ -1,4 +1,4 @@
-package cviews
+package console
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"

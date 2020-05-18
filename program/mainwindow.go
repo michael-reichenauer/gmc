@@ -2,7 +2,7 @@ package program
 
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/ui/cviews"
+	"github.com/michael-reichenauer/gmc/ui/console"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
@@ -13,7 +13,7 @@ type MainWindow struct {
 	ui            cui.UI
 	configService *config.Service
 	model         *viewrepo.Service
-	commitView    *cviews.CommitView
+	commitView    *console.CommitView
 }
 
 func NewMainWindow(ui cui.UI, configService *config.Service) *MainWindow {
