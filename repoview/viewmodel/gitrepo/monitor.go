@@ -93,10 +93,19 @@ func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 			// log.Infof("ignoring: %s", event.Name)
 		} else if h.isRepoChange(event.Name, fetchHeadPath, headPath, refsPath) {
 			// log.Infof("Repo change: %s", event.Name)
-			h.Changes <- repoChange
+			select {
+			case h.Changes <- repoChange:
+			case <-ctx.Done():
+				return
+			}
+
 		} else if h.isStatusChange(event.Name, gitPath) {
 			// log.Infof("Status change: %s", event.Name)
-			h.Changes <- statusChange
+			select {
+			case h.Changes <- statusChange:
+			case <-ctx.Done():
+				return
+			}
 		} else {
 			// fmt.Printf("ignoring: %s\n", event.Name)
 		}

@@ -20,7 +20,7 @@ type Branch struct {
 	IsNamedBranch bool
 }
 
-func newBranchFromGit(gb git.Branch) *Branch {
+func newGitBranch(gb git.Branch) *Branch {
 	return &Branch{
 		Name:        gb.Name,
 		DisplayName: gb.DisplayName,
@@ -32,7 +32,7 @@ func newBranchFromGit(gb git.Branch) *Branch {
 	}
 }
 
-func newNamedBranchFromID(commitID string, branchName string) *Branch {
+func newNamedBranch(commitID string, branchName string) *Branch {
 	sid := git.ToSid(commitID)
 	return &Branch{
 		Name:          fmt.Sprintf("%s:%s", branchName, sid),
@@ -42,7 +42,7 @@ func newNamedBranchFromID(commitID string, branchName string) *Branch {
 	}
 }
 
-func newBranchFromID(commitID string) *Branch {
+func newBranch(commitID string) *Branch {
 	sid := git.ToSid(commitID)
 	return &Branch{
 		Name:          fmt.Sprintf("branch:%s", sid),
@@ -52,7 +52,7 @@ func newBranchFromID(commitID string) *Branch {
 	}
 }
 
-func newMultiBranchFromID(commitID string) *Branch {
+func newMultiBranch(commitID string) *Branch {
 	sid := git.ToSid(commitID)
 	return &Branch{
 		Name:          fmt.Sprintf("multi:%s", sid),

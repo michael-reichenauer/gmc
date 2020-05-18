@@ -28,7 +28,7 @@ type Commit struct {
 	isLikely       bool
 }
 
-func newCommit(gc git.Commit) *Commit {
+func newGitCommit(gc git.Commit) *Commit {
 	return &Commit{
 		Id:         gc.ID,
 		Sid:        gc.SID,
@@ -51,14 +51,11 @@ func newPartialLogCommit() *Commit {
 		AuthorTime: time.Date(2000, 1, 1, 1, 1, 0, 0, time.UTC),
 	}
 }
-func (c *Commit) contains(lowerText string) bool {
-	return contains(c.Id, lowerText) ||
-		contains(c.Message, lowerText) ||
-		contains(c.Author, lowerText)
-}
 
-func contains(text, lowerSearch string) bool {
-	return strings.Contains(strings.ToLower(text), lowerSearch)
+func (c *Commit) containsText(lowerText string) bool {
+	return textContainsText(c.Id, lowerText) ||
+		textContainsText(c.Message, lowerText) ||
+		textContainsText(c.Author, lowerText)
 }
 
 func (c *Commit) addBranches(branches []*Branch) {
@@ -66,7 +63,7 @@ func (c *Commit) addBranches(branches []*Branch) {
 		c.Branches = branches
 		return
 	}
-	if areEqual(c.Branches, branches) {
+	if c.equalBranches(branches) {
 		return
 	}
 	for _, b := range branches {
@@ -94,14 +91,18 @@ func (c *Commit) String() string {
 	return fmt.Sprintf("%s %s (%s)", c.Sid, c.Subject, c.Branch)
 }
 
-func areEqual(a, b []*Branch) bool {
-	if len(a) != len(b) {
+func (c *Commit) equalBranches(branches []*Branch) bool {
+	if len(c.Branches) != len(branches) {
 		return false
 	}
-	for i, v := range a {
-		if v != b[i] && v.Name != b[i].Name {
+	for i, v := range c.Branches {
+		if v != branches[i] && v.Name != branches[i].Name {
 			return false
 		}
 	}
 	return true
+}
+
+func textContainsText(text, lowerSearch string) bool {
+	return strings.Contains(strings.ToLower(text), lowerSearch)
 }

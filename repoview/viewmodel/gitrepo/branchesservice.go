@@ -181,6 +181,7 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	c.Branch = repo.addMultiBranch(c)
 	c.addBranch(c.Branch)
 }
+
 func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	if len(c.Branches) < 1 {
 		return nil

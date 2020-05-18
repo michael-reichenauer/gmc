@@ -31,14 +31,14 @@ func (r Repo) SearchCommits(searchText string) []*Commit {
 	// Remember tag commits which contain the search string
 	tagCommits := make(map[string]bool)
 	for _, tag := range r.Tags {
-		if contains(tag.TagName, searchText) {
+		if textContainsText(tag.TagName, searchText) {
 			tagCommits[tag.CommitID] = true
 		}
 	}
 
 	var commits []*Commit
 	for _, c := range r.Commits {
-		if c.contains(searchText) {
+		if c.containsText(searchText) {
 			// The commit contained the search string
 			commits = append(commits, c)
 			continue
@@ -96,7 +96,7 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 	isPartialNeeded := false
 	for i := len(gitCommits) - 1; i > -1; i-- {
 		gc := gitCommits[i]
-		commit := newCommit(gc)
+		commit := newGitCommit(gc)
 		if isPartialPossible {
 			if len(commit.ParentIDs) == 1 {
 				if _, ok := r.commitById[commit.ParentIDs[0]]; !ok {
@@ -137,7 +137,7 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 
 func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 	for _, gb := range gitBranches {
-		r.Branches = append(r.Branches, newBranchFromGit(gb))
+		r.Branches = append(r.Branches, newGitBranch(gb))
 	}
 	// Set local name of all remote branches, that have a local branch as well
 	for _, b := range r.Branches {
@@ -154,19 +154,19 @@ func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 }
 
 func (r *Repo) addMultiBranch(c *Commit) *Branch {
-	b := newMultiBranchFromID(c.Id)
+	b := newMultiBranch(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
 }
 
 func (r *Repo) addNamedBranch(c *Commit, branchName string) *Branch {
-	b := newNamedBranchFromID(c.Id, branchName)
+	b := newNamedBranch(c.Id, branchName)
 	r.Branches = append(r.Branches, b)
 	return b
 }
 
 func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
-	b := newBranchFromID(c.Id)
+	b := newBranch(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
 }
