@@ -1,6 +1,7 @@
 package gitrepo
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
@@ -19,7 +20,7 @@ type Branch struct {
 	IsNamedBranch bool
 }
 
-func newBranch(gb git.Branch) *Branch {
+func newBranchFromGit(gb git.Branch) *Branch {
 	return &Branch{
 		Name:        gb.Name,
 		DisplayName: gb.DisplayName,
@@ -28,6 +29,36 @@ func newBranch(gb git.Branch) *Branch {
 		IsRemote:    gb.IsRemote,
 		RemoteName:  gb.RemoteName,
 		IsGitBranch: true,
+	}
+}
+
+func newNamedBranchFromID(commitID string, branchName string) *Branch {
+	sid := git.ToSid(commitID)
+	return &Branch{
+		Name:          fmt.Sprintf("%s:%s", branchName, sid),
+		DisplayName:   branchName,
+		TipID:         commitID,
+		IsNamedBranch: true,
+	}
+}
+
+func newBranchFromID(commitID string) *Branch {
+	sid := git.ToSid(commitID)
+	return &Branch{
+		Name:          fmt.Sprintf("branch:%s", sid),
+		DisplayName:   fmt.Sprintf("branch@%s", sid),
+		TipID:         commitID,
+		IsNamedBranch: true,
+	}
+}
+
+func newMultiBranchFromID(commitID string) *Branch {
+	sid := git.ToSid(commitID)
+	return &Branch{
+		Name:          fmt.Sprintf("multi:%s", sid),
+		DisplayName:   fmt.Sprintf("multiple@%s", sid),
+		TipID:         commitID,
+		IsMultiBranch: true,
 	}
 }
 

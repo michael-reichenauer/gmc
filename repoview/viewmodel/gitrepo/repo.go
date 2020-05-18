@@ -137,7 +137,7 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 
 func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 	for _, gb := range gitBranches {
-		r.Branches = append(r.Branches, newBranch(gb))
+		r.Branches = append(r.Branches, newBranchFromGit(gb))
 	}
 	// Set local name of all remote branches, that have a local branch as well
 	for _, b := range r.Branches {
@@ -154,42 +154,19 @@ func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 }
 
 func (r *Repo) addMultiBranch(c *Commit) *Branch {
-	b := &Branch{
-		Name:          fmt.Sprintf("multi:%s", c.Sid),
-		DisplayName:   fmt.Sprintf("multiple@%s", c.Sid),
-		TipID:         c.Id,
-		IsCurrent:     false,
-		IsGitBranch:   false,
-		IsMultiBranch: true,
-		IsNamedBranch: false,
-	}
+	b := newMultiBranchFromID(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
 }
 
 func (r *Repo) addNamedBranch(c *Commit, branchName string) *Branch {
-	b := &Branch{
-		Name:          fmt.Sprintf("%s:%s", branchName, c.Sid),
-		DisplayName:   branchName,
-		TipID:         c.Id,
-		IsCurrent:     false,
-		IsGitBranch:   false,
-		IsMultiBranch: false,
-		IsNamedBranch: true,
-	}
+	b := newNamedBranchFromID(c.Id, branchName)
 	r.Branches = append(r.Branches, b)
 	return b
 }
+
 func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
-	b := &Branch{
-		Name:          fmt.Sprintf("branch:%s", c.Sid),
-		DisplayName:   fmt.Sprintf("branch@%s", c.Sid),
-		TipID:         c.Id,
-		IsCurrent:     false,
-		IsGitBranch:   false,
-		IsMultiBranch: false,
-		IsNamedBranch: true,
-	}
+	b := newBranchFromID(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
 }
