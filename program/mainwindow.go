@@ -3,7 +3,7 @@ package program
 import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/repoview"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/ui"
@@ -12,7 +12,7 @@ import (
 type MainWindow struct {
 	ui            ui.UI
 	configService *config.Service
-	model         *viewmodel.Service
+	model         *viewrepo.Service
 	commitView    *repoview.CommitView
 }
 

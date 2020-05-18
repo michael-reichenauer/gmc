@@ -1,7 +1,7 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
 
@@ -25,7 +25,7 @@ func (h *DetailsView) viewData(viewPage ui.ViewPage) string {
 	return details
 }
 
-func (h *DetailsView) SetCurrent(commit viewmodel.Commit) {
+func (h *DetailsView) SetCurrent(commit viewrepo.Commit) {
 	h.vm.setCurrentCommit(commit)
 	h.NotifyChanged()
 }

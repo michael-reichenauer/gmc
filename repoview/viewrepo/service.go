@@ -1,10 +1,10 @@
-package viewmodel
+package viewrepo
 
 import (
 	"context"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"

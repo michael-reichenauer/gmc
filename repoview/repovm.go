@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
@@ -22,13 +22,13 @@ type repoVM struct {
 	ui                ui.UI
 	repoViewer        ui.Notifier
 	mainService       mainService
-	viewModelService  *viewmodel.Service
+	viewModelService  *viewrepo.Service
 	repoLayout        *repoLayout
 	isDetails         bool
 	workingFolder     string
 	cancel            context.CancelFunc
-	repo              viewmodel.ViewRepo
-	searchRepo        viewmodel.ViewRepo
+	repo              viewrepo.ViewRepo
+	searchRepo        viewrepo.ViewRepo
 	firstIndex        int
 	currentIndex      int
 	onRepoUpdatedFunc func()
@@ -47,7 +47,7 @@ func newRepoVM(
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
-	viewModelService := viewmodel.NewService(configService, workingFolder)
+	viewModelService := viewrepo.NewService(configService, workingFolder)
 	return &repoVM{
 		ui:               ui,
 		repoViewer:       repoViewer,
@@ -147,7 +147,7 @@ func (h *repoVM) isMoreClick(x int, y int) bool {
 	return x == moreX
 }
 
-func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewmodel.Commit) {
+func (h *repoVM) getCommits(viewPage ui.ViewPage) (int, []viewrepo.Commit) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
 	if count > len(h.repo.Commits) {
@@ -187,44 +187,44 @@ func (h *repoVM) showSelectedCommitDiff() {
 	h.showCommitDiff(c.ID)
 }
 
-func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []viewmodel.Branch {
+func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []viewrepo.Branch {
 	c := h.repo.Commits[selectedIndex]
-	if c.More == viewmodel.MoreNone {
+	if c.More == viewrepo.MoreNone {
 		return nil
 	}
 
 	return h.viewModelService.GetCommitOpenInBranches(c.ID, h.repo)
 }
 
-func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []viewmodel.Branch {
+func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []viewrepo.Branch {
 	c := h.repo.Commits[selectedIndex]
-	if c.More == viewmodel.MoreNone {
+	if c.More == viewrepo.MoreNone {
 		return nil
 	}
 
 	return h.viewModelService.GetCommitOpenOutBranches(c.ID, h.repo)
 }
 
-func (h *repoVM) CurrentNotShownBranch() (viewmodel.Branch, bool) {
+func (h *repoVM) CurrentNotShownBranch() (viewrepo.Branch, bool) {
 	current, ok := h.viewModelService.CurrentNotShownBranch(h.repo)
 
 	return current, ok
 }
 
-func (h *repoVM) CurrentBranch() (viewmodel.Branch, bool) {
+func (h *repoVM) CurrentBranch() (viewrepo.Branch, bool) {
 	current, ok := h.viewModelService.CurrentBranch(h.repo)
 	return current, ok
 }
 
-func (h *repoVM) GetLatestBranches(skipShown bool) []viewmodel.Branch {
+func (h *repoVM) GetLatestBranches(skipShown bool) []viewrepo.Branch {
 	return h.viewModelService.GetLatestBranches(h.repo, skipShown)
 }
 
-func (h *repoVM) GetAllBranches(skipShown bool) []viewmodel.Branch {
+func (h *repoVM) GetAllBranches(skipShown bool) []viewrepo.Branch {
 	return h.viewModelService.GetAllBranches(h.repo, skipShown)
 }
 
-func (h *repoVM) GetShownBranches(skipMaster bool) []viewmodel.Branch {
+func (h *repoVM) GetShownBranches(skipMaster bool) []viewrepo.Branch {
 	return h.viewModelService.GetShownBranches(h.repo, skipMaster)
 }
 

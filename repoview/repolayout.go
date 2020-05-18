@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
@@ -27,10 +27,10 @@ func newRepoLayout(branchColors branchColors) *repoLayout {
 }
 
 func (t *repoLayout) getPageLines(
-	commits []viewmodel.Commit,
+	commits []viewrepo.Commit,
 	viewWidth int,
 	currentBranchDisplayName string,
-	repo viewmodel.ViewRepo) []string {
+	repo viewrepo.ViewRepo) []string {
 	if len(commits) < 1 {
 		return nil
 	}
@@ -58,12 +58,12 @@ func (t *repoLayout) getPageLines(
 	return lines
 }
 
-func (t *repoLayout) getMoreIndex(repo viewmodel.ViewRepo) int {
+func (t *repoLayout) getMoreIndex(repo viewrepo.ViewRepo) int {
 	graphWidth := t.getGraphWidth(repo.Commits)
 	return graphWidth - 2
 }
 
-func (t *repoLayout) getGraphWidth(commits []viewmodel.Commit) int {
+func (t *repoLayout) getGraphWidth(commits []viewrepo.Commit) int {
 	if len(commits) == 0 {
 		return 0
 	}
@@ -93,27 +93,27 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 	return
 }
 
-func (t *repoLayout) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
+func (t *repoLayout) writeGraph(sb *strings.Builder, c viewrepo.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
 		// Normal branch color
 		bColor := t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
 		//	if i != 0 {
 		cColor := bColor
-		if c.Graph[i].Connect == viewmodel.BPass &&
+		if c.Graph[i].Connect == viewrepo.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
 			cColor = t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if c.Graph[i].Connect.Has(viewmodel.BPass) {
+		} else if c.Graph[i].Connect.Has(viewrepo.BPass) {
 			cColor = ui.CWhite
 		}
 		sb.WriteString(ui.ColorRune(cColor, t.repoGraph.graphConnectRune(c.Graph[i].Connect)))
 		//	}
 
-		if c.Graph[i].Branch == viewmodel.BPass &&
+		if c.Graph[i].Branch == viewrepo.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
 			bColor = t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if c.Graph[i].Branch == viewmodel.BPass {
+		} else if c.Graph[i].Branch == viewrepo.BPass {
 			bColor = ui.CWhite
 		}
 
@@ -121,7 +121,7 @@ func (t *repoLayout) writeGraph(sb *strings.Builder, c viewmodel.Commit) {
 	}
 }
 
-func (t *repoLayout) writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit) {
+func (t *repoLayout) writeCurrentMarker(sb *strings.Builder, c viewrepo.Commit) {
 	if c.IsCurrent {
 		sb.WriteString(currentCommitMarker)
 	} else {
@@ -129,19 +129,19 @@ func (t *repoLayout) writeCurrentMarker(sb *strings.Builder, c viewmodel.Commit)
 	}
 }
 
-func (t *repoLayout) writeMoreMarker(sb *strings.Builder, c viewmodel.Commit) {
-	if c.More.Has(viewmodel.MoreMergeIn) && c.More.Has(viewmodel.MoreBranchOut) {
+func (t *repoLayout) writeMoreMarker(sb *strings.Builder, c viewrepo.Commit) {
+	if c.More.Has(viewrepo.MoreMergeIn) && c.More.Has(viewrepo.MoreBranchOut) {
 		sb.WriteString(inOutMarker)
-	} else if c.More.Has(viewmodel.MoreMergeIn) {
+	} else if c.More.Has(viewrepo.MoreMergeIn) {
 		sb.WriteString(mergeInMarker)
-	} else if c.More.Has(viewmodel.MoreBranchOut) {
+	} else if c.More.Has(viewrepo.MoreBranchOut) {
 		sb.WriteString(branchOurMarker)
 	} else {
 		sb.WriteString(" ")
 	}
 }
 
-func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Commit) {
+func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c viewrepo.Commit) {
 	if c.IsLocalOnly {
 		sb.WriteString(ui.GreenDk("▲"))
 	} else if c.IsRemoteOnly {
@@ -151,12 +151,12 @@ func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c viewmodel.Com
 	}
 }
 
-func (t *repoLayout) writeAuthor(sb *strings.Builder, commit viewmodel.Commit, length int) {
+func (t *repoLayout) writeAuthor(sb *strings.Builder, commit viewrepo.Commit, length int) {
 	sb.WriteString(ui.Dark(utils.Text(commit.Author, length)))
 }
 
-func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, length int) {
-	if c.ID == viewmodel.UncommittedID {
+func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewrepo.Commit, length int) {
+	if c.ID == viewrepo.UncommittedID {
 		sb.WriteString(ui.Dark(utils.Text("", length)))
 		return
 	}
@@ -167,15 +167,15 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewmodel.Commit, le
 	sb.WriteString(ui.Dark(utils.Text(tt, length)))
 }
 
-func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, currentBranchDisplayName string, length int, repo viewmodel.ViewRepo) {
+func (t *repoLayout) writeSubject(sb *strings.Builder, c viewrepo.Commit, currentBranchDisplayName string, length int, repo viewrepo.ViewRepo) {
 	tagsText := t.toTagsText(c, length)
 
 	subject := utils.Text(c.Subject, length-len(tagsText))
-	if c.ID == viewmodel.PartialLogCommitID {
+	if c.ID == viewrepo.PartialLogCommitID {
 		sb.WriteString(ui.Dark(subject))
 		return
 	}
-	if c.ID == viewmodel.UncommittedID {
+	if c.ID == viewrepo.UncommittedID {
 		if repo.Conflicts > 0 {
 			sb.WriteString(ui.Red(subject))
 			return
@@ -201,7 +201,7 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c viewmodel.Commit, curre
 	sb.WriteString(ui.ColorText(color, subject))
 }
 
-func (t *repoLayout) toTagsText(c viewmodel.Commit, lenght int) string {
+func (t *repoLayout) toTagsText(c viewrepo.Commit, lenght int) string {
 	if len(c.Tags) == 0 {
 		return ""
 	}

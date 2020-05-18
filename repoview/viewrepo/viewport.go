@@ -1,4 +1,4 @@
-package viewmodel
+package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"

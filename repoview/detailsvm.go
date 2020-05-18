@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"strings"
 )
@@ -13,7 +13,7 @@ var (
 )
 
 type detailsVM struct {
-	currentCommit viewmodel.Commit
+	currentCommit viewrepo.Commit
 }
 
 func NewDetailsVM() *detailsVM {
@@ -26,7 +26,7 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(h.toViewLine(width, c.Branch) + "\n")
 	id := c.ID
-	if id == viewmodel.UncommittedID {
+	if id == viewrepo.UncommittedID {
 		id = " "
 	}
 	sb.WriteString(toHeader("Id:") + ui.Dark(id) + "\n")
@@ -37,7 +37,7 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 	sb.WriteString(toHeader("Branch tips:") + ui.Dark(toBranchTips(c.BranchTips)) + "\n")
 
 	color := ui.CDark
-	if c.ID == viewmodel.UncommittedID {
+	if c.ID == viewrepo.UncommittedID {
 		color = ui.CYellowDk
 	}
 
@@ -55,7 +55,7 @@ func (h detailsVM) getCommitDetails(viewPort ui.ViewPage) (string, error) {
 	return sb.String(), nil
 }
 
-func (h detailsVM) toViewLine(width int, branch viewmodel.Branch) string {
+func (h detailsVM) toViewLine(width int, branch viewrepo.Branch) string {
 	prefixWidth := branch.Index*2 - 1
 	suffixWidth := width - branch.Index*2 - 2
 	pointer := " " + branchPointer + " "
@@ -76,7 +76,7 @@ func toBranchTips(tips []string) string {
 func toSids(ids []string) string {
 	var sids []string
 	for _, id := range ids {
-		sids = append(sids, viewmodel.ToSid(id))
+		sids = append(sids, viewrepo.ToSid(id))
 	}
 	return fmt.Sprintf("%s", strings.Join(sids, ", "))
 }
@@ -85,7 +85,7 @@ func toHeader(text string) string {
 	return ui.White(fmt.Sprintf(" %-13s", text))
 }
 
-func (h detailsVM) toBranchText(c viewmodel.Commit) string {
+func (h detailsVM) toBranchText(c viewrepo.Commit) string {
 	typeText := ""
 
 	switch {
@@ -93,7 +93,7 @@ func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 		typeText = ui.Dark(" (multiple) >")
 	case !c.Branch.IsGitBranch:
 		typeText = ui.Dark(" ()")
-	case c.ID == viewmodel.UncommittedID:
+	case c.ID == viewrepo.UncommittedID:
 		typeText = ui.Dark(" (local)")
 	case c.IsLocalOnly:
 		typeText = ui.Dark(" (local)")
@@ -108,7 +108,7 @@ func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 	default:
 		typeText = ui.Dark(" (local)")
 	}
-	if c.ID == viewmodel.UncommittedID {
+	if c.ID == viewrepo.UncommittedID {
 		typeText = typeText + ", changes not yet committed"
 	} else if c.IsRemoteOnly {
 		typeText = typeText + ", commit not yet pulled"
@@ -118,6 +118,6 @@ func (h detailsVM) toBranchText(c viewmodel.Commit) string {
 	return c.Branch.DisplayName + ui.Dark(typeText)
 }
 
-func (h detailsVM) setCurrentCommit(commit viewmodel.Commit) {
+func (h detailsVM) setCurrentCommit(commit viewrepo.Commit) {
 	h.currentCommit = commit
 }

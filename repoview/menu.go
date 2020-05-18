@@ -2,7 +2,7 @@ package repoview
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 	"github.com/thoas/go-funk"
 )
@@ -63,7 +63,7 @@ func (t *menuService) getOpenBranchMenuItems(selectedIndex int) []ui.MenuItem {
 
 	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
-		if nil == funk.Find(append(inBranches, outBranches...), func(b viewmodel.Branch) bool {
+		if nil == funk.Find(append(inBranches, outBranches...), func(b viewrepo.Branch) bool {
 			return current.DisplayName == b.DisplayName
 		}) {
 			items = append(items, t.toOpenBranchMenuItem(current, ""))
@@ -156,13 +156,13 @@ func (t *menuService) getSwitchBranchMenuItems() []ui.MenuItem {
 	return items
 }
 
-func (t *menuService) toOpenBranchMenuItem(branch viewmodel.Branch, prefix string) ui.MenuItem {
+func (t *menuService) toOpenBranchMenuItem(branch viewrepo.Branch, prefix string) ui.MenuItem {
 	return ui.MenuItem{Text: t.branchItemText(branch, prefix), Action: func() {
 		t.vm.ShowBranch(branch.Name)
 	}}
 }
 
-func (t *menuService) branchItemText(branch viewmodel.Branch, prefix string) string {
+func (t *menuService) branchItemText(branch viewrepo.Branch, prefix string) string {
 	if prefix == "" {
 		prefix = " "
 	}

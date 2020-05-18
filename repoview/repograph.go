@@ -1,7 +1,7 @@
 package repoview
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/ui"
 )
@@ -23,42 +23,42 @@ func newRepoGraph() *repoGraph {
 func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	switch {
 	// commit of a branch with only one commit (tip==bottom)
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && bm.Has(viewmodel.BActiveTip) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BBottom) && bm.Has(viewrepo.BActiveTip) && t.hasLeft(bm):
 		return '┺'
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BBottom) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BBottom) && t.hasLeft(bm):
 		return '╼'
 
 	// commit is tip
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BActiveTip) && t.hasLeft(bm):
 		return '╊'
-	case bm.Has(viewmodel.BTip) && bm.Has(viewmodel.BActiveTip):
+	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BActiveTip):
 		return '┣'
-	case bm.Has(viewmodel.BTip) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BTip) && t.hasLeft(bm):
 		return '┲'
-	case bm.Has(viewmodel.BTip):
+	case bm.Has(viewrepo.BTip):
 		return '┏'
 
 	// commit is bottom
-	case bm.Has(viewmodel.BBottom) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BBottom) && t.hasLeft(bm):
 		return '┺'
-	case bm.Has(viewmodel.BBottom):
+	case bm.Has(viewrepo.BBottom):
 		return '┚'
 
 	// commit is within branch
-	case bm.Has(viewmodel.BCommit) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BCommit) && t.hasLeft(bm):
 		return '╊'
-	case bm.Has(viewmodel.BCommit):
+	case bm.Has(viewrepo.BCommit):
 		return '┣'
 
 	// commit is not part of branch
-	case bm.Has(viewmodel.BLine) && t.hasLeft(bm):
+	case bm.Has(viewrepo.BLine) && t.hasLeft(bm):
 		return '╂'
-	case bm.Has(viewmodel.BLine):
+	case bm.Has(viewrepo.BLine):
 		return '┃'
 
-	case bm == viewmodel.BPass:
+	case bm == viewrepo.BPass:
 		return '─'
-	case bm == viewmodel.BBlank:
+	case bm == viewrepo.BBlank:
 		return ' '
 	default:
 		return '*'
@@ -67,41 +67,41 @@ func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
 
 func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
-	case viewmodel.BMergeRight:
+	case viewrepo.BMergeRight:
 		return '╮'
-	case viewmodel.BMergeRight | viewmodel.BPass:
+	case viewrepo.BMergeRight | viewrepo.BPass:
 		return '┬'
-	case viewmodel.BMergeRight | viewmodel.BMLine:
+	case viewrepo.BMergeRight | viewrepo.BMLine:
 		return '┤'
-	case viewmodel.BMergeRight | viewmodel.BBranchRight:
+	case viewrepo.BMergeRight | viewrepo.BBranchRight:
 		return '┤'
-	case viewmodel.BMergeRight | viewmodel.BBranchRight | viewmodel.BPass:
+	case viewrepo.BMergeRight | viewrepo.BBranchRight | viewrepo.BPass:
 		return '┴'
-	case viewmodel.BBranchRight:
+	case viewrepo.BBranchRight:
 		return '╯'
-	case viewmodel.BBranchRight | viewmodel.BMLine | viewmodel.BPass:
+	case viewrepo.BBranchRight | viewrepo.BMLine | viewrepo.BPass:
 		return '┼'
-	case viewmodel.BBranchRight | viewmodel.BPass:
+	case viewrepo.BBranchRight | viewrepo.BPass:
 		return '┴'
-	case viewmodel.BBranchRight | viewmodel.BMLine:
+	case viewrepo.BBranchRight | viewrepo.BMLine:
 		return '┤'
-	case viewmodel.BMergeLeft:
+	case viewrepo.BMergeLeft:
 		return '╭'
-	case viewmodel.BMergeLeft | viewmodel.BBranchLeft:
+	case viewrepo.BMergeLeft | viewrepo.BBranchLeft:
 		return '├'
-	case viewmodel.BMergeLeft | viewmodel.BMLine:
+	case viewrepo.BMergeLeft | viewrepo.BMLine:
 		return '├'
-	case viewmodel.BBranchLeft:
+	case viewrepo.BBranchLeft:
 		return '╰'
-	case viewmodel.BBranchLeft | viewmodel.BMLine:
+	case viewrepo.BBranchLeft | viewrepo.BMLine:
 		return '├'
-	case viewmodel.BMLine | viewmodel.BPass:
+	case viewrepo.BMLine | viewrepo.BPass:
 		return '┼'
-	case viewmodel.BMLine:
+	case viewrepo.BMLine:
 		return '│'
-	case viewmodel.BPass:
+	case viewrepo.BPass:
 		return '─'
-	case viewmodel.BBlank:
+	case viewrepo.BBlank:
 		return ' '
 	default:
 		return '*'
@@ -109,7 +109,7 @@ func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
 }
 
 func (t *repoGraph) hasLeft(bm utils.Bitmask) bool {
-	return bm.Has(viewmodel.BBranchLeft) ||
-		bm.Has(viewmodel.BMergeLeft) ||
-		bm.Has(viewmodel.BPass)
+	return bm.Has(viewrepo.BBranchLeft) ||
+		bm.Has(viewrepo.BMergeLeft) ||
+		bm.Has(viewrepo.BPass)
 }

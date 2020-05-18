@@ -1,7 +1,7 @@
-package viewmodel
+package viewrepo
 
 import (
-	"github.com/michael-reichenauer/gmc/repoview/viewmodel/gitrepo"
+	"github.com/michael-reichenauer/gmc/repoview/viewrepo/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"sort"
