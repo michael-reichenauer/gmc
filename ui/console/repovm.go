@@ -22,13 +22,13 @@ type repoVM struct {
 	ui                cui.UI
 	repoViewer        cui.Notifier
 	mainService       mainService
-	viewModelService  *viewrepo.Service
+	viewModelService  *viewrepo.ViewRepo
 	repoLayout        *repoLayout
 	isDetails         bool
 	workingFolder     string
 	cancel            context.CancelFunc
-	repo              viewrepo.ViewRepo
-	searchRepo        viewrepo.ViewRepo
+	repo              viewrepo.Repo
+	searchRepo        viewrepo.Repo
 	firstIndex        int
 	currentIndex      int
 	onRepoUpdatedFunc func()

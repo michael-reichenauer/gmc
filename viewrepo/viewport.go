@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type ViewRepo struct {
+type Repo struct {
 	Commits            []Commit
 	CurrentBranchName  string
 	RepoPath           string
@@ -66,8 +66,8 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 	return false
 }
 
-func newViewRepo(repo *viewRepo) ViewRepo {
-	return ViewRepo{
+func newViewRepo(repo *viewRepo) Repo {
+	return Repo{
 		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
 		RepoPath:           repo.WorkingFolder,

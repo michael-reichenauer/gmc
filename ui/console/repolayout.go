@@ -30,7 +30,7 @@ func (t *repoLayout) getPageLines(
 	commits []viewrepo.Commit,
 	viewWidth int,
 	currentBranchDisplayName string,
-	repo viewrepo.ViewRepo) []string {
+	repo viewrepo.Repo) []string {
 	if len(commits) < 1 {
 		return nil
 	}
@@ -58,7 +58,7 @@ func (t *repoLayout) getPageLines(
 	return lines
 }
 
-func (t *repoLayout) getMoreIndex(repo viewrepo.ViewRepo) int {
+func (t *repoLayout) getMoreIndex(repo viewrepo.Repo) int {
 	graphWidth := t.getGraphWidth(repo.Commits)
 	return graphWidth - 2
 }
@@ -167,7 +167,7 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c viewrepo.Commit, len
 	sb.WriteString(cui.Dark(utils.Text(tt, length)))
 }
 
-func (t *repoLayout) writeSubject(sb *strings.Builder, c viewrepo.Commit, currentBranchDisplayName string, length int, repo viewrepo.ViewRepo) {
+func (t *repoLayout) writeSubject(sb *strings.Builder, c viewrepo.Commit, currentBranchDisplayName string, length int, repo viewrepo.Repo) {
 	tagsText := t.toTagsText(c, length)
 
 	subject := utils.Text(c.Subject, length-len(tagsText))

@@ -12,7 +12,7 @@ import (
 type MainWindow struct {
 	ui            cui.UI
 	configService *config.Service
-	model         *viewrepo.Service
+	model         *viewrepo.ViewRepo
 	commitView    *console.CommitView
 }
 
