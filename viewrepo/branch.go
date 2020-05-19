@@ -1,9 +1,9 @@
 package viewrepo
 
 type branch struct {
+	index            int
 	name             string
 	displayName      string
-	index            int
 	tipId            string
 	bottomId         string
 	parentBranchName string

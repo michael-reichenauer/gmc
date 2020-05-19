@@ -269,10 +269,13 @@ func (t *ViewRepo) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewR
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
-	repo.addVirtualStatusCommit(grepo)
+	if !grepo.Status.OK() {
+		repo.addVirtualStatusCommit(grepo)
+	}
 	for _, c := range grepo.Commits {
 		repo.addGitCommit(c)
 	}
+
 	t.addTags(repo, grepo.Tags)
 
 	t.adjustCurrentBranchIfStatus(repo)

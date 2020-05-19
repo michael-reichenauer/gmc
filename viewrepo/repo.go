@@ -61,10 +61,6 @@ func (t *viewRepo) addBranch(gb *gitrepo.Branch) {
 }
 
 func (t *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
-	if gRepo.Status.OK() {
-		// No uncommitted changes,
-		return
-	}
 	cb, ok := gRepo.CurrentBranch()
 	if !ok || !t.containsBranch(cb) {
 		// No current branch, or view repo does not show the current branch
