@@ -3,6 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io/ioutil"
+	stdlog "log"
+	_ "net/http/pprof"
+	"os"
+	"os/exec"
+	"runtime"
+
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/installation"
 	"github.com/michael-reichenauer/gmc/program"
@@ -12,12 +19,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"github.com/michael-reichenauer/gmc/utils/timer"
-	"io/ioutil"
-	stdlog "log"
-	_ "net/http/pprof"
-	"os"
-	"os/exec"
-	"runtime"
 )
 
 const (
