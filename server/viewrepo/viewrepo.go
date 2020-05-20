@@ -65,7 +65,7 @@ type ViewRepo struct {
 	customBranchColors map[string]int
 }
 
-func NewService(configService *config.Service, workingFolder string) *ViewRepo {
+func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo {
 	return &ViewRepo{
 		RepoChanges:     make(chan RepoChange),
 		showRequests:    make(chan ShowRequest),

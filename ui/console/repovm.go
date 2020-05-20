@@ -47,7 +47,7 @@ func newRepoVM(
 	mainService mainService,
 	configService *config.Service,
 	workingFolder string) *repoVM {
-	viewModelService := viewrepo.NewService(configService, workingFolder)
+	viewModelService := viewrepo.NewViewRepo(configService, workingFolder)
 	return &repoVM{
 		ui:               ui,
 		repoViewer:       repoViewer,
