@@ -2,9 +2,9 @@ package console
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/viewrepo"
 	"strings"
 )
 
