@@ -13,17 +13,12 @@ const (
 	markersWidth         = 4
 )
 
-type branchColors interface {
-	BranchColor(name string) cui.Color
-}
-
 type repoLayout struct {
-	branchColors branchColors
-	repoGraph    *repoGraph
+	repoGraph *repoGraph
 }
 
-func newRepoLayout(branchColors branchColors) *repoLayout {
-	return &repoLayout{branchColors: branchColors, repoGraph: newRepoGraph()}
+func newRepoLayout() *repoLayout {
+	return &repoLayout{repoGraph: newRepoGraph()}
 }
 
 func (t *repoLayout) getPageLines(
@@ -96,13 +91,13 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 func (t *repoLayout) writeGraph(sb *strings.Builder, c viewrepo.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
 		// Normal branch color
-		bColor := t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
+		bColor := cui.CWhite //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
 		//	if i != 0 {
 		cColor := bColor
 		if c.Graph[i].Connect == viewrepo.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			cColor = t.branchColors.BranchColor(c.Graph[i].PassName)
+			cColor = cui.CWhite // t.branchColors.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Connect.Has(viewrepo.BPass) {
 			cColor = cui.CWhite
 		}
@@ -112,7 +107,7 @@ func (t *repoLayout) writeGraph(sb *strings.Builder, c viewrepo.Commit) {
 		if c.Graph[i].Branch == viewrepo.BPass &&
 			c.Graph[i].PassName != "" &&
 			c.Graph[i].PassName != "-" {
-			bColor = t.branchColors.BranchColor(c.Graph[i].PassName)
+			bColor = cui.CWhite // t.branchColors.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Branch == viewrepo.BPass {
 			bColor = cui.CWhite
 		}

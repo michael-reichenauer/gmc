@@ -163,7 +163,7 @@ func (*menuView) maxMoreWidth(items []MenuItem) int {
 	maxMoreWidth := 0
 	for _, item := range items {
 		moreWidth := 0
-		if len(item.SubItems) > 0 || item.SubItemsFunc != nil && len(item.SubItemsFunc()) > 0 {
+		if len(item.SubItems) > 0 || item.SubItemsFunc != nil {
 			moreWidth = 1
 			if moreWidth > maxMoreWidth {
 				maxMoreWidth = moreWidth
@@ -196,7 +196,7 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 
 	more := ""
 	if h.moreWidth > 0 {
-		if len(item.SubItems) > 0 || item.SubItemsFunc != nil && len(item.SubItemsFunc()) > 0 {
+		if len(item.SubItems) > 0 || item.SubItemsFunc != nil {
 			more = " ►"
 		} else {
 			more = "  "

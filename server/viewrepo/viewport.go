@@ -2,6 +2,7 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"time"
 )
 
@@ -53,6 +54,7 @@ type Branch struct {
 	TipID         string
 	HasLocalOnly  bool
 	HasRemoteOnly bool
+	Color         cui.Color
 }
 
 type Branches []Branch
@@ -121,5 +123,6 @@ func toBranch(b *branch) Branch {
 		IsCurrent:     b.isCurrent,
 		HasRemoteOnly: b.HasRemoteOnly,
 		HasLocalOnly:  b.HasLocalOnly,
+		Color:         cui.CMagenta,
 	}
 }

@@ -210,14 +210,14 @@ func StripRemotePrefix(name string) string {
 }
 
 func CurrentRoot() string {
-	root, err := WorkingFolderRoot(utils.CurrentDir())
+	root, err := WorkingDirRoot(utils.CurrentDir())
 	if err != nil {
 		panic(log.Fatal(err))
 	}
 	return root
 }
 
-func WorkingFolderRoot(path string) (string, error) {
+func WorkingDirRoot(path string) (string, error) {
 	current := path
 	if strings.HasSuffix(path, ".git") || strings.HasSuffix(path, ".git/") || strings.HasSuffix(path, ".git\\") {
 		current = filepath.Dir(path)

@@ -3,7 +3,7 @@ package console
 import (
 	"context"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -21,11 +21,9 @@ type repoPage struct {
 type repoVM struct {
 	ui                cui.UI
 	repoViewer        cui.Notifier
-	mainService       mainService
-	viewModelService  *viewrepo.ViewRepo
+	viewModelService  api.Repo
 	repoLayout        *repoLayout
 	isDetails         bool
-	workingFolder     string
 	cancel            context.CancelFunc
 	repo              viewrepo.Repo
 	searchRepo        viewrepo.Repo
@@ -44,24 +42,18 @@ type trace struct {
 func newRepoVM(
 	ui cui.UI,
 	repoViewer cui.Notifier,
-	mainService mainService,
-	configService *config.Service,
-	workingFolder string) *repoVM {
-	viewModelService := viewrepo.NewViewRepo(configService, workingFolder)
+	viewRepo api.Repo,
+) *repoVM {
 	return &repoVM{
 		ui:               ui,
 		repoViewer:       repoViewer,
-		mainService:      mainService,
-		viewModelService: viewModelService,
-		repoLayout:       newRepoLayout(viewModelService),
-		workingFolder:    workingFolder,
+		viewModelService: viewRepo,
+		repoLayout:       newRepoLayout(),
 	}
 }
 
 func (h *repoVM) startRepoMonitor() {
-	ctx, cancel := context.WithCancel(context.Background())
-	h.cancel = cancel
-	go h.monitorModelRoutine(ctx)
+	go h.monitorModelRoutine()
 }
 
 func (h *repoVM) triggerRefresh() {
@@ -74,18 +66,18 @@ func (h *repoVM) SetSearch(text string) {
 }
 
 func (h *repoVM) close() {
-	h.cancel()
+	h.viewModelService.Close()
 }
 
-func (h *repoVM) monitorModelRoutine(ctx context.Context) {
-	h.viewModelService.StartMonitor(ctx)
+func (h *repoVM) monitorModelRoutine() {
+	h.viewModelService.StartMonitor()
 	var progress cui.Progress
-	for r := range h.viewModelService.RepoChanges {
+	for r := range h.viewModelService.RepoChanges() {
 		log.Infof("Detected model change")
 		rc := r
 		h.ui.PostOnUIThread(func() {
 			if rc.IsStarting {
-				progress = h.ui.ShowProgress("Loading repo:\n%s", h.workingFolder)
+				progress = h.ui.ShowProgress("Loading repo")
 				return
 			}
 

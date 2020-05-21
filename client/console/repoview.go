@@ -3,13 +3,12 @@ package console
 import (
 	"fmt"
 	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type mainService interface {
-	ToggleShowDetails()
 	MainMenuItem() cui.MenuItem
 	OpenRepoMenuItems() []cui.MenuItem
 	RecentReposMenuItem() cui.MenuItem
@@ -18,7 +17,7 @@ type mainService interface {
 type RepoView struct {
 	view        cui.View
 	ui          cui.UI
-	mainService mainService
+	viewRepo    api.Repo
 	vm          *repoVM
 	menuService *menuService
 	searchView  *SearchView
@@ -34,12 +33,12 @@ func (t *RepoView) ScrollVertical(scroll int) {
 
 }
 
-func NewRepoView(ui cui.UI, configService *config.Service, mainService mainService, workingFolder string) *RepoView {
+func NewRepoView(ui cui.UI, viewRepo api.Repo) *RepoView {
 	h := &RepoView{
-		ui:          ui,
-		mainService: mainService,
+		ui:       ui,
+		viewRepo: viewRepo,
 	}
-	h.vm = newRepoVM(ui, h, mainService, configService, workingFolder)
+	h.vm = newRepoVM(ui, h, viewRepo)
 	h.menuService = newMenuService(ui, h.vm)
 	h.view = h.newView()
 	return h

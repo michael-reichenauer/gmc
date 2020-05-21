@@ -38,8 +38,8 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	mergeItems, mergeTitle := t.getMergeMenuItems()
 	menu.Add(cui.MenuItem{Text: "Merge", Title: mergeTitle, SubItems: mergeItems})
 
-	menu.Add(t.vm.mainService.RecentReposMenuItem())
-	menu.Add(t.vm.mainService.MainMenuItem())
+	// menu.Add(t.vm.mainService.RecentReposMenuItem())
+	// menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
 }
 

@@ -3,6 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	client "github.com/michael-reichenauer/gmc/client"
+	"github.com/michael-reichenauer/gmc/client/console"
+	"github.com/michael-reichenauer/gmc/server"
 	"io/ioutil"
 	stdlog "log"
 	_ "net/http/pprof"
@@ -26,10 +29,10 @@ const (
 )
 
 var (
-	workingFolderFlag = flag.String("d", "", "specify working folder")
-	showVersionFlag   = flag.Bool("version", false, "print gmc version")
-	pauseFlag         = flag.Bool("pause", false, "pause until user click enter")
-	externalWindow    = flag.Bool("external", false, "start gmc in external window (used by ide)")
+	workingDirFlag  = flag.String("d", "", "specify working directory")
+	showVersionFlag = flag.Bool("version", false, "print gmc version")
+	pauseFlag       = flag.Bool("pause", false, "pause until user click enter")
+	externalWindow  = flag.Bool("external", false, "start gmc in external window (used by ide)")
 )
 
 func main() {
@@ -60,28 +63,31 @@ func main() {
 
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
+
 	// Set default http client proxy to the system proxy (used by e.g. telemetry)
 	utils.SetDefaultHTTPProxy()
+
+	// Enable telemetry and logging
 	logger.StdTelemetry.Enable(version)
 	defer logger.StdTelemetry.Close()
 	log.Eventf("program-start", "Starting gmc %s ...", version)
-
 	logger.RedirectStdErrorToFile()
-	//defer log.Event("program-stop")
-	configService := config.NewConfig(version, *workingFolderFlag, "")
+	logProgramInfo()
+
+	configService := config.NewConfig(version, "")
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
 	})
 
-	logProgramInfo(configService)
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
-	uiHandler := cui.NewUI()
-	uiHandler.Run(func() {
+	ui := cui.NewCommandUI()
+	ui.Run(func() {
 		log.Infof("Show main window %s", st)
-		mainWindow := program.NewMainWindow(uiHandler, configService)
-		mainWindow.Show()
+		api := client.NewClient(server.NewServer(configService))
+		mainWindow := console.NewMainWindow(ui, api)
+		mainWindow.Show(*workingDirFlag)
 	})
 }
 
@@ -109,8 +115,8 @@ func startAsExternalProcess() {
 	_ = cmd.Wait()
 }
 
-func logProgramInfo(configService *config.Service) {
-	log.Infof("Version: %s", configService.ProgramVersion)
+func logProgramInfo() {
+	log.Infof("Version: %s", version)
 	log.Infof("Build: release=%v", program.IsRelease)
 	log.Infof("Binary path: %q", utils.BinPath())
 	log.Infof("Args: %v", os.Args)
@@ -118,7 +124,7 @@ func logProgramInfo(configService *config.Service) {
 	log.Infof("OS: %q", runtime.GOOS)
 	log.Infof("Arch: %q", runtime.GOARCH)
 	log.Infof("Go version: %q", runtime.Version())
-	log.Infof("Folder path: %q", configService.FolderPath)
+	log.Infof("Specified folder path: %q", *workingDirFlag)
 	log.Infof("Working Folder: %q", utils.CurrentDir())
 	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
 	go func() { log.Infof("Git version: %q", git.Version()) }()

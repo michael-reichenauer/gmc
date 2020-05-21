@@ -43,7 +43,7 @@ type ui struct {
 	shownViews        []*view
 }
 
-func NewUI() *ui {
+func NewCommandUI() *ui {
 	return &ui{}
 }
 
