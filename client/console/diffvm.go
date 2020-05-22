@@ -2,19 +2,20 @@ package console
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"strings"
 )
 
 type DiffGetter interface {
-	GetCommitDiff(id string) (git.CommitDiff, error)
+	GetCommitDiff(id string) (api.CommitDiff, error)
 }
 
 type diffVM struct {
 	viewer         cui.Viewer
 	diffGetter     DiffGetter
-	commitDiff     git.CommitDiff
+	commitDiff     api.CommitDiff
 	commitID       string
 	isDiffReady    bool
 	isDiff         bool
@@ -132,7 +133,7 @@ func (h *diffVM) addDiffSummery() {
 	h.addLeft(fmt.Sprintf("%d Files:", len(h.commitDiff.FileDiffs)))
 	for _, df := range h.commitDiff.FileDiffs {
 		diffType := h.toDiffType(df)
-		if df.DiffMode == git.DiffConflicts {
+		if df.DiffMode == api.DiffConflicts {
 			h.addLeft(cui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
 		} else {
 			h.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
@@ -150,7 +151,7 @@ func (h *diffVM) line(text string) string {
 	return text[h.firstCharIndex:]
 }
 
-func (h *diffVM) addFileHeader(df git.FileDiff) {
+func (h *diffVM) addFileHeader(df api.FileDiff) {
 	h.addLeftAndRight("")
 	h.addLeftAndRight("")
 	h.addLeftAndRight(cui.Blue(strings.Repeat("═", viewWidth)))
@@ -162,14 +163,14 @@ func (h *diffVM) addFileHeader(df git.FileDiff) {
 	}
 }
 
-func (h *diffVM) addDiffSectionHeader(ds git.SectionDiff) {
+func (h *diffVM) addDiffSectionHeader(ds api.SectionDiff) {
 	h.addLeftAndRight("")
 	leftLines, rightLines := h.parseLinesTexts(ds)
 	h.add(cui.Dark(leftLines), cui.Dark(rightLines))
 	h.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 }
 
-func (h *diffVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
+func (h *diffVM) parseLinesTexts(ds api.SectionDiff) (string, string) {
 	if h.isUnified {
 		return fmt.Sprintf("Lines %s:", ds.ChangedIndexes), ""
 	}
@@ -180,7 +181,7 @@ func (h *diffVM) parseLinesTexts(ds git.SectionDiff) (string, string) {
 	return leftText, rightText
 }
 
-func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
+func (h *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
 	diffMode := git.DiffConflictEnd
@@ -191,21 +192,21 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 		l := h.line(dl.Line)
 
 		switch dl.DiffMode {
-		case git.DiffConflictStart:
+		case api.DiffConflictStart:
 			diffMode = git.DiffConflictStart
 			h.addBlocks(leftBlock, rightBlock)
 			leftBlock = nil
 			rightBlock = nil
 			h.addLeftAndRight(cui.Dark("=== Start of conflict "))
-		case git.DiffConflictSplit:
+		case api.DiffConflictSplit:
 			diffMode = git.DiffConflictSplit
-		case git.DiffConflictEnd:
+		case api.DiffConflictEnd:
 			diffMode = git.DiffConflictEnd
 			h.addBlocks(leftBlock, rightBlock)
 			leftBlock = nil
 			rightBlock = nil
 			h.addLeftAndRight(cui.Dark("=== End of conflict "))
-		case git.DiffRemoved:
+		case api.DiffRemoved:
 			if diffMode == git.DiffConflictStart {
 				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
@@ -213,7 +214,7 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 			} else {
 				leftBlock = append(leftBlock, cui.Red(l))
 			}
-		case git.DiffAdded:
+		case api.DiffAdded:
 			if diffMode == git.DiffConflictStart {
 				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
@@ -221,7 +222,7 @@ func (h *diffVM) addDiffSectionLines(ds git.SectionDiff) {
 			} else {
 				rightBlock = append(rightBlock, cui.Green(l))
 			}
-		case git.DiffSame:
+		case api.DiffSame:
 			if diffMode == git.DiffConflictStart {
 				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
@@ -274,15 +275,15 @@ func (h *diffVM) add(left, right string) {
 	h.rightLines = append(h.rightLines, right)
 }
 
-func (h *diffVM) toDiffType(df git.FileDiff) string {
+func (h *diffVM) toDiffType(df api.FileDiff) string {
 	switch df.DiffMode {
-	case git.DiffModified:
+	case api.DiffModified:
 		return "Modified:  "
-	case git.DiffAdded:
+	case api.DiffAdded:
 		return "Added:     "
-	case git.DiffRemoved:
+	case api.DiffRemoved:
 		return "Removed:   "
-	case git.DiffConflicts:
+	case api.DiffConflicts:
 		return "Conflicted:"
 	}
 	return ""

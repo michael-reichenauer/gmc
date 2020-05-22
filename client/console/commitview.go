@@ -2,6 +2,7 @@ package console
 
 import (
 	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -9,7 +10,7 @@ import (
 )
 
 type Committer interface {
-	GetCommitDiff(id string) (git.CommitDiff, error)
+	GetCommitDiff(id string) (api.CommitDiff, error)
 	Commit(message string) error
 }
 

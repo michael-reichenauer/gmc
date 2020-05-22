@@ -112,8 +112,50 @@ func (t *ViewRepo) TriggerRefreshModel() {
 	t.gitRepo.TriggerManualRefresh()
 }
 
-func (t *ViewRepo) GetCommitDiff(id string) (git.CommitDiff, error) {
-	return t.gitRepo.GetCommitDiff(id)
+func (t *ViewRepo) GetCommitDiff(id string) (api.CommitDiff, error) {
+	diff, err := t.gitRepo.GetCommitDiff(id)
+	if err != nil {
+		return api.CommitDiff{}, err
+	}
+	return api.CommitDiff{
+		FileDiffs: toFileDiffs(diff.FileDiffs),
+	}, nil
+}
+
+func toFileDiffs(gfd []git.FileDiff) []api.FileDiff {
+	diffs := make([]api.FileDiff, len(gfd))
+	for i, d := range gfd {
+		diffs[i] = api.FileDiff{
+			PathBefore:   d.PathBefore,
+			PathAfter:    d.PathAfter,
+			IsRenamed:    d.IsRenamed,
+			DiffMode:     api.DiffMode(d.DiffMode),
+			SectionDiffs: toSectionDiffs(d.SectionDiffs),
+		}
+	}
+	return diffs
+}
+
+func toSectionDiffs(gsd []git.SectionDiff) []api.SectionDiff {
+	diffs := make([]api.SectionDiff, len(gsd))
+	for i, d := range gsd {
+		diffs[i] = api.SectionDiff{
+			ChangedIndexes: d.ChangedIndexes,
+			LinesDiffs:     toLineDiffs(d.LinesDiffs),
+		}
+	}
+	return diffs
+}
+
+func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
+	diffs := make([]api.LinesDiff, len(gld))
+	for i, d := range gld {
+		diffs[i] = api.LinesDiff{
+			DiffMode: api.DiffMode(d.DiffMode),
+			Line:     d.Line,
+		}
+	}
+	return diffs
 }
 
 func (t *ViewRepo) SwitchToBranch(name string, displayName string) error {
