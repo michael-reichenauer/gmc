@@ -8,21 +8,26 @@ import (
 	"time"
 )
 
-const progressInterval = 500 * time.Millisecond
+const (
+	progressInterval = 500 * time.Millisecond
+	waitMark         = " ╭─╮ \n ╰─╯ "
+)
 
 type Progress interface {
 	Close()
 }
 type progress struct {
-	ui        *ui
-	text      string
-	view      View
-	length    int
-	startTime *timer.Timer
+	ui           *ui
+	text         string
+	view         View
+	length       int
+	startTimer   *timer.Timer
+	startTime    time.Time
+	showProgress bool
 }
 
 func newProgress(ui *ui) *progress {
-	t := &progress{ui: ui, length: 1, startTime: timer.Start()}
+	t := &progress{ui: ui, length: 1, startTimer: timer.Start(), startTime: time.Now()}
 	t.view = t.newView()
 	return t
 }
@@ -37,7 +42,7 @@ func (t *progress) show() {
 
 func (t *progress) newView() View {
 	view := t.ui.NewViewFromTextFunc(t.textFunc)
-	view.Properties().HasFrame = true
+	view.Properties().HasFrame = false
 	view.Properties().Name = "Progress"
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
@@ -65,6 +70,25 @@ func (t *progress) Close() {
 }
 
 func (t *progress) textFunc(ViewPage) string {
+	if time.Since(t.startTime) < 1000*time.Millisecond {
+		// Show no progress for a show while in case operation comletes fast
+		return ""
+	}
+	if time.Since(t.startTime) < 8*time.Second {
+		// Show just a small wait mark for a while
+		if t.length%2 == 1 {
+			return MagentaDk(waitMark)
+		} else {
+			return Dark(waitMark)
+		}
+	}
+
+	if !t.showProgress {
+		t.showProgress = true
+		t.length = 0
+	}
+	// Show full progress
+	t.view.ShowFrame(true)
 	pt := strings.Repeat("━", t.length)
 	return fmt.Sprintf("%s\n%s", t.text, MagentaDk(pt))
 }

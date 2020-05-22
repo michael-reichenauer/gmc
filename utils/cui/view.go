@@ -134,6 +134,7 @@ type View interface {
 	ScrollHorizontal(scroll int)
 	ScrollVertical(scroll int)
 	SetCurrentLine(line int)
+	ShowFrame(isShow bool)
 }
 
 type view struct {
@@ -258,6 +259,10 @@ func (h *view) Show(bf BoundFunc) {
 	mb := h.viewBounds()
 	h.setBounds(mb)
 	h.NotifyChanged()
+}
+
+func (h *view) ShowFrame(isShow bool) {
+	h.guiView.Frame = isShow
 }
 
 func (h *view) ScrollHorizontal(scroll int) {
