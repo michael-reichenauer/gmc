@@ -49,10 +49,6 @@ type gitRepo struct {
 	manualRefresh   chan struct{}
 }
 
-func ToSid(commitID string) string {
-	return git.ToSid(commitID)
-}
-
 func NewGitRepo(workingFolder string) GitRepo {
 	g := git.New(workingFolder)
 	return &gitRepo{

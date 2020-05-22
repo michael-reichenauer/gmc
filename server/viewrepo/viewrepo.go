@@ -70,10 +70,6 @@ func (t *ViewRepo) getViewRepo() *viewRepo {
 	return t.viewRepo
 }
 
-func ToSid(commitID string) string {
-	return gitrepo.ToSid(commitID)
-}
-
 func (t *ViewRepo) Close() {
 	t.cancel()
 }

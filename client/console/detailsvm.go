@@ -3,7 +3,6 @@ package console
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"strings"
 )
@@ -77,9 +76,13 @@ func toBranchTips(tips []string) string {
 func toSids(ids []string) string {
 	var sids []string
 	for _, id := range ids {
-		sids = append(sids, viewrepo.ToSid(id))
+		sids = append(sids, toSid(id))
 	}
 	return fmt.Sprintf("%s", strings.Join(sids, ", "))
+}
+
+func toSid(commitID string) string {
+	return commitID[:6]
 }
 
 func toHeader(text string) string {
