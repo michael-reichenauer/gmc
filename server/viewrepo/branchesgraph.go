@@ -5,6 +5,21 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
+var branchColors = []cui.Color{
+	cui.CRed,
+	cui.CBlue,
+	cui.CYellow,
+	cui.CGreen,
+	cui.CCyan,
+	cui.CRedDk,
+	cui.CGreenDk,
+	cui.CYellowDk,
+	//ui.CBlueDk,
+	cui.CMagenta,
+	cui.CMagentaDk,
+	cui.CCyanDk,
+}
+
 type branchesGraph struct {
 }
 
@@ -49,9 +64,6 @@ func (s *branchesGraph) drawBranchLine(branch *branch) {
 
 func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 	for _, c := range repo.Commits {
-		// if c.ID == StatusID {
-		// 	continue
-		// }
 		for i, b := range repo.Branches {
 			//	c.graph[i].BranchName = b.name
 			c.graph[i].BranchColor = api.Color(b.color)

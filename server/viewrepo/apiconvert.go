@@ -2,7 +2,44 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
+
+func toFileDiffs(gfd []git.FileDiff) []api.FileDiff {
+	diffs := make([]api.FileDiff, len(gfd))
+	for i, d := range gfd {
+		diffs[i] = api.FileDiff{
+			PathBefore:   d.PathBefore,
+			PathAfter:    d.PathAfter,
+			IsRenamed:    d.IsRenamed,
+			DiffMode:     api.DiffMode(d.DiffMode),
+			SectionDiffs: toSectionDiffs(d.SectionDiffs),
+		}
+	}
+	return diffs
+}
+
+func toSectionDiffs(gsd []git.SectionDiff) []api.SectionDiff {
+	diffs := make([]api.SectionDiff, len(gsd))
+	for i, d := range gsd {
+		diffs[i] = api.SectionDiff{
+			ChangedIndexes: d.ChangedIndexes,
+			LinesDiffs:     toLineDiffs(d.LinesDiffs),
+		}
+	}
+	return diffs
+}
+
+func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
+	diffs := make([]api.LinesDiff, len(gld))
+	for i, d := range gld {
+		diffs[i] = api.LinesDiff{
+			DiffMode: api.DiffMode(d.DiffMode),
+			Line:     d.Line,
+		}
+	}
+	return diffs
+}
 
 func toViewRepo(repo *viewRepo) api.ViewRepo {
 	graph := toConsoleGraph(repo)
