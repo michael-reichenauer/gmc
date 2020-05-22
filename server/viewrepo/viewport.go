@@ -2,7 +2,6 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
 func toViewRepo(repo *viewRepo) api.VRepo {
@@ -59,6 +58,6 @@ func toBranch(b *branch) api.Branch {
 		IsCurrent:     b.isCurrent,
 		HasRemoteOnly: b.HasRemoteOnly,
 		HasLocalOnly:  b.HasLocalOnly,
-		Color:         cui.CMagenta,
+		Color:         api.Color(b.color),
 	}
 }

@@ -2,6 +2,7 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
 type branchesGraph struct {
@@ -52,8 +53,8 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 		// 	continue
 		// }
 		for i, b := range repo.Branches {
-			c.graph[i].BranchName = b.name
-			c.graph[i].BranchDisplayName = b.displayName
+			//	c.graph[i].BranchName = b.name
+			c.graph[i].BranchColor = api.Color(b.color)
 			if c.Branch == b {
 				// Commit branch
 				if c.MergeParent != nil {
@@ -66,10 +67,10 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 						for k := c.MergeParent.Branch.index + 1; k < c.Branch.index; k++ {
 							c.MergeParent.graph[k].Connect.Set(api.BPass)
 							c.MergeParent.graph[k].Branch.Set(api.BPass)
-							if c.MergeParent.graph[k].PassName == "" {
-								c.MergeParent.graph[k].PassName = b.displayName
+							if c.MergeParent.graph[k].PassColor == 0 {
+								c.MergeParent.graph[k].PassColor = api.Color(b.color)
 							} else {
-								c.MergeParent.graph[k].PassName = "-"
+								c.MergeParent.graph[k].PassColor = api.Color(cui.CWhite)
 							}
 						}
 						// Draw vertical down line │
@@ -87,10 +88,10 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 						for k := i + 1; k < c.MergeParent.Branch.index; k++ {
 							c.graph[k].Connect.Set(api.BPass)
 							c.graph[k].Branch.Set(api.BPass)
-							if c.graph[k].PassName == "" {
-								c.graph[k].PassName = c.MergeParent.Branch.displayName
+							if c.graph[k].PassColor == 0 {
+								c.graph[k].PassColor = api.Color(c.MergeParent.Branch.color)
 							} else {
-								c.graph[k].PassName = "-"
+								c.graph[k].PassColor = api.Color(cui.CWhite)
 							}
 						}
 						// Draw vertical down line │
@@ -114,10 +115,10 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 						for k := c.Parent.Branch.index + 1; k < c.Branch.index; k++ {
 							c.Parent.graph[k].Connect.Set(api.BPass)
 							c.Parent.graph[k].Branch.Set(api.BPass)
-							if c.Parent.graph[k].PassName == "" {
-								c.Parent.graph[k].PassName = b.displayName
+							if c.Parent.graph[k].PassColor == 0 {
+								c.Parent.graph[k].PassColor = api.Color(b.color)
 							} else {
-								c.Parent.graph[k].PassName = "-"
+								c.Parent.graph[k].PassColor = api.Color(cui.CWhite)
 							}
 						}
 						// │
@@ -149,10 +150,10 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 					for k := c.Branch.index + 1; k <= i; k++ {
 						c.graph[k].Connect.Set(api.BPass)
 						c.graph[k].Branch.Set(api.BPass)
-						if c.graph[k].PassName == "" {
-							c.graph[k].PassName = b.displayName
+						if c.graph[k].PassColor == 0 {
+							c.graph[k].PassColor = api.Color(b.color)
 						} else {
-							c.graph[k].PassName = "-"
+							c.graph[k].PassColor = api.Color(cui.CWhite)
 						}
 					}
 				} else if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {

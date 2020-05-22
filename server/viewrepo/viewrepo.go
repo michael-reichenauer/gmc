@@ -319,6 +319,7 @@ func (t *ViewRepo) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewR
 	t.setBranchParentChildRelations(repo)
 	t.setParentChildRelations(repo)
 	t.setAheadBehind(repo)
+	t.setBranchColors(repo)
 
 	// Draw branch lines
 	t.branchesGraph.drawBranchLines(repo)
@@ -845,6 +846,12 @@ func (t *ViewRepo) addTags(repo *viewRepo, tags []gitrepo.Tag) {
 			continue
 		}
 		c.Tags = append(c.Tags, tag.TagName)
+	}
+}
+
+func (t *ViewRepo) setBranchColors(repo *viewRepo) {
+	for _, b := range repo.Branches {
+		b.color = t.BranchColor(b.displayName)
 	}
 }
 

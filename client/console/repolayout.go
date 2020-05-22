@@ -92,23 +92,22 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 func (t *repoLayout) writeGraph(sb *strings.Builder, c api.Commit) {
 	for i := 0; i < len(c.Graph); i++ {
 		// Normal branch color
-		bColor := cui.CWhite //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
-		//	if i != 0 {
+		bColor := cui.Color(c.Graph[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
+
 		cColor := bColor
 		if c.Graph[i].Connect == api.BPass &&
-			c.Graph[i].PassName != "" &&
-			c.Graph[i].PassName != "-" {
-			cColor = cui.CWhite // t.branchColors.BranchColor(c.Graph[i].PassName)
+			c.Graph[i].PassColor != 0 &&
+			c.Graph[i].PassColor != api.Color(cui.CWhite) {
+			cColor = cui.Color(c.Graph[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Connect.Has(api.BPass) {
 			cColor = cui.CWhite
 		}
 		sb.WriteString(cui.ColorRune(cColor, t.repoGraph.graphConnectRune(c.Graph[i].Connect)))
-		//	}
 
 		if c.Graph[i].Branch == api.BPass &&
-			c.Graph[i].PassName != "" &&
-			c.Graph[i].PassName != "-" {
-			bColor = cui.CWhite // t.branchColors.BranchColor(c.Graph[i].PassName)
+			c.Graph[i].PassColor != 0 &&
+			c.Graph[i].PassColor != api.Color(cui.CWhite) {
+			bColor = cui.Color(c.Graph[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
 		} else if c.Graph[i].Branch == api.BPass {
 			bColor = cui.CWhite
 		}

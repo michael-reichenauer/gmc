@@ -2,7 +2,6 @@ package api
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"time"
 )
@@ -15,6 +14,8 @@ type VRepo struct {
 	MergeMessage       string
 	Conflicts          int
 }
+
+type Color int
 
 const (
 	MoreNone                    = 0
@@ -59,12 +60,16 @@ type Commit struct {
 }
 
 type GraphColumn struct {
-	Connect           utils.Bitmask
-	Branch            utils.Bitmask
-	BranchName        string
-	BranchDisplayName string
-	PassName          string
+	Connect utils.Bitmask
+	Branch  utils.Bitmask
+
+	//BranchName        string
+	BranchColor Color
+	PassColor   Color
 }
+
+type GraphRow []GraphColumn
+type Graph []GraphRow
 
 type Branch struct {
 	Name          string
@@ -79,7 +84,7 @@ type Branch struct {
 	TipID         string
 	HasLocalOnly  bool
 	HasRemoteOnly bool
-	Color         cui.Color
+	Color         Color
 }
 
 type Branches []Branch

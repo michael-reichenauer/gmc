@@ -1,5 +1,9 @@
 package viewrepo
 
+import (
+	"github.com/michael-reichenauer/gmc/utils/cui"
+)
+
 type branch struct {
 	index            int
 	name             string
@@ -18,6 +22,7 @@ type branch struct {
 	isCurrent        bool
 	HasLocalOnly     bool
 	HasRemoteOnly    bool
+	color            cui.Color
 }
 
 func (t *branch) String() string {
