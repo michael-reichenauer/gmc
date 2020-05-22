@@ -21,7 +21,7 @@ type repoPage struct {
 type repoVM struct {
 	ui                cui.UI
 	repoViewer        cui.Notifier
-	viewModelService  api.Repo
+	viewRepo          api.Repo
 	repoLayout        *repoLayout
 	isDetails         bool
 	cancel            context.CancelFunc
@@ -45,10 +45,10 @@ func newRepoVM(
 	viewRepo api.Repo,
 ) *repoVM {
 	return &repoVM{
-		ui:               ui,
-		repoViewer:       repoViewer,
-		viewModelService: viewRepo,
-		repoLayout:       newRepoLayout(),
+		ui:         ui,
+		repoViewer: repoViewer,
+		viewRepo:   viewRepo,
+		repoLayout: newRepoLayout(),
 	}
 }
 
@@ -58,21 +58,21 @@ func (h *repoVM) startRepoMonitor() {
 
 func (h *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
-	h.viewModelService.TriggerRefreshModel()
+	h.viewRepo.TriggerRefreshModel()
 }
 
 func (h *repoVM) SetSearch(text string) {
-	h.viewModelService.TriggerSearch(text)
+	h.viewRepo.TriggerSearch(text)
 }
 
 func (h *repoVM) close() {
-	h.viewModelService.Close()
+	h.viewRepo.Close()
 }
 
 func (h *repoVM) monitorModelRoutine() {
-	h.viewModelService.StartMonitor()
+	h.viewRepo.StartMonitor()
 	var progress cui.Progress
-	for r := range h.viewModelService.RepoChanges() {
+	for r := range h.viewRepo.RepoChanges() {
 		log.Infof("Detected model change")
 		rc := r
 		h.ui.PostOnUIThread(func() {
@@ -159,7 +159,7 @@ func (h *repoVM) showCommitDialog() {
 		h.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
 	}
-	commitView := NewCommitView(h.ui, h.viewModelService)
+	commitView := NewCommitView(h.ui, h.viewRepo)
 	message := h.repo.MergeMessage
 	commitView.Show(message)
 }
@@ -170,7 +170,7 @@ func (h *repoVM) showCreateBranchDialog() {
 }
 
 func (h *repoVM) showCommitDiff(commitID string) {
-	diffView := NewDiffView(h.ui, h.viewModelService, commitID)
+	diffView := NewDiffView(h.ui, h.viewRepo, commitID)
 	diffView.Show()
 }
 
@@ -185,7 +185,7 @@ func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []viewrepo.Branch {
 		return nil
 	}
 
-	return h.viewModelService.GetCommitOpenInBranches(c.ID, h.repo)
+	return h.viewRepo.GetCommitOpenInBranches(c.ID)
 }
 
 func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []viewrepo.Branch {
@@ -194,44 +194,44 @@ func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []viewrepo.Branch {
 		return nil
 	}
 
-	return h.viewModelService.GetCommitOpenOutBranches(c.ID, h.repo)
+	return h.viewRepo.GetCommitOpenOutBranches(c.ID)
 }
 
 func (h *repoVM) CurrentNotShownBranch() (viewrepo.Branch, bool) {
-	current, ok := h.viewModelService.CurrentNotShownBranch(h.repo)
+	current, ok := h.viewRepo.CurrentNotShownBranch()
 
 	return current, ok
 }
 
 func (h *repoVM) CurrentBranch() (viewrepo.Branch, bool) {
-	current, ok := h.viewModelService.CurrentBranch(h.repo)
+	current, ok := h.viewRepo.CurrentBranch()
 	return current, ok
 }
 
 func (h *repoVM) GetLatestBranches(skipShown bool) []viewrepo.Branch {
-	return h.viewModelService.GetLatestBranches(h.repo, skipShown)
+	return h.viewRepo.GetLatestBranches(skipShown)
 }
 
 func (h *repoVM) GetAllBranches(skipShown bool) []viewrepo.Branch {
-	return h.viewModelService.GetAllBranches(h.repo, skipShown)
+	return h.viewRepo.GetAllBranches(skipShown)
 }
 
 func (h *repoVM) GetShownBranches(skipMaster bool) []viewrepo.Branch {
-	return h.viewModelService.GetShownBranches(h.repo, skipMaster)
+	return h.viewRepo.GetShownBranches(skipMaster)
 }
 
 func (h *repoVM) ShowBranch(name string) {
-	h.viewModelService.ShowBranch(name)
+	h.viewRepo.ShowBranch(name)
 }
 
 func (h *repoVM) HideBranch(name string) {
-	h.viewModelService.HideBranch(name)
+	h.viewRepo.HideBranch(name)
 }
 
 func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.viewModelService.SwitchToBranch(name, displayName, h.repo) },
+		func() error { return h.viewRepo.SwitchToBranch(name, displayName) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
 }
@@ -239,7 +239,7 @@ func (h *repoVM) SwitchToBranch(name string, displayName string) {
 func (h *repoVM) PushBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return h.viewModelService.PushBranch(name) },
+		func() error { return h.viewRepo.PushBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
@@ -251,7 +251,7 @@ func (h *repoVM) PushCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
-		func() error { return h.viewModelService.PushBranch(current.Name) },
+		func() error { return h.viewRepo.PushBranch(current.Name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -263,7 +263,7 @@ func (h *repoVM) PullCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return h.viewModelService.PullBranch() },
+		func() error { return h.viewRepo.PullBranch() },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -271,7 +271,7 @@ func (h *repoVM) PullCurrentBranch() {
 func (h *repoVM) MergeFromBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return h.viewModelService.MergeBranch(name) },
+		func() error { return h.viewRepo.MergeBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
@@ -298,24 +298,24 @@ func (h *repoVM) CreateBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := h.viewModelService.CreateBranch(name)
+			err := h.viewRepo.CreateBranch(name)
 			if err != nil {
 				return err
 			}
-			err = h.viewModelService.PushBranch(name)
+			err = h.viewRepo.PushBranch(name)
 			if err != nil {
 				return err
 			}
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { h.viewModelService.ShowBranch(name) })
+		func() { h.viewRepo.ShowBranch(name) })
 }
 
 func (h *repoVM) DeleteBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
-		func() error { return h.viewModelService.DeleteBranch(name, h.repo) },
+		func() error { return h.viewRepo.DeleteBranch(name) },
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
 }

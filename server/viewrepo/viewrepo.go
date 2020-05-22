@@ -122,7 +122,7 @@ func (t *ViewRepo) GetCommitDiff(id string) (git.CommitDiff, error) {
 	return t.gitRepo.GetCommitDiff(id)
 }
 
-func (t *ViewRepo) SwitchToBranch(name string, displayName string, repo Repo) error {
+func (t *ViewRepo) SwitchToBranch(name string, displayName string) error {
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}
@@ -386,7 +386,8 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 // 	return toCommit(s.currentViewModel.Commits[index]), nil
 // }
 //
-func (t *ViewRepo) CurrentNotShownBranch(viewRepo Repo) (Branch, bool) {
+func (t *ViewRepo) CurrentNotShownBranch() (Branch, bool) {
+	viewRepo := t.getRepo()
 	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
@@ -398,7 +399,8 @@ func (t *ViewRepo) CurrentNotShownBranch(viewRepo Repo) (Branch, bool) {
 	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
 }
 
-func (t *ViewRepo) CurrentBranch(viewRepo Repo) (Branch, bool) {
+func (t *ViewRepo) CurrentBranch() (Branch, bool) {
+	viewRepo := t.getRepo()
 	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
@@ -413,7 +415,8 @@ func (t *ViewRepo) CurrentBranch(viewRepo Repo) (Branch, bool) {
 	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
 }
 
-func (t *ViewRepo) GetAllBranches(viewRepo Repo, skipShown bool) []Branch {
+func (t *ViewRepo) GetAllBranches(skipShown bool) []Branch {
+	viewRepo := t.getRepo()
 	branches := t.getAllBranches(viewRepo, skipShown)
 	sort.SliceStable(branches, func(i, j int) bool {
 		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
@@ -422,7 +425,8 @@ func (t *ViewRepo) GetAllBranches(viewRepo Repo, skipShown bool) []Branch {
 	return branches
 }
 
-func (t *ViewRepo) GetLatestBranches(viewRepo Repo, skipShown bool) []Branch {
+func (t *ViewRepo) GetLatestBranches(skipShown bool) []Branch {
+	viewRepo := t.getRepo()
 	branches := t.getAllBranches(viewRepo, skipShown)
 	sort.SliceStable(branches, func(i, j int) bool {
 		return viewRepo.viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
@@ -455,7 +459,8 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 	return false
 }
 
-func (t *ViewRepo) GetCommitOpenInBranches(commitID string, viewRepo Repo) []Branch {
+func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []Branch {
+	viewRepo := t.getRepo()
 	c := viewRepo.viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
 
@@ -487,7 +492,8 @@ func (t *ViewRepo) GetCommitOpenInBranches(commitID string, viewRepo Repo) []Bra
 	return bs
 }
 
-func (t *ViewRepo) GetCommitOpenOutBranches(commitID string, viewRepo Repo) []Branch {
+func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []Branch {
+	viewRepo := t.getRepo()
 	c := viewRepo.viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
 
@@ -532,7 +538,8 @@ func (t *ViewRepo) GetCommitOpenOutBranches(commitID string, viewRepo Repo) []Br
 }
 
 //
-func (t *ViewRepo) GetShownBranches(viewRepo Repo, skipMaster bool) []Branch {
+func (t *ViewRepo) GetShownBranches(skipMaster bool) []Branch {
+	viewRepo := t.getRepo()
 	var bs []Branch
 	for _, b := range viewRepo.viewRepo.Branches {
 		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
@@ -770,7 +777,8 @@ func (t *ViewRepo) CreateBranch(name string) error {
 	return t.gitRepo.CreateBranch(name)
 }
 
-func (t *ViewRepo) DeleteBranch(name string, repo Repo) error {
+func (t *ViewRepo) DeleteBranch(name string) error {
+	repo := t.getRepo()
 	branch, ok := repo.viewRepo.gitRepo.BranchByName(name)
 	if !ok {
 		return fmt.Errorf("unknown git branch %q", name)
