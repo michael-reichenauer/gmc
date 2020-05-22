@@ -308,7 +308,7 @@ func (t *ViewRepo) getViewModel(grepo gitrepo.Repo, branchNames []string) *viewR
 }
 
 func (t *ViewRepo) adjustCurrentBranchIfStatus(repo *viewRepo) {
-	if len(repo.Commits) < 2 || repo.Commits[0].ID != UncommittedID || repo.CurrentCommit == nil {
+	if len(repo.Commits) < 2 || repo.Commits[0].ID != git.UncommittedID || repo.CurrentCommit == nil {
 		return
 	}
 
@@ -484,7 +484,7 @@ func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []api.Branch {
 
 	for _, ccId := range c.ChildIDs {
 		// commit has children (i.e.), other branches have merged from this branch
-		if ccId == UncommittedID {
+		if ccId == git.UncommittedID {
 			continue
 		}
 		cc := viewRepo.gitRepo.CommitByID(ccId)

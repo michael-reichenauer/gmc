@@ -72,21 +72,23 @@ func toCommits(repo *viewRepo) []api.Commit {
 
 func toCommit(c *commit) api.Commit {
 	return api.Commit{
-		ID:           c.ID,
-		SID:          c.SID,
-		Subject:      c.Subject,
-		Message:      c.Message,
-		ParentIDs:    c.ParentIDs,
-		ChildIDs:     c.ChildIDs,
-		Author:       c.Author,
-		AuthorTime:   c.AuthorTime,
-		IsCurrent:    c.IsCurrent,
-		Branch:       toBranch(c.Branch),
-		More:         c.More,
-		BranchTips:   c.BranchTips,
-		IsLocalOnly:  c.IsLocalOnly,
-		IsRemoteOnly: c.IsRemoteOnly,
-		Tags:         c.Tags,
+		ID:                 c.ID,
+		SID:                c.SID,
+		Subject:            c.Subject,
+		Message:            c.Message,
+		ParentIDs:          c.ParentIDs,
+		ChildIDs:           c.ChildIDs,
+		Author:             c.Author,
+		AuthorTime:         c.AuthorTime,
+		IsCurrent:          c.IsCurrent,
+		Branch:             toBranch(c.Branch),
+		More:               c.More,
+		BranchTips:         c.BranchTips,
+		IsLocalOnly:        c.IsLocalOnly,
+		IsRemoteOnly:       c.IsRemoteOnly,
+		IsUncommitted:      c.ID == git.UncommittedID,
+		IsPartialLogCommit: c.ID == git.PartialLogCommitID,
+		Tags:               c.Tags,
 	}
 }
 

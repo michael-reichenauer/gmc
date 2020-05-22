@@ -3,7 +3,6 @@ package console
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"strings"
@@ -151,7 +150,7 @@ func (t *repoLayout) writeAuthor(sb *strings.Builder, commit api.Commit, length 
 }
 
 func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c api.Commit, length int) {
-	if c.ID == viewrepo.UncommittedID {
+	if c.IsUncommitted {
 		sb.WriteString(cui.Dark(utils.Text("", length)))
 		return
 	}
@@ -166,11 +165,11 @@ func (t *repoLayout) writeSubject(sb *strings.Builder, c api.Commit, currentBran
 	tagsText := t.toTagsText(c, length)
 
 	subject := utils.Text(c.Subject, length-len(tagsText))
-	if c.ID == viewrepo.PartialLogCommitID {
+	if c.IsPartialLogCommit {
 		sb.WriteString(cui.Dark(subject))
 		return
 	}
-	if c.ID == viewrepo.UncommittedID {
+	if c.IsUncommitted {
 		if repo.Conflicts > 0 {
 			sb.WriteString(cui.Red(subject))
 			return

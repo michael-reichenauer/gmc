@@ -27,7 +27,7 @@ func (h detailsVM) getCommitDetails(viewPort cui.ViewPage) (string, error) {
 	var sb strings.Builder
 	sb.WriteString(h.toViewLine(width, c.Branch) + "\n")
 	id := c.ID
-	if id == viewrepo.UncommittedID {
+	if c.IsUncommitted {
 		id = " "
 	}
 	sb.WriteString(toHeader("Id:") + cui.Dark(id) + "\n")
@@ -38,7 +38,7 @@ func (h detailsVM) getCommitDetails(viewPort cui.ViewPage) (string, error) {
 	sb.WriteString(toHeader("Branch tips:") + cui.Dark(toBranchTips(c.BranchTips)) + "\n")
 
 	color := cui.CDark
-	if c.ID == viewrepo.UncommittedID {
+	if c.IsUncommitted {
 		color = cui.CYellowDk
 	}
 
@@ -94,7 +94,7 @@ func (h detailsVM) toBranchText(c api.Commit) string {
 		typeText = cui.Dark(" (multiple) >")
 	case !c.Branch.IsGitBranch:
 		typeText = cui.Dark(" ()")
-	case c.ID == viewrepo.UncommittedID:
+	case c.IsUncommitted:
 		typeText = cui.Dark(" (local)")
 	case c.IsLocalOnly:
 		typeText = cui.Dark(" (local)")
@@ -109,7 +109,7 @@ func (h detailsVM) toBranchText(c api.Commit) string {
 	default:
 		typeText = cui.Dark(" (local)")
 	}
-	if c.ID == viewrepo.UncommittedID {
+	if c.IsUncommitted {
 		typeText = typeText + ", changes not yet committed"
 	} else if c.IsRemoteOnly {
 		typeText = typeText + ", commit not yet pulled"

@@ -54,21 +54,23 @@ const (
 )
 
 type Commit struct {
-	ID           string
-	SID          string
-	Subject      string
-	Message      string
-	Author       string
-	AuthorTime   time.Time
-	IsCurrent    bool
-	Branch       Branch
-	Tags         []string
-	More         utils.Bitmask
-	ParentIDs    []string
-	ChildIDs     []string
-	BranchTips   []string
-	IsLocalOnly  bool
-	IsRemoteOnly bool
+	ID                 string
+	SID                string
+	Subject            string
+	Message            string
+	Author             string
+	AuthorTime         time.Time
+	IsCurrent          bool
+	Branch             Branch
+	Tags               []string
+	More               utils.Bitmask
+	ParentIDs          []string
+	ChildIDs           []string
+	BranchTips         []string
+	IsLocalOnly        bool
+	IsRemoteOnly       bool
+	IsUncommitted      bool
+	IsPartialLogCommit bool
 }
 
 type GraphColumn struct {

@@ -10,9 +10,8 @@ import (
 )
 
 const (
-	UncommittedID      = git.UncommittedID
-	UncommittedSID     = git.UncommittedSID
-	PartialLogCommitID = git.PartialLogCommitID
+// UncommittedID      = git.UncommittedID
+// PartialLogCommitID = git.PartialLogCommitID
 )
 
 type viewRepo struct {
@@ -189,8 +188,8 @@ func (t *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string
 func (t *viewRepo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
 	branch := t.BranchByName(branchName)
 	return &commit{
-		ID:         UncommittedID,
-		SID:        UncommittedSID,
+		ID:         git.UncommittedID,
+		SID:        git.UncommittedSID,
 		Subject:    statusText,
 		Message:    statusText,
 		Author:     "",
