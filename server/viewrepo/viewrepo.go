@@ -70,6 +70,10 @@ func (t *ViewRepo) getViewRepo() *viewRepo {
 	return t.viewRepo
 }
 
+func (t *ViewRepo) StartMonitor() {
+	go t.monitorViewModelRoutine(t.ctx)
+}
+
 func (t *ViewRepo) Close() {
 	t.cancel()
 }
@@ -78,8 +82,20 @@ func (t *ViewRepo) RepoChanges() chan api.RepoChange {
 	return t.repoChanges
 }
 
-func (t *ViewRepo) StartMonitor() {
-	go t.monitorViewModelRoutine(t.ctx)
+func (t *ViewRepo) GetCurrentBranch() (api.Branch, bool) {
+	viewRepo := t.getViewRepo()
+	current, ok := viewRepo.gitRepo.CurrentBranch()
+	if !ok {
+		return api.Branch{}, false
+	}
+
+	for _, b := range viewRepo.Branches {
+		if current.Name == b.name {
+			return toBranch(b), true
+		}
+	}
+
+	return toBranch(viewRepo.toBranch(current, 0)), true
 }
 
 func (t *ViewRepo) TriggerRefreshModel() {
@@ -119,6 +135,220 @@ func (t *ViewRepo) SwitchToBranch(name string, displayName string) error {
 
 func (t *ViewRepo) Commit(Commit string) error {
 	return t.gitRepo.Commit(Commit)
+}
+
+func (t *ViewRepo) BranchColor(name string) cui.Color {
+	if strings.HasPrefix(name, "multiple@") {
+		return cui.CWhite
+	}
+	color, ok := t.customBranchColors[name]
+	if ok {
+		return cui.Color(color)
+	}
+	if name == "master" {
+		return cui.CMagenta
+	}
+	if name == "develop" {
+		return cui.CRedDk
+	}
+
+	h := fnv.New32a()
+	h.Write([]byte(name))
+	index := int(h.Sum32()) % len(branchColors)
+	return branchColors[index]
+}
+
+func (t *ViewRepo) GetCurrentNotShownBranch() (api.Branch, bool) {
+	viewRepo := t.getViewRepo()
+	current, ok := viewRepo.gitRepo.CurrentBranch()
+	if !ok {
+		return api.Branch{}, false
+	}
+	if containsBranch(viewRepo.Branches, current.Name) {
+		return api.Branch{}, false
+	}
+
+	return toBranch(viewRepo.toBranch(current, 0)), true
+}
+
+func (t *ViewRepo) GetAllBranches(skipShown bool) []api.Branch {
+	viewRepo := t.getViewRepo()
+	branches := t.getAllBranches(viewRepo, skipShown)
+	sort.SliceStable(branches, func(i, j int) bool {
+		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+	})
+
+	return branches
+}
+
+func (t *ViewRepo) GetLatestBranches(skipShown bool) []api.Branch {
+	viewRepo := t.getViewRepo()
+	branches := t.getAllBranches(viewRepo, skipShown)
+	sort.SliceStable(branches, func(i, j int) bool {
+		return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
+	})
+
+	return branches
+}
+
+func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []api.Branch {
+	viewRepo := t.getViewRepo()
+	c := viewRepo.gitRepo.CommitByID(commitID)
+	var branches []*gitrepo.Branch
+
+	if len(c.ParentIDs) > 1 {
+		// commit has branch merged into this commit add it
+		mergeParent := viewRepo.gitRepo.CommitByID(c.ParentIDs[1])
+		branches = append(branches, mergeParent.Branch)
+	}
+
+	var bs []api.Branch
+	for _, b := range branches {
+		if nil != funk.Find(bs, func(bsb api.Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
+				b.Name == bsb.RemoteName
+		}) {
+			// Skip duplicates
+			continue
+		}
+		if nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
+			// Skip branches already shown
+			continue
+		}
+
+		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
+	}
+
+	return bs
+}
+
+func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []api.Branch {
+	viewRepo := t.getViewRepo()
+	c := viewRepo.gitRepo.CommitByID(commitID)
+	var branches []*gitrepo.Branch
+
+	for _, ccId := range c.ChildIDs {
+		// commit has children (i.e.), other branches have merged from this branch
+		if ccId == git.UncommittedID {
+			continue
+		}
+		cc := viewRepo.gitRepo.CommitByID(ccId)
+		if cc.Branch.Name != c.Branch.Name {
+			branches = append(branches, cc.Branch)
+		}
+	}
+
+	for _, b := range viewRepo.gitRepo.Branches {
+		if b.TipID == b.BottomID && b.BottomID == c.Id && b.ParentBranch.Name == c.Branch.Name {
+			// empty branch with no own branch commit, (branch start)
+			branches = append(branches, b)
+		}
+	}
+
+	var bs []api.Branch
+	for _, b := range branches {
+		if nil != funk.Find(bs, func(bsb api.Branch) bool {
+			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
+				b.Name == bsb.RemoteName
+		}) {
+			// Skip duplicates
+			continue
+		}
+		if nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
+			return b.Name == bsb.name
+		}) {
+			// Skip branches already shown
+			continue
+		}
+
+		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
+	}
+
+	return bs
+}
+
+//
+func (t *ViewRepo) GetShownBranches(skipMaster bool) []api.Branch {
+	viewRepo := t.getViewRepo()
+	var bs []api.Branch
+	for _, b := range viewRepo.Branches {
+		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
+			// Do not support closing master branch
+			continue
+		}
+		if b.isRemote && nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
+			return b.name == bsb.remoteName
+		}) {
+			// Skip remote if local exist
+			continue
+		}
+		if nil != funk.Find(bs, func(bsb api.Branch) bool {
+			return b.displayName == bsb.DisplayName
+		}) {
+			// Skip duplicates
+			continue
+		}
+
+		bs = append(bs, toBranch(b))
+	}
+	return bs
+}
+
+func (t *ViewRepo) ShowBranch(name string) {
+	viewRepo := t.getViewRepo()
+	branchNames := t.toBranchNames(viewRepo.Branches)
+
+	branch, ok := viewRepo.gitRepo.BranchByName(name)
+	if !ok {
+		return
+	}
+
+	branchNames = t.addBranchWithAncestors(branchNames, branch)
+
+	log.Event("vms-branches-open")
+	t.showBranches(branchNames)
+}
+
+func (t *ViewRepo) TriggerSearch(text string) {
+	log.Eventf("vms-search", text)
+	select {
+	case t.showRequests <- showRequest{searchText: text}:
+	default:
+	}
+}
+
+//
+func (t *ViewRepo) HideBranch(name string) {
+	viewRepo := t.getViewRepo()
+	hideBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
+		return name == b.name
+	}).(*branch)
+	if !ok || hideBranch == nil {
+		// No branch with that name
+		return
+	}
+	if hideBranch.remoteName != "" {
+		remoteBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
+			return hideBranch.remoteName == b.name
+		}).(*branch)
+		if ok && remoteBranch != nil {
+			// The branch to hide has a remote branch, hiding that and the local branch
+			// will be hidden as well
+			hideBranch = remoteBranch
+		}
+	}
+
+	var branchNames []string
+	for _, b := range viewRepo.Branches {
+		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
+			branchNames = append(branchNames, b.name)
+		}
+	}
+
+	log.Event("vms-branches-close")
+	t.showBranches(branchNames)
 }
 
 func (t *ViewRepo) showBranches(branchIds []string) {
@@ -318,99 +548,6 @@ func (t *ViewRepo) adjustCurrentBranchIfStatus(repo *viewRepo) {
 	}
 }
 
-func (t *ViewRepo) BranchColor(name string) cui.Color {
-	if strings.HasPrefix(name, "multiple@") {
-		return cui.CWhite
-	}
-	color, ok := t.customBranchColors[name]
-	if ok {
-		return cui.Color(color)
-	}
-	if name == "master" {
-		return cui.CMagenta
-	}
-	if name == "develop" {
-		return cui.CRedDk
-	}
-
-	h := fnv.New32a()
-	h.Write([]byte(name))
-	index := int(h.Sum32()) % len(branchColors)
-	return branchColors[index]
-}
-
-// func (s *Service) CurrentBranchNames() []string {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	if s.currentViewModel == nil {
-// 		return []string{}
-// 	}
-//
-// 	var branchNames []string
-// 	for _, b := range s.currentViewModel.Branches {
-// 		branchNames = append(branchNames, b.name)
-// 	}
-// 	return branchNames
-// }
-//
-// func (s *Service) GetCommitByIndex(index int) (Commit, error) {
-// 	s.lock.Lock()
-// 	defer s.lock.Unlock()
-// 	if index < 0 || index >= len(s.currentViewModel.Commits) {
-// 		return Commit{}, fmt.Errorf("no commit")
-// 	}
-// 	return toCommit(s.currentViewModel.Commits[index]), nil
-// }
-//
-func (t *ViewRepo) CurrentNotShownBranch() (api.Branch, bool) {
-	viewRepo := t.getViewRepo()
-	current, ok := viewRepo.gitRepo.CurrentBranch()
-	if !ok {
-		return api.Branch{}, false
-	}
-	if containsBranch(viewRepo.Branches, current.Name) {
-		return api.Branch{}, false
-	}
-
-	return toBranch(viewRepo.toBranch(current, 0)), true
-}
-
-func (t *ViewRepo) CurrentBranch() (api.Branch, bool) {
-	viewRepo := t.getViewRepo()
-	current, ok := viewRepo.gitRepo.CurrentBranch()
-	if !ok {
-		return api.Branch{}, false
-	}
-
-	for _, b := range viewRepo.Branches {
-		if current.Name == b.name {
-			return toBranch(b), true
-		}
-	}
-
-	return toBranch(viewRepo.toBranch(current, 0)), true
-}
-
-func (t *ViewRepo) GetAllBranches(skipShown bool) []api.Branch {
-	viewRepo := t.getViewRepo()
-	branches := t.getAllBranches(viewRepo, skipShown)
-	sort.SliceStable(branches, func(i, j int) bool {
-		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
-	})
-
-	return branches
-}
-
-func (t *ViewRepo) GetLatestBranches(skipShown bool) []api.Branch {
-	viewRepo := t.getViewRepo()
-	branches := t.getAllBranches(viewRepo, skipShown)
-	sort.SliceStable(branches, func(i, j int) bool {
-		return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
-	})
-
-	return branches
-}
-
 func (t *ViewRepo) getAllBranches(viewRepo *viewRepo, skipShown bool) []api.Branch {
 	var branches []api.Branch
 	for _, b := range viewRepo.gitRepo.Branches {
@@ -435,111 +572,6 @@ func containsDisplayNameBranch(branches []api.Branch, displayName string) bool {
 	return false
 }
 
-func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []api.Branch {
-	viewRepo := t.getViewRepo()
-	c := viewRepo.gitRepo.CommitByID(commitID)
-	var branches []*gitrepo.Branch
-
-	if len(c.ParentIDs) > 1 {
-		// commit has branch merged into this commit add it
-		mergeParent := viewRepo.gitRepo.CommitByID(c.ParentIDs[1])
-		branches = append(branches, mergeParent.Branch)
-	}
-
-	var bs []api.Branch
-	for _, b := range branches {
-		if nil != funk.Find(bs, func(bsb api.Branch) bool {
-			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
-				b.Name == bsb.RemoteName
-		}) {
-			// Skip duplicates
-			continue
-		}
-		if nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
-			return b.Name == bsb.name
-		}) {
-			// Skip branches already shown
-			continue
-		}
-
-		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
-	}
-
-	return bs
-}
-
-func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []api.Branch {
-	viewRepo := t.getViewRepo()
-	c := viewRepo.gitRepo.CommitByID(commitID)
-	var branches []*gitrepo.Branch
-
-	for _, ccId := range c.ChildIDs {
-		// commit has children (i.e.), other branches have merged from this branch
-		if ccId == git.UncommittedID {
-			continue
-		}
-		cc := viewRepo.gitRepo.CommitByID(ccId)
-		if cc.Branch.Name != c.Branch.Name {
-			branches = append(branches, cc.Branch)
-		}
-	}
-
-	for _, b := range viewRepo.gitRepo.Branches {
-		if b.TipID == b.BottomID && b.BottomID == c.Id && b.ParentBranch.Name == c.Branch.Name {
-			// empty branch with no own branch commit, (branch start)
-			branches = append(branches, b)
-		}
-	}
-
-	var bs []api.Branch
-	for _, b := range branches {
-		if nil != funk.Find(bs, func(bsb api.Branch) bool {
-			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
-				b.Name == bsb.RemoteName
-		}) {
-			// Skip duplicates
-			continue
-		}
-		if nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
-			return b.Name == bsb.name
-		}) {
-			// Skip branches already shown
-			continue
-		}
-
-		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
-	}
-
-	return bs
-}
-
-//
-func (t *ViewRepo) GetShownBranches(skipMaster bool) []api.Branch {
-	viewRepo := t.getViewRepo()
-	var bs []api.Branch
-	for _, b := range viewRepo.Branches {
-		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
-			// Do not support closing master branch
-			continue
-		}
-		if b.isRemote && nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
-			return b.name == bsb.remoteName
-		}) {
-			// Skip remote if local exist
-			continue
-		}
-		if nil != funk.Find(bs, func(bsb api.Branch) bool {
-			return b.displayName == bsb.DisplayName
-		}) {
-			// Skip duplicates
-			continue
-		}
-
-		bs = append(bs, toBranch(b))
-	}
-	return bs
-}
-
 //
 func containsBranch(branches []*branch, name string) bool {
 	for _, b := range branches {
@@ -549,62 +581,6 @@ func containsBranch(branches []*branch, name string) bool {
 	}
 	return false
 }
-
-func (t *ViewRepo) ShowBranch(name string) {
-	viewRepo := t.getViewRepo()
-	branchNames := t.toBranchNames(viewRepo.Branches)
-
-	branch, ok := viewRepo.gitRepo.BranchByName(name)
-	if !ok {
-		return
-	}
-
-	branchNames = t.addBranchWithAncestors(branchNames, branch)
-
-	log.Event("vms-branches-open")
-	t.showBranches(branchNames)
-}
-
-func (t *ViewRepo) TriggerSearch(text string) {
-	log.Eventf("vms-search", text)
-	select {
-	case t.showRequests <- showRequest{searchText: text}:
-	default:
-	}
-}
-
-//
-func (t *ViewRepo) HideBranch(name string) {
-	viewRepo := t.getViewRepo()
-	hideBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
-		return name == b.name
-	}).(*branch)
-	if !ok || hideBranch == nil {
-		// No branch with that name
-		return
-	}
-	if hideBranch.remoteName != "" {
-		remoteBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
-			return hideBranch.remoteName == b.name
-		}).(*branch)
-		if ok && remoteBranch != nil {
-			// The branch to hide has a remote branch, hiding that and the local branch
-			// will be hidden as well
-			hideBranch = remoteBranch
-		}
-	}
-
-	var branchNames []string
-	for _, b := range viewRepo.Branches {
-		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
-			branchNames = append(branchNames, b.name)
-		}
-	}
-
-	log.Event("vms-branches-close")
-	t.showBranches(branchNames)
-}
-
 func (t *ViewRepo) setBranchParentChildRelations(repo *viewRepo) {
 	for _, b := range repo.Branches {
 		b.tip = repo.commitById[b.tipId]
@@ -657,6 +633,13 @@ func (t *ViewRepo) toBranchNames(branches []*branch) []string {
 	return ids
 }
 
+func (t *ViewRepo) getBranchNames(repo *viewRepo) []string {
+	var names []string
+	for _, b := range repo.Branches {
+		names = append(names, b.name)
+	}
+	return names
+}
 func (t *ViewRepo) setAheadBehind(repo *viewRepo) {
 	for _, b := range repo.Branches {
 		if b.isRemote && b.localName != "" {
@@ -666,6 +649,7 @@ func (t *ViewRepo) setAheadBehind(repo *viewRepo) {
 		}
 	}
 }
+
 func (t *ViewRepo) setIsRemoteOnlyCommits(repo *viewRepo, b *branch) {
 	localBranch := repo.tryGetBranchByName(b.localName)
 	localTip := t.tryGetRealLocalTip(localBranch)
@@ -735,14 +719,6 @@ func (t *ViewRepo) PushBranch(name string) error {
 
 func (t *ViewRepo) PullBranch() error {
 	return t.gitRepo.PullBranch()
-}
-
-func (t *ViewRepo) getBranchNames(repo *viewRepo) []string {
-	var names []string
-	for _, b := range repo.Branches {
-		names = append(names, b.name)
-	}
-	return names
 }
 
 func (t *ViewRepo) MergeBranch(name string) error {
@@ -816,51 +792,3 @@ func (t *ViewRepo) addTags(repo *viewRepo, tags []gitrepo.Tag) {
 		c.Tags = append(c.Tags, tag.TagName)
 	}
 }
-
-func (t *ViewRepo) setBranchColors(repo *viewRepo) {
-	for _, b := range repo.Branches {
-		b.color = t.BranchColor(b.displayName)
-	}
-}
-
-//
-// func (s *Service) ChangeBranchColor(index int) {
-// 	log.Event("vms-branches-change-color")
-// 	var branchName string
-// 	s.lock.Lock()
-// 	if index >= len(s.currentViewModel.Commits) {
-// 		// Repo must just have changed, just ignore
-// 		s.lock.Unlock()
-// 		return
-// 	}
-// 	c := s.currentViewModel.Commits[index]
-// 	branchName = c.Branch.displayName
-// 	s.lock.Unlock()
-//
-// 	color := s.BranchColor(branchName)
-// 	for i, c := range branchColors {
-// 		if color == c {
-// 			index := int((i + 1) % len(branchColors))
-// 			color = branchColors[index]
-// 			s.customBranchColors[branchName] = int(color)
-// 			break
-// 		}
-// 	}
-//
-// 	s.configService.SetRepo(s.gmRepo.RepoPath, func(r *config.Repo) {
-// 		isSet := false
-// 		cb := config.Branch{DisplayName: branchName, Color: int(color)}
-//
-// 		for i, b := range r.Branches {
-// 			if branchName == b.DisplayName {
-// 				r.Branches[i] = cb
-// 				isSet = true
-// 				break
-// 			}
-// 		}
-// 		if !isSet {
-// 			r.Branches = append(r.Branches, cb)
-// 		}
-// 	})
-// }
-//

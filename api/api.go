@@ -15,8 +15,8 @@ type Repo interface {
 	TriggerSearch(text string)
 	GetCommitOpenInBranches(id string) []Branch
 	GetCommitOpenOutBranches(id string) []Branch
-	CurrentNotShownBranch() (Branch, bool)
-	CurrentBranch() (Branch, bool)
+	GetCurrentNotShownBranch() (Branch, bool)
+	GetCurrentBranch() (Branch, bool)
 	GetLatestBranches(shown bool) []Branch
 	GetAllBranches(shown bool) []Branch
 	GetShownBranches(master bool) []Branch

@@ -44,6 +44,12 @@ func (t *ViewRepo) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo
 	return branches
 }
 
+func (t *ViewRepo) setBranchColors(repo *viewRepo) {
+	for _, b := range repo.Branches {
+		b.color = t.BranchColor(b.displayName)
+	}
+}
+
 func (t *ViewRepo) appendIfNotAppended(branches []*gitrepo.Branch, branch *gitrepo.Branch) []*gitrepo.Branch {
 	for _, b := range branches {
 		if b == branch {

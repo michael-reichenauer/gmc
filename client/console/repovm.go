@@ -197,13 +197,13 @@ func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
 }
 
 func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
-	current, ok := h.viewRepo.CurrentNotShownBranch()
+	current, ok := h.viewRepo.GetCurrentNotShownBranch()
 
 	return current, ok
 }
 
 func (h *repoVM) CurrentBranch() (api.Branch, bool) {
-	current, ok := h.viewRepo.CurrentBranch()
+	current, ok := h.viewRepo.GetCurrentBranch()
 	return current, ok
 }
 
