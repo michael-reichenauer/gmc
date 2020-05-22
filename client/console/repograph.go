@@ -1,7 +1,7 @@
 package console
 
 import (
-	"github.com/michael-reichenauer/gmc/server/viewrepo"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 )
@@ -23,42 +23,42 @@ func newRepoGraph() *repoGraph {
 func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	switch {
 	// commit of a branch with only one commit (tip==bottom)
-	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BBottom) && bm.Has(viewrepo.BActiveTip) && t.hasLeft(bm):
+	case bm.Has(api.BTip) && bm.Has(api.BBottom) && bm.Has(api.BActiveTip) && t.hasLeft(bm):
 		return '┺'
-	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BBottom) && t.hasLeft(bm):
+	case bm.Has(api.BTip) && bm.Has(api.BBottom) && t.hasLeft(bm):
 		return '╼'
 
 	// commit is tip
-	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BActiveTip) && t.hasLeft(bm):
+	case bm.Has(api.BTip) && bm.Has(api.BActiveTip) && t.hasLeft(bm):
 		return '╊'
-	case bm.Has(viewrepo.BTip) && bm.Has(viewrepo.BActiveTip):
+	case bm.Has(api.BTip) && bm.Has(api.BActiveTip):
 		return '┣'
-	case bm.Has(viewrepo.BTip) && t.hasLeft(bm):
+	case bm.Has(api.BTip) && t.hasLeft(bm):
 		return '┲'
-	case bm.Has(viewrepo.BTip):
+	case bm.Has(api.BTip):
 		return '┏'
 
 	// commit is bottom
-	case bm.Has(viewrepo.BBottom) && t.hasLeft(bm):
+	case bm.Has(api.BBottom) && t.hasLeft(bm):
 		return '┺'
-	case bm.Has(viewrepo.BBottom):
+	case bm.Has(api.BBottom):
 		return '┚'
 
 	// commit is within branch
-	case bm.Has(viewrepo.BCommit) && t.hasLeft(bm):
+	case bm.Has(api.BCommit) && t.hasLeft(bm):
 		return '╊'
-	case bm.Has(viewrepo.BCommit):
+	case bm.Has(api.BCommit):
 		return '┣'
 
 	// commit is not part of branch
-	case bm.Has(viewrepo.BLine) && t.hasLeft(bm):
+	case bm.Has(api.BLine) && t.hasLeft(bm):
 		return '╂'
-	case bm.Has(viewrepo.BLine):
+	case bm.Has(api.BLine):
 		return '┃'
 
-	case bm == viewrepo.BPass:
+	case bm == api.BPass:
 		return '─'
-	case bm == viewrepo.BBlank:
+	case bm == api.BBlank:
 		return ' '
 	default:
 		return '*'
@@ -67,41 +67,41 @@ func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
 
 func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
-	case viewrepo.BMergeRight:
+	case api.BMergeRight:
 		return '╮'
-	case viewrepo.BMergeRight | viewrepo.BPass:
+	case api.BMergeRight | api.BPass:
 		return '┬'
-	case viewrepo.BMergeRight | viewrepo.BMLine:
+	case api.BMergeRight | api.BMLine:
 		return '┤'
-	case viewrepo.BMergeRight | viewrepo.BBranchRight:
+	case api.BMergeRight | api.BBranchRight:
 		return '┤'
-	case viewrepo.BMergeRight | viewrepo.BBranchRight | viewrepo.BPass:
+	case api.BMergeRight | api.BBranchRight | api.BPass:
 		return '┴'
-	case viewrepo.BBranchRight:
+	case api.BBranchRight:
 		return '╯'
-	case viewrepo.BBranchRight | viewrepo.BMLine | viewrepo.BPass:
+	case api.BBranchRight | api.BMLine | api.BPass:
 		return '┼'
-	case viewrepo.BBranchRight | viewrepo.BPass:
+	case api.BBranchRight | api.BPass:
 		return '┴'
-	case viewrepo.BBranchRight | viewrepo.BMLine:
+	case api.BBranchRight | api.BMLine:
 		return '┤'
-	case viewrepo.BMergeLeft:
+	case api.BMergeLeft:
 		return '╭'
-	case viewrepo.BMergeLeft | viewrepo.BBranchLeft:
+	case api.BMergeLeft | api.BBranchLeft:
 		return '├'
-	case viewrepo.BMergeLeft | viewrepo.BMLine:
+	case api.BMergeLeft | api.BMLine:
 		return '├'
-	case viewrepo.BBranchLeft:
+	case api.BBranchLeft:
 		return '╰'
-	case viewrepo.BBranchLeft | viewrepo.BMLine:
+	case api.BBranchLeft | api.BMLine:
 		return '├'
-	case viewrepo.BMLine | viewrepo.BPass:
+	case api.BMLine | api.BPass:
 		return '┼'
-	case viewrepo.BMLine:
+	case api.BMLine:
 		return '│'
-	case viewrepo.BPass:
+	case api.BPass:
 		return '─'
-	case viewrepo.BBlank:
+	case api.BBlank:
 		return ' '
 	default:
 		return '*'
@@ -109,7 +109,7 @@ func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
 }
 
 func (t *repoGraph) hasLeft(bm utils.Bitmask) bool {
-	return bm.Has(viewrepo.BBranchLeft) ||
-		bm.Has(viewrepo.BMergeLeft) ||
-		bm.Has(viewrepo.BPass)
+	return bm.Has(api.BBranchLeft) ||
+		bm.Has(api.BMergeLeft) ||
+		bm.Has(api.BPass)
 }

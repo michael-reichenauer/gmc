@@ -2,6 +2,7 @@ package viewrepo
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -155,9 +156,9 @@ func (t *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 func (t *viewRepo) toCommit(repo *gitrepo.Commit, index int, includeGraph bool) *commit {
 	var branch = t.BranchByName(repo.Branch.Name)
 
-	var graph []GraphColumn
+	var graph []api.GraphColumn
 	if includeGraph {
-		graph = make([]GraphColumn, len(t.Branches))
+		graph = make([]api.GraphColumn, len(t.Branches))
 	}
 	return &commit{
 		ID:         repo.Id,
@@ -199,7 +200,7 @@ func (t *viewRepo) toVirtualStatusCommit(branchName string, statusText string, i
 		IsCurrent:  false,
 		Branch:     branch,
 		Index:      index,
-		graph:      make([]GraphColumn, len(t.Branches)),
+		graph:      make([]api.GraphColumn, len(t.Branches)),
 	}
 }
 

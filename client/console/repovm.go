@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -25,8 +24,8 @@ type repoVM struct {
 	repoLayout        *repoLayout
 	isDetails         bool
 	cancel            context.CancelFunc
-	repo              viewrepo.Repo
-	searchRepo        viewrepo.Repo
+	repo              api.VRepo
+	searchRepo        api.VRepo
 	firstIndex        int
 	currentIndex      int
 	onRepoUpdatedFunc func()
@@ -139,7 +138,7 @@ func (h *repoVM) isMoreClick(x int, y int) bool {
 	return x == moreX
 }
 
-func (h *repoVM) getCommits(viewPage cui.ViewPage) (int, []viewrepo.Commit) {
+func (h *repoVM) getCommits(viewPage cui.ViewPage) (int, []api.Commit) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
 	if count > len(h.repo.Commits) {
@@ -179,44 +178,44 @@ func (h *repoVM) showSelectedCommitDiff() {
 	h.showCommitDiff(c.ID)
 }
 
-func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []viewrepo.Branch {
+func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []api.Branch {
 	c := h.repo.Commits[selectedIndex]
-	if c.More == viewrepo.MoreNone {
+	if c.More == api.MoreNone {
 		return nil
 	}
 
 	return h.viewRepo.GetCommitOpenInBranches(c.ID)
 }
 
-func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []viewrepo.Branch {
+func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
 	c := h.repo.Commits[selectedIndex]
-	if c.More == viewrepo.MoreNone {
+	if c.More == api.MoreNone {
 		return nil
 	}
 
 	return h.viewRepo.GetCommitOpenOutBranches(c.ID)
 }
 
-func (h *repoVM) CurrentNotShownBranch() (viewrepo.Branch, bool) {
+func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	current, ok := h.viewRepo.CurrentNotShownBranch()
 
 	return current, ok
 }
 
-func (h *repoVM) CurrentBranch() (viewrepo.Branch, bool) {
+func (h *repoVM) CurrentBranch() (api.Branch, bool) {
 	current, ok := h.viewRepo.CurrentBranch()
 	return current, ok
 }
 
-func (h *repoVM) GetLatestBranches(skipShown bool) []viewrepo.Branch {
+func (h *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 	return h.viewRepo.GetLatestBranches(skipShown)
 }
 
-func (h *repoVM) GetAllBranches(skipShown bool) []viewrepo.Branch {
+func (h *repoVM) GetAllBranches(skipShown bool) []api.Branch {
 	return h.viewRepo.GetAllBranches(skipShown)
 }
 
-func (h *repoVM) GetShownBranches(skipMaster bool) []viewrepo.Branch {
+func (h *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	return h.viewRepo.GetShownBranches(skipMaster)
 }
 

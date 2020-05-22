@@ -1,7 +1,7 @@
 package console
 
 import (
-	"github.com/michael-reichenauer/gmc/server/viewrepo"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
@@ -25,7 +25,7 @@ func (h *DetailsView) viewData(viewPage cui.ViewPage) string {
 	return details
 }
 
-func (h *DetailsView) SetCurrent(commit viewrepo.Commit) {
+func (h *DetailsView) SetCurrent(commit api.Commit) {
 	h.vm.setCurrentCommit(commit)
 	h.NotifyChanged()
 }

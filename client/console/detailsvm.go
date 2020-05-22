@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"strings"
@@ -13,7 +14,7 @@ var (
 )
 
 type detailsVM struct {
-	currentCommit viewrepo.Commit
+	currentCommit api.Commit
 }
 
 func NewDetailsVM() *detailsVM {
@@ -55,7 +56,7 @@ func (h detailsVM) getCommitDetails(viewPort cui.ViewPage) (string, error) {
 	return sb.String(), nil
 }
 
-func (h detailsVM) toViewLine(width int, branch viewrepo.Branch) string {
+func (h detailsVM) toViewLine(width int, branch api.Branch) string {
 	prefixWidth := branch.Index*2 - 1
 	suffixWidth := width - branch.Index*2 - 2
 	pointer := " " + branchPointer + " "
@@ -85,7 +86,7 @@ func toHeader(text string) string {
 	return cui.White(fmt.Sprintf(" %-13s", text))
 }
 
-func (h detailsVM) toBranchText(c viewrepo.Commit) string {
+func (h detailsVM) toBranchText(c api.Commit) string {
 	typeText := ""
 
 	switch {
@@ -118,6 +119,6 @@ func (h detailsVM) toBranchText(c viewrepo.Commit) string {
 	return c.Branch.DisplayName + cui.Dark(typeText)
 }
 
-func (h detailsVM) setCurrentCommit(commit viewrepo.Commit) {
+func (h detailsVM) setCurrentCommit(commit api.Commit) {
 	h.currentCommit = commit
 }

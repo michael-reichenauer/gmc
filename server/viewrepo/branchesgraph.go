@@ -1,5 +1,9 @@
 package viewrepo
 
+import (
+	"github.com/michael-reichenauer/gmc/api"
+)
+
 type branchesGraph struct {
 }
 
@@ -22,16 +26,16 @@ func (s *branchesGraph) drawBranchLine(branch *branch) {
 			break
 		}
 		if c == c.Branch.tip {
-			c.graph[branch.index].Branch.Set(BTip) //       ┏   (branch tip)
+			c.graph[branch.index].Branch.Set(api.BTip) //       ┏   (branch tip)
 		}
 		if c == c.Branch.tip && c.Branch.isGitBranch {
-			c.graph[branch.index].Branch.Set(BActiveTip) // ┣   (indicate possible more commits in the future)
+			c.graph[branch.index].Branch.Set(api.BActiveTip) // ┣   (indicate possible more commits in the future)
 		}
 		if c == c.Branch.bottom {
-			c.graph[branch.index].Branch.Set(BBottom) // ┗   (bottom commit (e.g. initial commit on master)
+			c.graph[branch.index].Branch.Set(api.BBottom) // ┗   (bottom commit (e.g. initial commit on master)
 		}
 		if c != c.Branch.tip && c != c.Branch.bottom { // ┣   (normal commit, in the middle)
-			c.graph[branch.index].Branch.Set(BCommit)
+			c.graph[branch.index].Branch.Set(api.BCommit)
 		}
 
 		if c.Parent == nil || c.Branch != c.Parent.Branch {
@@ -56,12 +60,12 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 					// Commit has merge (2 parents)
 					if c.MergeParent.Branch.index < c.Branch.index {
 						// Other branch is left side ╭
-						c.graph[i].Connect.Set(BMergeLeft)
-						c.graph[i].Branch.Set(BMergeLeft)
+						c.graph[i].Connect.Set(api.BMergeLeft)
+						c.graph[i].Branch.Set(api.BMergeLeft)
 						// Draw horizontal pass through line ───
 						for k := c.MergeParent.Branch.index + 1; k < c.Branch.index; k++ {
-							c.MergeParent.graph[k].Connect.Set(BPass)
-							c.MergeParent.graph[k].Branch.Set(BPass)
+							c.MergeParent.graph[k].Connect.Set(api.BPass)
+							c.MergeParent.graph[k].Branch.Set(api.BPass)
 							if c.MergeParent.graph[k].PassName == "" {
 								c.MergeParent.graph[k].PassName = b.displayName
 							} else {
@@ -71,18 +75,18 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
 							cc := repo.Commits[j]
-							cc.graph[i].Connect.Set(BMLine)
+							cc.graph[i].Connect.Set(api.BMLine)
 						}
 						// Draw ╯
-						c.MergeParent.graph[i].Connect.Set(BBranchRight)
+						c.MergeParent.graph[i].Connect.Set(api.BBranchRight)
 					} else {
 						// Other branch is right side  ╮
 						// Draw merge in rune
-						c.graph[c.MergeParent.Branch.index].Connect.Set(BMergeRight)
+						c.graph[c.MergeParent.Branch.index].Connect.Set(api.BMergeRight)
 						// Draw horizontal pass through line ───
 						for k := i + 1; k < c.MergeParent.Branch.index; k++ {
-							c.graph[k].Connect.Set(BPass)
-							c.graph[k].Branch.Set(BPass)
+							c.graph[k].Connect.Set(api.BPass)
+							c.graph[k].Branch.Set(api.BPass)
 							if c.graph[k].PassName == "" {
 								c.graph[k].PassName = c.MergeParent.Branch.displayName
 							} else {
@@ -92,24 +96,24 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 						// Draw vertical down line │
 						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
 							cc := repo.Commits[j]
-							cc.graph[c.MergeParent.Branch.index].Connect.Set(BMLine)
+							cc.graph[c.MergeParent.Branch.index].Connect.Set(api.BMLine)
 						}
 						// Draw branch out rune ╰
-						c.MergeParent.graph[c.MergeParent.Branch.index].Connect.Set(BBranchLeft)
-						c.MergeParent.graph[c.MergeParent.Branch.index].Branch.Set(BBranchLeft)
+						c.MergeParent.graph[c.MergeParent.Branch.index].Connect.Set(api.BBranchLeft)
+						c.MergeParent.graph[c.MergeParent.Branch.index].Branch.Set(api.BBranchLeft)
 					}
 				}
 				if c.Parent != nil && c.Parent.Branch != c.Branch {
 					// Commit parent is on other branch (bottom/first commit on this branch)
 					if c.Parent.Branch.index < c.Branch.index {
 						// Other branch is left side  ╭
-						c.graph[i].Connect.Set(BMergeLeft)
-						c.graph[i].Branch.Set(BMergeLeft)
+						c.graph[i].Connect.Set(api.BMergeLeft)
+						c.graph[i].Branch.Set(api.BMergeLeft)
 
 						// ──
 						for k := c.Parent.Branch.index + 1; k < c.Branch.index; k++ {
-							c.Parent.graph[k].Connect.Set(BPass)
-							c.Parent.graph[k].Branch.Set(BPass)
+							c.Parent.graph[k].Connect.Set(api.BPass)
+							c.Parent.graph[k].Branch.Set(api.BPass)
 							if c.Parent.graph[k].PassName == "" {
 								c.Parent.graph[k].PassName = b.displayName
 							} else {
@@ -119,32 +123,32 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 						// │
 						for j := c.Index + 1; j < c.Parent.Index; j++ {
 							cc := repo.Commits[j]
-							cc.graph[i].Connect.Set(BMLine)
+							cc.graph[i].Connect.Set(api.BMLine)
 						}
 						// ╯
-						c.Parent.graph[i].Connect.Set(BBranchRight)
+						c.Parent.graph[i].Connect.Set(api.BBranchRight)
 					} else {
 						// Other branch is right side ╮
-						c.graph[i+1].Connect.Set(BMergeRight)
+						c.graph[i+1].Connect.Set(api.BMergeRight)
 						// │
 						for j := c.Index + 1; j < c.Parent.Index; j++ {
 							cc := repo.Commits[j]
-							cc.graph[i+1].Connect.Set(BMLine)
+							cc.graph[i+1].Connect.Set(api.BMLine)
 						}
 						//  ╰
-						c.Parent.graph[c.Parent.Branch.index].Connect.Set(BBranchLeft)
-						c.Parent.graph[c.Parent.Branch.index].Branch.Set(BBranchLeft)
+						c.Parent.graph[c.Parent.Branch.index].Connect.Set(api.BBranchLeft)
+						c.Parent.graph[c.Parent.Branch.index].Branch.Set(api.BBranchLeft)
 					}
 				}
 			} else {
 				// Other branch
 				if b.tip == c {
 					// this branch tip does not have a branch of its own, ┺
-					c.graph[i].Branch.Set(BBottom | BPass)
+					c.graph[i].Branch.Set(api.BBottom | api.BPass)
 					// ──
 					for k := c.Branch.index + 1; k <= i; k++ {
-						c.graph[k].Connect.Set(BPass)
-						c.graph[k].Branch.Set(BPass)
+						c.graph[k].Connect.Set(api.BPass)
+						c.graph[k].Branch.Set(api.BPass)
 						if c.graph[k].PassName == "" {
 							c.graph[k].PassName = b.displayName
 						} else {
@@ -153,7 +157,7 @@ func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
 					}
 				} else if c.Index >= b.tip.Index && c.Index <= b.bottom.Index {
 					// Other branch, normal branch line (no commit on that branch) ┃
-					c.graph[i].Branch.Set(BLine)
+					c.graph[i].Branch.Set(api.BLine)
 				}
 			}
 		}
