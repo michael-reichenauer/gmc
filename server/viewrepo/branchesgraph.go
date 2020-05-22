@@ -27,7 +27,7 @@ func newBranchesGraph() *branchesGraph {
 	return &branchesGraph{}
 }
 
-func (s *branchesGraph) drawBranchLines(repo *viewRepo) {
+func (s *branchesGraph) drawBranchLines(repo *repo) {
 	for _, branch := range repo.Branches {
 		branch.tip = repo.commitById[branch.tipId]
 		s.drawBranchLine(branch)
@@ -62,7 +62,7 @@ func (s *branchesGraph) drawBranchLine(branch *branch) {
 	}
 }
 
-func (s *branchesGraph) drawConnectorLines(repo *viewRepo) {
+func (s *branchesGraph) drawConnectorLines(repo *repo) {
 	for _, c := range repo.Commits {
 		for i, b := range repo.Branches {
 			//	c.graph[i].BranchName = b.name

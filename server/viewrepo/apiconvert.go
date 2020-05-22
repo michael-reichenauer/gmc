@@ -41,7 +41,7 @@ func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
 	return diffs
 }
 
-func toViewRepo(repo *viewRepo) api.ViewRepo {
+func toViewRepo(repo *repo) api.ViewRepo {
 	graph := toConsoleGraph(repo)
 	return api.ViewRepo{
 		Commits:            toCommits(repo),
@@ -54,7 +54,7 @@ func toViewRepo(repo *viewRepo) api.ViewRepo {
 	}
 }
 
-func toConsoleGraph(repo *viewRepo) api.Graph {
+func toConsoleGraph(repo *repo) api.Graph {
 	rows := make([]api.GraphRow, len(repo.Commits))
 	for i, c := range repo.Commits {
 		rows[i] = c.graph
@@ -62,7 +62,7 @@ func toConsoleGraph(repo *viewRepo) api.Graph {
 	return rows
 }
 
-func toCommits(repo *viewRepo) []api.Commit {
+func toCommits(repo *repo) []api.Commit {
 	commits := make([]api.Commit, len(repo.Commits))
 	for i, c := range repo.Commits {
 		commits[i] = toCommit(c)

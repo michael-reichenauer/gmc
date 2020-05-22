@@ -9,12 +9,7 @@ import (
 	"time"
 )
 
-const (
-// UncommittedID      = git.UncommittedID
-// PartialLogCommitID = git.PartialLogCommitID
-)
-
-type viewRepo struct {
+type repo struct {
 	Commits            []*commit
 	commitById         map[string]*commit
 	Branches           []*branch
@@ -27,18 +22,18 @@ type viewRepo struct {
 	MergeMessage       string
 }
 
-func newRepo() *viewRepo {
-	return &viewRepo{
+func newRepo() *repo {
+	return &repo{
 		commitById: make(map[string]*commit),
 	}
 }
 
-func (t *viewRepo) CommitById(id string) (*commit, bool) {
+func (t *repo) CommitById(id string) (*commit, bool) {
 	c, ok := t.commitById[id]
 	return c, ok
 }
 
-func (t *viewRepo) BranchByName(name string) *branch {
+func (t *repo) BranchByName(name string) *branch {
 	b := t.tryGetBranchByName(name)
 	if b == nil {
 		panic(log.Fatal(fmt.Errorf("unknown branch id %s", name)))
@@ -46,7 +41,7 @@ func (t *viewRepo) BranchByName(name string) *branch {
 	return b
 }
 
-func (t *viewRepo) tryGetBranchByName(name string) *branch {
+func (t *repo) tryGetBranchByName(name string) *branch {
 	for _, b := range t.Branches {
 		if name == b.name {
 			return b
@@ -55,12 +50,12 @@ func (t *viewRepo) tryGetBranchByName(name string) *branch {
 	return nil
 }
 
-func (t *viewRepo) addBranch(gb *gitrepo.Branch) {
+func (t *repo) addBranch(gb *gitrepo.Branch) {
 	b := t.toBranch(gb, len(t.Branches))
 	t.Branches = append(t.Branches, b)
 }
 
-func (t *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
+func (t *repo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	cb, ok := gRepo.CurrentBranch()
 	if !ok || !t.containsBranch(cb) {
 		// No current branch, or view repo does not show the current branch
@@ -81,7 +76,7 @@ func (t *viewRepo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	t.commitById[c.ID] = c
 }
 
-func (t *viewRepo) addSearchCommit(gc *gitrepo.Commit) {
+func (t *repo) addSearchCommit(gc *gitrepo.Commit) {
 	c := t.toCommit(gc, len(t.Commits), false)
 	t.Commits = append(t.Commits, c)
 	t.commitById[c.ID] = c
@@ -90,7 +85,7 @@ func (t *viewRepo) addSearchCommit(gc *gitrepo.Commit) {
 	}
 }
 
-func (t *viewRepo) addGitCommit(gc *gitrepo.Commit) {
+func (t *repo) addGitCommit(gc *gitrepo.Commit) {
 	if !t.containsBranch(gc.Branch) {
 		return
 	}
@@ -102,7 +97,7 @@ func (t *viewRepo) addGitCommit(gc *gitrepo.Commit) {
 	}
 }
 
-func (t *viewRepo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
+func (t *repo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	for _, rb := range t.Branches {
 		for _, b := range branches {
 			if rb.name == b.Name {
@@ -113,7 +108,7 @@ func (t *viewRepo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	return false
 }
 
-func (t *viewRepo) containsBranch(branch *gitrepo.Branch) bool {
+func (t *repo) containsBranch(branch *gitrepo.Branch) bool {
 	for _, b := range t.Branches {
 		if b.name == branch.Name {
 			return true
@@ -122,7 +117,7 @@ func (t *viewRepo) containsBranch(branch *gitrepo.Branch) bool {
 	return false
 }
 
-func (t *viewRepo) containsBranchName(name string) bool {
+func (t *repo) containsBranchName(name string) bool {
 	for _, b := range t.Branches {
 		if b.name == name {
 			return true
@@ -131,7 +126,7 @@ func (t *viewRepo) containsBranchName(name string) bool {
 	return false
 }
 
-func (t *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
+func (t *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	parentBranchName := ""
 	if b.ParentBranch != nil {
 		parentBranchName = b.ParentBranch.Name
@@ -152,7 +147,7 @@ func (t *viewRepo) toBranch(b *gitrepo.Branch, index int) *branch {
 	}
 }
 
-func (t *viewRepo) toCommit(repo *gitrepo.Commit, index int, includeGraph bool) *commit {
+func (t *repo) toCommit(repo *gitrepo.Commit, index int, includeGraph bool) *commit {
 	var branch = t.BranchByName(repo.Branch.Name)
 
 	var graph []api.GraphColumn
@@ -176,7 +171,7 @@ func (t *viewRepo) toCommit(repo *gitrepo.Commit, index int, includeGraph bool) 
 	}
 }
 
-func (t *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
+func (t *repo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
 			return true
@@ -185,7 +180,7 @@ func (t *viewRepo) containsGitBranchName(branches []*gitrepo.Branch, name string
 	return false
 }
 
-func (t *viewRepo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
+func (t *repo) toVirtualStatusCommit(branchName string, statusText string, index int) *commit {
 	branch := t.BranchByName(branchName)
 	return &commit{
 		ID:         git.UncommittedID,
@@ -203,11 +198,11 @@ func (t *viewRepo) toVirtualStatusCommit(branchName string, statusText string, i
 	}
 }
 
-func (t *viewRepo) String() string {
+func (t *repo) String() string {
 	return fmt.Sprintf("b:%d c:%d", len(t.Branches), len(t.Commits))
 }
 
-func (t *viewRepo) ToBranchIndex(id string) int {
+func (t *repo) ToBranchIndex(id string) int {
 	for i, b := range t.Branches {
 		if b.name == id {
 			return i

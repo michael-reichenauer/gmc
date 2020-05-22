@@ -44,7 +44,7 @@ func (t *ViewRepo) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo
 	return branches
 }
 
-func (t *ViewRepo) setBranchColors(repo *viewRepo) {
+func (t *ViewRepo) setBranchColors(repo *repo) {
 	for _, b := range repo.Branches {
 		b.color = t.BranchColor(b.displayName)
 	}
