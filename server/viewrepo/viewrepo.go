@@ -67,6 +67,7 @@ type ViewRepo struct {
 	ctx                context.Context
 	cancel             context.CancelFunc
 	repo               Repo
+	viewRepo           *viewRepo
 	repoLock           sync.Mutex
 }
 
@@ -95,6 +96,18 @@ func (t *ViewRepo) getRepo() Repo {
 	t.repoLock.Lock()
 	defer t.repoLock.Unlock()
 	return t.repo
+}
+
+func (t *ViewRepo) storeViewRepo(viewRepo *viewRepo) {
+	t.repoLock.Lock()
+	defer t.repoLock.Unlock()
+	t.viewRepo = viewRepo
+}
+
+func (t *ViewRepo) getViewRepo() *viewRepo {
+	t.repoLock.Lock()
+	defer t.repoLock.Unlock()
+	return t.viewRepo
 }
 
 func ToSid(commitID string) string {
@@ -219,7 +232,7 @@ func (t *ViewRepo) triggerSearchRepo(ctx context.Context, searchText string, rep
 	log.Infof("triggerSearchRepo")
 	go func() {
 		vRepo := t.getSearchModel(repo, searchText)
-		repoChange := RepoChange{SearchText: searchText, ViewRepo: newViewRepo(vRepo)}
+		repoChange := RepoChange{SearchText: searchText, ViewRepo: toViewRepo(vRepo)}
 		select {
 		case t.repoChanges <- repoChange:
 		case <-ctx.Done():
@@ -231,7 +244,7 @@ func (t *ViewRepo) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, 
 	log.Infof("triggerFreshViewRepo")
 	go func() {
 		vRepo := t.getViewModel(repo, branchNames)
-		vr := newViewRepo(vRepo)
+		vr := toViewRepo(vRepo)
 		t.storeRepo(vr)
 		repoChange := RepoChange{ViewRepo: vr}
 		select {
@@ -387,36 +400,36 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 // }
 //
 func (t *ViewRepo) CurrentNotShownBranch() (Branch, bool) {
-	viewRepo := t.getRepo()
-	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
+	viewRepo := t.getViewRepo()
+	current, ok := viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
 	}
-	if containsBranch(viewRepo.viewRepo.Branches, current.Name) {
+	if containsBranch(viewRepo.Branches, current.Name) {
 		return Branch{}, false
 	}
 
-	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
+	return toBranch(viewRepo.toBranch(current, 0)), true
 }
 
 func (t *ViewRepo) CurrentBranch() (Branch, bool) {
-	viewRepo := t.getRepo()
-	current, ok := viewRepo.viewRepo.gitRepo.CurrentBranch()
+	viewRepo := t.getViewRepo()
+	current, ok := viewRepo.gitRepo.CurrentBranch()
 	if !ok {
 		return Branch{}, false
 	}
 
-	for _, b := range viewRepo.viewRepo.Branches {
+	for _, b := range viewRepo.Branches {
 		if current.Name == b.name {
 			return toBranch(b), true
 		}
 	}
 
-	return toBranch(viewRepo.viewRepo.toBranch(current, 0)), true
+	return toBranch(viewRepo.toBranch(current, 0)), true
 }
 
 func (t *ViewRepo) GetAllBranches(skipShown bool) []Branch {
-	viewRepo := t.getRepo()
+	viewRepo := t.getViewRepo()
 	branches := t.getAllBranches(viewRepo, skipShown)
 	sort.SliceStable(branches, func(i, j int) bool {
 		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
@@ -426,25 +439,25 @@ func (t *ViewRepo) GetAllBranches(skipShown bool) []Branch {
 }
 
 func (t *ViewRepo) GetLatestBranches(skipShown bool) []Branch {
-	viewRepo := t.getRepo()
+	viewRepo := t.getViewRepo()
 	branches := t.getAllBranches(viewRepo, skipShown)
 	sort.SliceStable(branches, func(i, j int) bool {
-		return viewRepo.viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
+		return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
 	})
 
 	return branches
 }
 
-func (t *ViewRepo) getAllBranches(viewRepo Repo, skipShown bool) []Branch {
+func (t *ViewRepo) getAllBranches(viewRepo *viewRepo, skipShown bool) []Branch {
 	var branches []Branch
-	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
+	for _, b := range viewRepo.gitRepo.Branches {
 		if containsDisplayNameBranch(branches, b.DisplayName) {
 			continue
 		}
-		if skipShown && containsBranch(viewRepo.viewRepo.Branches, b.Name) {
+		if skipShown && containsBranch(viewRepo.Branches, b.Name) {
 			continue
 		}
-		branches = append(branches, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+		branches = append(branches, toBranch(viewRepo.toBranch(b, 0)))
 	}
 
 	return branches
@@ -460,13 +473,13 @@ func containsDisplayNameBranch(branches []Branch, displayName string) bool {
 }
 
 func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []Branch {
-	viewRepo := t.getRepo()
-	c := viewRepo.viewRepo.gitRepo.CommitByID(commitID)
+	viewRepo := t.getViewRepo()
+	c := viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
 
 	if len(c.ParentIDs) > 1 {
 		// commit has branch merged into this commit add it
-		mergeParent := viewRepo.viewRepo.gitRepo.CommitByID(c.ParentIDs[1])
+		mergeParent := viewRepo.gitRepo.CommitByID(c.ParentIDs[1])
 		branches = append(branches, mergeParent.Branch)
 	}
 
@@ -479,22 +492,22 @@ func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []Branch {
 			// Skip duplicates
 			continue
 		}
-		if nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+		if nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
 			return b.Name == bsb.name
 		}) {
 			// Skip branches already shown
 			continue
 		}
 
-		bs = append(bs, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
 	}
 
 	return bs
 }
 
 func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []Branch {
-	viewRepo := t.getRepo()
-	c := viewRepo.viewRepo.gitRepo.CommitByID(commitID)
+	viewRepo := t.getViewRepo()
+	c := viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
 
 	for _, ccId := range c.ChildIDs {
@@ -502,13 +515,13 @@ func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []Branch {
 		if ccId == UncommittedID {
 			continue
 		}
-		cc := viewRepo.viewRepo.gitRepo.CommitByID(ccId)
+		cc := viewRepo.gitRepo.CommitByID(ccId)
 		if cc.Branch.Name != c.Branch.Name {
 			branches = append(branches, cc.Branch)
 		}
 	}
 
-	for _, b := range viewRepo.viewRepo.gitRepo.Branches {
+	for _, b := range viewRepo.gitRepo.Branches {
 		if b.TipID == b.BottomID && b.BottomID == c.Id && b.ParentBranch.Name == c.Branch.Name {
 			// empty branch with no own branch commit, (branch start)
 			branches = append(branches, b)
@@ -524,14 +537,14 @@ func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []Branch {
 			// Skip duplicates
 			continue
 		}
-		if nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+		if nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
 			return b.Name == bsb.name
 		}) {
 			// Skip branches already shown
 			continue
 		}
 
-		bs = append(bs, toBranch(viewRepo.viewRepo.toBranch(b, 0)))
+		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
 	}
 
 	return bs
@@ -539,14 +552,14 @@ func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []Branch {
 
 //
 func (t *ViewRepo) GetShownBranches(skipMaster bool) []Branch {
-	viewRepo := t.getRepo()
+	viewRepo := t.getViewRepo()
 	var bs []Branch
-	for _, b := range viewRepo.viewRepo.Branches {
+	for _, b := range viewRepo.Branches {
 		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
 			// Do not support closing master branch
 			continue
 		}
-		if b.isRemote && nil != funk.Find(viewRepo.viewRepo.Branches, func(bsb *branch) bool {
+		if b.isRemote && nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
 			return b.name == bsb.remoteName
 		}) {
 			// Skip remote if local exist
@@ -575,10 +588,10 @@ func containsBranch(branches []*branch, name string) bool {
 }
 
 func (t *ViewRepo) ShowBranch(name string) {
-	vr := t.getRepo()
-	branchNames := t.toBranchNames(vr.viewRepo.Branches)
+	viewRepo := t.getViewRepo()
+	branchNames := t.toBranchNames(viewRepo.Branches)
 
-	branch, ok := vr.viewRepo.gitRepo.BranchByName(name)
+	branch, ok := viewRepo.gitRepo.BranchByName(name)
 	if !ok {
 		return
 	}
@@ -599,8 +612,8 @@ func (t *ViewRepo) TriggerSearch(text string) {
 
 //
 func (t *ViewRepo) HideBranch(name string) {
-	vr := t.getRepo()
-	hideBranch, ok := funk.Find(vr.viewRepo.Branches, func(b *branch) bool {
+	viewRepo := t.getViewRepo()
+	hideBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
 		return name == b.name
 	}).(*branch)
 	if !ok || hideBranch == nil {
@@ -608,7 +621,7 @@ func (t *ViewRepo) HideBranch(name string) {
 		return
 	}
 	if hideBranch.remoteName != "" {
-		remoteBranch, ok := funk.Find(vr.viewRepo.Branches, func(b *branch) bool {
+		remoteBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
 			return hideBranch.remoteName == b.name
 		}).(*branch)
 		if ok && remoteBranch != nil {
@@ -619,7 +632,7 @@ func (t *ViewRepo) HideBranch(name string) {
 	}
 
 	var branchNames []string
-	for _, b := range vr.viewRepo.Branches {
+	for _, b := range viewRepo.Branches {
 		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
 			branchNames = append(branchNames, b.name)
 		}
@@ -778,8 +791,8 @@ func (t *ViewRepo) CreateBranch(name string) error {
 }
 
 func (t *ViewRepo) DeleteBranch(name string) error {
-	repo := t.getRepo()
-	branch, ok := repo.viewRepo.gitRepo.BranchByName(name)
+	viewRepo := t.getViewRepo()
+	branch, ok := viewRepo.gitRepo.BranchByName(name)
 	if !ok {
 		return fmt.Errorf("unknown git branch %q", name)
 	}
@@ -797,7 +810,7 @@ func (t *ViewRepo) DeleteBranch(name string) error {
 		// Remote branch, check if there is a corresponding local branch
 		remoteBranch = branch
 		if branch.LocalName != "" {
-			if b, ok := repo.viewRepo.gitRepo.BranchByName(branch.LocalName); ok {
+			if b, ok := viewRepo.gitRepo.BranchByName(branch.LocalName); ok {
 				localBranch = b
 			}
 		}
@@ -807,7 +820,7 @@ func (t *ViewRepo) DeleteBranch(name string) error {
 		// Local branch, check if there is a corresponding remote branch
 		localBranch = branch
 		if branch.RemoteName != "" {
-			if b, ok := repo.viewRepo.gitRepo.BranchByName(branch.RemoteName); ok {
+			if b, ok := viewRepo.gitRepo.BranchByName(branch.RemoteName); ok {
 				remoteBranch = b
 			}
 		}

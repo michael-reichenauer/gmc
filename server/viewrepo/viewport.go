@@ -11,7 +11,6 @@ type Repo struct {
 	CurrentBranchName  string
 	RepoPath           string
 	UncommittedChanges int
-	viewRepo           *viewRepo
 	MergeMessage       string
 	Conflicts          int
 }
@@ -20,6 +19,23 @@ const (
 	MoreNone                    = 0
 	MoreMergeIn   utils.Bitmask = 1 << iota // ╮
 	MoreBranchOut                           // ╭
+)
+
+const (
+	BBlank                = 0         //
+	BCommit utils.Bitmask = 1 << iota // ┣
+	BLine                             // ┃
+	BPass                             // ╂
+
+	BTip        // ┏
+	BBottom     // ┗
+	BMergeLeft  // ╭
+	BMergeRight // ╮
+
+	BBranchLeft  //  ╰
+	BBranchRight // ╯
+	BMLine       // │
+	BActiveTip   // ┣
 )
 
 type Commit struct {
@@ -39,6 +55,14 @@ type Commit struct {
 	BranchTips   []string
 	IsLocalOnly  bool
 	IsRemoteOnly bool
+}
+
+type GraphColumn struct {
+	Connect           utils.Bitmask
+	Branch            utils.Bitmask
+	BranchName        string
+	BranchDisplayName string
+	PassName          string
 }
 
 type Branch struct {
@@ -68,13 +92,12 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 	return false
 }
 
-func newViewRepo(repo *viewRepo) Repo {
+func toViewRepo(repo *viewRepo) Repo {
 	return Repo{
 		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
-		viewRepo:           repo,
 		MergeMessage:       repo.MergeMessage,
 		Conflicts:          repo.Conflicts,
 	}
