@@ -24,8 +24,8 @@ type repoVM struct {
 	repoLayout        *repoLayout
 	isDetails         bool
 	cancel            context.CancelFunc
-	repo              api.VRepo
-	searchRepo        api.VRepo
+	repo              api.ViewRepo
+	searchRepo        api.ViewRepo
 	firstIndex        int
 	currentIndex      int
 	onRepoUpdatedFunc func()

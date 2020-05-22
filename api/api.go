@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-type VRepo struct {
+type ViewRepo struct {
 	Commits            []Commit
 	CurrentBranchName  string
 	RepoPath           string
@@ -100,7 +100,7 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 
 type RepoChange struct {
 	IsStarting bool
-	ViewRepo   VRepo
+	ViewRepo   ViewRepo
 	SearchText string
 	Error      error
 }

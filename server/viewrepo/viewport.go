@@ -4,8 +4,8 @@ import (
 	"github.com/michael-reichenauer/gmc/api"
 )
 
-func toViewRepo(repo *viewRepo) api.VRepo {
-	return api.VRepo{
+func toViewRepo(repo *viewRepo) api.ViewRepo {
+	return api.ViewRepo{
 		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
 		RepoPath:           repo.WorkingFolder,

@@ -60,7 +60,7 @@ type ViewRepo struct {
 	customBranchColors map[string]int
 	ctx                context.Context
 	cancel             context.CancelFunc
-	repo               api.VRepo
+	repo               api.ViewRepo
 	viewRepo           *viewRepo
 	repoLock           sync.Mutex
 }
@@ -80,13 +80,13 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 	}
 }
 
-func (t *ViewRepo) storeRepo(repo api.VRepo) {
+func (t *ViewRepo) storeRepo(repo api.ViewRepo) {
 	t.repoLock.Lock()
 	defer t.repoLock.Unlock()
 	t.repo = repo
 }
 
-func (t *ViewRepo) getRepo() api.VRepo {
+func (t *ViewRepo) getRepo() api.ViewRepo {
 	t.repoLock.Lock()
 	defer t.repoLock.Unlock()
 	return t.repo
