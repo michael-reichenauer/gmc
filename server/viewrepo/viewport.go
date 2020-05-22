@@ -5,6 +5,7 @@ import (
 )
 
 func toViewRepo(repo *viewRepo) api.ViewRepo {
+	graph := toConsoleGraph(repo)
 	return api.ViewRepo{
 		Commits:            toCommits(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
@@ -12,7 +13,16 @@ func toViewRepo(repo *viewRepo) api.ViewRepo {
 		UncommittedChanges: repo.UncommittedChanges,
 		MergeMessage:       repo.MergeMessage,
 		Conflicts:          repo.Conflicts,
+		ConsoleGraph:       graph,
 	}
+}
+
+func toConsoleGraph(repo *viewRepo) api.Graph {
+	rows := make([]api.GraphRow, len(repo.Commits))
+	for i, c := range repo.Commits {
+		rows[i] = c.graph
+	}
+	return rows
 }
 
 func toCommits(repo *viewRepo) []api.Commit {
@@ -35,7 +45,6 @@ func toCommit(c *commit) api.Commit {
 		AuthorTime:   c.AuthorTime,
 		IsCurrent:    c.IsCurrent,
 		Branch:       toBranch(c.Branch),
-		Graph:        c.graph,
 		More:         c.More,
 		BranchTips:   c.BranchTips,
 		IsLocalOnly:  c.IsLocalOnly,

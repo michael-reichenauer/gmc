@@ -13,6 +13,7 @@ type ViewRepo struct {
 	UncommittedChanges int
 	MergeMessage       string
 	Conflicts          int
+	ConsoleGraph       Graph
 }
 
 type Color int
@@ -50,7 +51,6 @@ type Commit struct {
 	IsCurrent    bool
 	Branch       Branch
 	Tags         []string
-	Graph        []GraphColumn
 	More         utils.Bitmask
 	ParentIDs    []string
 	ChildIDs     []string

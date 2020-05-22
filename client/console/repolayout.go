@@ -31,14 +31,14 @@ func (t *repoLayout) getPageLines(
 		return nil
 	}
 
-	graphWidth := t.getGraphWidth(commits)
+	graphWidth := t.getGraphWidth(repo.ConsoleGraph)
 	commitWidth := viewWidth - graphWidth
 	messageWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
 
 	var lines []string
-	for _, c := range commits {
+	for i, c := range commits {
 		var sb strings.Builder
-		t.writeGraph(&sb, c)
+		t.writeGraph(&sb, repo.ConsoleGraph[i])
 		sb.WriteString(" ")
 		t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
@@ -55,16 +55,16 @@ func (t *repoLayout) getPageLines(
 }
 
 func (t *repoLayout) getMoreIndex(repo api.ViewRepo) int {
-	graphWidth := t.getGraphWidth(repo.Commits)
+	graphWidth := t.getGraphWidth(repo.ConsoleGraph)
 	return graphWidth - 2
 }
 
-func (t *repoLayout) getGraphWidth(commits []api.Commit) int {
-	if len(commits) == 0 {
+func (t *repoLayout) getGraphWidth(graph api.Graph) int {
+	if len(graph) == 0 {
 		return 0
 	}
 	//return markersWidth
-	return len(commits[0].Graph)*2 + markersWidth
+	return len(graph[0])*2 + markersWidth
 }
 
 func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, timeWidth int) {
@@ -89,30 +89,30 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 	return
 }
 
-func (t *repoLayout) writeGraph(sb *strings.Builder, c api.Commit) {
-	for i := 0; i < len(c.Graph); i++ {
+func (t *repoLayout) writeGraph(sb *strings.Builder, row api.GraphRow) {
+	for i := 0; i < len(row); i++ {
 		// Normal branch color
-		bColor := cui.Color(c.Graph[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
+		bColor := cui.Color(row[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
 
 		cColor := bColor
-		if c.Graph[i].Connect == api.BPass &&
-			c.Graph[i].PassColor != 0 &&
-			c.Graph[i].PassColor != api.Color(cui.CWhite) {
-			cColor = cui.Color(c.Graph[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if c.Graph[i].Connect.Has(api.BPass) {
+		if row[i].Connect == api.BPass &&
+			row[i].PassColor != 0 &&
+			row[i].PassColor != api.Color(cui.CWhite) {
+			cColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+		} else if row[i].Connect.Has(api.BPass) {
 			cColor = cui.CWhite
 		}
-		sb.WriteString(cui.ColorRune(cColor, t.repoGraph.graphConnectRune(c.Graph[i].Connect)))
+		sb.WriteString(cui.ColorRune(cColor, t.repoGraph.graphConnectRune(row[i].Connect)))
 
-		if c.Graph[i].Branch == api.BPass &&
-			c.Graph[i].PassColor != 0 &&
-			c.Graph[i].PassColor != api.Color(cui.CWhite) {
-			bColor = cui.Color(c.Graph[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if c.Graph[i].Branch == api.BPass {
+		if row[i].Branch == api.BPass &&
+			row[i].PassColor != 0 &&
+			row[i].PassColor != api.Color(cui.CWhite) {
+			bColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+		} else if row[i].Branch == api.BPass {
 			bColor = cui.CWhite
 		}
 
-		sb.WriteString(cui.ColorRune(bColor, t.repoGraph.graphBranchRune(c.Graph[i].Branch)))
+		sb.WriteString(cui.ColorRune(bColor, t.repoGraph.graphBranchRune(row[i].Branch)))
 	}
 }
 
