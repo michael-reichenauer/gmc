@@ -60,7 +60,6 @@ type ViewRepo struct {
 	customBranchColors map[string]int
 	ctx                context.Context
 	cancel             context.CancelFunc
-	repo               api.ViewRepo
 	viewRepo           *viewRepo
 	repoLock           sync.Mutex
 }
@@ -78,18 +77,6 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 		cancel:          cancel,
 		//	customBranchColors: make(map[string]int),
 	}
-}
-
-func (t *ViewRepo) storeRepo(repo api.ViewRepo) {
-	t.repoLock.Lock()
-	defer t.repoLock.Unlock()
-	t.repo = repo
-}
-
-func (t *ViewRepo) getRepo() api.ViewRepo {
-	t.repoLock.Lock()
-	defer t.repoLock.Unlock()
-	return t.repo
 }
 
 func (t *ViewRepo) storeViewRepo(viewRepo *viewRepo) {
@@ -238,8 +225,8 @@ func (t *ViewRepo) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, 
 	log.Infof("triggerFreshViewRepo")
 	go func() {
 		vRepo := t.getViewModel(repo, branchNames)
+		t.storeViewRepo(vRepo)
 		vr := toViewRepo(vRepo)
-		t.storeRepo(vr)
 		repoChange := api.RepoChange{ViewRepo: vr}
 		select {
 		case t.repoChanges <- repoChange:
