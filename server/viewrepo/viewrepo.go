@@ -23,12 +23,7 @@ const (
 	remoteMasterName = "origin/master"
 )
 
-type Status struct {
-	AllChanges int
-	GraphWidth int
-}
-
-type ShowRequest struct {
+type showRequest struct {
 	branches   []string
 	searchText string
 }
@@ -40,7 +35,7 @@ type ViewRepo struct {
 	configService *config.Service
 	branchesGraph *branchesGraph
 
-	showRequests       chan ShowRequest
+	showRequests       chan showRequest
 	currentBranches    chan []string
 	customBranchColors map[string]int
 	ctx                context.Context
@@ -53,7 +48,7 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 	ctx, cancel := context.WithCancel(context.Background())
 	return &ViewRepo{
 		repoChanges:     make(chan api.RepoChange),
-		showRequests:    make(chan ShowRequest),
+		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
 		gitRepo:         gitrepo.NewGitRepo(workingFolder),
@@ -133,7 +128,7 @@ func (t *ViewRepo) Commit(Commit string) error {
 func (t *ViewRepo) showBranches(branchIds []string) {
 	log.Event("vms-load-repo")
 	select {
-	case t.showRequests <- ShowRequest{branches: branchIds}:
+	case t.showRequests <- showRequest{branches: branchIds}:
 	default:
 	}
 }
@@ -577,7 +572,7 @@ func (t *ViewRepo) ShowBranch(name string) {
 func (t *ViewRepo) TriggerSearch(text string) {
 	log.Eventf("vms-search", text)
 	select {
-	case t.showRequests <- ShowRequest{searchText: text}:
+	case t.showRequests <- showRequest{searchText: text}:
 	default:
 	}
 }

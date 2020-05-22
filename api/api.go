@@ -7,11 +7,12 @@ type Api interface {
 }
 
 type Repo interface {
-	TriggerRefreshModel()
-	TriggerSearch(text string)
 	StartMonitor()
 	Close()
 	RepoChanges() chan RepoChange
+
+	TriggerRefreshModel()
+	TriggerSearch(text string)
 	GetCommitOpenInBranches(id string) []Branch
 	GetCommitOpenOutBranches(id string) []Branch
 	CurrentNotShownBranch() (Branch, bool)
