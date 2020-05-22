@@ -24,8 +24,8 @@ type Repo interface {
 	GetLatestBranches(repo viewrepo.Repo, shown bool) []viewrepo.Branch
 	GetAllBranches(repo viewrepo.Repo, shown bool) []viewrepo.Branch
 	GetShownBranches(repo viewrepo.Repo, master bool) []viewrepo.Branch
-	ShowBranch(name string, repo viewrepo.Repo)
-	HideBranch(repo viewrepo.Repo, name string)
+	ShowBranch(name string)
+	HideBranch(name string)
 	SwitchToBranch(name string, name2 string, repo viewrepo.Repo) error
 	PushBranch(name string) error
 	PullBranch() error

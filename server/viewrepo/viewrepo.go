@@ -14,6 +14,7 @@ import (
 	"hash/fnv"
 	"sort"
 	"strings"
+	"sync"
 )
 
 const (
@@ -65,6 +66,8 @@ type ViewRepo struct {
 	customBranchColors map[string]int
 	ctx                context.Context
 	cancel             context.CancelFunc
+	repo               Repo
+	repoLock           sync.Mutex
 }
 
 func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo {
@@ -80,6 +83,18 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 		cancel:          cancel,
 		//	customBranchColors: make(map[string]int),
 	}
+}
+
+func (t *ViewRepo) storeRepo(repo Repo) {
+	t.repoLock.Lock()
+	defer t.repoLock.Unlock()
+	t.repo = repo
+}
+
+func (t *ViewRepo) getRepo() Repo {
+	t.repoLock.Lock()
+	defer t.repoLock.Unlock()
+	return t.repo
 }
 
 func ToSid(commitID string) string {
@@ -111,7 +126,7 @@ func (t *ViewRepo) SwitchToBranch(name string, displayName string, repo Repo) er
 	if strings.HasPrefix(name, "origin/") {
 		name = name[7:]
 	}
-	t.ShowBranch(name, repo)
+	t.ShowBranch(name)
 	// exist := false
 	// for _, b := range repo.viewRepo.gitRepo.Branches {
 	// 	if b.IsGitBranch && b.DisplayName == displayName {
@@ -216,7 +231,9 @@ func (t *ViewRepo) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, 
 	log.Infof("triggerFreshViewRepo")
 	go func() {
 		vRepo := t.getViewModel(repo, branchNames)
-		repoChange := RepoChange{ViewRepo: newViewRepo(vRepo)}
+		vr := newViewRepo(vRepo)
+		t.storeRepo(vr)
+		repoChange := RepoChange{ViewRepo: vr}
 		select {
 		case t.repoChanges <- repoChange:
 			t.storeShownBranchesInConfig(branchNames)
@@ -550,10 +567,11 @@ func containsBranch(branches []*branch, name string) bool {
 	return false
 }
 
-func (t *ViewRepo) ShowBranch(name string, viewRepo Repo) {
-	branchNames := t.toBranchNames(viewRepo.viewRepo.Branches)
+func (t *ViewRepo) ShowBranch(name string) {
+	vr := t.getRepo()
+	branchNames := t.toBranchNames(vr.viewRepo.Branches)
 
-	branch, ok := viewRepo.viewRepo.gitRepo.BranchByName(name)
+	branch, ok := vr.viewRepo.gitRepo.BranchByName(name)
 	if !ok {
 		return
 	}
@@ -573,8 +591,9 @@ func (t *ViewRepo) TriggerSearch(text string) {
 }
 
 //
-func (t *ViewRepo) HideBranch(viewRepo Repo, name string) {
-	hideBranch, ok := funk.Find(viewRepo.viewRepo.Branches, func(b *branch) bool {
+func (t *ViewRepo) HideBranch(name string) {
+	vr := t.getRepo()
+	hideBranch, ok := funk.Find(vr.viewRepo.Branches, func(b *branch) bool {
 		return name == b.name
 	}).(*branch)
 	if !ok || hideBranch == nil {
@@ -582,7 +601,7 @@ func (t *ViewRepo) HideBranch(viewRepo Repo, name string) {
 		return
 	}
 	if hideBranch.remoteName != "" {
-		remoteBranch, ok := funk.Find(viewRepo.viewRepo.Branches, func(b *branch) bool {
+		remoteBranch, ok := funk.Find(vr.viewRepo.Branches, func(b *branch) bool {
 			return hideBranch.remoteName == b.name
 		}).(*branch)
 		if ok && remoteBranch != nil {
@@ -593,7 +612,7 @@ func (t *ViewRepo) HideBranch(viewRepo Repo, name string) {
 	}
 
 	var branchNames []string
-	for _, b := range viewRepo.viewRepo.Branches {
+	for _, b := range vr.viewRepo.Branches {
 		if b.name != hideBranch.name && !hideBranch.isAncestor(b) && b.remoteName != hideBranch.name {
 			branchNames = append(branchNames, b.name)
 		}

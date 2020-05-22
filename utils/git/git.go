@@ -235,5 +235,5 @@ func WorkingDirRoot(path string) (string, error) {
 		}
 		current = parent
 	}
-	return "", fmt.Errorf("could not locater working folder root from " + path)
+	return "", fmt.Errorf("could not locate git repo in or above " + path)
 }

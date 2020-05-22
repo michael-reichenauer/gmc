@@ -221,11 +221,11 @@ func (h *repoVM) GetShownBranches(skipMaster bool) []viewrepo.Branch {
 }
 
 func (h *repoVM) ShowBranch(name string) {
-	h.viewModelService.ShowBranch(name, h.repo)
+	h.viewModelService.ShowBranch(name)
 }
 
 func (h *repoVM) HideBranch(name string) {
-	h.viewModelService.HideBranch(h.repo, name)
+	h.viewModelService.HideBranch(name)
 }
 
 func (h *repoVM) SwitchToBranch(name string, displayName string) {
@@ -309,7 +309,7 @@ func (h *repoVM) CreateBranch(name string) {
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { h.viewModelService.ShowBranch(name, h.repo) })
+		func() { h.viewModelService.ShowBranch(name) })
 }
 
 func (h *repoVM) DeleteBranch(name string) {

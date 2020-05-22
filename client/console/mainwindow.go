@@ -3,6 +3,8 @@ package console
 import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"path"
+	"strings"
 )
 
 type MainWindow struct {
@@ -66,9 +68,11 @@ func (t *MainWindow) getRecentRepoMenuItems(recentDirs []string) []cui.MenuItem 
 func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.MenuItem {
 	var items []cui.MenuItem
 
-	for _, path := range paths {
+	for _, p := range paths {
+		name := path.Base(strings.ReplaceAll(p, "\\", "/"))
+		path := p
 		items = append(items, cui.MenuItem{
-			Text:   path,
+			Text:   name,
 			Title:  path,
 			Action: func() { action(path) },
 			SubItemsFunc: func() []cui.MenuItem {
