@@ -68,7 +68,7 @@ func TestNewJsonRpcServer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
-	assert.NoError(t, rpcServer.Start("127.0.0.1:0"))
+	assert.NoError(t, rpcServer.Start("127.0.0.1:0", "/rpc"))
 	defer rpcServer.Close()
 	go func() {
 		err := rpcServer.Serve()
@@ -79,7 +79,7 @@ func TestNewJsonRpcServer(t *testing.T) {
 
 	// Create rpc client and create service client
 	rpcClient := NewRpcClient("Srv")
-	assert.NoError(t, rpcClient.Connect(rpcServer.Address))
+	assert.NoError(t, rpcClient.Connect(rpcServer.Address, "/rpc"))
 	defer rpcClient.Close()
 	client := NewServiceClient(rpcClient)
 
@@ -106,7 +106,7 @@ func TestClosingServer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
-	assert.NoError(t, rpcServer.Start("127.0.0.1:0"))
+	assert.NoError(t, rpcServer.Start("127.0.0.1:0", "/rpc"))
 	defer rpcServer.Close()
 	go func() {
 		err := rpcServer.Serve()
@@ -117,7 +117,7 @@ func TestClosingServer(t *testing.T) {
 
 	// Create rpc client and create service client
 	rpcClient := NewRpcClient("Srv")
-	assert.NoError(t, rpcClient.Connect(rpcServer.Address))
+	assert.NoError(t, rpcClient.Connect(rpcServer.Address, "/rpc"))
 	defer rpcClient.Close()
 	client := NewServiceClient(rpcClient)
 
@@ -139,6 +139,7 @@ func TestClosingServer(t *testing.T) {
 		require.Equal(t, i*2, rsp.R)
 	}
 }
+
 func TestClosingClient(t *testing.T) {
 	// Create rpc server and register service server
 	rpcServer := NewRpcServer()
@@ -147,7 +148,7 @@ func TestClosingClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
-	assert.NoError(t, rpcServer.Start("127.0.0.1:0"))
+	assert.NoError(t, rpcServer.Start("127.0.0.1:0", "/rpc"))
 	defer rpcServer.Close()
 	go func() {
 		err := rpcServer.Serve()
@@ -158,7 +159,7 @@ func TestClosingClient(t *testing.T) {
 
 	// Create rpc client and create service client
 	rpcClient := NewRpcClient("Srv")
-	assert.NoError(t, rpcClient.Connect(rpcServer.Address))
+	assert.NoError(t, rpcClient.Connect(rpcServer.Address, "/rpc"))
 	defer rpcClient.Close()
 	client := NewServiceClient(rpcClient)
 
