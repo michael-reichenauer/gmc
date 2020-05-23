@@ -1,16 +1,18 @@
 package rpc
 
 import (
+	"fmt"
 	"io"
 	"net"
 	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"net/url"
 	"sync"
 )
 
 type Server struct {
-	Address   string
+	URL       string
 	rpcServer *rpc.Server
 
 	done         chan struct{}
@@ -29,20 +31,24 @@ func NewRpcServer() *Server {
 	}
 }
 
-func (t *Server) RegisterName(name string, service interface{}) error {
-	return t.rpcServer.RegisterName(name, service)
+func (t *Server) RegisterName(serviceName string, service interface{}) error {
+	return t.rpcServer.RegisterName(serviceName, service)
 }
 
-func (t *Server) Start(address string, path string) error {
-	listener, err := net.Listen("tcp", address)
+func (t *Server) Start(uri string) error {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+	listener, err := net.Listen("tcp", u.Host)
 	if err != nil {
 		return err
 	}
 	mux := http.NewServeMux()
-	mux.HandleFunc(path, t.httpRpcHandler)
-	t.httpServer = &http.Server{Addr: "127.0.0.1:1234", Handler: mux}
+	mux.HandleFunc(u.Path, t.httpRpcHandler)
+	t.httpServer = &http.Server{Handler: mux}
 	t.listener = listener
-	t.Address = listener.Addr().String()
+	t.URL = fmt.Sprintf("http://%s%s", listener.Addr().String(), u.Path)
 	return nil
 }
 

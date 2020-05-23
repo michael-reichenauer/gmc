@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"net/url"
 	"runtime"
 	"strings"
 )
@@ -23,14 +24,18 @@ func NewRpcClient(serviceName string) *Client {
 	return &Client{serviceName: serviceName + ".", done: make(chan struct{})}
 }
 
-func (t *Client) Connect(address string, path string) error {
-	var err error
-	conn, err := net.Dial("tcp", address)
+func (t *Client) Connect(uri string) error {
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+
+	conn, err := net.Dial("tcp", u.Host)
 	if err != nil {
 		return err
 	}
 	t.conn = conn
-	io.WriteString(conn, "CONNECT "+path+" HTTP/1.0\n\n")
+	io.WriteString(conn, "CONNECT "+u.Path+" HTTP/1.0\n\n")
 
 	// Require successful HTTP response before switching to RPC protocol.
 	resp, err := http.ReadResponse(bufio.NewReader(conn), &http.Request{Method: "CONNECT"})
