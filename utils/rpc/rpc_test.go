@@ -78,19 +78,19 @@ func TestNewJsonRpcServer(t *testing.T) {
 	rpcClient := NewRpcClient("Service")
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	client := NewServiceClient(rpcClient)
+	serviceClient := NewServiceClient(rpcClient)
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
 		var rsp int
 		if i == 5 {
 			// Verify tha call for arg 5 will fail (server returns error)
-			require.Error(t, client.Add(Args{A: i, B: i}, &rsp), "Add Call: %d", i)
+			require.Error(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Add Call: %d", i)
 			continue
 		}
-		require.NoError(t, client.Add(Args{A: i, B: i}, &rsp), "Add Call: %d", i)
+		require.NoError(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Add Call: %d", i)
 		require.Equal(t, i*2, rsp)
-		require.NoError(t, client.Sub(Args{A: i * 2, B: i}, &rsp), "Sub Call: %d", i)
+		require.NoError(t, serviceClient.Sub(Args{A: i * 2, B: i}, &rsp), "Sub Call: %d", i)
 		require.Equal(t, i, rsp)
 	}
 }
@@ -116,23 +116,23 @@ func TestClosingServer(t *testing.T) {
 	rpcClient := NewRpcClient("Service")
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	client := NewServiceClient(rpcClient)
+	serviceClient := NewServiceClient(rpcClient)
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
 		var rsp int
 		if i == 5 {
 			// Verify tha call for arg 5 will fail (server returns error)
-			require.Error(t, client.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
+			require.Error(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 			continue
 		}
 		if i == 20 {
 			rpcServer.Close()
 			// Verify that calls will fail after server is closed
-			require.Error(t, client.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
+			require.Error(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 			break
 		}
-		require.NoError(t, client.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
+		require.NoError(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 		require.Equal(t, i*2, rsp)
 	}
 }
@@ -158,23 +158,23 @@ func TestClosingClient(t *testing.T) {
 	rpcClient := NewRpcClient("Service")
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	client := NewServiceClient(rpcClient)
+	serviceClient := NewServiceClient(rpcClient)
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
 		var rsp int
 		if i == 5 {
 			// Verify tha call for arg 5 will fail (server returns error)
-			require.Error(t, client.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
+			require.Error(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 			continue
 		}
 		if i == 20 {
 			rpcClient.Close()
 			// Verify that calls will fail after client is closed
-			require.Error(t, client.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
+			require.Error(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 			break
 		}
-		require.NoError(t, client.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
+		require.NoError(t, serviceClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 		require.Equal(t, i*2, rsp)
 	}
 }
