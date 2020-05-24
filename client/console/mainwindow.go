@@ -17,7 +17,7 @@ func NewMainWindow(ui cui.UI, api api.Api) *MainWindow {
 }
 
 func (t *MainWindow) Show(path string) {
-	repo, err := t.api.OpenRepo(path)
+	err := t.api.OpenRepo(path)
 	if err != nil {
 		if path != "" {
 			t.ui.ShowErrorMessageBox("Failed to show repo for:\n%s\nError: %v", path, err)
@@ -26,14 +26,14 @@ func (t *MainWindow) Show(path string) {
 		return
 	}
 
-	repoView := NewRepoView(t.ui, repo)
+	repoView := NewRepoView(t.ui, t.api)
 	repoView.Show()
 }
 
 func (t *MainWindow) showOpenRepoMenu() {
 	menu := t.ui.NewMenu("Open repo")
 
-	recentDirs, err := t.api.GetRecentDirs()
+	recentDirs, err := t.api.GetRecentWorkingDirs()
 	if err != nil {
 		t.ui.ShowErrorMessageBox("Failed to get recent dirs,\nError: %v", err)
 	}

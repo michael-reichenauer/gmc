@@ -9,7 +9,7 @@ import (
 
 // getGitModelBranches returns the git branches based on the name together with ancestor branches
 // If no named branches, the current branch (with ancestors is returned)
-func (t *viewRepo) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo) []*gitrepo.Branch {
+func (t *ViewRepo) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo) []*gitrepo.Branch {
 	branchNames = t.getBranchNamesToShow(branchNames, gitRepo)
 
 	var branches []*gitrepo.Branch
@@ -44,13 +44,13 @@ func (t *viewRepo) getGitRepoBranches(branchNames []string, gitRepo gitrepo.Repo
 	return branches
 }
 
-func (t *viewRepo) setBranchColors(repo *repo) {
+func (t *ViewRepo) setBranchColors(repo *repo) {
 	for _, b := range repo.Branches {
 		b.color = t.BranchColor(b.displayName)
 	}
 }
 
-func (t *viewRepo) appendIfNotAppended(branches []*gitrepo.Branch, branch *gitrepo.Branch) []*gitrepo.Branch {
+func (t *ViewRepo) appendIfNotAppended(branches []*gitrepo.Branch, branch *gitrepo.Branch) []*gitrepo.Branch {
 	for _, b := range branches {
 		if b == branch {
 			return branches
@@ -59,7 +59,7 @@ func (t *viewRepo) appendIfNotAppended(branches []*gitrepo.Branch, branch *gitre
 	return append(branches, branch)
 }
 
-func (t *viewRepo) addLocalBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo) []*gitrepo.Branch {
+func (t *ViewRepo) addLocalBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo) []*gitrepo.Branch {
 	var bs []*gitrepo.Branch
 	for _, branch := range branches {
 		bs = append(bs, branch)
@@ -75,7 +75,7 @@ func (t *viewRepo) addLocalBranches(branches []*gitrepo.Branch, gmRepo gitrepo.R
 	return bs
 }
 
-func (t *viewRepo) getBranchNamesToShow(branchNames []string, gitRepo gitrepo.Repo) []string {
+func (t *ViewRepo) getBranchNamesToShow(branchNames []string, gitRepo gitrepo.Repo) []string {
 	if len(branchNames) > 0 {
 		return branchNames
 	}
@@ -90,7 +90,7 @@ func (t *viewRepo) getBranchNamesToShow(branchNames []string, gitRepo gitrepo.Re
 	return branchNames
 }
 
-func (t *viewRepo) addRemoteBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo) []*gitrepo.Branch {
+func (t *ViewRepo) addRemoteBranches(branches []*gitrepo.Branch, gmRepo gitrepo.Repo) []*gitrepo.Branch {
 	var bs []*gitrepo.Branch
 	for _, branch := range branches {
 		bs = append(bs, branch)
@@ -106,7 +106,7 @@ func (t *viewRepo) addRemoteBranches(branches []*gitrepo.Branch, gmRepo gitrepo.
 	return bs
 }
 
-func (t *viewRepo) containsBranch(branches []*gitrepo.Branch, name string) bool {
+func (t *ViewRepo) containsBranch(branches []*gitrepo.Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
 			return true
@@ -115,7 +115,7 @@ func (t *viewRepo) containsBranch(branches []*gitrepo.Branch, name string) bool 
 	return false
 }
 
-func (t *viewRepo) sortBranches(branches []*gitrepo.Branch) {
+func (t *ViewRepo) sortBranches(branches []*gitrepo.Branch) {
 	sort.SliceStable(branches, func(l, r int) bool {
 		if branches[l].Name == branches[r].RemoteName {
 			// Prioritize remote branch before local
@@ -136,7 +136,7 @@ func (t *viewRepo) sortBranches(branches []*gitrepo.Branch) {
 	})
 }
 
-func (t *viewRepo) getDefaultBranchIDs(gmRepo gitrepo.Repo) []string {
+func (t *ViewRepo) getDefaultBranchIDs(gmRepo gitrepo.Repo) []string {
 	var branchIDs []string
 	branch, ok := gmRepo.CurrentBranch()
 	if ok {
@@ -153,7 +153,7 @@ func (t *viewRepo) getDefaultBranchIDs(gmRepo gitrepo.Repo) []string {
 	return branchIDs
 }
 
-func (t *viewRepo) addBranchWithAncestors(branchIds []string, branch *gitrepo.Branch) []string {
+func (t *ViewRepo) addBranchWithAncestors(branchIds []string, branch *gitrepo.Branch) []string {
 	ids := t.branchAncestorIDs(branch)
 	for _, id := range ids {
 		branchIds = t.addBranchIdIfNotAdded(branchIds, id)
@@ -161,7 +161,7 @@ func (t *viewRepo) addBranchWithAncestors(branchIds []string, branch *gitrepo.Br
 	return branchIds
 }
 
-func (*viewRepo) addBranchIdIfNotAdded(branchIds []string, branchId string) []string {
+func (*ViewRepo) addBranchIdIfNotAdded(branchIds []string, branchId string) []string {
 	isAdded := false
 	for _, id := range branchIds {
 		if id == branchId {
@@ -174,7 +174,7 @@ func (*viewRepo) addBranchIdIfNotAdded(branchIds []string, branchId string) []st
 	return branchIds
 }
 
-func (*viewRepo) branchAncestorIDs(b *gitrepo.Branch) []string {
+func (*ViewRepo) branchAncestorIDs(b *gitrepo.Branch) []string {
 	var ids []string
 	for cb := b; cb != nil; cb = cb.ParentBranch {
 		ids = append(ids, cb.Name)
@@ -186,7 +186,7 @@ func (*viewRepo) branchAncestorIDs(b *gitrepo.Branch) []string {
 	return ids
 }
 
-func (t *viewRepo) removeSameLocalAsRemotes(branches []*gitrepo.Branch, gmRepo gitrepo.Repo, gmStatus gitrepo.Status) []*gitrepo.Branch {
+func (t *ViewRepo) removeSameLocalAsRemotes(branches []*gitrepo.Branch, gmRepo gitrepo.Repo, gmStatus gitrepo.Status) []*gitrepo.Branch {
 	statusOk := gmStatus.OK()
 	currentBranch, _ := gmRepo.CurrentBranch()
 
@@ -203,7 +203,7 @@ func (t *viewRepo) removeSameLocalAsRemotes(branches []*gitrepo.Branch, gmRepo g
 	return bs
 }
 
-func (*viewRepo) containsSameRemoteBranch(bs []*gitrepo.Branch, branch *gitrepo.Branch) bool {
+func (*ViewRepo) containsSameRemoteBranch(bs []*gitrepo.Branch, branch *gitrepo.Branch) bool {
 	for _, b := range bs {
 		if branch.RemoteName != "" &&
 			branch.RemoteName == b.Name &&

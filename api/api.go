@@ -1,15 +1,12 @@
 package api
 
 type Api interface {
-	OpenRepo(path string) (Repo, error)
-	GetRecentDirs() ([]string, error)
-	GetSubDirs(path string) ([]string, error)
-}
+	GetRecentWorkingDirs() ([]string, error)
+	GetSubDirs(dirPath string) ([]string, error)
 
-type Repo interface {
-	StartMonitor()
-	Close()
-	RepoChanges() chan RepoChange
+	OpenRepo(path string) error
+	CloseRepo()
+	GetChanges() []RepoChange
 
 	TriggerRefreshModel()
 	TriggerSearch(text string)

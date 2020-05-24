@@ -115,7 +115,7 @@ func (t viewRepoMock) RepoChanges() chan api.RepoChange {
 	return t.repoChanges
 }
 
-func (t viewRepoMock) Close() {
+func (t viewRepoMock) CloseRepo() {
 }
 
 func (t viewRepoMock) TriggerRefreshModel() {
