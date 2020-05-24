@@ -11,6 +11,8 @@ import (
 	"sync"
 )
 
+const defaultServiceName = "api"
+
 type Server struct {
 	URL       string
 	rpcServer *rpc.Server
@@ -31,7 +33,10 @@ func NewServer() *Server {
 	}
 }
 
-func (t *Server) Register(serviceName string, service interface{}) error {
+func (t *Server) RegisterService(serviceName string, service interface{}) error {
+	if serviceName == "" {
+		serviceName = defaultServiceName
+	}
 	return t.rpcServer.RegisterName(serviceName, service)
 }
 

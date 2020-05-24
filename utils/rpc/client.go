@@ -13,11 +13,11 @@ import (
 	"strings"
 )
 
-type Caller interface {
+type ServiceClient interface {
 	Call(arg interface{}, rsp interface{}) error
 }
 
-type caller struct {
+type serviceClient struct {
 	serviceName string
 	client      *Client
 }
@@ -73,20 +73,23 @@ func (t *Client) Close() {
 	t.conn.Close()
 }
 
-func (t *Client) Caller(serviceName string) Caller {
-	return &caller{client: t, serviceName: serviceName + "."}
+func (t *Client) ServiceClient(serviceName string) ServiceClient {
+	if serviceName == "" {
+		serviceName = defaultServiceName
+	}
+	return &serviceClient{client: t, serviceName: serviceName + "."}
 }
 
 func (t *Client) call(serviceMethod string, arg interface{}, rsp interface{}) error {
 	return t.rpcClient.Call(serviceMethod, arg, rsp)
 }
 
-func (t *caller) Call(arg interface{}, rsp interface{}) error {
+func (t *serviceClient) Call(arg interface{}, rsp interface{}) error {
 	callerName := t.callerMethodName()
 	return t.client.call(t.serviceName+callerName, arg, rsp)
 }
 
-func (*caller) callerMethodName() string {
+func (*serviceClient) callerMethodName() string {
 	rpc := make([]uintptr, 1)
 	n := runtime.Callers(3, rpc[:])
 	if n < 1 {
