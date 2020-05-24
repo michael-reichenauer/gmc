@@ -23,7 +23,7 @@ type Server struct {
 	connectionID int
 }
 
-func NewRpcServer() *Server {
+func NewServer() *Server {
 	return &Server{
 		rpcServer:   rpc.NewServer(),
 		done:        make(chan struct{}),
@@ -31,7 +31,7 @@ func NewRpcServer() *Server {
 	}
 }
 
-func (t *Server) RegisterName(serviceName string, service interface{}) error {
+func (t *Server) Register(serviceName string, service interface{}) error {
 	return t.rpcServer.RegisterName(serviceName, service)
 }
 

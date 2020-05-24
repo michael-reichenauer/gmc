@@ -2,9 +2,8 @@ package console
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"strings"
@@ -101,6 +100,99 @@ func (t uiMock) Quit() {
 	t.Close()
 }
 
+type viewRepoMock struct {
+	repoChanges chan api.RepoChange
+}
+
+func newViewRepoMock() api.Repo {
+	return &viewRepoMock{repoChanges: make(chan api.RepoChange)}
+}
+
+func (t viewRepoMock) StartMonitor() {
+}
+
+func (t viewRepoMock) RepoChanges() chan api.RepoChange {
+	return t.repoChanges
+}
+
+func (t viewRepoMock) Close() {
+}
+
+func (t viewRepoMock) TriggerRefreshModel() {
+}
+
+func (t viewRepoMock) TriggerSearch(text string) {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetCommitOpenInBranches(id string) []api.Branch {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetCommitOpenOutBranches(id string) []api.Branch {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetCurrentNotShownBranch() (api.Branch, bool) {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetCurrentBranch() (api.Branch, bool) {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetLatestBranches(shown bool) []api.Branch {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetAllBranches(shown bool) []api.Branch {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetShownBranches(master bool) []api.Branch {
+	panic("implement me")
+}
+
+func (t viewRepoMock) ShowBranch(name string) {
+	panic("implement me")
+}
+
+func (t viewRepoMock) HideBranch(name string) {
+	panic("implement me")
+}
+
+func (t viewRepoMock) SwitchToBranch(name string, name2 string) error {
+	panic("implement me")
+}
+
+func (t viewRepoMock) PushBranch(name string) error {
+	panic("implement me")
+}
+
+func (t viewRepoMock) PullBranch() error {
+	panic("implement me")
+}
+
+func (t viewRepoMock) MergeBranch(name string) error {
+	panic("implement me")
+}
+
+func (t viewRepoMock) CreateBranch(name string) error {
+	panic("implement me")
+}
+
+func (t viewRepoMock) DeleteBranch(name string) error {
+	panic("implement me")
+}
+
+func (t viewRepoMock) GetCommitDiff(id string) (api.CommitDiff, error) {
+	panic("implement me")
+}
+
+func (t viewRepoMock) Commit(message string) error {
+	panic("implement me")
+}
+
 func TestViewCurrent(t *testing.T) {
 	tests.ManualTest(t)
 	// wf:= tests.CreateTempFolder()
@@ -108,7 +200,8 @@ func TestViewCurrent(t *testing.T) {
 
 	uim := newUIMock()
 	viewer := newViewerMock(uim, func() { uim.Close() })
-	vm := newRepoVM(uim, viewer, nil, config.NewConfig("0.1", "", ""), git.CurrentRoot())
+	viewRepo := newViewRepoMock()
+	vm := newRepoVM(uim, viewer, viewRepo)
 	vm.startRepoMonitor()
 	defer vm.close()
 	vm.triggerRefresh()
@@ -124,7 +217,8 @@ func TestViewAcs(t *testing.T) {
 
 	uim := newUIMock()
 	viewer := newViewerMock(uim, func() { uim.Close() })
-	vm := newRepoVM(uim, viewer, nil, config.NewConfig("0.1", "", ""), "C:\\Work Files\\AcmAcs")
+	viewRepo := newViewRepoMock()
+	vm := newRepoVM(uim, viewer, viewRepo)
 	vm.startRepoMonitor()
 	defer vm.close()
 	vm.triggerRefresh()

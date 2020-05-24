@@ -1,6 +1,8 @@
 package console
 
 import (
+	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/tests"
@@ -13,8 +15,12 @@ type getterMock struct {
 	git git.Git
 }
 
-func (t getterMock) GetCommitDiff(id string) (git.CommitDiff, error) {
-	return t.git.CommitDiff(id)
+func (t getterMock) GetCommitDiff(id string) (api.CommitDiff, error) {
+	diff, err := t.git.CommitDiff(id)
+	if err != nil {
+		return api.CommitDiff{}, err
+	}
+	return viewrepo.ToCommitDiff(diff), nil
 }
 
 func TestConflicts_Manual(t *testing.T) {

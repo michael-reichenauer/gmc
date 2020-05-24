@@ -5,6 +5,12 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
+func ToCommitDiff(diff git.CommitDiff) api.CommitDiff {
+	return api.CommitDiff{
+		FileDiffs: toFileDiffs(diff.FileDiffs),
+	}
+}
+
 func toFileDiffs(gfd []git.FileDiff) []api.FileDiff {
 	diffs := make([]api.FileDiff, len(gfd))
 	for i, d := range gfd {

@@ -108,9 +108,7 @@ func (t *viewRepo) GetCommitDiff(id string) (api.CommitDiff, error) {
 	if err != nil {
 		return api.CommitDiff{}, err
 	}
-	return api.CommitDiff{
-		FileDiffs: toFileDiffs(diff.FileDiffs),
-	}, nil
+	return ToCommitDiff(diff), nil
 }
 
 func (t *viewRepo) SwitchToBranch(name string, displayName string) error {

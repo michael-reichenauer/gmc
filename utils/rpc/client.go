@@ -13,15 +13,23 @@ import (
 	"strings"
 )
 
-type Client struct {
-	serviceName string
-	conn        net.Conn
-	rpcClient   *rpc.Client
-	done        chan struct{}
+type Caller interface {
+	Call(arg interface{}, rsp interface{}) error
 }
 
-func NewRpcClient(serviceName string) *Client {
-	return &Client{serviceName: serviceName + ".", done: make(chan struct{})}
+type caller struct {
+	serviceName string
+	client      *Client
+}
+
+type Client struct {
+	conn      net.Conn
+	rpcClient *rpc.Client
+	done      chan struct{}
+}
+
+func NewClient() *Client {
+	return &Client{done: make(chan struct{})}
 }
 
 func (t *Client) Connect(uri string) error {
@@ -65,12 +73,20 @@ func (t *Client) Close() {
 	t.conn.Close()
 }
 
-func (t *Client) Call(arg interface{}, rsp interface{}) error {
-	callerName := t.callerMethodName()
-	return t.rpcClient.Call(t.serviceName+callerName, arg, rsp)
+func (t *Client) Caller(serviceName string) Caller {
+	return &caller{client: t, serviceName: serviceName + "."}
 }
 
-func (*Client) callerMethodName() string {
+func (t *Client) call(serviceMethod string, arg interface{}, rsp interface{}) error {
+	return t.rpcClient.Call(serviceMethod, arg, rsp)
+}
+
+func (t *caller) Call(arg interface{}, rsp interface{}) error {
+	callerName := t.callerMethodName()
+	return t.client.call(t.serviceName+callerName, arg, rsp)
+}
+
+func (*caller) callerMethodName() string {
 	rpc := make([]uintptr, 1)
 	n := runtime.Callers(3, rpc[:])
 	if n < 1 {

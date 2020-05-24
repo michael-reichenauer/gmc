@@ -15,21 +15,21 @@ type Service interface {
 
 // The service client
 type ServiceClient struct {
-	client *Client
+	caller Caller
 }
 
-func NewServiceClient(client *Client) Service {
-	return &ServiceClient{client: client}
+func NewServiceClient(caller Caller) Service {
+	return &ServiceClient{caller: caller}
 }
 
 func (t ServiceClient) Add(args Args, rsp *int) error {
 	// All implementations are the same, client will call different methods of the server
-	return t.client.Call(args, rsp)
+	return t.caller.Call(args, rsp)
 }
 
 func (t ServiceClient) Sub(args Args, rsp *int) error {
 	// All implementations are the same, client will call different methods of the server
-	return t.client.Call(args, rsp)
+	return t.caller.Call(args, rsp)
 }
 
 type ServiceServer struct {
@@ -57,11 +57,10 @@ func (t *ServiceServer) Sub(args Args, rsp *int) error {
 	return nil
 }
 
-func TestNewJsonRpcServer(t *testing.T) {
+func TestRpc(t *testing.T) {
 	// Create rpc server and register service server
-	serviceServer := NewServiceServer()
-	rpcServer := NewRpcServer()
-	err := rpcServer.RegisterName("Service", serviceServer)
+	rpcServer := NewServer()
+	err := rpcServer.Register("Service", NewServiceServer())
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
@@ -75,10 +74,10 @@ func TestNewJsonRpcServer(t *testing.T) {
 	}()
 
 	// Create rpc client and create service client
-	rpcClient := NewRpcClient("Service")
+	rpcClient := NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	serviceClient := NewServiceClient(rpcClient)
+	serviceClient := NewServiceClient(rpcClient.Caller("Service"))
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
@@ -95,11 +94,10 @@ func TestNewJsonRpcServer(t *testing.T) {
 	}
 }
 
-func TestClosingServer(t *testing.T) {
+func TestRpcWithCloseServer(t *testing.T) {
 	// Create rpc server and register service server
-	serviceServer := NewServiceServer()
-	rpcServer := NewRpcServer()
-	err := rpcServer.RegisterName("Service", serviceServer)
+	rpcServer := NewServer()
+	err := rpcServer.Register("Service", NewServiceServer())
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
@@ -113,10 +111,10 @@ func TestClosingServer(t *testing.T) {
 	}()
 
 	// Create rpc client and create service client
-	rpcClient := NewRpcClient("Service")
+	rpcClient := NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	serviceClient := NewServiceClient(rpcClient)
+	serviceClient := NewServiceClient(rpcClient.Caller("Service"))
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
@@ -137,11 +135,10 @@ func TestClosingServer(t *testing.T) {
 	}
 }
 
-func TestClosingClient(t *testing.T) {
+func TestRpcWithCloseClient(t *testing.T) {
 	// Create rpc server and register service server
-	serviceServer := NewServiceServer()
-	rpcServer := NewRpcServer()
-	err := rpcServer.RegisterName("Service", serviceServer)
+	rpcServer := NewServer()
+	err := rpcServer.Register("Service", NewServiceServer())
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
@@ -155,10 +152,10 @@ func TestClosingClient(t *testing.T) {
 	}()
 
 	// Create rpc client and create service client
-	rpcClient := NewRpcClient("Service")
+	rpcClient := NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	serviceClient := NewServiceClient(rpcClient)
+	serviceClient := NewServiceClient(rpcClient.Caller("Service"))
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
