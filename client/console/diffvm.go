@@ -9,7 +9,7 @@ import (
 )
 
 type DiffGetter interface {
-	GetCommitDiff(id string) (api.CommitDiff, error)
+	GetCommitDiff(id string, diff *api.CommitDiff) error
 }
 
 type diffVM struct {
@@ -34,7 +34,8 @@ func newDiffVM(viewer cui.Viewer, diffGetter DiffGetter, commitID string) *diffV
 
 func (h *diffVM) load() {
 	go func() {
-		diff, _ := h.diffGetter.GetCommitDiff(h.commitID)
+		var diff api.CommitDiff
+		_ = h.diffGetter.GetCommitDiff(h.commitID, &diff)
 		h.viewer.PostOnUIThread(func() {
 			h.commitDiff = diff
 			h.isDiffReady = true

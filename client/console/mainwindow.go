@@ -17,7 +17,7 @@ func NewMainWindow(ui cui.UI, api api.Api) *MainWindow {
 }
 
 func (t *MainWindow) Show(path string) {
-	err := t.api.OpenRepo(path)
+	err := t.api.OpenRepo(path, nil)
 	if err != nil {
 		if path != "" {
 			t.ui.ShowErrorMessageBox("Failed to show repo for:\n%s\nError: %v", path, err)
@@ -33,7 +33,8 @@ func (t *MainWindow) Show(path string) {
 func (t *MainWindow) showOpenRepoMenu() {
 	menu := t.ui.NewMenu("Open repo")
 
-	recentDirs, err := t.api.GetRecentWorkingDirs()
+	var recentDirs []string
+	err := t.api.GetRecentWorkingDirs(nil, &recentDirs)
 	if err != nil {
 		t.ui.ShowErrorMessageBox("Failed to get recent dirs,\nError: %v", err)
 	}
@@ -42,7 +43,8 @@ func (t *MainWindow) showOpenRepoMenu() {
 		menu.Add(cui.SeparatorMenuItem)
 	}
 
-	paths, err := t.api.GetSubDirs("")
+	var paths []string
+	err = t.api.GetSubDirs("", &paths)
 	if err != nil {
 		t.ui.ShowErrorMessageBox("Failed to list of folders to open,\nError: %v", err)
 		return
@@ -76,7 +78,8 @@ func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.Me
 			Title:  path,
 			Action: func() { action(path) },
 			SubItemsFunc: func() []cui.MenuItem {
-				dirs, err := t.api.GetSubDirs(path)
+				var dirs []string
+				err := t.api.GetSubDirs(path, &dirs)
 				if err != nil {
 					t.ui.ShowErrorMessageBox("Failed to list of folders to open,\nError: %v", err)
 					return nil

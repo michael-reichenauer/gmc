@@ -1,6 +1,7 @@
 package server
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
@@ -27,7 +28,14 @@ func NewServer(configService *config.Service) api.Api {
 	return &server{configService: configService}
 }
 
-func (t *server) GetSubDirs(parentDirPath string) ([]string, error) {
+func (t *server) GetRecentWorkingDirs(_ api.Nil, rsp *[]string) error {
+	log.Debugf(">")
+	defer log.Debugf("<")
+	*rsp = t.configService.GetState().RecentFolders
+	return nil
+}
+
+func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	var paths []string
@@ -35,13 +43,14 @@ func (t *server) GetSubDirs(parentDirPath string) ([]string, error) {
 		// Path not specified, return recent used parent paths and root folders
 		paths = t.configService.GetState().RecentParentFolders
 		paths = append(paths, utils.GetVolumes()...)
-		return paths, nil
+		*dirs = paths
+		return nil
 	}
-
-	return t.getSubDirs(parentDirPath), nil
+	*dirs = t.getSubDirs(parentDirPath)
+	return nil
 }
 
-func (t *server) OpenRepo(path string) error {
+func (t *server) OpenRepo(path string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	if path == "" {
@@ -68,22 +77,17 @@ func (t *server) OpenRepo(path string) error {
 	return nil
 }
 
-func (t *server) GetRecentWorkingDirs() ([]string, error) {
-	log.Debugf(">")
-	defer log.Debugf("<")
-	return t.configService.GetState().RecentFolders, nil
-}
-
-func (t *server) CloseRepo() {
+func (t *server) CloseRepo(_ api.Nil, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	t.repo().CloseRepo()
 	t.lock.Lock()
 	t.viewRepo = nil
 	t.lock.Unlock()
+	return nil
 }
 
-func (t *server) GetChanges() []api.RepoChange {
+func (t *server) GetChanges(_ api.Nil, rsp *[]api.RepoChange) error {
 	repo := t.repo()
 	if repo == nil {
 		return nil
@@ -94,17 +98,21 @@ func (t *server) GetChanges() []api.RepoChange {
 	select {
 	case change, ok := <-repo.RepoChanges:
 		if !ok {
-			return changes
+			*rsp = changes
+			return nil
 		}
 		changes = append(changes, change)
 	case <-time.After(getChangesTimout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
-		return changes
+		*rsp = changes
+		return nil
 	}
 
 	repo = t.repo()
 	if repo == nil {
-		return changes
+		*rsp = changes
+		return nil
+
 	}
 
 	// Got some event, check if there are more events and return them as well
@@ -112,125 +120,149 @@ func (t *server) GetChanges() []api.RepoChange {
 		select {
 		case change, ok := <-repo.RepoChanges:
 			if !ok {
-				return changes
+				*rsp = changes
+				return nil
+
 			}
 			changes = append(changes, change)
 		default:
 			// no more queued changes,
-			return changes
+			*rsp = changes
+			return nil
 		}
 	}
 }
 
-func (t *server) TriggerRefreshModel() {
+func (t *server) TriggerRefreshModel(_ api.Nil, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	t.repo().TriggerRefreshModel()
+	return nil
 }
 
-func (t *server) TriggerSearch(text string) {
+func (t *server) TriggerSearch(text string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	t.repo().TriggerSearch(text)
+	return nil
 }
 
-func (t *server) GetCommitOpenInBranches(id string) []api.Branch {
+func (t *server) GetCommitOpenInBranches(id string, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetCommitOpenInBranches(id)
+	*rsp = t.repo().GetCommitOpenInBranches(id)
+	return nil
 }
 
-func (t *server) GetCommitOpenOutBranches(id string) []api.Branch {
+func (t *server) GetCommitOpenOutBranches(id string, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetCommitOpenOutBranches(id)
+	*rsp = t.repo().GetCommitOpenOutBranches(id)
+	return nil
 }
 
-func (t *server) GetCurrentNotShownBranch() (api.Branch, bool) {
+func (t *server) GetCurrentNotShownBranch(_ api.Nil, rsp *api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetCurrentNotShownBranch()
+	b, ok := t.repo().GetCurrentNotShownBranch()
+	if !ok {
+		return fmt.Errorf("branch not found")
+	}
+	*rsp = b
+	return nil
 }
 
-func (t *server) GetCurrentBranch() (api.Branch, bool) {
+func (t *server) GetCurrentBranch(_ api.Nil, rsp *api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetCurrentBranch()
+	b, ok := t.repo().GetCurrentBranch()
+	if !ok {
+		return fmt.Errorf("branch not found")
+	}
+	*rsp = b
+	return nil
 }
 
-func (t *server) GetLatestBranches(shown bool) []api.Branch {
+func (t *server) GetLatestBranches(shown bool, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetLatestBranches(shown)
+	*rsp = t.repo().GetLatestBranches(shown)
+	return nil
 }
 
-func (t *server) GetAllBranches(shown bool) []api.Branch {
+func (t *server) GetAllBranches(shown bool, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetAllBranches(shown)
+	*rsp = t.repo().GetAllBranches(shown)
+	return nil
 }
 
-func (t *server) GetShownBranches(master bool) []api.Branch {
+func (t *server) GetShownBranches(master bool, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetShownBranches(master)
+	*rsp = t.repo().GetShownBranches(master)
+	return nil
 }
 
-func (t *server) ShowBranch(name string) {
+func (t *server) ShowBranch(name string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	t.repo().ShowBranch(name)
+	return nil
 }
 
-func (t *server) HideBranch(name string) {
+func (t *server) HideBranch(name string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	t.repo().HideBranch(name)
+	return nil
 }
 
-func (t *server) SwitchToBranch(name string, name2 string) error {
+func (t *server) SwitchToBranch(args api.SwitchArgs, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().SwitchToBranch(name, name2)
+	return t.repo().SwitchToBranch(args.Name, args.DisplayName)
 }
 
-func (t *server) PushBranch(name string) error {
+func (t *server) PushBranch(name string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	return t.repo().PushBranch(name)
 }
 
-func (t *server) PullBranch() error {
+func (t *server) PullBranch(_ api.Nil, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	return t.repo().PullBranch()
 }
 
-func (t *server) MergeBranch(name string) error {
+func (t *server) MergeBranch(name string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	return t.repo().MergeBranch(name)
 }
 
-func (t *server) CreateBranch(name string) error {
+func (t *server) CreateBranch(name string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	return t.repo().CreateBranch(name)
 }
 
-func (t *server) DeleteBranch(name string) error {
+func (t *server) DeleteBranch(name string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	return t.repo().DeleteBranch(name)
 }
 
-func (t *server) GetCommitDiff(id string) (api.CommitDiff, error) {
+func (t *server) GetCommitDiff(id string, diff *api.CommitDiff) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.repo().GetCommitDiff(id)
+	d, err := t.repo().GetCommitDiff(id)
+	*diff = d
+	return err
 }
 
-func (t *server) Commit(message string) error {
+func (t *server) Commit(message string, _ api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
 	return t.repo().Commit(message)

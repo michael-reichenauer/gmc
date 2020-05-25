@@ -59,29 +59,36 @@ func (h *repoVM) startRepoMonitor() {
 
 func (h *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
-	h.api.TriggerRefreshModel()
+	_ = h.api.TriggerRefreshModel(nil, nil)
 }
 
 func (h *repoVM) SetSearch(text string) {
-	h.api.TriggerSearch(text)
+	_ = h.api.TriggerSearch(text, nil)
 }
 
 func (h *repoVM) close() {
+	log.Infof("Close")
 	close(h.done)
-	h.api.CloseRepo()
+	_ = h.api.CloseRepo(nil, nil)
 }
 
 func (h *repoVM) monitorModelRoutine() {
 	repoChanges := make(chan api.RepoChange)
 	go func() {
 		for {
-			changes := h.api.GetChanges()
+			var changes []api.RepoChange
+			err := h.api.GetChanges(nil, &changes)
+			if err != nil {
+				close(repoChanges)
+				return
+			}
 			select {
 			case <-h.done:
 				close(repoChanges)
 				return
 			default:
 			}
+
 			for _, c := range changes {
 				repoChanges <- c
 			}
@@ -202,7 +209,9 @@ func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []api.Branch {
 		return nil
 	}
 
-	return h.api.GetCommitOpenInBranches(c.ID)
+	var branches []api.Branch
+	_ = h.api.GetCommitOpenInBranches(c.ID, &branches)
+	return branches
 }
 
 func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
@@ -210,45 +219,54 @@ func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
 	if c.More == api.MoreNone {
 		return nil
 	}
-
-	return h.api.GetCommitOpenOutBranches(c.ID)
+	var branches []api.Branch
+	_ = h.api.GetCommitOpenOutBranches(c.ID, &branches)
+	return branches
 }
 
 func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
-	current, ok := h.api.GetCurrentNotShownBranch()
+	var current api.Branch
+	err := h.api.GetCurrentNotShownBranch(nil, &current)
 
-	return current, ok
+	return current, err == nil
 }
 
 func (h *repoVM) CurrentBranch() (api.Branch, bool) {
-	current, ok := h.api.GetCurrentBranch()
-	return current, ok
+	var current api.Branch
+	err := h.api.GetCurrentBranch(nil, &current)
+	return current, err == nil
 }
 
 func (h *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
-	return h.api.GetLatestBranches(skipShown)
+	var branches []api.Branch
+	_ = h.api.GetLatestBranches(skipShown, &branches)
+	return branches
 }
 
 func (h *repoVM) GetAllBranches(skipShown bool) []api.Branch {
-	return h.api.GetAllBranches(skipShown)
+	var branches []api.Branch
+	_ = h.api.GetAllBranches(skipShown, &branches)
+	return branches
 }
 
 func (h *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
-	return h.api.GetShownBranches(skipMaster)
+	var branches []api.Branch
+	_ = h.api.GetShownBranches(skipMaster, &branches)
+	return branches
 }
 
 func (h *repoVM) ShowBranch(name string) {
-	h.api.ShowBranch(name)
+	_ = h.api.ShowBranch(name, nil)
 }
 
 func (h *repoVM) HideBranch(name string) {
-	h.api.HideBranch(name)
+	_ = h.api.HideBranch(name, nil)
 }
 
 func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.api.SwitchToBranch(name, displayName) },
+		func() error { return h.api.SwitchToBranch(api.SwitchArgs{Name: name, DisplayName: displayName}, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
 }
@@ -256,7 +274,7 @@ func (h *repoVM) SwitchToBranch(name string, displayName string) {
 func (h *repoVM) PushBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return h.api.PushBranch(name) },
+		func() error { return h.api.PushBranch(name, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
@@ -268,7 +286,7 @@ func (h *repoVM) PushCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
-		func() error { return h.api.PushBranch(current.Name) },
+		func() error { return h.api.PushBranch(current.Name, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -280,7 +298,7 @@ func (h *repoVM) PullCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return h.api.PullBranch() },
+		func() error { return h.api.PullBranch(nil, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -288,7 +306,7 @@ func (h *repoVM) PullCurrentBranch() {
 func (h *repoVM) MergeFromBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return h.api.MergeBranch(name) },
+		func() error { return h.api.MergeBranch(name, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
@@ -315,24 +333,24 @@ func (h *repoVM) CreateBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := h.api.CreateBranch(name)
+			err := h.api.CreateBranch(name, nil)
 			if err != nil {
 				return err
 			}
-			err = h.api.PushBranch(name)
+			err = h.api.PushBranch(name, nil)
 			if err != nil {
 				return err
 			}
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { h.api.ShowBranch(name) })
+		func() { h.api.ShowBranch(name, nil) })
 }
 
 func (h *repoVM) DeleteBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
-		func() error { return h.api.DeleteBranch(name) },
+		func() error { return h.api.DeleteBranch(name, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
 }

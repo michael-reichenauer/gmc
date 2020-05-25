@@ -13,144 +13,144 @@ func NewClient(server api.Api) api.Api {
 	return &client{server: server}
 }
 
-func (t client) OpenRepo(path string) error {
+func (t client) OpenRepo(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.OpenRepo(path)
+	return t.server.OpenRepo(args, rsp)
 }
 
-func (t client) GetRecentWorkingDirs() ([]string, error) {
+func (t client) GetRecentWorkingDirs(args api.Nil, rsp *[]string) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetRecentWorkingDirs()
+	return t.server.GetRecentWorkingDirs(args, rsp)
 }
 
-func (t client) GetSubDirs(path string) ([]string, error) {
+func (t client) GetSubDirs(args string, rsp *[]string) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetSubDirs(path)
+	return t.server.GetSubDirs(args, rsp)
 }
 
-func (t client) CloseRepo() {
+func (t client) CloseRepo(args api.Nil, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	t.server.CloseRepo()
+	return t.server.CloseRepo(args, rsp)
 }
 
-func (t client) GetChanges() []api.RepoChange {
-	return t.server.GetChanges()
+func (t client) GetChanges(args api.Nil, rsp *[]api.RepoChange) error {
+	return t.server.GetChanges(args, rsp)
 }
 
-func (t client) TriggerRefreshModel() {
+func (t client) TriggerRefreshModel(args api.Nil, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	t.server.TriggerRefreshModel()
+	return t.server.TriggerRefreshModel(args, rsp)
 }
 
-func (t client) TriggerSearch(text string) {
+func (t client) TriggerSearch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	t.server.TriggerSearch(text)
+	return t.server.TriggerSearch(args, rsp)
 }
 
-func (t client) GetCommitOpenInBranches(id string) []api.Branch {
+func (t client) GetCommitOpenInBranches(args string, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetCommitOpenInBranches(id)
+	return t.server.GetCommitOpenInBranches(args, rsp)
 }
 
-func (t client) GetCommitOpenOutBranches(id string) []api.Branch {
+func (t client) GetCommitOpenOutBranches(args string, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetCommitOpenOutBranches(id)
+	return t.server.GetCommitOpenOutBranches(args, rsp)
 }
 
-func (t client) GetCurrentNotShownBranch() (api.Branch, bool) {
+func (t client) GetCurrentNotShownBranch(args api.Nil, rsp *api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetCurrentNotShownBranch()
+	return t.server.GetCurrentNotShownBranch(args, rsp)
 }
 
-func (t client) GetCurrentBranch() (api.Branch, bool) {
+func (t client) GetCurrentBranch(args api.Nil, rsp *api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetCurrentBranch()
+	return t.server.GetCurrentBranch(args, rsp)
 }
 
-func (t client) GetLatestBranches(shown bool) []api.Branch {
+func (t client) GetLatestBranches(args bool, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetLatestBranches(shown)
+	return t.server.GetLatestBranches(args, rsp)
 }
 
-func (t client) GetAllBranches(shown bool) []api.Branch {
+func (t client) GetAllBranches(args bool, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetAllBranches(shown)
+	return t.server.GetAllBranches(args, rsp)
 }
 
-func (t client) GetShownBranches(master bool) []api.Branch {
+func (t client) GetShownBranches(args bool, rsp *[]api.Branch) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetShownBranches(master)
+	return t.server.GetShownBranches(args, rsp)
 }
 
-func (t client) ShowBranch(name string) {
+func (t client) ShowBranch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	t.server.ShowBranch(name)
+	return t.server.ShowBranch(args, rsp)
 }
 
-func (t client) HideBranch(name string) {
+func (t client) HideBranch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	t.server.HideBranch(name)
+	return t.server.HideBranch(args, rsp)
 }
 
-func (t client) SwitchToBranch(name string, name2 string) error {
+func (t client) SwitchToBranch(args api.SwitchArgs, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.SwitchToBranch(name, name2)
+	return t.server.SwitchToBranch(args, rsp)
 }
 
-func (t client) PushBranch(name string) error {
+func (t client) PushBranch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.PushBranch(name)
+	return t.server.PushBranch(args, rsp)
 }
 
-func (t client) PullBranch() error {
+func (t client) PullBranch(args api.Nil, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.PullBranch()
+	return t.server.PullBranch(args, rsp)
 }
 
-func (t client) MergeBranch(name string) error {
+func (t client) MergeBranch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.MergeBranch(name)
+	return t.server.MergeBranch(args, rsp)
 }
 
-func (t client) CreateBranch(name string) error {
+func (t client) CreateBranch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.CreateBranch(name)
+	return t.server.CreateBranch(args, rsp)
 }
 
-func (t client) DeleteBranch(name string) error {
+func (t client) DeleteBranch(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.DeleteBranch(name)
+	return t.server.DeleteBranch(args, rsp)
 }
 
-func (t client) GetCommitDiff(id string) (api.CommitDiff, error) {
+func (t client) GetCommitDiff(args string, rsp *api.CommitDiff) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.GetCommitDiff(id)
+	return t.server.GetCommitDiff(args, rsp)
 }
 
-func (t client) Commit(message string) error {
+func (t client) Commit(args string, rsp api.Nil) error {
 	log.Debugf(">")
 	defer log.Debugf("<")
-	return t.server.Commit(message)
+	return t.server.Commit(args, rsp)
 }

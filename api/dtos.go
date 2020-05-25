@@ -18,6 +18,13 @@ const (
 	DiffConflictEnd
 )
 
+type Nil *int
+
+type SwitchArgs struct {
+	Name        string
+	DisplayName string
+}
+
 type ViewRepo struct {
 	Commits            []Commit
 	CurrentBranchName  string
