@@ -129,8 +129,8 @@ func (h *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 }
 
 func (h *repoVM) getLines(viewPage cui.ViewPage) (int, []string) {
-	firstIndex, commits := h.getCommits(viewPage)
-	return firstIndex, h.repoLayout.getPageLines(commits, viewPage.Width, "", h.repo)
+	firstIndex, commits, graph := h.getPage(viewPage)
+	return firstIndex, h.repoLayout.getPageLines(commits, graph, viewPage.Width, "", h.repo)
 }
 
 func (h *repoVM) isMoreClick(x int, y int) bool {
@@ -138,7 +138,7 @@ func (h *repoVM) isMoreClick(x int, y int) bool {
 	return x == moreX
 }
 
-func (h *repoVM) getCommits(viewPage cui.ViewPage) (int, []api.Commit) {
+func (h *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphRow) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
 	if count > len(h.repo.Commits) {
@@ -150,7 +150,9 @@ func (h *repoVM) getCommits(viewPage cui.ViewPage) (int, []api.Commit) {
 		// Requested commits past available, adjust to return available commits
 		firstIndex = len(h.repo.Commits) - count
 	}
-	return firstIndex, h.repo.Commits[firstIndex : firstIndex+count]
+	commits := h.repo.Commits[firstIndex : firstIndex+count]
+	graphRows := h.repo.ConsoleGraph[firstIndex : firstIndex+count]
+	return firstIndex, commits, graphRows
 }
 
 func (h *repoVM) showCommitDialog() {
