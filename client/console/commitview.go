@@ -109,7 +109,7 @@ func (h *CommitView) onCancel() {
 
 func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
-	err := h.committer.Commit(msg, nil)
+	err := h.committer.Commit(msg, api.Nil)
 	if err != nil {
 		log.Eventf("commit-error", "failed to commit, %v", err)
 		h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
