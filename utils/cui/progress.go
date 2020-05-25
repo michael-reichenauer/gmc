@@ -71,7 +71,7 @@ func (t *progress) Close() {
 
 func (t *progress) textFunc(ViewPage) string {
 	if time.Since(t.startTime) < 1000*time.Millisecond {
-		// Show no progress for a show while in case operation comletes fast
+		// Show no progress for a show while in case operation completes fast
 		return ""
 	}
 	if time.Since(t.startTime) < 8*time.Second {
