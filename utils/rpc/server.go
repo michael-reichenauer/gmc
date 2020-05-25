@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"io"
 	"net"
 	"net/http"
@@ -54,6 +55,7 @@ func (t *Server) Start(uri string) error {
 	t.httpServer = &http.Server{Handler: mux}
 	t.listener = listener
 	t.URL = fmt.Sprintf("http://%s%s", listener.Addr().String(), u.Path)
+	log.Infof("Started rpc server on %s", t.URL)
 	return nil
 }
 
@@ -71,6 +73,7 @@ func (t *Server) Serve() error {
 }
 
 func (t *Server) Close() {
+	log.Infof("Closing %s ...", t.URL)
 	select {
 	case <-t.done:
 		// Already closed
@@ -99,10 +102,12 @@ func (t *Server) httpRpcHandler(w http.ResponseWriter, req *http.Request) {
 	// Return response that connection was accepted
 	_, _ = io.WriteString(conn, "HTTP/1.0 200 Connected\r\n\r\n")
 
+	log.Infof("Connected %s->%s", req.RemoteAddr, t.URL)
 	// Keep track of current connections so they can be closed when closing server
 	id := t.storeConnection(conn)
 	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(conn))
 	t.removeConnection(id)
+	log.Infof("Disconnected %s->%s", req.RemoteAddr, t.URL)
 }
 
 func (t *Server) storeConnection(conn net.Conn) int {

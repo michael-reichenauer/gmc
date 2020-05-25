@@ -18,7 +18,12 @@ const (
 	DiffConflictEnd
 )
 
-type Nil *int
+type None *int
+
+var (
+	Nil None = &no
+	no  int
+)
 
 type SwitchArgs struct {
 	Name        string

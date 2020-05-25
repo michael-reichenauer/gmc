@@ -59,17 +59,17 @@ func (h *repoVM) startRepoMonitor() {
 
 func (h *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
-	_ = h.api.TriggerRefreshModel(nil, nil)
+	_ = h.api.TriggerRefreshModel(api.Nil, api.Nil)
 }
 
 func (h *repoVM) SetSearch(text string) {
-	_ = h.api.TriggerSearch(text, nil)
+	_ = h.api.TriggerSearch(text, api.Nil)
 }
 
 func (h *repoVM) close() {
 	log.Infof("Close")
 	close(h.done)
-	_ = h.api.CloseRepo(nil, nil)
+	_ = h.api.CloseRepo(api.Nil, api.Nil)
 }
 
 func (h *repoVM) monitorModelRoutine() {
@@ -77,7 +77,7 @@ func (h *repoVM) monitorModelRoutine() {
 	go func() {
 		for {
 			var changes []api.RepoChange
-			err := h.api.GetChanges(nil, &changes)
+			err := h.api.GetChanges(api.Nil, &changes)
 			if err != nil {
 				close(repoChanges)
 				return
@@ -228,14 +228,14 @@ func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
 
 func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	var current api.Branch
-	err := h.api.GetCurrentNotShownBranch(nil, &current)
+	err := h.api.GetCurrentNotShownBranch(api.Nil, &current)
 
 	return current, err == nil
 }
 
 func (h *repoVM) CurrentBranch() (api.Branch, bool) {
 	var current api.Branch
-	err := h.api.GetCurrentBranch(nil, &current)
+	err := h.api.GetCurrentBranch(api.Nil, &current)
 	return current, err == nil
 }
 
@@ -258,11 +258,11 @@ func (h *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 }
 
 func (h *repoVM) ShowBranch(name string) {
-	_ = h.api.ShowBranch(name, nil)
+	_ = h.api.ShowBranch(name, api.Nil)
 }
 
 func (h *repoVM) HideBranch(name string) {
-	_ = h.api.HideBranch(name, nil)
+	_ = h.api.HideBranch(name, api.Nil)
 }
 
 func (h *repoVM) SwitchToBranch(name string, displayName string) {
@@ -276,7 +276,7 @@ func (h *repoVM) SwitchToBranch(name string, displayName string) {
 func (h *repoVM) PushBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return h.api.PushBranch(name, nil) },
+		func() error { return h.api.PushBranch(name, api.Nil) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
@@ -288,7 +288,7 @@ func (h *repoVM) PushCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
-		func() error { return h.api.PushBranch(current.Name, nil) },
+		func() error { return h.api.PushBranch(current.Name, api.Nil) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -300,7 +300,7 @@ func (h *repoVM) PullCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return h.api.PullBranch(nil, nil) },
+		func() error { return h.api.PullBranch(nil, api.Nil) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -308,7 +308,7 @@ func (h *repoVM) PullCurrentBranch() {
 func (h *repoVM) MergeFromBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return h.api.MergeBranch(name, nil) },
+		func() error { return h.api.MergeBranch(name, api.Nil) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
@@ -335,24 +335,24 @@ func (h *repoVM) CreateBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := h.api.CreateBranch(name, nil)
+			err := h.api.CreateBranch(name, api.Nil)
 			if err != nil {
 				return err
 			}
-			err = h.api.PushBranch(name, nil)
+			err = h.api.PushBranch(name, api.Nil)
 			if err != nil {
 				return err
 			}
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { h.api.ShowBranch(name, nil) })
+		func() { h.api.ShowBranch(name, api.Nil) })
 }
 
 func (h *repoVM) DeleteBranch(name string) {
 	h.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
-		func() error { return h.api.DeleteBranch(name, nil) },
+		func() error { return h.api.DeleteBranch(name, api.Nil) },
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
 }

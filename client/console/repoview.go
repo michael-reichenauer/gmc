@@ -17,7 +17,6 @@ type mainService interface {
 type RepoView struct {
 	view        cui.View
 	ui          cui.UI
-	api         api.Api
 	vm          *repoVM
 	menuService *menuService
 	searchView  *SearchView
@@ -35,8 +34,7 @@ func (t *RepoView) ScrollVertical(scroll int) {
 
 func NewRepoView(ui cui.UI, api api.Api) *RepoView {
 	h := &RepoView{
-		ui:  ui,
-		api: api,
+		ui: ui,
 	}
 	h.vm = newRepoVM(ui, h, api)
 	h.menuService = newMenuService(ui, h.vm)

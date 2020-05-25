@@ -7,7 +7,6 @@ import (
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"path/filepath"
 	"sort"
@@ -16,7 +15,7 @@ import (
 	"time"
 )
 
-const getChangesTimout = 60 * time.Second
+const getChangesTimout = 5 * time.Minute
 
 type server struct {
 	configService *config.Service
@@ -28,16 +27,12 @@ func NewServer(configService *config.Service) api.Api {
 	return &server{configService: configService}
 }
 
-func (t *server) GetRecentWorkingDirs(_ api.Nil, rsp *[]string) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) GetRecentWorkingDirs(_ api.None, rsp *[]string) error {
 	*rsp = t.configService.GetState().RecentFolders
 	return nil
 }
 
 func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	var paths []string
 	if parentDirPath == "" {
 		// Path not specified, return recent used parent paths and root folders
@@ -50,9 +45,7 @@ func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) error {
 	return nil
 }
 
-func (t *server) OpenRepo(path string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) OpenRepo(path string, _ api.None) error {
 	if path == "" {
 		// No path specified, assume current working dir
 		path = utils.CurrentDir()
@@ -77,9 +70,7 @@ func (t *server) OpenRepo(path string, _ api.Nil) error {
 	return nil
 }
 
-func (t *server) CloseRepo(_ api.Nil, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) CloseRepo(_ api.None, _ api.None) error {
 	t.repo().CloseRepo()
 	t.lock.Lock()
 	t.viewRepo = nil
@@ -87,7 +78,7 @@ func (t *server) CloseRepo(_ api.Nil, _ api.Nil) error {
 	return nil
 }
 
-func (t *server) GetChanges(_ api.Nil, rsp *[]api.RepoChange) error {
+func (t *server) GetChanges(_ api.None, rsp *[]api.RepoChange) error {
 	repo := t.repo()
 	if repo == nil {
 		return nil
@@ -133,37 +124,27 @@ func (t *server) GetChanges(_ api.Nil, rsp *[]api.RepoChange) error {
 	}
 }
 
-func (t *server) TriggerRefreshModel(_ api.Nil, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) TriggerRefreshModel(_ api.None, _ api.None) error {
 	t.repo().TriggerRefreshModel()
 	return nil
 }
 
-func (t *server) TriggerSearch(text string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) TriggerSearch(text string, _ api.None) error {
 	t.repo().TriggerSearch(text)
 	return nil
 }
 
 func (t *server) GetCommitOpenInBranches(id string, rsp *[]api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	*rsp = t.repo().GetCommitOpenInBranches(id)
 	return nil
 }
 
 func (t *server) GetCommitOpenOutBranches(id string, rsp *[]api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	*rsp = t.repo().GetCommitOpenOutBranches(id)
 	return nil
 }
 
-func (t *server) GetCurrentNotShownBranch(_ api.Nil, rsp *api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) GetCurrentNotShownBranch(_ api.None, rsp *api.Branch) error {
 	b, ok := t.repo().GetCurrentNotShownBranch()
 	if !ok {
 		return fmt.Errorf("branch not found")
@@ -172,9 +153,7 @@ func (t *server) GetCurrentNotShownBranch(_ api.Nil, rsp *api.Branch) error {
 	return nil
 }
 
-func (t *server) GetCurrentBranch(_ api.Nil, rsp *api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) GetCurrentBranch(_ api.None, rsp *api.Branch) error {
 	b, ok := t.repo().GetCurrentBranch()
 	if !ok {
 		return fmt.Errorf("branch not found")
@@ -184,87 +163,61 @@ func (t *server) GetCurrentBranch(_ api.Nil, rsp *api.Branch) error {
 }
 
 func (t *server) GetLatestBranches(shown bool, rsp *[]api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	*rsp = t.repo().GetLatestBranches(shown)
 	return nil
 }
 
 func (t *server) GetAllBranches(shown bool, rsp *[]api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	*rsp = t.repo().GetAllBranches(shown)
 	return nil
 }
 
 func (t *server) GetShownBranches(master bool, rsp *[]api.Branch) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	*rsp = t.repo().GetShownBranches(master)
 	return nil
 }
 
-func (t *server) ShowBranch(name string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) ShowBranch(name string, _ api.None) error {
 	t.repo().ShowBranch(name)
 	return nil
 }
 
-func (t *server) HideBranch(name string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) HideBranch(name string, _ api.None) error {
 	t.repo().HideBranch(name)
 	return nil
 }
 
-func (t *server) SwitchToBranch(args api.SwitchArgs, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) SwitchToBranch(args api.SwitchArgs, _ api.None) error {
 	return t.repo().SwitchToBranch(args.Name, args.DisplayName)
 }
 
-func (t *server) PushBranch(name string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) PushBranch(name string, _ api.None) error {
 	return t.repo().PushBranch(name)
 }
 
-func (t *server) PullBranch(_ api.Nil, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) PullBranch(_ api.None, _ api.None) error {
 	return t.repo().PullBranch()
 }
 
-func (t *server) MergeBranch(name string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) MergeBranch(name string, _ api.None) error {
 	return t.repo().MergeBranch(name)
 }
 
-func (t *server) CreateBranch(name string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) CreateBranch(name string, _ api.None) error {
 	return t.repo().CreateBranch(name)
 }
 
-func (t *server) DeleteBranch(name string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) DeleteBranch(name string, _ api.None) error {
 	return t.repo().DeleteBranch(name)
 }
 
 func (t *server) GetCommitDiff(id string, diff *api.CommitDiff) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
 	d, err := t.repo().GetCommitDiff(id)
 	*diff = d
 	return err
 }
 
-func (t *server) Commit(message string, _ api.Nil) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *server) Commit(message string, _ api.None) error {
 	return t.repo().Commit(message)
 }
 

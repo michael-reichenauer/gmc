@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 	"fmt"
-	client "github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/client/console"
 	"github.com/michael-reichenauer/gmc/server"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"io/ioutil"
 	stdlog "log"
 	_ "net/http/pprof"
@@ -82,12 +82,26 @@ func main() {
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
+	// Start rpc sever and serve rpc requests
+	rpcServer := rpc.NewServer()
+	if err := rpcServer.RegisterService("", server.NewServer(configService)); err != nil {
+		panic(log.Fatal(err))
+	}
+	if err := rpcServer.Start("http://127.0.0.1:0/api"); err != nil {
+		panic(log.Fatal(err))
+	}
+	defer rpcServer.Close()
+	go func() {
+		if err := rpcServer.Serve(); err != nil {
+			panic(log.Fatal(err))
+		}
+	}()
+
 	ui := cui.NewCommandUI()
 	ui.Run(func() {
 		log.Infof("Show main window %s", st)
-		api := client.NewClient(server.NewServer(configService))
-		mainWindow := console.NewMainWindow(ui, api)
-		mainWindow.Show(*workingDirFlag)
+		mainWindow := console.NewMainWindow(ui)
+		mainWindow.Show(rpcServer.URL, *workingDirFlag)
 	})
 }
 

@@ -11,7 +11,7 @@ import (
 
 type Committer interface {
 	GetCommitDiff(id string, diff *api.CommitDiff) error
-	Commit(message string, _ api.Nil) error
+	Commit(message string, rsp api.None) error
 }
 
 func NewCommitView(ui cui.UI, committer Committer) *CommitView {

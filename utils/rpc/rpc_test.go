@@ -1,24 +1,35 @@
-package rpc
+package rpc_test
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"testing"
 )
 
+type None *int
+
+var (
+	Nil None = &no
+	no  int
+)
+
 // The service interface implemented by both service client and server
 type Api interface {
-	Add(args Args, rsp *int) error
-	Sub(args Args, rsp *int) error
+	Add(arg Args, rsp *int) error
+	Sub(arg Args, rsp *int) error
+	Set(arg Args, rsp None) error
+	Get(arg None, rsp *int) error
+	Trigger(arg None, rsp None) error
 }
 
 // The service client
 type ApiClient struct {
-	client ServiceClient
+	client rpc.ServiceClient
 }
 
-func NewApiClient(client ServiceClient) Api {
+func NewApiClient(client rpc.ServiceClient) Api {
 	return &ApiClient{client: client}
 }
 
@@ -29,6 +40,18 @@ func (t *ApiClient) Add(args Args, rsp *int) error {
 
 func (t *ApiClient) Sub(args Args, rsp *int) error {
 	// All implementations are the same, client will call different methods of the server
+	return t.client.Call(args, rsp)
+}
+
+func (t *ApiClient) Set(args Args, rsp None) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *ApiClient) Get(args None, rsp *int) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *ApiClient) Trigger(args None, rsp None) error {
 	return t.client.Call(args, rsp)
 }
 
@@ -57,9 +80,22 @@ func (t *ApiServer) Sub(args Args, rsp *int) error {
 	return nil
 }
 
+func (t *ApiServer) Set(arg Args, rsp None) error {
+	return nil
+}
+
+func (t *ApiServer) Get(arg None, rsp *int) error {
+	*rsp = 5
+	return nil
+}
+
+func (t *ApiServer) Trigger(_ None, _ None) error {
+	return nil
+}
+
 func TestRpc(t *testing.T) {
 	// Create rpc server and register service server
-	rpcServer := NewServer()
+	rpcServer := rpc.NewServer()
 	err := rpcServer.RegisterService("api", NewApiServer())
 	assert.NoError(t, err)
 
@@ -74,14 +110,14 @@ func TestRpc(t *testing.T) {
 	}()
 
 	// Create rpc client and create service client
-	rpcClient := NewClient()
+	rpcClient := rpc.NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
 
 	// Make rpc requests
+	var rsp int
 	for i := 0; i < 1000; i++ {
-		var rsp int
 		if i == 5 {
 			// Verify tha call for arg 5 will fail (server returns error)
 			require.Error(t, apiClient.Add(Args{A: i, B: i}, &rsp), "Add Call: %d", i)
@@ -92,11 +128,16 @@ func TestRpc(t *testing.T) {
 		require.NoError(t, apiClient.Sub(Args{A: i * 2, B: i}, &rsp), "Sub Call: %d", i)
 		require.Equal(t, i, rsp)
 	}
+
+	require.NoError(t, apiClient.Set(Args{A: 5, B: 3}, Nil))
+	require.NoError(t, apiClient.Get(Nil, &rsp))
+	require.Equal(t, 5, rsp)
+	require.NoError(t, apiClient.Trigger(Nil, Nil))
 }
 
 func TestRpcWithCloseServer(t *testing.T) {
 	// Create rpc server and register service server
-	rpcServer := NewServer()
+	rpcServer := rpc.NewServer()
 	err := rpcServer.RegisterService("api", NewApiServer())
 	assert.NoError(t, err)
 
@@ -111,7 +152,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 	}()
 
 	// Create rpc client and create service client
-	rpcClient := NewClient()
+	rpcClient := rpc.NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
@@ -137,7 +178,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 
 func TestRpcWithCloseClient(t *testing.T) {
 	// Create rpc server and register service server
-	rpcServer := NewServer()
+	rpcServer := rpc.NewServer()
 	err := rpcServer.RegisterService("api", NewApiServer())
 	assert.NoError(t, err)
 
@@ -152,7 +193,7 @@ func TestRpcWithCloseClient(t *testing.T) {
 	}()
 
 	// Create rpc client and create service client
-	rpcClient := NewClient()
+	rpcClient := rpc.NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))

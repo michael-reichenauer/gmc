@@ -3,6 +3,7 @@ package rpc
 import (
 	"bufio"
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"io"
 	"net"
 	"net/http"
@@ -26,6 +27,7 @@ type Client struct {
 	conn      net.Conn
 	rpcClient *rpc.Client
 	done      chan struct{}
+	uri       string
 }
 
 func NewClient() *Client {
@@ -33,10 +35,12 @@ func NewClient() *Client {
 }
 
 func (t *Client) Connect(uri string) error {
+	log.Infof("Connecting to %s", uri)
 	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}
+	t.uri = uri
 
 	conn, err := net.Dial("tcp", u.Host)
 	if err != nil {
@@ -49,16 +53,19 @@ func (t *Client) Connect(uri string) error {
 	resp, err := http.ReadResponse(bufio.NewReader(conn), &http.Request{Method: "CONNECT"})
 	if err == nil && resp.StatusCode == http.StatusOK {
 		// OK response, create json rpc client
+		log.Infof("Connected %s->%s", conn.LocalAddr(), uri)
 		t.rpcClient = jsonrpc.NewClient(conn)
 		return nil
 	}
 
-	// Some error
-	t.Close()
-	if err != nil {
-		return err
+	// Some error occurred, either connect error or response error
+	if err == nil {
+		// Some response error
+		err = fmt.Errorf("invalid http response, code: %d, %s", resp.StatusCode, resp.Status)
 	}
-	return fmt.Errorf("invalid http response, code: %d, %s", resp.StatusCode, resp.Status)
+	log.Infof("Failed to connect to %s, %v", uri, err)
+	t.Close()
+	return err
 }
 
 func (t *Client) Close() {
@@ -68,6 +75,7 @@ func (t *Client) Close() {
 		return
 	default:
 	}
+	log.Infof("Closing %s", t.uri)
 	close(t.done)
 
 	t.conn.Close()
@@ -86,7 +94,14 @@ func (t *Client) call(serviceMethod string, arg interface{}, rsp interface{}) er
 
 func (t *serviceClient) Call(arg interface{}, rsp interface{}) error {
 	callerName := t.callerMethodName()
-	return t.client.call(t.serviceName+callerName, arg, rsp)
+	name := t.serviceName + callerName
+	log.Debugf("%s >", name)
+	defer log.Debugf("%s <", name)
+	err := t.client.call(t.serviceName+callerName, arg, rsp)
+	if err != nil {
+		log.Warnf("%s error: %v", name, err)
+	}
+	return err
 }
 
 func (*serviceClient) callerMethodName() string {

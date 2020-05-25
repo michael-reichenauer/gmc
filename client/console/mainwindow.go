@@ -2,23 +2,50 @@ package console
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"path"
 	"strings"
 )
 
 type MainWindow struct {
-	ui  cui.UI
-	api api.Api
+	ui        cui.UI
+	api       api.Api
+	rpcClient *rpc.Client
 }
 
-func NewMainWindow(ui cui.UI, api api.Api) *MainWindow {
-	return &MainWindow{ui: ui, api: api}
+func NewMainWindow(ui cui.UI) *MainWindow {
+	return &MainWindow{ui: ui}
 }
 
-func (t *MainWindow) Show(path string) {
-	err := t.api.OpenRepo(path, nil)
+func (t *MainWindow) Show(serverUri, path string) {
+	progress := t.ui.ShowProgress("Connecting")
+	go func() {
+		// Create rpc client and create service client
+		rpcClient := rpc.NewClient()
+		err := rpcClient.Connect(serverUri)
+		api := client.NewClient(rpcClient.ServiceClient(""))
+
+		t.ui.PostOnUIThread(func() {
+			if err != nil {
+				t.ui.ShowErrorMessageBox("Failed to connect:\n%v", err)
+				return
+			}
+			t.api = api
+			t.rpcClient = rpcClient
+			progress.Close()
+
+			t.showRepo(path)
+		})
+	}()
+}
+
+func (t *MainWindow) showRepo(path string) {
+	err := t.api.OpenRepo(path, api.Nil)
 	if err != nil {
+		log.Warnf("Failed to open %q, %v", path, err)
 		if path != "" {
 			t.ui.ShowErrorMessageBox("Failed to show repo for:\n%s\nError: %v", path, err)
 		}
@@ -28,6 +55,10 @@ func (t *MainWindow) Show(path string) {
 
 	repoView := NewRepoView(t.ui, t.api)
 	repoView.Show()
+}
+
+func (t *MainWindow) Close() {
+	t.rpcClient.Close()
 }
 
 func (t *MainWindow) showOpenRepoMenu() {
@@ -51,7 +82,7 @@ func (t *MainWindow) showOpenRepoMenu() {
 	}
 
 	openItemsFunc := func() []cui.MenuItem {
-		return t.getDirItems(paths, func(path string) { t.Show(path) })
+		return t.getDirItems(paths, func(path string) { t.showRepo(path) })
 	}
 	menu.Add(cui.MenuItem{Text: "Open Repo", SubItemsFunc: openItemsFunc})
 
@@ -62,7 +93,7 @@ func (t *MainWindow) getRecentRepoMenuItems(recentDirs []string) []cui.MenuItem 
 	var items []cui.MenuItem
 	for _, f := range recentDirs {
 		path := f
-		items = append(items, cui.MenuItem{Text: path, Action: func() { t.Show(path) }})
+		items = append(items, cui.MenuItem{Text: path, Action: func() { t.showRepo(path) }})
 	}
 	return items
 }
