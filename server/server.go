@@ -135,12 +135,18 @@ func (t *server) TriggerSearch(text string, _ api.None) error {
 }
 
 func (t *server) GetCommitOpenInBranches(id string, rsp *[]api.Branch) error {
-	*rsp = t.repo().GetCommitOpenInBranches(id)
+	b := t.repo().GetCommitOpenInBranches(id)
+	if b != nil {
+		*rsp = b
+	}
 	return nil
 }
 
 func (t *server) GetCommitOpenOutBranches(id string, rsp *[]api.Branch) error {
-	*rsp = t.repo().GetCommitOpenOutBranches(id)
+	b := t.repo().GetCommitOpenOutBranches(id)
+	if b != nil {
+		*rsp = b
+	}
 	return nil
 }
 
@@ -163,17 +169,26 @@ func (t *server) GetCurrentBranch(_ api.None, rsp *api.Branch) error {
 }
 
 func (t *server) GetLatestBranches(shown bool, rsp *[]api.Branch) error {
-	*rsp = t.repo().GetLatestBranches(shown)
+	b := t.repo().GetLatestBranches(shown)
+	if b != nil {
+		*rsp = b
+	}
 	return nil
 }
 
 func (t *server) GetAllBranches(shown bool, rsp *[]api.Branch) error {
-	*rsp = t.repo().GetAllBranches(shown)
+	b := t.repo().GetAllBranches(shown)
+	if b != nil {
+		*rsp = b
+	}
 	return nil
 }
 
 func (t *server) GetShownBranches(master bool, rsp *[]api.Branch) error {
-	*rsp = t.repo().GetShownBranches(master)
+	b := t.repo().GetShownBranches(master)
+	if b != nil {
+		*rsp = b
+	}
 	return nil
 }
 
