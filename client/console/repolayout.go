@@ -23,21 +23,23 @@ func newRepoLayout() *repoLayout {
 
 func (t *repoLayout) getPageLines(
 	commits []api.Commit,
+	graphRows []api.GraphRow,
 	viewWidth int,
 	currentBranchDisplayName string,
-	repo api.ViewRepo) []string {
+	repo api.ViewRepo,
+) []string {
 	if len(commits) < 1 {
 		return nil
 	}
 
-	graphWidth := t.getGraphWidth(repo.ConsoleGraph)
+	graphWidth := t.getGraphWidth(graphRows)
 	commitWidth := viewWidth - graphWidth
 	messageWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
 
 	var lines []string
 	for i, c := range commits {
 		var sb strings.Builder
-		t.writeGraph(&sb, repo.ConsoleGraph[i])
+		t.writeGraph(&sb, graphRows[i])
 		sb.WriteString(" ")
 		t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
@@ -161,7 +163,13 @@ func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c api.Commit, length i
 	sb.WriteString(cui.Dark(utils.Text(tt, length)))
 }
 
-func (t *repoLayout) writeSubject(sb *strings.Builder, c api.Commit, currentBranchDisplayName string, length int, repo api.ViewRepo) {
+func (t *repoLayout) writeSubject(
+	sb *strings.Builder,
+	c api.Commit,
+	currentBranchDisplayName string,
+	length int,
+	repo api.ViewRepo,
+) {
 	tagsText := t.toTagsText(c, length)
 
 	subject := utils.Text(c.Subject, length-len(tagsText))
