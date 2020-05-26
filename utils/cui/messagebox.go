@@ -6,6 +6,7 @@ import (
 )
 
 type MessageBox struct {
+	OnOK        func()
 	ui          *ui
 	boxView     View
 	textView    View
@@ -14,34 +15,29 @@ type MessageBox struct {
 	title       string
 }
 
-type Result struct {
-}
-
 func NewMessageBox(ui *ui, text, title string) *MessageBox {
 	return &MessageBox{ui: ui, text: text, title: title}
 }
 
-func (h *MessageBox) Show() *Result {
-	result := &Result{}
-	h.boxView = h.newBoxView()
-	h.buttonsView = h.newButtonsView()
-	h.textView = h.newTextView()
+func (t *MessageBox) Show() {
+	t.boxView = t.newBoxView()
+	t.buttonsView = t.newButtonsView()
+	t.textView = t.newTextView()
 
-	bb, tb, bbb := h.getBounds()
-	h.boxView.Show(bb)
-	h.buttonsView.Show(bbb)
-	h.textView.Show(tb)
+	bb, tb, bbb := t.getBounds()
+	t.boxView.Show(bb)
+	t.buttonsView.Show(bbb)
+	t.textView.Show(tb)
 
-	h.boxView.SetTop()
-	h.buttonsView.SetTop()
-	h.textView.SetTop()
-	h.textView.SetCurrentView()
-	return result
+	t.boxView.SetTop()
+	t.buttonsView.SetTop()
+	t.textView.SetTop()
+	t.textView.SetCurrentView()
 }
 
-func (h *MessageBox) newBoxView() View {
-	view := h.ui.NewView("")
-	view.Properties().Title = h.title
+func (t *MessageBox) newBoxView() View {
+	view := t.ui.NewView("")
+	view.Properties().Title = t.title
 	view.Properties().Name = "MessageBox"
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
@@ -49,39 +45,39 @@ func (h *MessageBox) newBoxView() View {
 	return view
 }
 
-func (h *MessageBox) newButtonsView() View {
-	view := h.ui.NewView(" [OK]")
+func (t *MessageBox) newButtonsView() View {
+	view := t.ui.NewView(" [OK]")
 	view.Properties().Name = "MessageBoxButtons"
-	view.Properties().OnMouseLeft = h.onButtonsClick
+	view.Properties().OnMouseLeft = t.onButtonsClick
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideCurrentLineMarker = true
 	return view
 }
 
-func (h *MessageBox) newTextView() View {
-	view := h.ui.NewView(h.text)
+func (t *MessageBox) newTextView() View {
+	view := t.ui.NewView(t.text)
 	view.Properties().Name = "MessageBoxText"
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().IsWrap = true
-	view.SetKey(gocui.KeyEnter, h.Close)
-	view.SetKey(gocui.KeyCtrlO, h.Close)
-	view.SetKey(gocui.KeyEsc, h.Close)
-	view.SetKey(gocui.KeyCtrlC, h.Close)
+	view.SetKey(gocui.KeyEnter, t.Close)
+	view.SetKey(gocui.KeyCtrlO, t.Close)
+	view.SetKey(gocui.KeyEsc, t.Close)
+	view.SetKey(gocui.KeyCtrlC, t.Close)
 	return view
 }
 
-func (h *MessageBox) Close() {
-	h.textView.Close()
-	h.buttonsView.Close()
-	h.boxView.Close()
+func (t *MessageBox) Close() {
+	t.textView.Close()
+	t.buttonsView.Close()
+	t.boxView.Close()
 }
 
-func (h *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
-	lines := strings.Split(h.text, "\n")
+func (t *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
+	lines := strings.Split(t.text, "\n")
 
-	width := h.maxTextWidth(lines)
+	width := t.maxTextWidth(lines)
 	if width < 30 {
 		width = 30
 	}
@@ -108,7 +104,7 @@ func (h *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
 	return box, text, buttons
 }
 
-func (h *MessageBox) maxTextWidth(lines []string) int {
+func (t *MessageBox) maxTextWidth(lines []string) int {
 	maxWidth := 0
 	for _, line := range lines {
 		if len(line) > maxWidth {
@@ -118,8 +114,11 @@ func (h *MessageBox) maxTextWidth(lines []string) int {
 	return maxWidth
 }
 
-func (h *MessageBox) onButtonsClick(x int, y int) {
+func (t *MessageBox) onButtonsClick(x int, y int) {
 	if x < 4 {
-		h.Close()
+		t.Close()
+		if t.OnOK != nil {
+			t.OnOK()
+		}
 	}
 }

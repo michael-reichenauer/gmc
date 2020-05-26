@@ -28,6 +28,7 @@ type UI interface {
 	ShowProgress(format string, v ...interface{}) Progress
 	ShowMessageBox(title string, format string, v ...interface{})
 	ShowErrorMessageBox(format string, v ...interface{})
+	MessageBox(title, text string) *MessageBox
 	ResizeAllViews()
 	NewMenu(title string) Menu
 	Quit()
@@ -47,53 +48,57 @@ func NewCommandUI() *ui {
 	return &ui{}
 }
 
-func (h *ui) ShowMessageBox(title, format string, v ...interface{}) {
+func (t *ui) MessageBox(title, text string) *MessageBox {
+	return NewMessageBox(t, text, title)
+}
+
+func (t *ui) ShowMessageBox(title, format string, v ...interface{}) {
 	text := fmt.Sprintf(format, v...)
-	msgBox := NewMessageBox(h, text, title)
+	msgBox := NewMessageBox(t, text, title)
 	msgBox.Show()
 }
 
-func (h *ui) ShowErrorMessageBox(format string, v ...interface{}) {
+func (t *ui) ShowErrorMessageBox(format string, v ...interface{}) {
 	text := Red(fmt.Sprintf(format, v...))
-	msgBox := NewMessageBox(h, text, "Error !")
+	msgBox := NewMessageBox(t, text, "Error !")
 	msgBox.Show()
 }
 
-func (h *ui) ShowProgress(format string, v ...interface{}) Progress {
+func (t *ui) ShowProgress(format string, v ...interface{}) Progress {
 	text := fmt.Sprintf(format, v...)
-	p := newProgress(h)
+	p := newProgress(t)
 	p.SetText(text)
 	p.show()
 	return p
 }
 
-func (h *ui) NewMenu(title string) Menu {
-	return newMenu(h, title)
+func (t *ui) NewMenu(title string) Menu {
+	return newMenu(t, title)
 }
 
-func (h *ui) NewView(text string) View {
-	return newView(h, viewDataFromText(text))
+func (t *ui) NewView(text string) View {
+	return newView(t, viewDataFromText(text))
 }
 
-func (h *ui) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewText) View {
-	return newView(h, viewData)
+func (t *ui) NewViewFromPageFunc(viewData func(viewPort ViewPage) ViewText) View {
+	return newView(t, viewData)
 }
 
-func (h *ui) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
-	return newView(h, viewDataFromTextFunc(viewText))
+func (t *ui) NewViewFromTextFunc(viewText func(viewPort ViewPage) string) View {
+	return newView(t, viewDataFromTextFunc(viewText))
 }
 
-func (h *ui) Run(runFunc func()) {
-	h.runFunc = runFunc
+func (t *ui) Run(runFunc func()) {
+	t.runFunc = runFunc
 
 	gui, err := gocui.NewGui(gocui.OutputNormal)
 	if err != nil {
 		panic(log.Fatal(err))
 	}
-	h.gui = gui
+	t.gui = gui
 	defer gui.Close()
 
-	gui.SetManagerFunc(h.layout)
+	gui.SetManagerFunc(t.layout)
 	gui.InputEsc = true
 	gui.BgColor = gocui.ColorBlack
 	gui.Cursor = false
@@ -104,102 +109,102 @@ func (h *ui) Run(runFunc func()) {
 	}
 }
 
-func (h *ui) PostOnUIThread(f func()) {
-	h.gui.Update(func(g *gocui.Gui) error {
+func (t *ui) PostOnUIThread(f func()) {
+	t.gui.Update(func(g *gocui.Gui) error {
 		f()
 		return nil
 	})
 }
 
-func (h *ui) WindowSize() (width, height int) {
-	return h.gui.Size()
+func (t *ui) WindowSize() (width, height int) {
+	return t.gui.Size()
 }
 
 func SetWindowTitle(text string) {
 	_, _ = utils.SetConsoleTitle(text)
 }
 
-func (h *ui) currentView() *view {
-	if len(h.currentViewsStack) == 0 {
+func (t *ui) currentView() *view {
+	if len(t.currentViewsStack) == 0 {
 		return nil
 	}
-	return h.currentViewsStack[len(h.currentViewsStack)-1]
+	return t.currentViewsStack[len(t.currentViewsStack)-1]
 }
 
-func (h *ui) setCurrentView(v *view) {
-	previousCurrentView := h.currentView()
-	if _, err := h.gui.SetCurrentView(v.guiView.Name()); err != nil {
+func (t *ui) setCurrentView(v *view) {
+	previousCurrentView := t.currentView()
+	if _, err := t.gui.SetCurrentView(v.guiView.Name()); err != nil {
 		panic(log.Fatal(err))
 	}
-	h.gui.Cursor = v.properties.IsEditable
+	t.gui.Cursor = v.properties.IsEditable
 	log.Infof("Set current %q %q", v.guiView.Name(), v.properties.Name)
-	h.addCurrentView(v)
+	t.addCurrentView(v)
 	if previousCurrentView != nil {
 		previousCurrentView.NotifyChanged()
 	}
 }
 
-func (h *ui) addCurrentView(v *view) {
-	h.removeCurrentView(v)
-	h.currentViewsStack = append(h.currentViewsStack, v)
+func (t *ui) addCurrentView(v *view) {
+	t.removeCurrentView(v)
+	t.currentViewsStack = append(t.currentViewsStack, v)
 }
 
-func (h *ui) removeCurrentView(v *view) {
+func (t *ui) removeCurrentView(v *view) {
 	var views []*view
-	for _, cv := range h.currentViewsStack {
+	for _, cv := range t.currentViewsStack {
 		if cv == v {
 			continue
 		}
 		views = append(views, cv)
 	}
-	h.currentViewsStack = views
+	t.currentViewsStack = views
 }
 
-func (h *ui) layout(gui *gocui.Gui) error {
+func (t *ui) layout(gui *gocui.Gui) error {
 	// Resize window and notify all views if console window is resized
 	windowWidth, windowHeight := gui.Size()
-	if windowWidth != h.windowWidth || windowHeight != h.windowHeight {
-		h.windowWidth = windowWidth
-		h.windowHeight = windowHeight
-		h.ResizeAllViews()
+	if windowWidth != t.windowWidth || windowHeight != t.windowHeight {
+		t.windowWidth = windowWidth
+		t.windowHeight = windowHeight
+		t.ResizeAllViews()
 		termbox.SetCursor(0, 0) // workaround for hiding the cursor
 	}
 
-	if h.isInitialized {
+	if t.isInitialized {
 		return nil
 	}
-	h.isInitialized = true
-	go h.runFunc()
+	t.isInitialized = true
+	go t.runFunc()
 	return nil
 }
 
-func (h *ui) ResizeAllViews() {
-	for _, v := range h.shownViews {
-		v.resize(h.windowWidth, h.windowHeight)
+func (t *ui) ResizeAllViews() {
+	for _, v := range t.shownViews {
+		v.resize(t.windowWidth, t.windowHeight)
 		v.NotifyChanged()
 	}
 }
 
-func (h *ui) CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) Rect {
+func (t *ui) CenterBounds(minWidth, minHeight, maxWidth, maxHeight int) Rect {
 	bf := CenterBounds(minWidth, minHeight, maxWidth, maxHeight)
-	ww, wh := h.WindowSize()
+	ww, wh := t.WindowSize()
 	return bf(ww, wh)
 }
 
-func (h *ui) Quit() {
-	h.gui.Update(func(gui *gocui.Gui) error {
+func (t *ui) Quit() {
+	t.gui.Update(func(gui *gocui.Gui) error {
 		return gocui.ErrQuit
 	})
 }
 
-func (h *ui) showCursor(isShow bool) {
-	h.gui.Cursor = isShow
+func (t *ui) showCursor(isShow bool) {
+	t.gui.Cursor = isShow
 }
 
-func (h *ui) createView() *gocui.View {
+func (t *ui) createView() *gocui.View {
 	mb := Rect{-2, -2, -1, -1}
 	name := utils.RandomString(10)
-	if guiView, err := h.gui.SetView(name, mb.X, mb.Y, mb.W, mb.H); err != nil {
+	if guiView, err := t.gui.SetView(name, mb.X, mb.Y, mb.W, mb.H); err != nil {
 		if err != gocui.ErrUnknownView {
 			panic(log.Fatalf(err, "%s %+v", name, mb))
 		}
@@ -208,47 +213,47 @@ func (h *ui) createView() *gocui.View {
 	panic(log.Fatalf(fmt.Errorf("view already created"), "%s %+v", name, mb))
 }
 
-func (h *ui) setBounds(v *gocui.View, bounds Rect) {
+func (t *ui) setBounds(v *gocui.View, bounds Rect) {
 	if v == nil {
 		return
 	}
-	if _, err := h.gui.SetView(v.Name(), bounds.X, bounds.Y, bounds.W, bounds.H); err != nil {
+	if _, err := t.gui.SetView(v.Name(), bounds.X, bounds.Y, bounds.W, bounds.H); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
-func (h *ui) closeView(v *view) {
-	h.deleteView(v.guiView)
+func (t *ui) closeView(v *view) {
+	t.deleteView(v.guiView)
 
-	isCurrent := h.currentView() == v
-	h.removeCurrentView(v)
+	isCurrent := t.currentView() == v
+	t.removeCurrentView(v)
 	if isCurrent {
-		cv := h.currentView()
+		cv := t.currentView()
 		if cv != nil {
-			h.setCurrentView(cv)
-			h.showCursor(cv.properties.IsEditable)
+			t.setCurrentView(cv)
+			t.showCursor(cv.properties.IsEditable)
 		}
 	}
-	h.removeShownView(v)
+	t.removeShownView(v)
 }
 
-func (h *ui) deleteView(v *gocui.View) {
+func (t *ui) deleteView(v *gocui.View) {
 	if v == nil {
 		return
 	}
-	if err := h.gui.DeleteView(v.Name()); err != nil {
+	if err := t.gui.DeleteView(v.Name()); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
-func (h *ui) deleteKey(v *gocui.View, key interface{}) {
-	if err := h.gui.DeleteKeybinding(v.Name(), key, gocui.ModNone); err != nil {
+func (t *ui) deleteKey(v *gocui.View, key interface{}) {
+	if err := t.gui.DeleteKeybinding(v.Name(), key, gocui.ModNone); err != nil {
 		panic(log.Fatal(err))
 	}
 }
 
-func (h *ui) setKey(v *gocui.View, key interface{}, handler func()) {
-	if err := h.gui.SetKeybinding(v.Name(), key, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
+func (t *ui) setKey(v *gocui.View, key interface{}, handler func()) {
+	if err := t.gui.SetKeybinding(v.Name(), key, gocui.ModNone, func(gui *gocui.Gui, view *gocui.View) error {
 		handler()
 		return nil
 	}); err != nil {
@@ -256,37 +261,37 @@ func (h *ui) setKey(v *gocui.View, key interface{}, handler func()) {
 	}
 }
 
-func (h *ui) setTop(v *gocui.View) {
+func (t *ui) setTop(v *gocui.View) {
 	if v == nil {
 		return
 	}
 
-	if _, err := h.gui.SetViewOnTop(v.Name()); err != nil {
+	if _, err := t.gui.SetViewOnTop(v.Name()); err != nil {
 		panic(log.Fatalf(err, "failed for %q", v.Name()))
 	}
 }
 
-func (h *ui) setBottom(v *gocui.View) {
+func (t *ui) setBottom(v *gocui.View) {
 	if v == nil {
 		return
 	}
-	if _, err := h.gui.SetViewOnBottom(v.Name()); err != nil {
+	if _, err := t.gui.SetViewOnBottom(v.Name()); err != nil {
 		panic(log.Fatalf(err, "failed for %q", v.Name()))
 	}
 }
 
-func (h *ui) addShownView(v *view) {
-	h.removeShownView(v)
-	h.shownViews = append(h.shownViews, v)
+func (t *ui) addShownView(v *view) {
+	t.removeShownView(v)
+	t.shownViews = append(t.shownViews, v)
 }
 
-func (h *ui) removeShownView(v *view) {
+func (t *ui) removeShownView(v *view) {
 	var views []*view
-	for _, sv := range h.shownViews {
+	for _, sv := range t.shownViews {
 		if sv == v {
 			continue
 		}
 		views = append(views, sv)
 	}
-	h.shownViews = views
+	t.shownViews = views
 }

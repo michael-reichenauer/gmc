@@ -1,6 +1,7 @@
 package console
 
 import (
+	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/utils/cui"
@@ -29,11 +30,13 @@ func (t *MainWindow) Show(serverUri, path string) {
 		rpcClient.IsLogCalls = true
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.PostOnUIThread(func() {
-				t.ui.ShowErrorMessageBox("Connection to server failed:\n%v", err)
+				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
+				msgBox.OnOK = func() { t.ui.PostOnUIThread(func() { t.Show(serverUri, path) }) }
+				msgBox.Show()
 			})
 		}
 		time.AfterFunc(20*time.Second, func() {
-			// rpcClient.Interrupt()
+			//	rpcClient.Interrupt()
 		})
 		err := rpcClient.Connect(serverUri)
 		api := client.NewClient(rpcClient.ServiceClient(""))

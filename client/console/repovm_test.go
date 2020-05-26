@@ -56,10 +56,10 @@ func (t *uiMock) Run() {
 		f()
 	}
 }
+
 func (t *uiMock) Close() {
 	close(t.uiWork)
 }
-
 func (t uiMock) PostOnUIThread(f func()) {
 	go func() { t.uiWork <- f }()
 }
@@ -79,6 +79,10 @@ func (t uiMock) NewViewFromTextFunc(f func(viewPage cui.ViewPage) string) cui.Vi
 func (t uiMock) ShowProgress(format string, v ...interface{}) cui.Progress {
 	log.Infof("Progress %q", fmt.Sprintf(format, v...))
 	return newProgressMock()
+}
+
+func (t *uiMock) MessageBox(title, text string) *cui.MessageBox {
+	panic("implement me")
 }
 
 func (t uiMock) ShowMessageBox(title, format string, v ...interface{}) {
