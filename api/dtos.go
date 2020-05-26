@@ -18,11 +18,13 @@ const (
 	DiffConflictEnd
 )
 
-type None *int
+type NoArg int
+type NoRsp *int
 
 var (
-	Nil None = &no
-	no  int
+	NilArg NoArg = 0
+	NilRsp NoRsp = &no
+	no     int
 )
 
 type SwitchArgs struct {

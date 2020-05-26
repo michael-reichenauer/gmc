@@ -11,7 +11,7 @@ import (
 
 type Committer interface {
 	GetCommitDiff(id string, diff *api.CommitDiff) error
-	Commit(message string, rsp api.None) error
+	Commit(message string, rsp api.NoRsp) error
 }
 
 func NewCommitView(ui cui.UI, committer Committer) *CommitView {
@@ -109,7 +109,7 @@ func (h *CommitView) onCancel() {
 
 func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
-	err := h.committer.Commit(msg, api.Nil)
+	err := h.committer.Commit(msg, api.NilRsp)
 	if err != nil {
 		log.Eventf("commit-error", "failed to commit, %v", err)
 		h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)

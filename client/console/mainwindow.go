@@ -56,7 +56,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 }
 
 func (t *MainWindow) showRepo(path string) {
-	err := t.api.OpenRepo(path, api.Nil)
+	err := t.api.OpenRepo(path, api.NilRsp)
 	if err != nil {
 		log.Warnf("Failed to open %q, %v", path, err)
 		if path != "" {
@@ -78,7 +78,7 @@ func (t *MainWindow) showOpenRepoMenu() {
 	menu := t.ui.NewMenu("Open repo")
 
 	var recentDirs []string
-	err := t.api.GetRecentWorkingDirs(nil, &recentDirs)
+	err := t.api.GetRecentWorkingDirs(api.NilArg, &recentDirs)
 	if err != nil {
 		t.ui.ShowErrorMessageBox("Failed to get recent dirs,\nError: %v", err)
 	}
