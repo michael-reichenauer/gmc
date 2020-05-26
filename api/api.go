@@ -10,8 +10,7 @@ type Api interface {
 
 	TriggerRefreshModel(_ NoArg, _ NoRsp) error
 	TriggerSearch(text string, _ NoRsp) error
-	GetCommitOpenInBranches(id string, branches *[]Branch) error
-	GetCommitOpenOutBranches(id string, branches *[]Branch) error
+	GetCommitBranches(id string, branches *[]Branch) error
 	GetCurrentNotShownBranch(_ NoArg, branch *Branch) error
 	GetCurrentBranch(_ NoArg, branch *Branch) error
 	GetLatestBranches(shown bool, branches *[]Branch) error

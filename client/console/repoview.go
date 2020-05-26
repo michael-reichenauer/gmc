@@ -136,7 +136,7 @@ func (t *RepoView) mouseLeft(x int, y int) {
 		return
 	}
 
-	menu := t.menuService.getShowMoreMenu(selectedLine)
+	menu := t.menuService.getShowCommitBranchesMenu(selectedLine)
 	menu.Show(x+3, y+2)
 }
 

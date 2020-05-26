@@ -111,6 +111,10 @@ type Branch struct {
 	HasLocalOnly  bool
 	HasRemoteOnly bool
 	Color         Color
+
+	IsShown bool
+	IsIn    bool
+	IsOut   bool
 }
 
 type Branches []Branch

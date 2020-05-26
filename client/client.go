@@ -41,11 +41,7 @@ func (t client) TriggerSearch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetCommitOpenInBranches(args string, rsp *[]api.Branch) error {
-	return t.client.Call(args, rsp)
-}
-
-func (t client) GetCommitOpenOutBranches(args string, rsp *[]api.Branch) error {
+func (t client) GetCommitBranches(args string, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 

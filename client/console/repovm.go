@@ -205,26 +205,38 @@ func (h *repoVM) showSelectedCommitDiff() {
 	h.showCommitDiff(c.ID)
 }
 
-func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []api.Branch {
+func (h *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 	c := h.repo.Commits[selectedIndex]
 	if c.More == api.MoreNone {
 		return nil
 	}
 
 	var branches []api.Branch
-	_ = h.api.GetCommitOpenInBranches(c.ID, &branches)
+	_ = h.api.GetCommitBranches(c.ID, &branches)
+
 	return branches
 }
 
-func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
-	c := h.repo.Commits[selectedIndex]
-	if c.More == api.MoreNone {
-		return nil
-	}
-	var branches []api.Branch
-	_ = h.api.GetCommitOpenOutBranches(c.ID, &branches)
-	return branches
-}
+// func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []api.Branch {
+// 	c := h.repo.Commits[selectedIndex]
+// 	if c.More == api.MoreNone {
+// 		return nil
+// 	}
+//
+// 	var branches []api.Branch
+// 	_ = h.api.GetCommitOpenInBranches(c.ID, &branches)
+// 	return branches
+// }
+//
+// func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
+// 	c := h.repo.Commits[selectedIndex]
+// 	if c.More == api.MoreNone {
+// 		return nil
+// 	}
+// 	var branches []api.Branch
+// 	_ = h.api.GetCommitOpenOutBranches(c.ID, &branches)
+// 	return branches
+// }
 
 func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	var current api.Branch

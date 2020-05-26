@@ -78,22 +78,6 @@ func (t *ViewRepo) CloseRepo() {
 	t.cancel()
 }
 
-func (t *ViewRepo) GetCurrentBranch() (api.Branch, bool) {
-	viewRepo := t.getViewRepo()
-	current, ok := viewRepo.gitRepo.CurrentBranch()
-	if !ok {
-		return api.Branch{}, false
-	}
-
-	for _, b := range viewRepo.Branches {
-		if current.Name == b.name {
-			return toBranch(b), true
-		}
-	}
-
-	return toBranch(viewRepo.toBranch(current, 0)), true
-}
-
 func (t *ViewRepo) TriggerRefreshModel() {
 	log.Event("vms-refresh")
 	t.gitRepo.TriggerManualRefresh()
@@ -152,6 +136,22 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
+func (t *ViewRepo) GetCurrentBranch() (api.Branch, bool) {
+	viewRepo := t.getViewRepo()
+	current, ok := viewRepo.gitRepo.CurrentBranch()
+	if !ok {
+		return api.Branch{}, false
+	}
+
+	for _, b := range viewRepo.Branches {
+		if current.Name == b.name {
+			return toBranch(b), true
+		}
+	}
+
+	return toBranch(viewRepo.toBranch(current, 0)), true
+}
+
 func (t *ViewRepo) GetCurrentNotShownBranch() (api.Branch, bool) {
 	viewRepo := t.getViewRepo()
 	current, ok := viewRepo.gitRepo.CurrentBranch()
@@ -185,7 +185,14 @@ func (t *ViewRepo) GetLatestBranches(skipShown bool) []api.Branch {
 	return branches
 }
 
-func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []api.Branch {
+func (t *ViewRepo) GetCommitBranches(commitID string) []api.Branch {
+	branches := t.getCommitOpenInBranches(commitID)
+
+	branches = append(branches, t.getCommitOpenOutBranches(commitID)...)
+	return branches
+}
+
+func (t *ViewRepo) getCommitOpenInBranches(commitID string) []api.Branch {
 	viewRepo := t.getViewRepo()
 	c := viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
@@ -211,14 +218,15 @@ func (t *ViewRepo) GetCommitOpenInBranches(commitID string) []api.Branch {
 			// Skip branches already shown
 			continue
 		}
-
-		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
+		branch := toBranch(viewRepo.toBranch(b, 0))
+		branch.IsIn = true
+		bs = append(bs, branch)
 	}
 
 	return bs
 }
 
-func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []api.Branch {
+func (t *ViewRepo) getCommitOpenOutBranches(commitID string) []api.Branch {
 	viewRepo := t.getViewRepo()
 	c := viewRepo.gitRepo.CommitByID(commitID)
 	var branches []*gitrepo.Branch
@@ -256,7 +264,8 @@ func (t *ViewRepo) GetCommitOpenOutBranches(commitID string) []api.Branch {
 			// Skip branches already shown
 			continue
 		}
-
+		branch := toBranch(viewRepo.toBranch(b, 0))
+		branch.IsOut = true
 		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
 	}
 

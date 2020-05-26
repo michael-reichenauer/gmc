@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/thoas/go-funk"
 )
 
@@ -17,56 +18,61 @@ func newMenuService(ui cui.UI, vm *repoVM) *menuService {
 }
 
 func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
+	log.Infof(">")
+	defer log.Infof("<")
 	menu := t.ui.NewMenu("")
 
-	menu.Add(cui.MenuItem{Text: "Show Branch", SubItems: t.getOpenBranchMenuItems(currentLineIndex)})
-	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getCloseBranchMenuItems()})
+	menu.Add(cui.MenuItem{Text: "Show Branch",
+		SubItemsFunc: func() []cui.MenuItem { return t.getShowBranchesMenuItems(currentLineIndex) }})
 
-	menu.Add(cui.SeparatorMenuItem)
-
-	c := t.vm.repo.Commits[currentLineIndex]
-	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
-		t.vm.showCommitDiff(c.ID)
-	}})
-	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "Ctrl-S", Action: t.vm.showCommitDialog})
-	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
-	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItems: t.getDeleteBranchMenuItems()})
-	menu.Add(cui.MenuItem{Text: "Push", SubItems: t.getPushBranchMenuItems()})
-	menu.Add(cui.MenuItem{Text: "Pull/Update", SubItems: t.getPullBranchMenuItems()})
-
-	menu.Add(cui.MenuItem{Text: "Switch/Checkout", SubItems: t.getSwitchBranchMenuItems()})
-	mergeItems, mergeTitle := t.getMergeMenuItems()
-	menu.Add(cui.MenuItem{Text: "Merge", Title: mergeTitle, SubItems: mergeItems})
+	// menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getCloseBranchMenuItems()})
+	//
+	// menu.Add(cui.SeparatorMenuItem)
+	//
+	// c := t.vm.repo.Commits[currentLineIndex]
+	// menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
+	// 	t.vm.showCommitDiff(c.ID)
+	// }})
+	// menu.Add(cui.MenuItem{Text: "Commit ...", Key: "Ctrl-S", Action: t.vm.showCommitDialog})
+	// menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "Ctrl-B", Action: t.vm.showCreateBranchDialog})
+	// menu.Add(cui.MenuItem{Text: "Delete Branch", SubItems: t.getDeleteBranchMenuItems()})
+	// menu.Add(cui.MenuItem{Text: "Push", SubItems: t.getPushBranchMenuItems()})
+	// menu.Add(cui.MenuItem{Text: "Pull/Update", SubItems: t.getPullBranchMenuItems()})
+	//
+	// menu.Add(cui.MenuItem{Text: "Switch/Checkout", SubItems: t.getSwitchBranchMenuItems()})
+	// mergeItems, mergeTitle := t.getMergeMenuItems()
+	// menu.Add(cui.MenuItem{Text: "Merge", Title: mergeTitle, SubItems: mergeItems})
 
 	// menu.Add(t.vm.mainService.RecentReposMenuItem())
 	// menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
 }
 
-func (t *menuService) getShowMoreMenu(selectedIndex int) cui.Menu {
+func (t *menuService) getShowCommitBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("")
-	menu.AddItems(t.getOpenBranchMenuItems(selectedIndex))
-	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getCloseBranchMenuItems()})
+	menu.AddItems(t.getShowCommitBranchesMenuItems(selectedIndex))
+	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getHideBranchMenuItems()})
 	return menu
 }
 
-func (t *menuService) getOpenBranchMenuItems(selectedIndex int) []cui.MenuItem {
+func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.MenuItem {
 	var items []cui.MenuItem
-	inBranches := t.vm.GetCommitOpenInBranches(selectedIndex)
-	for _, b := range inBranches {
-		items = append(items, t.toOpenBranchMenuItem(b, "╮"))
+	branches := t.vm.GetCommitBranches(selectedIndex)
+	for _, b := range branches {
+		items = append(items, t.toOpenBranchMenuItem(b))
 	}
-	outBranches := t.vm.GetCommitOpenOutBranches(selectedIndex)
-	for _, b := range outBranches {
-		items = append(items, t.toOpenBranchMenuItem(b, "╭"))
-	}
+	return items
+}
+
+func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
+	items := t.getShowCommitBranchesMenuItems(selectedIndex)
 
 	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
-		if nil == funk.Find(append(inBranches, outBranches...), func(b api.Branch) bool {
+		if nil == funk.Find(items, func(b api.Branch) bool {
 			return current.DisplayName == b.DisplayName
 		}) {
-			items = append(items, t.toOpenBranchMenuItem(current, ""))
+			items = append(items, t.toOpenBranchMenuItem(current))
 		}
 	}
 
@@ -76,33 +82,33 @@ func (t *menuService) getOpenBranchMenuItems(selectedIndex int) []cui.MenuItem {
 
 	var activeSubItems []cui.MenuItem
 	for _, b := range t.vm.GetLatestBranches(true) {
-		activeSubItems = append(activeSubItems, t.toOpenBranchMenuItem(b, ""))
+		activeSubItems = append(activeSubItems, t.toOpenBranchMenuItem(b))
 	}
 	items = append(items, cui.MenuItem{Text: "Latest Branches", SubItems: activeSubItems})
 
 	var allGitSubItems []cui.MenuItem
 	for _, b := range t.vm.GetAllBranches(true) {
 		if b.IsGitBranch {
-			allGitSubItems = append(allGitSubItems, t.toOpenBranchMenuItem(b, ""))
+			allGitSubItems = append(allGitSubItems, t.toOpenBranchMenuItem(b))
 		}
 	}
 	items = append(items, cui.MenuItem{Text: "All Git Branches", SubItems: allGitSubItems})
 
 	var allSubItems []cui.MenuItem
 	for _, b := range t.vm.GetAllBranches(true) {
-		allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b, ""))
+		allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
 	}
 	items = append(items, cui.MenuItem{Text: "All Branches", SubItems: allSubItems})
 
 	return items
 }
 
-func (t *menuService) getCloseBranchMenuItems() []cui.MenuItem {
+func (t *menuService) getHideBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	commitBranches := t.vm.GetShownBranches(true)
 	for _, b := range commitBranches {
 		name := b.Name // closure save
-		closeItem := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+		closeItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.HideBranch(name)
 		}}
 		items = append(items, closeItem)
@@ -115,7 +121,7 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
 		bb := b // closure save
-		switchItem := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+		switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		items = append(items, switchItem)
@@ -124,7 +130,7 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 	var activeSubItems []cui.MenuItem
 	for _, b := range t.vm.GetLatestBranches(true) {
 		bb := b // closure save
-		switchItem := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+		switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		activeSubItems = append(activeSubItems, switchItem)
@@ -135,7 +141,7 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 	for _, b := range t.vm.GetAllBranches(true) {
 		bb := b // closure save
 		if b.IsGitBranch {
-			switchItem := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+			switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 			}}
 			allGitSubItems = append(allGitSubItems, switchItem)
@@ -146,7 +152,7 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 	var allSubItems []cui.MenuItem
 	for _, b := range t.vm.GetAllBranches(true) {
 		bb := b // closure save
-		switchItem := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+		switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
 		}}
 		allSubItems = append(allSubItems, switchItem)
@@ -156,15 +162,18 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) toOpenBranchMenuItem(branch api.Branch, prefix string) cui.MenuItem {
-	return cui.MenuItem{Text: t.branchItemText(branch, prefix), Action: func() {
+func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
+	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
 		t.vm.ShowBranch(branch.Name)
 	}}
 }
 
-func (t *menuService) branchItemText(branch api.Branch, prefix string) string {
-	if prefix == "" {
-		prefix = " "
+func (t *menuService) branchItemText(branch api.Branch) string {
+	prefix := " "
+	if branch.IsIn {
+		prefix = "╮"
+	} else if branch.IsOut {
+		prefix = "╭"
 	}
 	if branch.IsCurrent {
 		return prefix + "●" + branch.DisplayName
@@ -177,7 +186,7 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasLocalOnly {
-		pushItem := cui.MenuItem{Text: t.branchItemText(current, ""), Key: "Ctrl-P", Action: func() {
+		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-P", Action: func() {
 			t.vm.PushBranch(current.Name)
 		}}
 		items = append(items, pushItem)
@@ -189,7 +198,7 @@ func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasRemoteOnly {
-		pushItem := cui.MenuItem{Text: t.branchItemText(current, ""), Key: "Ctrl-U", Action: func() {
+		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-U", Action: func() {
 			t.vm.PullCurrentBranch()
 		}}
 		items = append(items, pushItem)
@@ -209,7 +218,7 @@ func (t *menuService) getMergeMenuItems() ([]cui.MenuItem, string) {
 		if b.DisplayName == current.DisplayName {
 			continue
 		}
-		item := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+		item := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.MergeFromBranch(name)
 		}}
 		items = append(items, item)
@@ -225,7 +234,7 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 			continue
 		}
 		name := b.Name // closure save
-		item := cui.MenuItem{Text: t.branchItemText(b, ""), Action: func() {
+		item := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 			t.vm.DeleteBranch(name)
 		}}
 		items = append(items, item)

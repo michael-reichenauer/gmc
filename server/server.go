@@ -131,16 +131,8 @@ func (t *server) TriggerSearch(text string, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *server) GetCommitOpenInBranches(id string, rsp *[]api.Branch) error {
-	b := t.repo().GetCommitOpenInBranches(id)
-	if b != nil {
-		*rsp = b
-	}
-	return nil
-}
-
-func (t *server) GetCommitOpenOutBranches(id string, rsp *[]api.Branch) error {
-	b := t.repo().GetCommitOpenOutBranches(id)
+func (t *server) GetCommitBranches(id string, rsp *[]api.Branch) error {
+	b := t.repo().GetCommitBranches(id)
 	if b != nil {
 		*rsp = b
 	}
