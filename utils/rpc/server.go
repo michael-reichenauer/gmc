@@ -85,6 +85,7 @@ func (t *Server) Close() {
 	// Close server for new connections
 	t.httpServer.Close()
 	t.closeAllCurrentConnections()
+	log.Infof("Closed %s", t.URL)
 }
 
 func (t *Server) httpRpcHandler(w http.ResponseWriter, req *http.Request) {

@@ -8,6 +8,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"path"
 	"strings"
+	"time"
 )
 
 type MainWindow struct {
@@ -25,6 +26,15 @@ func (t *MainWindow) Show(serverUri, path string) {
 	go func() {
 		// Create rpc client and create service client
 		rpcClient := rpc.NewClient()
+		rpcClient.IsLogCalls = true
+		rpcClient.OnConnectionError = func(err error) {
+			t.ui.PostOnUIThread(func() {
+				t.ui.ShowErrorMessageBox("Connection to server failed:\n%v", err)
+			})
+		}
+		time.AfterFunc(20*time.Second, func() {
+			// rpcClient.Interrupt()
+		})
 		err := rpcClient.Connect(serverUri)
 		api := client.NewClient(rpcClient.ServiceClient(""))
 

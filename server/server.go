@@ -89,13 +89,11 @@ func (t *server) GetChanges(_ api.None, rsp *[]api.RepoChange) error {
 	select {
 	case change, ok := <-repo.RepoChanges:
 		if !ok {
-			*rsp = changes
 			return nil
 		}
 		changes = append(changes, change)
 	case <-time.After(getChangesTimout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
-		*rsp = changes
 		return nil
 	}
 
@@ -103,7 +101,6 @@ func (t *server) GetChanges(_ api.None, rsp *[]api.RepoChange) error {
 	if repo == nil {
 		*rsp = changes
 		return nil
-
 	}
 
 	// Got some event, check if there are more events and return them as well

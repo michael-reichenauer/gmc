@@ -14,11 +14,15 @@ type MessageBox struct {
 	title       string
 }
 
+type Result struct {
+}
+
 func NewMessageBox(ui *ui, text, title string) *MessageBox {
 	return &MessageBox{ui: ui, text: text, title: title}
 }
 
-func (h *MessageBox) Show() {
+func (h *MessageBox) Show() *Result {
+	result := &Result{}
 	h.boxView = h.newBoxView()
 	h.buttonsView = h.newButtonsView()
 	h.textView = h.newTextView()
@@ -32,6 +36,7 @@ func (h *MessageBox) Show() {
 	h.buttonsView.SetTop()
 	h.textView.SetTop()
 	h.textView.SetCurrentView()
+	return result
 }
 
 func (h *MessageBox) newBoxView() View {

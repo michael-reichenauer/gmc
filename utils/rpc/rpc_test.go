@@ -2,6 +2,7 @@ package rpc_test
 
 import (
 	"fmt"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -153,6 +154,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 
 	// Create rpc client and create service client
 	rpcClient := rpc.NewClient()
+	rpcClient.OnConnectionError = func(err error) { log.Warnf("Connection error: %v", err) }
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
@@ -194,6 +196,7 @@ func TestRpcWithCloseClient(t *testing.T) {
 
 	// Create rpc client and create service client
 	rpcClient := rpc.NewClient()
+	rpcClient.OnConnectionError = func(err error) { log.Warnf("Connection error: %v", err) }
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
@@ -207,7 +210,7 @@ func TestRpcWithCloseClient(t *testing.T) {
 			continue
 		}
 		if i == 20 {
-			rpcClient.Close()
+			rpcClient.Interrupt()
 			// Verify that calls will fail after client is closed
 			require.Error(t, apiClient.Add(Args{A: i, B: i}, &rsp), "Call: %d", i)
 			break
