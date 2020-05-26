@@ -32,6 +32,16 @@ type SwitchArgs struct {
 	DisplayName string
 }
 
+type GetBranchesArgs struct {
+	IncludeOnlyCurrent        bool
+	IncludeOnlyGitBranches    bool
+	IncludeOnlyCommitBranches string
+	IncludeOnlyShown          bool
+	IncludeOnlyNotShown       bool
+	SkipMaster                bool
+	SortOnLatest              bool
+}
+
 type ViewRepo struct {
 	Commits            []Commit
 	CurrentBranchName  string

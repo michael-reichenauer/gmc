@@ -212,60 +212,59 @@ func (h *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 	}
 
 	var branches []api.Branch
-	_ = h.api.GetCommitBranches(c.ID, &branches)
+	_ = h.api.GetBranches(api.GetBranchesArgs{IncludeOnlyCommitBranches: c.ID}, &branches)
 
 	return branches
 }
 
-// func (h *repoVM) GetCommitOpenInBranches(selectedIndex int) []api.Branch {
-// 	c := h.repo.Commits[selectedIndex]
-// 	if c.More == api.MoreNone {
-// 		return nil
-// 	}
-//
-// 	var branches []api.Branch
-// 	_ = h.api.GetCommitOpenInBranches(c.ID, &branches)
-// 	return branches
-// }
-//
-// func (h *repoVM) GetCommitOpenOutBranches(selectedIndex int) []api.Branch {
-// 	c := h.repo.Commits[selectedIndex]
-// 	if c.More == api.MoreNone {
-// 		return nil
-// 	}
-// 	var branches []api.Branch
-// 	_ = h.api.GetCommitOpenOutBranches(c.ID, &branches)
-// 	return branches
-// }
-
 func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
-	var current api.Branch
-	err := h.api.GetCurrentNotShownBranch(api.NilArg, &current)
+	var branches []api.Branch
+	err := h.api.GetBranches(
+		api.GetBranchesArgs{IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
+		&branches)
 
-	return current, err == nil
+	if err != nil || len(branches) == 0 {
+		return api.Branch{}, false
+	}
+
+	return branches[0], true
 }
 
 func (h *repoVM) CurrentBranch() (api.Branch, bool) {
-	var current api.Branch
-	err := h.api.GetCurrentBranch(api.NilArg, &current)
-	return current, err == nil
+	var branches []api.Branch
+	err := h.api.GetBranches(
+		api.GetBranchesArgs{IncludeOnlyCurrent: true},
+		&branches)
+
+	if err != nil || len(branches) == 0 {
+		return api.Branch{}, false
+	}
+
+	return branches[0], true
 }
 
 func (h *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
-	_ = h.api.GetLatestBranches(skipShown, &branches)
+
+	_ = h.api.GetBranches(api.GetBranchesArgs{
+		IncludeOnlyNotShown: skipShown,
+		SortOnLatest:        true,
+	}, &branches)
 	return branches
 }
 
 func (h *repoVM) GetAllBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
-	_ = h.api.GetAllBranches(skipShown, &branches)
+
+	_ = h.api.GetBranches(api.GetBranchesArgs{IncludeOnlyNotShown: skipShown}, &branches)
 	return branches
 }
 
 func (h *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
-	_ = h.api.GetShownBranches(skipMaster, &branches)
+	_ = h.api.GetBranches(
+		api.GetBranchesArgs{IncludeOnlyShown: true, SkipMaster: skipMaster},
+		&branches)
 	return branches
 }
 
@@ -312,7 +311,7 @@ func (h *repoVM) PullCurrentBranch() {
 	}
 	h.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return h.api.PullBranch(api.NilArg, api.NilRsp) },
+		func() error { return h.api.PullCurrentBranch(api.NilArg, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }

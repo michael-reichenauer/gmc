@@ -136,10 +136,55 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
-func (t *ViewRepo) GetCurrentBranch() (api.Branch, bool) {
+// func (t *ViewRepo) GetLatestBranches(skipShown bool) []api.Branch {
+// 	viewRepo := t.getViewRepo()
+// 	branches := t.getAllBranches(viewRepo, skipShown)
+// 	sort.SliceStable(branches, func(i, j int) bool {
+// 		return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
+// 	})
+//
+// 	return branches
+// }
+
+func (t *ViewRepo) GetBranches(args api.GetBranchesArgs) []api.Branch {
+	branches := []api.Branch{}
+	if args.IncludeOnlyCommitBranches != "" {
+		return append(branches, t.getCommitBranches(args.IncludeOnlyCommitBranches)...)
+	} else if args.IncludeOnlyCurrent {
+		if b, ok := t.getCurrentBranch(args.IncludeOnlyNotShown); ok {
+			branches = append(branches, b)
+		}
+		return branches
+	} else if args.IncludeOnlyShown {
+		return t.GetShownBranches(args.SkipMaster)
+	}
+
+	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
+}
+
+func (t *ViewRepo) getAllBranchesC(skipShown bool, sortOnLatest bool) []api.Branch {
+	viewRepo := t.getViewRepo()
+	branches := t.getAllBranches(viewRepo, skipShown)
+	if sortOnLatest {
+		sort.SliceStable(branches, func(i, j int) bool {
+			return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
+		})
+	} else {
+		sort.SliceStable(branches, func(i, j int) bool {
+			return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+		})
+	}
+
+	return branches
+}
+
+func (t *ViewRepo) getCurrentBranch(includeOnlyNotShown bool) (api.Branch, bool) {
 	viewRepo := t.getViewRepo()
 	current, ok := viewRepo.gitRepo.CurrentBranch()
 	if !ok {
+		return api.Branch{}, false
+	}
+	if includeOnlyNotShown && containsBranch(viewRepo.Branches, current.Name) {
 		return api.Branch{}, false
 	}
 
@@ -152,42 +197,8 @@ func (t *ViewRepo) GetCurrentBranch() (api.Branch, bool) {
 	return toBranch(viewRepo.toBranch(current, 0)), true
 }
 
-func (t *ViewRepo) GetCurrentNotShownBranch() (api.Branch, bool) {
-	viewRepo := t.getViewRepo()
-	current, ok := viewRepo.gitRepo.CurrentBranch()
-	if !ok {
-		return api.Branch{}, false
-	}
-	if containsBranch(viewRepo.Branches, current.Name) {
-		return api.Branch{}, false
-	}
-
-	return toBranch(viewRepo.toBranch(current, 0)), true
-}
-
-func (t *ViewRepo) GetAllBranches(skipShown bool) []api.Branch {
-	viewRepo := t.getViewRepo()
-	branches := t.getAllBranches(viewRepo, skipShown)
-	sort.SliceStable(branches, func(i, j int) bool {
-		return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
-	})
-
-	return branches
-}
-
-func (t *ViewRepo) GetLatestBranches(skipShown bool) []api.Branch {
-	viewRepo := t.getViewRepo()
-	branches := t.getAllBranches(viewRepo, skipShown)
-	sort.SliceStable(branches, func(i, j int) bool {
-		return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
-	})
-
-	return branches
-}
-
-func (t *ViewRepo) GetCommitBranches(commitID string) []api.Branch {
+func (t *ViewRepo) getCommitBranches(commitID string) []api.Branch {
 	branches := t.getCommitOpenInBranches(commitID)
-
 	branches = append(branches, t.getCommitOpenOutBranches(commitID)...)
 	return branches
 }
@@ -203,7 +214,7 @@ func (t *ViewRepo) getCommitOpenInBranches(commitID string) []api.Branch {
 		branches = append(branches, mergeParent.Branch)
 	}
 
-	var bs []api.Branch
+	bs := []api.Branch{}
 	for _, b := range branches {
 		if nil != funk.Find(bs, func(bsb api.Branch) bool {
 			return b.Name == bsb.Name || b.RemoteName == bsb.Name ||
@@ -266,7 +277,7 @@ func (t *ViewRepo) getCommitOpenOutBranches(commitID string) []api.Branch {
 		}
 		branch := toBranch(viewRepo.toBranch(b, 0))
 		branch.IsOut = true
-		bs = append(bs, toBranch(viewRepo.toBranch(b, 0)))
+		bs = append(bs, branch)
 	}
 
 	return bs
@@ -275,7 +286,7 @@ func (t *ViewRepo) getCommitOpenOutBranches(commitID string) []api.Branch {
 //
 func (t *ViewRepo) GetShownBranches(skipMaster bool) []api.Branch {
 	viewRepo := t.getViewRepo()
-	var bs []api.Branch
+	bs := []api.Branch{}
 	for _, b := range viewRepo.Branches {
 		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
 			// Do not support closing master branch
@@ -552,7 +563,7 @@ func (t *ViewRepo) adjustCurrentBranchIfStatus(repo *repo) {
 }
 
 func (t *ViewRepo) getAllBranches(viewRepo *repo, skipShown bool) []api.Branch {
-	var branches []api.Branch
+	branches := []api.Branch{}
 	for _, b := range viewRepo.gitRepo.Branches {
 		if containsDisplayNameBranch(branches, b.DisplayName) {
 			continue

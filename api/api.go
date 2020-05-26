@@ -10,17 +10,23 @@ type Api interface {
 
 	TriggerRefreshModel(_ NoArg, _ NoRsp) error
 	TriggerSearch(text string, _ NoRsp) error
-	GetCommitBranches(id string, branches *[]Branch) error
-	GetCurrentNotShownBranch(_ NoArg, branch *Branch) error
-	GetCurrentBranch(_ NoArg, branch *Branch) error
-	GetLatestBranches(shown bool, branches *[]Branch) error
-	GetAllBranches(shown bool, branches *[]Branch) error
-	GetShownBranches(master bool, branches *[]Branch) error
+
+	GetBranches(args GetBranchesArgs, branches *[]Branch) error
+
+	//	GetCommitBranches(id string, branches *[]Branch) error
+
+	// GetCurrentNotShownBranch(_ NoArg, branch *Branch) error
+	// GetCurrentBranch(_ NoArg, branch *Branch) error
+
+	//GetLatestBranches(shown bool, branches *[]Branch) error
+	//GetAllBranches(shown bool, branches *[]Branch) error
+	//GetShownBranches(master bool, branches *[]Branch) error
+
 	ShowBranch(name string, _ NoRsp) error
 	HideBranch(name string, _ NoRsp) error
 	SwitchToBranch(args SwitchArgs, _ NoRsp) error
 	PushBranch(name string, _ NoRsp) error
-	PullBranch(_ NoArg, _ NoRsp) error
+	PullCurrentBranch(_ NoArg, _ NoRsp) error
 	MergeBranch(name string, _ NoRsp) error
 	CreateBranch(name string, _ NoRsp) error
 	DeleteBranch(name string, _ NoRsp) error

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
@@ -131,55 +130,60 @@ func (t *server) TriggerSearch(text string, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *server) GetCommitBranches(id string, rsp *[]api.Branch) error {
-	b := t.repo().GetCommitBranches(id)
-	if b != nil {
-		*rsp = b
-	}
+func (t *server) GetBranches(args api.GetBranchesArgs, branches *[]api.Branch) error {
+	*branches = t.repo().GetBranches(args)
 	return nil
 }
 
-func (t *server) GetCurrentNotShownBranch(_ api.NoArg, rsp *api.Branch) error {
-	b, ok := t.repo().GetCurrentNotShownBranch()
-	if !ok {
-		return fmt.Errorf("branch not found")
-	}
-	*rsp = b
-	return nil
-}
+// func (t *server) GetCommitBranches(id string, rsp *[]api.Branch) error {
+// 	b := t.repo().GetCommitBranches(id)
+// 	if b != nil {
+// 		*rsp = b
+// 	}
+// 	return nil
+// }
 
-func (t *server) GetCurrentBranch(_ api.NoArg, rsp *api.Branch) error {
-	b, ok := t.repo().GetCurrentBranch()
-	if !ok {
-		return fmt.Errorf("branch not found")
-	}
-	*rsp = b
-	return nil
-}
+// func (t *server) GetCurrentNotShownBranch(_ api.NoArg, rsp *api.Branch) error {
+// 	b, ok := t.repo().GetCurrentNotShownBranch()
+// 	if !ok {
+// 		return fmt.Errorf("branch not found")
+// 	}
+// 	*rsp = b
+// 	return nil
+// }
+//
+// func (t *server) GetCurrentBranch(_ api.NoArg, rsp *api.Branch) error {
+// 	b, ok := t.repo().GetCurrentBranch()
+// 	if !ok {
+// 		return fmt.Errorf("branch not found")
+// 	}
+// 	*rsp = b
+// 	return nil
+// }
+//
+// func (t *server) GetLatestBranches(shown bool, rsp *[]api.Branch) error {
+// 	b := t.repo().GetLatestBranches(shown)
+// 	if b != nil {
+// 		*rsp = b
+// 	}
+// 	return nil
+// }
+//
+// func (t *server) GetAllBranches(shown bool, rsp *[]api.Branch) error {
+// 	b := t.repo().GetAllBranches(shown)
+// 	if b != nil {
+// 		*rsp = b
+// 	}
+// 	return nil
+// }
 
-func (t *server) GetLatestBranches(shown bool, rsp *[]api.Branch) error {
-	b := t.repo().GetLatestBranches(shown)
-	if b != nil {
-		*rsp = b
-	}
-	return nil
-}
-
-func (t *server) GetAllBranches(shown bool, rsp *[]api.Branch) error {
-	b := t.repo().GetAllBranches(shown)
-	if b != nil {
-		*rsp = b
-	}
-	return nil
-}
-
-func (t *server) GetShownBranches(master bool, rsp *[]api.Branch) error {
-	b := t.repo().GetShownBranches(master)
-	if b != nil {
-		*rsp = b
-	}
-	return nil
-}
+// func (t *server) GetShownBranches(master bool, rsp *[]api.Branch) error {
+// 	b := t.repo().GetShownBranches(master)
+// 	if b != nil {
+// 		*rsp = b
+// 	}
+// 	return nil
+// }
 
 func (t *server) ShowBranch(name string, _ api.NoRsp) error {
 	t.repo().ShowBranch(name)
@@ -199,7 +203,7 @@ func (t *server) PushBranch(name string, _ api.NoRsp) error {
 	return t.repo().PushBranch(name)
 }
 
-func (t *server) PullBranch(_ api.NoArg, _ api.NoRsp) error {
+func (t *server) PullCurrentBranch(_ api.NoArg, _ api.NoRsp) error {
 	return t.repo().PullBranch()
 }
 

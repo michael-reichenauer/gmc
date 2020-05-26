@@ -41,29 +41,33 @@ func (t client) TriggerSearch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetCommitBranches(args string, rsp *[]api.Branch) error {
+func (t client) GetBranches(args api.GetBranchesArgs, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetCurrentNotShownBranch(args api.NoArg, rsp *api.Branch) error {
-	return t.client.Call(args, rsp)
-}
+// func (t client) GetCommitBranches(args string, rsp *[]api.Branch) error {
+// 	return t.client.Call(args, rsp)
+// }
 
-func (t client) GetCurrentBranch(args api.NoArg, rsp *api.Branch) error {
-	return t.client.Call(args, rsp)
-}
+// func (t client) GetCurrentNotShownBranch(args api.NoArg, rsp *api.Branch) error {
+// 	return t.client.Call(args, rsp)
+// }
+//
+// func (t client) GetCurrentBranch(args api.NoArg, rsp *api.Branch) error {
+// 	return t.client.Call(args, rsp)
+// }
+//
+// func (t client) GetLatestBranches(args bool, rsp *[]api.Branch) error {
+// 	return t.client.Call(args, rsp)
+// }
+//
+// func (t client) GetAllBranches(args bool, rsp *[]api.Branch) error {
+// 	return t.client.Call(args, rsp)
+// }
 
-func (t client) GetLatestBranches(args bool, rsp *[]api.Branch) error {
-	return t.client.Call(args, rsp)
-}
-
-func (t client) GetAllBranches(args bool, rsp *[]api.Branch) error {
-	return t.client.Call(args, rsp)
-}
-
-func (t client) GetShownBranches(args bool, rsp *[]api.Branch) error {
-	return t.client.Call(args, rsp)
-}
+// func (t client) GetShownBranches(args bool, rsp *[]api.Branch) error {
+// 	return t.client.Call(args, rsp)
+// }
 
 func (t client) ShowBranch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
@@ -81,7 +85,7 @@ func (t client) PushBranch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) PullBranch(args api.NoArg, rsp api.NoRsp) error {
+func (t client) PullCurrentBranch(args api.NoArg, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
