@@ -136,16 +136,6 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
-// func (t *ViewRepo) GetLatestBranches(skipShown bool) []api.Branch {
-// 	viewRepo := t.getViewRepo()
-// 	branches := t.getAllBranches(viewRepo, skipShown)
-// 	sort.SliceStable(branches, func(i, j int) bool {
-// 		return viewRepo.gitRepo.CommitByID(branches[i].TipID).AuthorTime.After(viewRepo.gitRepo.CommitByID(branches[j].TipID).AuthorTime)
-// 	})
-//
-// 	return branches
-// }
-
 func (t *ViewRepo) GetBranches(args api.GetBranchesArgs) []api.Branch {
 	branches := []api.Branch{}
 	if args.IncludeOnlyCommitBranches != "" {
@@ -156,7 +146,7 @@ func (t *ViewRepo) GetBranches(args api.GetBranchesArgs) []api.Branch {
 		}
 		return branches
 	} else if args.IncludeOnlyShown {
-		return t.GetShownBranches(args.SkipMaster)
+		return t.getShownBranches(args.SkipMaster)
 	}
 
 	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
@@ -284,7 +274,7 @@ func (t *ViewRepo) getCommitOpenOutBranches(commitID string) []api.Branch {
 }
 
 //
-func (t *ViewRepo) GetShownBranches(skipMaster bool) []api.Branch {
+func (t *ViewRepo) getShownBranches(skipMaster bool) []api.Branch {
 	viewRepo := t.getViewRepo()
 	bs := []api.Branch{}
 	for _, b := range viewRepo.Branches {

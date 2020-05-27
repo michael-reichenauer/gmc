@@ -59,7 +59,7 @@ func (h *repoVM) startRepoMonitor() {
 
 func (h *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
-	_ = h.api.TriggerRefreshModel(api.NilArg, api.NilRsp)
+	_ = h.api.TriggerRefreshRepo(api.NilArg, api.NilRsp)
 }
 
 func (h *repoVM) SetSearch(text string) {
@@ -77,7 +77,7 @@ func (h *repoVM) monitorModelRoutine() {
 	go func() {
 		for {
 			var changes []api.RepoChange
-			err := h.api.GetChanges(api.NilArg, &changes)
+			err := h.api.GetRepoChanges(api.NilArg, &changes)
 			if err != nil {
 				close(repoChanges)
 				return
@@ -279,7 +279,7 @@ func (h *repoVM) HideBranch(name string) {
 func (h *repoVM) SwitchToBranch(name string, displayName string) {
 	h.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.api.SwitchToBranch(api.SwitchArgs{Name: name, DisplayName: displayName}, nil) },
+		func() error { return h.api.Checkout(api.CheckoutArgs{Name: name, DisplayName: displayName}, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
 }

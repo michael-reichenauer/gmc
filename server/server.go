@@ -6,10 +6,7 @@ import (
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"io/ioutil"
 	"path/filepath"
-	"sort"
-	"strings"
 	"sync"
 	"time"
 )
@@ -31,17 +28,18 @@ func (t *server) GetRecentWorkingDirs(_ api.NoArg, rsp *[]string) error {
 	return nil
 }
 
-func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) error {
-	var paths []string
+func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) (err error) {
 	if parentDirPath == "" {
 		// Path not specified, return recent used parent paths and root folders
-		paths = t.configService.GetState().RecentParentFolders
+		paths := t.configService.GetState().RecentParentFolders
 		paths = append(paths, utils.GetVolumes()...)
 		*dirs = paths
 		return nil
 	}
-	*dirs = t.getSubDirs(parentDirPath)
-	return nil
+
+	// Get sub dirs for the parent dirs
+	*dirs, err = utils.GetSubDirs(parentDirPath)
+	return
 }
 
 func (t *server) OpenRepo(path string, _ api.NoRsp) error {
@@ -55,29 +53,34 @@ func (t *server) OpenRepo(path string, _ api.NoRsp) error {
 		return err
 	}
 
+	var previousRepo = t.repo()
+	if previousRepo != nil {
+		// Previous repo was not closed, lets close before starting next
+		previousRepo.CloseRepo()
+	}
+
+	// Got root working dir path, open repo
+	viewRepo := viewrepo.NewViewRepo(t.configService, workingDir)
+	t.setRepo(viewRepo)
+
+	viewRepo.StartMonitor()
+
+	// Remember working dir paths to use for "open recent" lists
 	parentDir := filepath.Dir(workingDir)
 	t.configService.SetState(func(s *config.State) {
-		s.RecentFolders = utils.RecentItems(s.RecentFolders, workingDir, 10)
-		s.RecentParentFolders = utils.RecentItems(s.RecentParentFolders, parentDir, 5)
+		s.RecentFolders = utils.RecentPaths(s.RecentFolders, workingDir, 10)
+		s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
 	})
-
-	viewRepo := viewrepo.NewViewRepo(t.configService, workingDir)
-	t.lock.Lock()
-	t.viewRepo = viewRepo
-	t.lock.Unlock()
-	viewRepo.StartMonitor()
 	return nil
 }
 
 func (t *server) CloseRepo(_ api.NoArg, _ api.NoRsp) error {
 	t.repo().CloseRepo()
-	t.lock.Lock()
-	t.viewRepo = nil
-	t.lock.Unlock()
+	t.setRepo(nil)
 	return nil
 }
 
-func (t *server) GetChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
+func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 	repo := t.repo()
 	if repo == nil {
 		return nil
@@ -120,7 +123,7 @@ func (t *server) GetChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 	}
 }
 
-func (t *server) TriggerRefreshModel(_ api.NoArg, _ api.NoRsp) error {
+func (t *server) TriggerRefreshRepo(_ api.NoArg, _ api.NoRsp) error {
 	t.repo().TriggerRefreshModel()
 	return nil
 }
@@ -135,56 +138,6 @@ func (t *server) GetBranches(args api.GetBranchesArgs, branches *[]api.Branch) e
 	return nil
 }
 
-// func (t *server) GetCommitBranches(id string, rsp *[]api.Branch) error {
-// 	b := t.repo().GetCommitBranches(id)
-// 	if b != nil {
-// 		*rsp = b
-// 	}
-// 	return nil
-// }
-
-// func (t *server) GetCurrentNotShownBranch(_ api.NoArg, rsp *api.Branch) error {
-// 	b, ok := t.repo().GetCurrentNotShownBranch()
-// 	if !ok {
-// 		return fmt.Errorf("branch not found")
-// 	}
-// 	*rsp = b
-// 	return nil
-// }
-//
-// func (t *server) GetCurrentBranch(_ api.NoArg, rsp *api.Branch) error {
-// 	b, ok := t.repo().GetCurrentBranch()
-// 	if !ok {
-// 		return fmt.Errorf("branch not found")
-// 	}
-// 	*rsp = b
-// 	return nil
-// }
-//
-// func (t *server) GetLatestBranches(shown bool, rsp *[]api.Branch) error {
-// 	b := t.repo().GetLatestBranches(shown)
-// 	if b != nil {
-// 		*rsp = b
-// 	}
-// 	return nil
-// }
-//
-// func (t *server) GetAllBranches(shown bool, rsp *[]api.Branch) error {
-// 	b := t.repo().GetAllBranches(shown)
-// 	if b != nil {
-// 		*rsp = b
-// 	}
-// 	return nil
-// }
-
-// func (t *server) GetShownBranches(master bool, rsp *[]api.Branch) error {
-// 	b := t.repo().GetShownBranches(master)
-// 	if b != nil {
-// 		*rsp = b
-// 	}
-// 	return nil
-// }
-
 func (t *server) ShowBranch(name string, _ api.NoRsp) error {
 	t.repo().ShowBranch(name)
 	return nil
@@ -195,7 +148,7 @@ func (t *server) HideBranch(name string, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *server) SwitchToBranch(args api.SwitchArgs, _ api.NoRsp) error {
+func (t *server) Checkout(args api.CheckoutArgs, _ api.NoRsp) error {
 	return t.repo().SwitchToBranch(args.Name, args.DisplayName)
 }
 
@@ -219,36 +172,21 @@ func (t *server) DeleteBranch(name string, _ api.NoRsp) error {
 	return t.repo().DeleteBranch(name)
 }
 
-func (t *server) GetCommitDiff(id string, diff *api.CommitDiff) error {
-	d, err := t.repo().GetCommitDiff(id)
-	*diff = d
-	return err
+func (t *server) GetCommitDiff(id string, diff *api.CommitDiff) (err error) {
+	*diff, err = t.repo().GetCommitDiff(id)
+	return
 }
 
 func (t *server) Commit(message string, _ api.NoRsp) error {
 	return t.repo().Commit(message)
 }
 
-func (t *server) getSubDirs(path string) []string {
-	files, err := ioutil.ReadDir(path)
-	if err != nil {
-		// Folder not readable, might be e.g. access denied
-		return nil
-	}
-
-	var paths []string
-	for _, f := range files {
-		if !f.IsDir() || f.Name() == "$RECYCLE.BIN" {
-			continue
-		}
-		paths = append(paths, filepath.Join(path, f.Name()))
-	}
-	// Sort with but ignore case
-	sort.SliceStable(paths, func(l, r int) bool {
-		return -1 == strings.Compare(strings.ToLower(paths[l]), strings.ToLower(paths[r]))
-	})
-	return paths
+func (t *server) setRepo(repo *viewrepo.ViewRepo) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	t.viewRepo = repo
 }
+
 func (t *server) repo() *viewrepo.ViewRepo {
 	t.lock.Lock()
 	defer t.lock.Unlock()

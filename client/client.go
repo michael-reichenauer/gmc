@@ -29,11 +29,11 @@ func (t client) CloseRepo(args api.NoArg, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetChanges(args api.NoArg, rsp *[]api.RepoChange) error {
+func (t client) GetRepoChanges(args api.NoArg, rsp *[]api.RepoChange) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) TriggerRefreshModel(args api.NoArg, rsp api.NoRsp) error {
+func (t client) TriggerRefreshRepo(args api.NoArg, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
@@ -45,29 +45,13 @@ func (t client) GetBranches(args api.GetBranchesArgs, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
-// func (t client) GetCommitBranches(args string, rsp *[]api.Branch) error {
-// 	return t.client.Call(args, rsp)
-// }
+func (t client) Commit(args string, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
 
-// func (t client) GetCurrentNotShownBranch(args api.NoArg, rsp *api.Branch) error {
-// 	return t.client.Call(args, rsp)
-// }
-//
-// func (t client) GetCurrentBranch(args api.NoArg, rsp *api.Branch) error {
-// 	return t.client.Call(args, rsp)
-// }
-//
-// func (t client) GetLatestBranches(args bool, rsp *[]api.Branch) error {
-// 	return t.client.Call(args, rsp)
-// }
-//
-// func (t client) GetAllBranches(args bool, rsp *[]api.Branch) error {
-// 	return t.client.Call(args, rsp)
-// }
-
-// func (t client) GetShownBranches(args bool, rsp *[]api.Branch) error {
-// 	return t.client.Call(args, rsp)
-// }
+func (t client) GetCommitDiff(args string, rsp *api.CommitDiff) error {
+	return t.client.Call(args, rsp)
+}
 
 func (t client) ShowBranch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
@@ -77,7 +61,7 @@ func (t client) HideBranch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) SwitchToBranch(args api.SwitchArgs, rsp api.NoRsp) error {
+func (t client) Checkout(args api.CheckoutArgs, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
@@ -98,13 +82,5 @@ func (t client) CreateBranch(args string, rsp api.NoRsp) error {
 }
 
 func (t client) DeleteBranch(args string, rsp api.NoRsp) error {
-	return t.client.Call(args, rsp)
-}
-
-func (t client) GetCommitDiff(args string, rsp *api.CommitDiff) error {
-	return t.client.Call(args, rsp)
-}
-
-func (t client) Commit(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }

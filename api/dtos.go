@@ -27,7 +27,7 @@ var (
 	no     int
 )
 
-type SwitchArgs struct {
+type CheckoutArgs struct {
 	Name        string
 	DisplayName string
 }
