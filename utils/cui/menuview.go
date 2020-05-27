@@ -34,37 +34,37 @@ func newMenuView(ui *ui, title string, parent *menuView) *menuView {
 	return h
 }
 
-func (h *menuView) addItems(items []MenuItem) {
-	h.items = append(h.items, items...)
+func (t *menuView) addItems(items []MenuItem) {
+	t.items = append(t.items, items...)
 }
 
-func (h *menuView) show(bounds Rect) {
-	h.bounds = h.getBounds(h.items, bounds)
-	h.SetKey(gocui.KeyEsc, h.onClose)
-	h.SetKey(gocui.KeyEnter, h.onEnter)
-	h.SetKey(gocui.KeyArrowLeft, h.onClose)
-	h.SetKey(gocui.KeyArrowRight, h.onSubItem)
-	h.Show(Bounds(Rect{X: h.bounds.X, Y: h.bounds.Y, W: h.bounds.W, H: h.bounds.H}))
-	h.SetCurrentView()
-	h.NotifyChanged()
+func (t *menuView) show(bounds Rect) {
+	t.bounds = t.getBounds(t.items, bounds)
+	t.SetKey(gocui.KeyEsc, t.onClose)
+	t.SetKey(gocui.KeyEnter, t.onEnter)
+	t.SetKey(gocui.KeyArrowLeft, t.onClose)
+	t.SetKey(gocui.KeyArrowRight, t.onSubItem)
+	t.Show(Bounds(Rect{X: t.bounds.X, Y: t.bounds.Y, W: t.bounds.W, H: t.bounds.H}))
+	t.SetCurrentView()
+	t.NotifyChanged()
 }
 
-func (h *menuView) viewData(viewPort ViewPage) ViewText {
+func (t *menuView) viewData(viewPort ViewPage) ViewText {
 	var lines []string
 	length := viewPort.FirstLine + viewPort.Height
-	if length > len(h.items) {
-		length = len(h.items)
+	if length > len(t.items) {
+		length = len(t.items)
 	}
 
 	for i := viewPort.FirstLine; i < length; i++ {
-		line := h.toItemText(viewPort.Width, h.items[i])
+		line := t.toItemText(viewPort.Width, t.items[i])
 		lines = append(lines, line)
 	}
-	return ViewText{Lines: lines, Total: len(h.items)}
+	return ViewText{Lines: lines, Total: len(t.items)}
 }
 
-func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
-	width, height := h.getSize(items)
+func (t *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
+	width, height := t.getSize(items)
 	if bounds.W != 0 {
 		if width < bounds.W {
 			width = bounds.W
@@ -76,12 +76,12 @@ func (h *menuView) getBounds(items []MenuItem, bounds Rect) Rect {
 		}
 	}
 
-	x2, y2 := h.getPos(bounds.X, bounds.Y, width, height)
+	x2, y2 := t.getPos(bounds.X, bounds.Y, width, height)
 	return Rect{X: x2, Y: y2, W: width, H: height}
 }
 
-func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
-	windowWidth, windowHeight := h.ui.WindowSize()
+func (t *menuView) getPos(x1, y1, width, height int) (x int, y int) {
+	windowWidth, windowHeight := t.ui.WindowSize()
 	if x1 < 3 {
 		x1 = 1
 	}
@@ -98,10 +98,10 @@ func (h *menuView) getPos(x1, y1, width, height int) (x int, y int) {
 	return x1, y1
 }
 
-func (h *menuView) getSize(items []MenuItem) (width, height int) {
-	windowWidth, windowHeight := h.ui.WindowSize()
+func (t *menuView) getSize(items []MenuItem) (width, height int) {
+	windowWidth, windowHeight := t.ui.WindowSize()
 
-	width, h.keyWidth, h.moreWidth, h.marginsWidth = h.maxWidth(items)
+	width, t.keyWidth, t.moreWidth, t.marginsWidth = t.maxWidth(items)
 	if width < 10 {
 		width = 10
 	}
@@ -112,7 +112,7 @@ func (h *menuView) getSize(items []MenuItem) (width, height int) {
 		width = windowWidth - margin
 	}
 
-	height = len(h.items)
+	height = len(t.items)
 	if height < 0 {
 		height = 0
 	}
@@ -125,10 +125,10 @@ func (h *menuView) getSize(items []MenuItem) (width, height int) {
 	return width, height
 }
 
-func (h *menuView) maxWidth(items []MenuItem) (maxWidth, maxKeyWidth, maxMoreWidth, marginsWidth int) {
-	maxTextWidth := h.maxTextWidth(items)
-	maxKeyWidth = h.maxKeyWidth(items)
-	maxMoreWidth = h.maxMoreWidth(items)
+func (t *menuView) maxWidth(items []MenuItem) (maxWidth, maxKeyWidth, maxMoreWidth, marginsWidth int) {
+	maxTextWidth := t.maxTextWidth(items)
+	maxKeyWidth = t.maxKeyWidth(items)
+	maxMoreWidth = t.maxMoreWidth(items)
 
 	marginsWidth = 0
 	if maxKeyWidth > 0 {
@@ -138,7 +138,7 @@ func (h *menuView) maxWidth(items []MenuItem) (maxWidth, maxKeyWidth, maxMoreWid
 		marginsWidth++
 	}
 	maxWidth = maxTextWidth + maxKeyWidth + maxMoreWidth + marginsWidth
-	titleWidth := len(h.title) + 3
+	titleWidth := len(t.title) + 3
 	if maxWidth < titleWidth {
 		maxWidth = titleWidth
 	}
@@ -184,18 +184,18 @@ func (*menuView) maxTextWidth(items []MenuItem) int {
 	return maxTextWidth + 2
 }
 
-func (h *menuView) toItemText(width int, item MenuItem) string {
+func (t *menuView) toItemText(width int, item MenuItem) string {
 	key := ""
-	if h.keyWidth > 0 {
+	if t.keyWidth > 0 {
 		if item.Key != "" {
-			key = "   " + utils.Text(item.Key, h.keyWidth)
+			key = "   " + utils.Text(item.Key, t.keyWidth)
 		} else {
-			key = "  " + strings.Repeat(" ", h.keyWidth+1)
+			key = "  " + strings.Repeat(" ", t.keyWidth+1)
 		}
 	}
 
 	more := ""
-	if h.moreWidth > 0 {
+	if t.moreWidth > 0 {
 		if len(item.SubItems) > 0 || item.SubItemsFunc != nil {
 			more = " ►"
 		} else {
@@ -203,7 +203,7 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 		}
 	}
 
-	extraWidth := h.marginsWidth + h.keyWidth + h.moreWidth
+	extraWidth := t.marginsWidth + t.keyWidth + t.moreWidth
 	text := utils.Text(item.Text, width-extraWidth)
 	if item.isSeparator {
 		text = strings.Repeat("─", width-extraWidth)
@@ -211,95 +211,105 @@ func (h *menuView) toItemText(width int, item MenuItem) string {
 	return fmt.Sprintf("%s%s%s", text, key, more)
 }
 
-func (h *menuView) onClose() {
+func (t *menuView) onClose() {
 	log.Infof("On close")
-	h.Close()
+	t.Close()
 }
 
-func (h *menuView) closeAll() {
+func (t *menuView) closeAll() {
 	log.Infof("Close all from")
-	if h.parent == nil {
-		h.onClose()
+	if t.parent == nil {
+		t.onClose()
 		return
 	}
-	h.Close()
-	h.parent.closeAll()
+	t.Close()
+	t.parent.closeAll()
 }
 
-func (h *menuView) onEnter() {
-	vp := h.ViewPage()
+func (t *menuView) onEnter() {
+	vp := t.ViewPage()
 	log.Infof("enter %d", vp.CurrentLine)
-	h.action(vp.FirstLine, vp.CurrentLine, false)
+	t.action(vp.FirstLine, vp.CurrentLine, false)
 }
 
-func (h *menuView) onSubItem() {
-	vp := h.ViewPage()
-	h.subItem(vp.FirstLine, vp.CurrentLine)
+func (t *menuView) onSubItem() {
+	vp := t.ViewPage()
+	t.subItem(vp.FirstLine, vp.CurrentLine)
 }
 
-func (h *menuView) onMouseLeft(x int, y int) {
-	vp := h.ViewPage()
+func (t *menuView) onMouseLeft(x int, y int) {
+	vp := t.ViewPage()
 	log.Infof("mouse %d", vp.FirstLine+y)
 	isMoreClicked := vp.Width-x < 2
-	h.action(vp.FirstLine, vp.FirstLine+y, isMoreClicked)
+	t.action(vp.FirstLine, vp.FirstLine+y, isMoreClicked)
 }
 
-func (h *menuView) action(firstLine, index int, isMoreClicked bool) {
-	log.Infof("action %d", index)
-	item := h.items[index]
+func (t *menuView) action(firstLine, index int, isMoreClicked bool) {
+	item := t.items[index]
 	log.Infof("action item %d %q, %v", index, item.Text, item.Action == nil)
 
-	var subItems []MenuItem
-	if item.SubItemsFunc != nil {
-		subItems = item.SubItemsFunc()
-	} else {
-		subItems = item.SubItems
-	}
-	if len(subItems) != 0 && item.Action == nil {
-		h.subItem(firstLine, index)
-		return
-	}
-	if len(subItems) != 0 && isMoreClicked {
-		h.subItem(firstLine, index)
+	hasSubActions := len(item.SubItems) != 0 || item.SubItemsFunc != nil
+	if hasSubActions && (item.Action == nil || isMoreClicked) {
+		t.subItem(firstLine, index)
 		return
 	}
 
 	if item.Action == nil {
 		return
 	}
-	h.closeAll()
+	t.closeAll()
 	item.Action()
 }
 
-func (h *menuView) subItem(firstLine, index int) {
-	if index >= len(h.items) {
+func (t *menuView) subItem(firstLine, index int) {
+	if index >= len(t.items) {
 		return
 	}
-	item := h.items[index]
+	item := t.items[index]
 	log.Infof("sub item %d %q", index, item.Text)
 
-	var subItems []MenuItem
 	if item.SubItemsFunc != nil {
-		subItems = item.SubItemsFunc()
-	} else {
-		subItems = item.SubItems
-	}
-	if len(subItems) == 0 {
+		t.showSubItemsPlaceholderMenu(firstLine, index, item, item.SubItemsFunc)
 		return
 	}
-	var subBonds Rect
-	subBonds.X = h.bounds.X + h.bounds.W
-	windowWidth, _ := h.ui.WindowSize()
-	maxSubWidth, _, _, _ := h.maxWidth(subItems)
-	if subBonds.X+maxSubWidth > windowWidth {
-		subBonds.X = h.bounds.X - maxSubWidth
+	if len(item.SubItems) == 0 {
+		return
 	}
 
-	subBonds.Y = h.bounds.Y + (index - firstLine)
-	mv := newMenuView(h.ui, item.Title, h)
+	t.showSubItemsMenu(firstLine, index, item, item.SubItems)
+}
+
+func (t *menuView) showSubItemsMenu(firstLine, index int, item MenuItem, subItems []MenuItem) *menuView {
+	var subBonds Rect
+	subBonds.X = t.bounds.X + t.bounds.W
+	windowWidth, _ := t.ui.WindowSize()
+	maxSubWidth, _, _, _ := t.maxWidth(subItems)
+	if subBonds.X+maxSubWidth > windowWidth {
+		subBonds.X = t.bounds.X - maxSubWidth
+	}
+
+	subBonds.Y = t.bounds.Y + (index - firstLine)
+
+	mv := newMenuView(t.ui, item.Title, t)
 	mv.addItems(subItems)
 	if item.ReuseBounds {
-		subBonds = h.bounds
+		subBonds = t.bounds
 	}
 	mv.show(subBonds)
+	return mv
+}
+
+func (t *menuView) showSubItemsPlaceholderMenu(firstLine, index int, item MenuItem, subItemsFunc func() []MenuItem) {
+	subItems := []MenuItem{{Text: " "}, {Text: "Retrieving ..."}, {Text: " "}}
+	mv := t.showSubItemsMenu(firstLine, index, item, subItems)
+	p := t.ui.ShowProgress("Getting %s ...", item.Text)
+
+	go func() {
+		items := subItemsFunc()
+		t.ui.PostOnUIThread(func() {
+			p.Close()
+			mv.Close()
+			t.showSubItemsMenu(firstLine, index, item, items)
+		})
+	}()
 }

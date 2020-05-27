@@ -13,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 type ServiceClient interface {
@@ -32,6 +33,8 @@ type Client struct {
 	rpcClient         *rpc.Client
 	done              chan struct{}
 	uri               string
+	Latency           time.Duration
+	BandWithMpbs      float32
 }
 
 func NewClient() *Client {
@@ -39,12 +42,20 @@ func NewClient() *Client {
 }
 
 func (t *Client) Connect(uri string) error {
+	// if t.Latency != 0 {
+	// 	time.Sleep(3 * t.Latency)
+	// }
 	conn, err := t.connect(uri)
 	if err != nil {
 		return err
 	}
 	t.uri = uri
-	t.connection = &connection{conn: conn, onConnectionError: t.OnConnectionError}
+	t.connection = &connection{
+		conn:              conn,
+		onConnectionError: t.OnConnectionError,
+		latency:           t.Latency,
+		bandWithMpbs:      t.BandWithMpbs,
+	}
 	t.rpcClient = jsonrpc.NewClient(t.connection)
 	return nil
 }
@@ -53,6 +64,8 @@ type connection struct {
 	conn              net.Conn
 	onConnectionError func(err error)
 	connErrors        int32
+	latency           time.Duration
+	bandWithMpbs      float32
 }
 
 func (t *connection) Read(p []byte) (n int, err error) {
@@ -62,10 +75,16 @@ func (t *connection) Read(p []byte) (n int, err error) {
 			t.onConnectionError(err)
 		}
 	}
+	if t.latency != 0 {
+		time.Sleep(t.latency)
+	}
 	return
 }
 
 func (t *connection) Write(p []byte) (n int, err error) {
+	if t.latency != 0 {
+		time.Sleep(t.latency)
+	}
 	n, err = t.conn.Write(p)
 	if err != nil && t.onConnectionError != nil {
 		if c := atomic.AddInt32(&t.connErrors, 1); c == 1 {
