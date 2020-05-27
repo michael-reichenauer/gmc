@@ -5,12 +5,18 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	progressInterval = 500 * time.Millisecond
 	waitMark         = " ╭─╮ \n ╰─╯ "
+)
+
+var (
+	closeTimeLock sync.Mutex
+	lastCloseTime time.Time
 )
 
 type Progress interface {
@@ -65,16 +71,27 @@ func (t *progress) SetText(text string) {
 
 func (t *progress) Close() {
 	log.Infof("Close Progress %s", t.startTime)
+	closeTimeLock.Lock()
+	lastCloseTime = time.Now()
+	closeTimeLock.Unlock()
 	t.view.Close()
 	t.view = nil
 }
 
 func (t *progress) textFunc(ViewPage) string {
-	if time.Since(t.startTime) < 1000*time.Millisecond {
+	var sinceLastCloseTime time.Duration
+	closeTimeLock.Lock()
+	sinceLastCloseTime = time.Since(lastCloseTime)
+	closeTimeLock.Unlock()
+	sinceStart := time.Since(t.startTime)
+	if sinceLastCloseTime < 1000*time.Millisecond {
+		sinceStart = 1000 * time.Millisecond
+	}
+	if sinceStart < 1000*time.Millisecond {
 		// Show no progress for a show while in case operation completes fast
 		return ""
 	}
-	if time.Since(t.startTime) < 8*time.Second {
+	if sinceStart < 8*time.Second {
 		// Show just a small wait mark for a while
 		if t.length%2 == 1 {
 			return MagentaDk(waitMark)
