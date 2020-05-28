@@ -3,47 +3,73 @@ package cui
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/timer"
 	"strings"
-	"sync"
 	"time"
 )
 
 const (
 	progressInterval = 500 * time.Millisecond
 	waitMark         = " ╭─╮ \n ╰─╯ "
+	showIconTimeout  = 1000 * time.Millisecond
+	showFullTimeout  = 8 * time.Second
 )
 
 var (
-	closeTimeLock sync.Mutex
-	lastCloseTime time.Time
+	instance          *progress
+	instanceStartTime time.Time
+	instanceCloseTime time.Time
 )
 
 type Progress interface {
 	Close()
 }
+
 type progress struct {
 	ui           *ui
 	text         string
 	view         View
+	showCount    int
 	length       int
-	startTimer   *timer.Timer
 	startTime    time.Time
 	showProgress bool
 }
 
-func newProgress(ui *ui) *progress {
-	t := &progress{ui: ui, length: 1, startTimer: timer.Start(), startTime: time.Now()}
+func showProgress(ui *ui, format string, v ...interface{}) Progress {
+	text := fmt.Sprintf(format, v...)
+	log.Infof("Start progress for %q, ...", text)
+	if instance == nil {
+		startTime := time.Now()
+		if time.Since(instanceCloseTime) < showIconTimeout {
+			startTime = instanceStartTime
+			log.Infof("Reuse start time at %v", startTime)
+		} else {
+			log.Warnf("Use new start time %v", startTime)
+		}
+		instanceStartTime = startTime
+		instance = newProgress(ui, startTime)
+	}
+	instance.showCount++
+
+	if instance.showCount == 1 {
+		instance.show()
+	}
+	instance.view.SetTop()
+	instance.SetText(text)
+	return instance
+}
+
+func newProgress(ui *ui, startTime time.Time) *progress {
+	t := &progress{ui: ui, length: 0, startTime: startTime}
 	t.view = t.newView()
 	return t
 }
 
 func (t *progress) show() {
-	log.Infof("Show progress %q", t.text)
+	log.Infof("Show progress %q at %v", t.text, t.startTime)
 	t.view.Show(CenterBounds(30, 3, 30, 3))
 	t.view.SetTop()
 	t.view.SetCurrentView()
-	time.AfterFunc(progressInterval, t.elapsed)
+	t.updateProgress()
 }
 
 func (t *progress) newView() View {
@@ -70,29 +96,28 @@ func (t *progress) SetText(text string) {
 }
 
 func (t *progress) Close() {
-	log.Infof("Close Progress %s", t.startTime)
-	closeTimeLock.Lock()
-	lastCloseTime = time.Now()
-	closeTimeLock.Unlock()
-	t.view.Close()
-	t.view = nil
+	log.Infof("Stop progress")
+	instance.showCount--
+	if instance.showCount == 0 {
+		instanceCloseTime = time.Now()
+		log.Infof("Close Progress %v", time.Since(t.startTime))
+		t.view.Close()
+		t.view = nil
+		instance = nil
+	}
 }
 
 func (t *progress) textFunc(ViewPage) string {
-	var sinceLastCloseTime time.Duration
-	closeTimeLock.Lock()
-	sinceLastCloseTime = time.Since(lastCloseTime)
-	closeTimeLock.Unlock()
 	sinceStart := time.Since(t.startTime)
-	if sinceLastCloseTime < 1000*time.Millisecond {
-		sinceStart = 1000 * time.Millisecond
-	}
-	if sinceStart < 1000*time.Millisecond {
+	if sinceStart < showIconTimeout {
 		// Show no progress for a show while in case operation completes fast
+		log.Infof("Show no progress for %q, ...", t.text)
 		return ""
 	}
-	if sinceStart < 8*time.Second {
-		// Show just a small wait mark for a while
+
+	if sinceStart < showFullTimeout {
+		// Show just a small wait icon for a while
+		log.Infof("Show icon progress for %q, ...", t.text)
 		if t.length%2 == 1 {
 			return MagentaDk(waitMark)
 		} else {
@@ -100,6 +125,7 @@ func (t *progress) textFunc(ViewPage) string {
 		}
 	}
 
+	log.Infof("Show full progress for %q, ...", t.text)
 	if !t.showProgress {
 		t.showProgress = true
 		t.length = 0
@@ -110,7 +136,7 @@ func (t *progress) textFunc(ViewPage) string {
 	return fmt.Sprintf("%s\n%s", t.text, MagentaDk(pt))
 }
 
-func (t *progress) elapsed() {
+func (t *progress) updateProgress() {
 	t.ui.PostOnUIThread(func() {
 		if t.view == nil {
 			return
@@ -120,6 +146,6 @@ func (t *progress) elapsed() {
 		t.length = (t.length + 1) % (p.Width + 2)
 
 		t.view.NotifyChanged()
-		time.AfterFunc(progressInterval, t.elapsed)
+		time.AfterFunc(progressInterval, t.updateProgress)
 	})
 }

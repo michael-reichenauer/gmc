@@ -65,11 +65,7 @@ func (t *ui) ShowErrorMessageBox(format string, v ...interface{}) {
 }
 
 func (t *ui) ShowProgress(format string, v ...interface{}) Progress {
-	text := fmt.Sprintf(format, v...)
-	p := newProgress(t)
-	p.SetText(text)
-	p.show()
-	return p
+	return showProgress(t, format, v...)
 }
 
 func (t *ui) NewMenu(title string) Menu {

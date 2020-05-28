@@ -53,37 +53,50 @@ func newRepoVM(
 	}
 }
 
-func (h *repoVM) startRepoMonitor() {
-	go h.monitorModelRoutine()
+func (t *repoVM) startRepoMonitor() {
+	go t.monitorModelRoutine()
 }
 
-func (h *repoVM) triggerRefresh() {
+func (t *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
-	_ = h.api.TriggerRefreshRepo(api.NilArg, api.NilRsp)
+	progress := t.ui.ShowProgress("Trigger")
+	t.startCommand(
+		fmt.Sprintf("Trigger refresh repo"),
+		func() error { return t.api.TriggerRefreshRepo(api.NilArg, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
+		func() {
+			t.ui.PostOnUIThread(func() {
+				progress.Close()
+			})
+		})
 }
 
-func (h *repoVM) SetSearch(text string) {
-	_ = h.api.TriggerSearch(text, api.NilRsp)
+func (t *repoVM) SetSearch(text string) {
+	t.startCommand(
+		fmt.Sprintf("Trigger search repo"),
+		func() error { return t.api.TriggerSearch(text, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
+		nil)
 }
 
-func (h *repoVM) close() {
+func (t *repoVM) close() {
 	log.Infof("Close")
-	close(h.done)
-	_ = h.api.CloseRepo(api.NilArg, api.NilRsp)
+	close(t.done)
+	_ = t.api.CloseRepo(api.NilArg, api.NilRsp)
 }
 
-func (h *repoVM) monitorModelRoutine() {
+func (t *repoVM) monitorModelRoutine() {
 	repoChanges := make(chan api.RepoChange)
 	go func() {
 		for {
 			var changes []api.RepoChange
-			err := h.api.GetRepoChanges(api.NilArg, &changes)
+			err := t.api.GetRepoChanges(api.NilArg, &changes)
 			if err != nil {
 				close(repoChanges)
 				return
 			}
 			select {
-			case <-h.done:
+			case <-t.done:
 				close(repoChanges)
 				return
 			default:
@@ -97,11 +110,12 @@ func (h *repoVM) monitorModelRoutine() {
 
 	var progress cui.Progress
 	for r := range repoChanges {
-		log.Infof("Detected model change")
+		log.Infof("repo event")
 		rc := r
-		h.ui.PostOnUIThread(func() {
+		t.ui.PostOnUIThread(func() {
 			if rc.IsStarting {
-				progress = h.ui.ShowProgress("Loading repo")
+				log.Infof("repo starting event")
+				progress = t.ui.ShowProgress("Loading repo")
 				return
 			}
 
@@ -111,115 +125,118 @@ func (h *repoVM) monitorModelRoutine() {
 			}
 
 			if rc.Error != nil {
-				h.ui.ShowErrorMessageBox("Error: %v", rc.Error)
+				log.Infof("repo error event")
+				t.ui.ShowErrorMessageBox("Error: %v", rc.Error)
 				return
 			}
 
 			if rc.SearchText != "" {
+				log.Infof("repo search event")
 				log.Infof("commits %d", len(r.ViewRepo.Commits))
-				h.repo = r.ViewRepo
-				h.repoViewer.NotifyChanged()
+				t.repo = r.ViewRepo
+				t.repoViewer.NotifyChanged()
 				return
 			}
 
-			h.repo = rc.ViewRepo
-			h.repoViewer.NotifyChanged()
+			log.Infof("repo change event")
+			t.repo = rc.ViewRepo
+			t.repoViewer.NotifyChanged()
 
-			if h.onRepoUpdatedFunc != nil {
-				f := h.onRepoUpdatedFunc
-				h.onRepoUpdatedFunc = nil
-				h.ui.PostOnUIThread(f)
+			if t.onRepoUpdatedFunc != nil {
+				f := t.onRepoUpdatedFunc
+				t.onRepoUpdatedFunc = nil
+				t.ui.PostOnUIThread(f)
 			}
 		})
 	}
 }
 
-func (h *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
-	firstIndex, lines := h.getLines(viewPage)
-	h.firstIndex = firstIndex
-	h.currentIndex = viewPage.CurrentLine
+func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
+	firstIndex, lines := t.getLines(viewPage)
+	t.firstIndex = firstIndex
+	t.currentIndex = viewPage.CurrentLine
 
 	var sbn string
-	if viewPage.CurrentLine < len(h.repo.Commits) {
-		sbn = h.repo.Commits[viewPage.CurrentLine].Branch.Name
+	if viewPage.CurrentLine < len(t.repo.Commits) {
+		sbn = t.repo.Commits[viewPage.CurrentLine].Branch.Name
 	}
 	return repoPage{
-		repoPath:           h.repo.RepoPath,
+		repoPath:           t.repo.RepoPath,
 		lines:              lines,
-		total:              len(h.repo.Commits),
-		uncommittedChanges: h.repo.UncommittedChanges,
-		currentBranchName:  h.repo.CurrentBranchName,
+		total:              len(t.repo.Commits),
+		uncommittedChanges: t.repo.UncommittedChanges,
+		currentBranchName:  t.repo.CurrentBranchName,
 		selectedBranchName: sbn,
 	}, nil
 }
 
-func (h *repoVM) getLines(viewPage cui.ViewPage) (int, []string) {
-	firstIndex, commits, graph := h.getPage(viewPage)
-	return firstIndex, h.repoLayout.getPageLines(commits, graph, viewPage.Width, "", h.repo)
+func (t *repoVM) getLines(viewPage cui.ViewPage) (int, []string) {
+	firstIndex, commits, graph := t.getPage(viewPage)
+	return firstIndex, t.repoLayout.getPageLines(commits, graph, viewPage.Width, "", t.repo)
 }
 
-func (h *repoVM) isMoreClick(x int, y int) bool {
-	moreX := h.repoLayout.getMoreIndex(h.repo)
+func (t *repoVM) isMoreClick(x int, y int) bool {
+	moreX := t.repoLayout.getMoreIndex(t.repo)
 	return x == moreX
 }
 
-func (h *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphRow) {
+func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphRow) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
-	if count > len(h.repo.Commits) {
+	if count > len(t.repo.Commits) {
 		// Requested count larger than available, return just all available commits
-		count = len(h.repo.Commits)
+		count = len(t.repo.Commits)
 	}
 
-	if firstIndex+count >= len(h.repo.Commits) {
+	if firstIndex+count >= len(t.repo.Commits) {
 		// Requested commits past available, adjust to return available commits
-		firstIndex = len(h.repo.Commits) - count
+		firstIndex = len(t.repo.Commits) - count
 	}
-	commits := h.repo.Commits[firstIndex : firstIndex+count]
-	graphRows := h.repo.ConsoleGraph[firstIndex : firstIndex+count]
+	commits := t.repo.Commits[firstIndex : firstIndex+count]
+	graphRows := t.repo.ConsoleGraph[firstIndex : firstIndex+count]
 	return firstIndex, commits, graphRows
 }
 
-func (h *repoVM) showCommitDialog() {
-	if h.repo.Conflicts > 0 {
-		h.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
+func (t *repoVM) showCommitDialog() {
+	if t.repo.Conflicts > 0 {
+		t.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
 	}
-	commitView := NewCommitView(h.ui, h.api)
-	message := h.repo.MergeMessage
+	commitView := NewCommitView(t.ui, t.api)
+	message := t.repo.MergeMessage
 	commitView.Show(message)
 }
 
-func (h *repoVM) showCreateBranchDialog() {
-	branchView := NewBranchView(h.ui, h)
+func (t *repoVM) showCreateBranchDialog() {
+	branchView := NewBranchView(t.ui, t)
 	branchView.Show()
 }
 
-func (h *repoVM) showCommitDiff(commitID string) {
-	diffView := NewDiffView(h.ui, h.api, commitID)
+func (t *repoVM) showCommitDiff(commitID string) {
+	diffView := NewDiffView(t.ui, t.api, commitID)
 	diffView.Show()
 }
 
-func (h *repoVM) showSelectedCommitDiff() {
-	c := h.repo.Commits[h.currentIndex]
-	h.showCommitDiff(c.ID)
+func (t *repoVM) showSelectedCommitDiff() {
+	c := t.repo.Commits[t.currentIndex]
+	t.showCommitDiff(c.ID)
 }
 
-func (h *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
-	c := h.repo.Commits[selectedIndex]
+func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
+	c := t.repo.Commits[selectedIndex]
 	if c.More == api.MoreNone {
 		return nil
 	}
 
 	var branches []api.Branch
-	_ = h.api.GetBranches(api.GetBranchesArgs{IncludeOnlyCommitBranches: c.ID}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesArgs{IncludeOnlyCommitBranches: c.ID}, &branches)
 
 	return branches
 }
 
-func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
+func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	var branches []api.Branch
-	err := h.api.GetBranches(
+	err := t.api.GetBranches(
 		api.GetBranchesArgs{IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
 		&branches)
 
@@ -230,9 +247,9 @@ func (h *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (h *repoVM) CurrentBranch() (api.Branch, bool) {
+func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	var branches []api.Branch
-	err := h.api.GetBranches(
+	err := t.api.GetBranches(
 		api.GetBranchesArgs{IncludeOnlyCurrent: true},
 		&branches)
 
@@ -243,127 +260,127 @@ func (h *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (h *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
-	_ = h.api.GetBranches(api.GetBranchesArgs{
+	_ = t.api.GetBranches(api.GetBranchesArgs{
 		IncludeOnlyNotShown: skipShown,
 		SortOnLatest:        true,
 	}, &branches)
 	return branches
 }
 
-func (h *repoVM) GetAllBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetAllBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
-	_ = h.api.GetBranches(api.GetBranchesArgs{IncludeOnlyNotShown: skipShown}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesArgs{IncludeOnlyNotShown: skipShown}, &branches)
 	return branches
 }
 
-func (h *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
+func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
-	_ = h.api.GetBranches(
+	_ = t.api.GetBranches(
 		api.GetBranchesArgs{IncludeOnlyShown: true, SkipMaster: skipMaster},
 		&branches)
 	return branches
 }
 
-func (h *repoVM) ShowBranch(name string) {
-	_ = h.api.ShowBranch(name, api.NilRsp)
+func (t *repoVM) ShowBranch(name string) {
+	_ = t.api.ShowBranch(name, api.NilRsp)
 }
 
-func (h *repoVM) HideBranch(name string) {
-	_ = h.api.HideBranch(name, api.NilRsp)
+func (t *repoVM) HideBranch(name string) {
+	_ = t.api.HideBranch(name, api.NilRsp)
 }
 
-func (h *repoVM) SwitchToBranch(name string, displayName string) {
-	h.startCommand(
+func (t *repoVM) SwitchToBranch(name string, displayName string) {
+	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return h.api.Checkout(api.CheckoutArgs{Name: name, DisplayName: displayName}, nil) },
+		func() error { return t.api.Checkout(api.CheckoutArgs{Name: name, DisplayName: displayName}, nil) },
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
 }
 
-func (h *repoVM) PushBranch(name string) {
-	h.startCommand(
+func (t *repoVM) PushBranch(name string) {
+	t.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return h.api.PushBranch(name, api.NilRsp) },
+		func() error { return t.api.PushBranch(name, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
 
-func (h *repoVM) PushCurrentBranch() {
-	current, ok := h.CurrentBranch()
+func (t *repoVM) PushCurrentBranch() {
+	current, ok := t.CurrentBranch()
 	if !ok || !current.HasLocalOnly {
 		return
 	}
-	h.startCommand(
+	t.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
-		func() error { return h.api.PushBranch(current.Name, api.NilRsp) },
+		func() error { return t.api.PushBranch(current.Name, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
 }
 
-func (h *repoVM) PullCurrentBranch() {
-	current, ok := h.CurrentBranch()
+func (t *repoVM) PullCurrentBranch() {
+	current, ok := t.CurrentBranch()
 	if !ok || !current.HasLocalOnly {
 		return
 	}
-	h.startCommand(
+	t.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return h.api.PullCurrentBranch(api.NilArg, api.NilRsp) },
+		func() error { return t.api.PullCurrentBranch(api.NilArg, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
 
-func (h *repoVM) MergeFromBranch(name string) {
-	h.startCommand(
+func (t *repoVM) MergeFromBranch(name string) {
+	t.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return h.api.MergeBranch(name, api.NilRsp) },
+		func() error { return t.api.MergeBranch(name, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
 
-func (h *repoVM) startCommand(
+func (t *repoVM) startCommand(
 	progressText string,
 	doFunc func() error,
 	errorFunc func(err error) string,
 	onRepoUpdatedFunc func()) {
-	progress := h.ui.ShowProgress(progressText)
-	h.onRepoUpdatedFunc = onRepoUpdatedFunc
+	progress := t.ui.ShowProgress(progressText)
+	t.onRepoUpdatedFunc = onRepoUpdatedFunc
 	go func() {
 		err := doFunc()
-		h.ui.PostOnUIThread(func() {
+		t.ui.PostOnUIThread(func() {
 			if err != nil {
-				h.ui.ShowErrorMessageBox(errorFunc(err))
+				t.ui.ShowErrorMessageBox(errorFunc(err))
 			}
 			progress.Close()
 		})
 	}()
 }
 
-func (h *repoVM) CreateBranch(name string) {
-	h.startCommand(
+func (t *repoVM) CreateBranch(name string) {
+	t.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := h.api.CreateBranch(name, api.NilRsp)
+			err := t.api.CreateBranch(name, api.NilRsp)
 			if err != nil {
 				return err
 			}
-			err = h.api.PushBranch(name, api.NilRsp)
+			err = t.api.PushBranch(name, api.NilRsp)
 			if err != nil {
 				return err
 			}
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { h.api.ShowBranch(name, api.NilRsp) })
+		func() { t.api.ShowBranch(name, api.NilRsp) })
 }
 
-func (h *repoVM) DeleteBranch(name string) {
-	h.startCommand(
+func (t *repoVM) DeleteBranch(name string) {
+	t.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
-		func() error { return h.api.DeleteBranch(name, api.NilRsp) },
+		func() error { return t.api.DeleteBranch(name, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
 }

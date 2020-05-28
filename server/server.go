@@ -6,6 +6,7 @@ import (
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"path/filepath"
 	"sync"
 	"time"
@@ -81,21 +82,28 @@ func (t *server) CloseRepo(_ api.NoArg, _ api.NoRsp) error {
 }
 
 func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
+	log.Infof(">")
+
 	repo := t.repo()
 	if repo == nil {
+		log.Warnf("no repo")
 		return nil
 	}
 	var changes []api.RepoChange
+	defer func() { log.Infof("< (%d events)", len(changes)) }()
 
 	// Wait for event or timout
 	select {
-	case change, ok := <-repo.RepoChanges:
+	case change, ok := <-repo.RepoChangesOut:
 		if !ok {
+			log.Infof("chan closed")
 			return nil
 		}
-		changes = append(changes, change)
+		log.Infof("one event")
+		changes = append(changes, change.(api.RepoChange))
 	case <-time.After(getChangesTimout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
+		log.Infof("timeout")
 		return nil
 	}
 
@@ -108,15 +116,17 @@ func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 	// Got some event, check if there are more events and return them as well
 	for {
 		select {
-		case change, ok := <-repo.RepoChanges:
+		case change, ok := <-repo.RepoChangesOut:
 			if !ok {
+				log.Infof("chan closed")
 				*rsp = changes
 				return nil
-
 			}
-			changes = append(changes, change)
+			changes = append(changes, change.(api.RepoChange))
+			log.Infof("more events event (%d events)", len(changes))
 		default:
 			// no more queued changes,
+			log.Infof("no more events (%d events)", len(changes))
 			*rsp = changes
 			return nil
 		}

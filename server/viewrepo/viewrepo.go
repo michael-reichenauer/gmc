@@ -29,7 +29,8 @@ type showRequest struct {
 }
 
 type ViewRepo struct {
-	RepoChanges chan api.RepoChange
+	repoChangesIn  chan<- interface{}
+	RepoChangesOut <-chan interface{}
 
 	gitRepo       gitrepo.GitRepo
 	configService *config.Service
@@ -46,8 +47,11 @@ type ViewRepo struct {
 
 func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo {
 	ctx, cancel := context.WithCancel(context.Background())
+	in, out := utils.InfiniteChannel()
+
 	return &ViewRepo{
-		RepoChanges:     make(chan api.RepoChange, 100),
+		repoChangesIn:   in,
+		RepoChangesOut:  out,
 		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
@@ -76,6 +80,7 @@ func (t *ViewRepo) StartMonitor() {
 
 func (t *ViewRepo) CloseRepo() {
 	t.cancel()
+	close(t.repoChangesIn)
 }
 
 func (t *ViewRepo) TriggerRefreshModel() {
@@ -378,9 +383,9 @@ func (t *ViewRepo) monitorViewModelRoutine(ctx context.Context) {
 				return
 			}
 			if change.IsStarting {
-				log.Infof("Got repo start change ...")
+				log.Infof("Send repo start change ...")
 				select {
-				case t.RepoChanges <- api.RepoChange{IsStarting: true}:
+				case t.repoChangesIn <- api.RepoChange{IsStarting: true}:
 				case <-ctx.Done():
 					return
 				}
@@ -391,8 +396,9 @@ func (t *ViewRepo) monitorViewModelRoutine(ctx context.Context) {
 
 			if change.Error != nil {
 				log.Event("vms-error-repo")
+				log.Infof("Send repo error event ...")
 				select {
-				case t.RepoChanges <- api.RepoChange{Error: change.Error}:
+				case t.repoChangesIn <- api.RepoChange{Error: change.Error}:
 				case <-ctx.Done():
 					return
 				}
@@ -429,8 +435,9 @@ func (t *ViewRepo) triggerSearchRepo(ctx context.Context, searchText string, rep
 	go func() {
 		vRepo := t.getSearchModel(repo, searchText)
 		repoChange := api.RepoChange{SearchText: searchText, ViewRepo: toViewRepo(vRepo)}
+		log.Infof("Send new search repo event ...")
 		select {
-		case t.RepoChanges <- repoChange:
+		case t.repoChangesIn <- repoChange:
 		case <-ctx.Done():
 		}
 	}()
@@ -443,8 +450,9 @@ func (t *ViewRepo) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, 
 		t.storeViewRepo(vRepo)
 		vr := toViewRepo(vRepo)
 		repoChange := api.RepoChange{ViewRepo: vr}
+		log.Infof("Send new view repo event ...")
 		select {
-		case t.RepoChanges <- repoChange:
+		case t.repoChangesIn <- repoChange:
 			t.storeShownBranchesInConfig(branchNames)
 		case <-ctx.Done():
 		}

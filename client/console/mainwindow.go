@@ -57,18 +57,24 @@ func (t *MainWindow) Show(serverUri, path string) {
 }
 
 func (t *MainWindow) showRepo(path string) {
-	err := t.api.OpenRepo(path, api.NilRsp)
-	if err != nil {
-		log.Warnf("Failed to open %q, %v", path, err)
-		if path != "" {
-			t.ui.ShowErrorMessageBox("Failed to show repo for:\n%s\nError: %v", path, err)
-		}
-		t.showOpenRepoMenu()
-		return
-	}
+	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
+	go func() {
+		err := t.api.OpenRepo(path, api.NilRsp)
+		t.ui.PostOnUIThread(func() {
+			if err != nil {
+				log.Warnf("Failed to open %q, %v", path, err)
+				if path != "" {
+					t.ui.ShowErrorMessageBox("Failed to show repo for:\n%s\nError: %v", path, err)
+				}
+				t.showOpenRepoMenu()
+				return
+			}
 
-	repoView := NewRepoView(t.ui, t.api)
-	repoView.Show()
+			progress.Close()
+			repoView := NewRepoView(t.ui, t.api)
+			repoView.Show()
+		})
+	}()
 }
 
 func (t *MainWindow) Close() {
@@ -98,6 +104,7 @@ func (t *MainWindow) showOpenRepoMenu() {
 	openItemsFunc := func() []cui.MenuItem {
 		return t.getDirItems(paths, func(path string) { t.showRepo(path) })
 	}
+
 	menu.Add(cui.MenuItem{Text: "Open Repo", SubItemsFunc: openItemsFunc})
 
 	menu.Show(3, 1)
