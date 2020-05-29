@@ -296,7 +296,9 @@ func (t *repoVM) HideBranch(name string) {
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error { return t.api.Checkout(api.CheckoutArgs{Name: name, DisplayName: displayName}, nil) },
+		func() error {
+			return t.api.Checkout(api.CheckoutArgs{Name: name, DisplayName: displayName}, api.NilRsp)
+		},
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
 }
