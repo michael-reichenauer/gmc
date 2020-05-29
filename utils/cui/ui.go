@@ -24,7 +24,7 @@ type UI interface {
 	NewView(text string) View
 	NewViewFromPageFunc(f func(viewPort ViewPage) ViewText) View
 	NewViewFromTextFunc(f func(viewPage ViewPage) string) View
-	PostOnUIThread(f func())
+	Post(f func())
 	ShowProgress(format string, v ...interface{}) Progress
 	ShowMessageBox(title string, format string, v ...interface{})
 	ShowErrorMessageBox(format string, v ...interface{})
@@ -105,7 +105,7 @@ func (t *ui) Run(runFunc func()) {
 	}
 }
 
-func (t *ui) PostOnUIThread(f func()) {
+func (t *ui) Post(f func()) {
 	t.gui.Update(func(g *gocui.Gui) error {
 		f()
 		return nil

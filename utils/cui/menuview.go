@@ -306,7 +306,7 @@ func (t *menuView) showSubItemsPlaceholderMenu(firstLine, index int, item MenuIt
 
 	go func() {
 		items := subItemsFunc()
-		t.ui.PostOnUIThread(func() {
+		t.ui.Post(func() {
 			p.Close()
 			mv.Close()
 			t.showSubItemsMenu(firstLine, index, item, items)

@@ -33,11 +33,11 @@ func newViewerMock(ui *uiMock, notify func()) *viewerMock {
 }
 
 func (t *viewerMock) NotifyChanged() {
-	t.ui.PostOnUIThread(t.notify)
+	t.ui.Post(t.notify)
 }
 
 func (t *viewerMock) PostOnUIThread(f func()) {
-	t.ui.PostOnUIThread(f)
+	t.ui.Post(f)
 }
 func (t *viewerMock) Run() {
 	t.ui.Run()
@@ -60,7 +60,7 @@ func (t *uiMock) Run() {
 func (t *uiMock) Close() {
 	close(t.uiWork)
 }
-func (t uiMock) PostOnUIThread(f func()) {
+func (t uiMock) Post(f func()) {
 	go func() { t.uiWork <- f }()
 }
 

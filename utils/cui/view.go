@@ -275,7 +275,7 @@ func (h *view) NotifyChanged() {
 		return
 	}
 	go func() {
-		h.ui.PostOnUIThread(func() {
+		h.ui.Post(func() {
 			h.notifyThrottler.Release(1)
 			if h.isClosed {
 				return
@@ -421,7 +421,7 @@ func (h *view) Properties() *ViewProperties {
 }
 
 func (h *view) PostOnUIThread(f func()) {
-	h.ui.PostOnUIThread(f)
+	h.ui.Post(f)
 }
 
 func (h *view) Close() {

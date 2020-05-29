@@ -30,9 +30,9 @@ func (t *MainWindow) Show(serverUri, path string) {
 		rpcClient.IsLogCalls = true
 		rpcClient.Latency = 600 * time.Millisecond
 		rpcClient.OnConnectionError = func(err error) {
-			t.ui.PostOnUIThread(func() {
+			t.ui.Post(func() {
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
-				msgBox.OnOK = func() { t.ui.PostOnUIThread(func() { t.Show(serverUri, path) }) }
+				msgBox.OnOK = func() { t.ui.Post(func() { t.Show(serverUri, path) }) }
 				msgBox.Show()
 			})
 		}
@@ -42,7 +42,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 		err := rpcClient.Connect(serverUri)
 		api := client.NewClient(rpcClient.ServiceClient(""))
 
-		t.ui.PostOnUIThread(func() {
+		t.ui.Post(func() {
 			if err != nil {
 				t.ui.ShowErrorMessageBox("Failed to connect:\n%v", err)
 				return
@@ -60,7 +60,7 @@ func (t *MainWindow) showRepo(path string) {
 	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 	go func() {
 		err := t.api.OpenRepo(path, api.NilRsp)
-		t.ui.PostOnUIThread(func() {
+		t.ui.Post(func() {
 			if err != nil {
 				log.Warnf("Failed to open %q, %v", path, err)
 				if path != "" {

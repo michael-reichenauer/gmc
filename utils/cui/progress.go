@@ -138,7 +138,7 @@ func (t *progress) textFunc(ViewPage) string {
 }
 
 func (t *progress) updateProgress() {
-	t.ui.PostOnUIThread(func() {
+	t.ui.Post(func() {
 		if t.view == nil {
 			return
 		}

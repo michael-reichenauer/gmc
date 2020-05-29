@@ -65,7 +65,7 @@ func (t *repoVM) triggerRefresh() {
 		func() error { return t.api.TriggerRefreshRepo(api.NilArg, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		func() {
-			t.ui.PostOnUIThread(func() {
+			t.ui.Post(func() {
 				progress.Close()
 			})
 		})
@@ -112,7 +112,7 @@ func (t *repoVM) monitorModelRoutine() {
 	for r := range repoChanges {
 		log.Infof("repo event")
 		rc := r
-		t.ui.PostOnUIThread(func() {
+		t.ui.Post(func() {
 			if rc.IsStarting {
 				log.Infof("repo starting event")
 				progress = t.ui.ShowProgress("Loading repo")
@@ -145,7 +145,7 @@ func (t *repoVM) monitorModelRoutine() {
 			if t.onRepoUpdatedFunc != nil {
 				f := t.onRepoUpdatedFunc
 				t.onRepoUpdatedFunc = nil
-				t.ui.PostOnUIThread(f)
+				t.ui.Post(f)
 			}
 		})
 	}
@@ -350,7 +350,7 @@ func (t *repoVM) startCommand(
 	t.onRepoUpdatedFunc = onRepoUpdatedFunc
 	go func() {
 		err := doFunc()
-		t.ui.PostOnUIThread(func() {
+		t.ui.Post(func() {
 			if err != nil {
 				t.ui.ShowErrorMessageBox(errorFunc(err))
 			}
