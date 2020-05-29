@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
+	"time"
 )
 
 type Committer interface {
@@ -109,16 +110,23 @@ func (h *CommitView) onCancel() {
 
 func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
-	err := h.committer.Commit(msg, api.NilRsp)
-	if err != nil {
-		log.Eventf("commit-error", "failed to commit, %v", err)
-		h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
-		h.Close()
-		return
-	}
+	progress := h.ui.ShowProgress("Getting diff ...")
+	go func() {
+		err := h.committer.Commit(msg, api.NilRsp)
+		time.Sleep(10 * time.Second)
+		h.ui.Post(func() {
+			progress.Close()
+			if err != nil {
+				log.Eventf("commit-error", "failed to commit, %v", err)
+				h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
+				h.Close()
+				return
+			}
 
-	log.Event("commit-ok")
-	h.Close()
+			log.Event("commit-ok")
+			h.Close()
+		})
+	}()
 }
 
 func (h *CommitView) showDiff() {

@@ -31,7 +31,7 @@ func NewDiffView(ui cui.UI, diffGetter DiffGetter, commitID string) DiffView {
 		ui:       ui,
 		commitID: commitID,
 	}
-	t.vm = newDiffVM(t, diffGetter, commitID)
+	t.vm = newDiffVM(t.ui, t, diffGetter, commitID)
 	t.vm.setUnified(t.isUnified)
 	t.leftSide = t.newLeftSide()
 	t.rightSide = t.newRightSide()
