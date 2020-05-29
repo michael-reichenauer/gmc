@@ -53,8 +53,8 @@ func showProgress(ui *ui, format string, v ...interface{}) Progress {
 	if instance.showCount == 1 {
 		instance.show()
 	}
-	instance.view.SetTop()
 	instance.SetText(text)
+	instance.view.SetTop()
 	return instance
 }
 
@@ -114,6 +114,7 @@ func (t *progress) textFunc(ViewPage) string {
 		log.Infof("Show no progress for %q, ...", t.text)
 		return ""
 	}
+	t.view.SetTop()
 
 	if sinceStart < showFullTimeout {
 		// Show just a small wait icon for a while
