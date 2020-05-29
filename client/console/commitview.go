@@ -7,7 +7,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
-	"time"
 )
 
 type Committer interface {
@@ -110,9 +109,8 @@ func (h *CommitView) onCancel() {
 
 func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
-	progress := h.ui.ShowProgress("Getting diff ...")
+	progress := h.ui.ShowProgress("Committing ...")
 	go func() {
-		time.Sleep(10 * time.Second)
 		err := h.committer.Commit(msg, api.NilRsp)
 		h.ui.Post(func() {
 			progress.Close()
