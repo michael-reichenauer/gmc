@@ -112,8 +112,8 @@ func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
 	progress := h.ui.ShowProgress("Getting diff ...")
 	go func() {
-		err := h.committer.Commit(msg, api.NilRsp)
 		time.Sleep(10 * time.Second)
+		err := h.committer.Commit(msg, api.NilRsp)
 		h.ui.Post(func() {
 			progress.Close()
 			if err != nil {
