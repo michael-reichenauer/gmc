@@ -3,21 +3,25 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/installation"
-	"github.com/michael-reichenauer/gmc/program"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/log/logger"
-	"github.com/michael-reichenauer/gmc/utils/timer"
-	"github.com/michael-reichenauer/gmc/utils/ui"
+	"github.com/michael-reichenauer/gmc/client/console"
+	"github.com/michael-reichenauer/gmc/server"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"io/ioutil"
 	stdlog "log"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/installation"
+	"github.com/michael-reichenauer/gmc/program"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
 const (
@@ -25,10 +29,10 @@ const (
 )
 
 var (
-	workingFolderFlag = flag.String("d", "", "specify working folder")
-	showVersionFlag   = flag.Bool("version", false, "print gmc version")
-	pauseFlag         = flag.Bool("pause", false, "pause until user click enter")
-	externalWindow    = flag.Bool("external", false, "start gmc in external window (used by ide)")
+	workingDirFlag  = flag.String("d", "", "specify working directory")
+	showVersionFlag = flag.Bool("version", false, "print gmc version")
+	pauseFlag       = flag.Bool("pause", false, "pause until user click enter")
+	externalWindow  = flag.Bool("external", false, "start gmc in external window (used by ide)")
 )
 
 func main() {
@@ -59,28 +63,45 @@ func main() {
 
 	// Disable standard logging since some modules log to stderr, which conflicts with console ui
 	stdlog.SetOutput(ioutil.Discard)
+
 	// Set default http client proxy to the system proxy (used by e.g. telemetry)
 	utils.SetDefaultHTTPProxy()
+
+	// Enable telemetry and logging
 	logger.StdTelemetry.Enable(version)
 	defer logger.StdTelemetry.Close()
 	log.Eventf("program-start", "Starting gmc %s ...", version)
-
 	logger.RedirectStdErrorToFile()
-	//defer log.Event("program-stop")
-	configService := config.NewConfig(version, *workingFolderFlag, "")
+	logProgramInfo()
+
+	configService := config.NewConfig(version, "")
 	configService.SetState(func(s *config.State) {
 		s.InstalledVersion = version
 	})
 
-	logProgramInfo(configService)
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
-	uiHandler := ui.NewUI()
-	uiHandler.Run(func() {
+	// Start rpc sever and serve rpc requests
+	rpcServer := rpc.NewServer()
+	if err := rpcServer.RegisterService("", server.NewServer(configService)); err != nil {
+		panic(log.Fatal(err))
+	}
+	if err := rpcServer.Start("http://127.0.0.1:0/api"); err != nil {
+		panic(log.Fatal(err))
+	}
+	defer rpcServer.Close()
+	go func() {
+		if err := rpcServer.Serve(); err != nil {
+			panic(log.Fatal(err))
+		}
+	}()
+
+	ui := cui.NewCommandUI()
+	ui.Run(func() {
 		log.Infof("Show main window %s", st)
-		mainWindow := program.NewMainWindow(uiHandler, configService)
-		mainWindow.Show()
+		mainWindow := console.NewMainWindow(ui)
+		mainWindow.Show(rpcServer.URL, *workingDirFlag)
 	})
 }
 
@@ -108,15 +129,16 @@ func startAsExternalProcess() {
 	_ = cmd.Wait()
 }
 
-func logProgramInfo(configService *config.Service) {
-	log.Infof("Version: %s", configService.ProgramVersion)
+func logProgramInfo() {
+	log.Infof("Version: %s", version)
 	log.Infof("Build: release=%v", program.IsRelease)
 	log.Infof("Binary path: %q", utils.BinPath())
 	log.Infof("Args: %v", os.Args)
+	log.Infof("ID: %q", utils.MachineID)
 	log.Infof("OS: %q", runtime.GOOS)
 	log.Infof("Arch: %q", runtime.GOARCH)
 	log.Infof("Go version: %q", runtime.Version())
-	log.Infof("Folder path: %q", configService.FolderPath)
+	log.Infof("Specified folder path: %q", *workingDirFlag)
 	log.Infof("Working Folder: %q", utils.CurrentDir())
 	log.Infof("Http proxy: %q", utils.GetHTTPProxyURL())
 	go func() { log.Infof("Git version: %q", git.Version()) }()

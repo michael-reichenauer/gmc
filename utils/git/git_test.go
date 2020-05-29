@@ -22,6 +22,7 @@ func TestInit(t *testing.T) {
 	defer tests.CleanTemp()
 	git := New(wf.Path())
 	assert.NoError(t, git.InitRepo())
+	assert.NoError(t, git.ConfigRepoUser("test", "test@test.com"))
 	assert.Equal(t, wf.Path(), git.RepoPath())
 	l, err := git.GetLog()
 	assert.NoError(t, err)

@@ -60,7 +60,7 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 
 	diffText, err := t.cmd.Git("show",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
-		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
+		//"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6", id)
 	if err != nil {
 		return CommitDiff{}, err
@@ -75,7 +75,7 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 	diffText, err := t.cmd.Git("diff",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
-		"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
+		//	"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6", "HEAD")
 	if err != nil {
 		return CommitDiff{}, err
@@ -222,17 +222,17 @@ func tryParseFileDiffConflictHead(line string) (FileDiff, bool) {
 
 func tryParseLineDiff(line string) (LinesDiff, bool) {
 	switch {
-	case strings.HasPrefix(line, "><<<<<<<"):
+	case strings.HasPrefix(line, "+<<<<<<<"):
 		return LinesDiff{DiffMode: DiffConflictStart, Line: asConflictLine(line)}, true
-	case strings.HasPrefix(line, ">======="):
+	case strings.HasPrefix(line, "+======="):
 		return LinesDiff{DiffMode: DiffConflictSplit, Line: asConflictLine(line)}, true
-	case strings.HasPrefix(line, ">>>>>>>>"):
+	case strings.HasPrefix(line, "+>>>>>>>"):
 		return LinesDiff{DiffMode: DiffConflictEnd, Line: asConflictLine(line)}, true
-	case strings.HasPrefix(line, ">"):
+	case strings.HasPrefix(line, "+"):
 		return LinesDiff{DiffMode: DiffAdded, Line: asLine(line)}, true
-	case strings.HasPrefix(line, "<"):
+	case strings.HasPrefix(line, "-"):
 		return LinesDiff{DiffMode: DiffRemoved, Line: asLine(line)}, true
-	case strings.HasPrefix(line, "="):
+	case strings.HasPrefix(line, " "):
 		return LinesDiff{DiffMode: DiffSame, Line: asLine(line)}, true
 	}
 	return LinesDiff{}, false

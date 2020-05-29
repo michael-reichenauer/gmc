@@ -46,7 +46,7 @@ func (t *gitCmd) Git(args ...string) (string, error) {
 			errorText = string(ee.Stderr)
 			errorText = strings.ReplaceAll(errorText, "\t", "   ")
 		}
-		err := fmt.Errorf("error: git %s\n%v\n%v", argsText, err, errorText)
+		err := fmt.Errorf("failed: git %s\n%v\n%v", argsText, err, errorText)
 		log.Warnf("%v %v", err, st)
 		return string(out), err
 	}

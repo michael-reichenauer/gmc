@@ -14,6 +14,7 @@ func TestBranches(t *testing.T) {
 	file1 := "a.txt"
 	git := New(wf.Path())
 	assert.NoError(t, git.InitRepo())
+	assert.NoError(t, git.ConfigRepoUser("test", "test@test.com"))
 
 	bs, err := git.GetBranches()
 	assert.NoError(t, err)

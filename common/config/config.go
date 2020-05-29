@@ -53,12 +53,11 @@ type Asset struct {
 
 type Service struct {
 	ProgramVersion string
-	FolderPath     string // Folder specified on command line with "-d" option
 	dataFolder     string
 }
 
-func NewConfig(programVersion, folderPath, dataFolder string) *Service {
-	return &Service{ProgramVersion: programVersion, FolderPath: folderPath, dataFolder: dataFolder}
+func NewConfig(programVersion, dataFolder string) *Service {
+	return &Service{ProgramVersion: programVersion, dataFolder: dataFolder}
 }
 
 func (s *Service) GetState() State {

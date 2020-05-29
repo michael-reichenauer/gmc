@@ -3,6 +3,7 @@ package logger
 import (
 	"fmt"
 	"github.com/Microsoft/ApplicationInsights-Go/appinsights/contracts"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"golang.org/x/time/rate"
 	"net"
@@ -48,6 +49,8 @@ func (h *telemetry) SendTrace(level, text string) {
 	case Error:
 		h.send(appinsights.NewTraceTelemetry(text, contracts.Error))
 		h.client.Channel().Flush()
+	case Debug:
+		// Skipp sending debug to cloud, keep local
 	}
 }
 
@@ -109,14 +112,18 @@ func (h *telemetry) SendErrorf(err error, message string, v ...interface{}) {
 }
 
 func (h *telemetry) Close() {
+	st := timer.Start()
 	if h.client == nil {
 		// Not enabled
 		return
 	}
 	select {
 	case <-h.client.Channel().Close(300 * time.Millisecond):
+		StdLogger.Debugf("Close normal %s", st)
 	case <-time.After(1 * time.Second):
+		StdLogger.Debugf("Timeout while closing %s", st)
 	}
+	StdLogger.Debugf("Close time %s", st)
 }
 
 func (h *telemetry) createClient(version string) appinsights.TelemetryClient {
