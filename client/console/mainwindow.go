@@ -28,7 +28,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 		// Create rpc client and create service client
 		rpcClient := rpc.NewClient()
 		rpcClient.IsLogCalls = true
-		rpcClient.Latency = 600 * time.Millisecond
+		//rpcClient.Latency = 600 * time.Millisecond
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))

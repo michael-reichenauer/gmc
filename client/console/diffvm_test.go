@@ -15,12 +15,13 @@ type getterMock struct {
 	git git.Git
 }
 
-func (t getterMock) GetCommitDiff(id string) (api.CommitDiff, error) {
+func (t getterMock) GetCommitDiff(id string, rsp *api.CommitDiff) error {
 	diff, err := t.git.CommitDiff(id)
 	if err != nil {
-		return api.CommitDiff{}, err
+		return err
 	}
-	return viewrepo.ToCommitDiff(diff), nil
+	*rsp = viewrepo.ToCommitDiff(diff)
+	return nil
 }
 
 func TestConflicts_Manual(t *testing.T) {
@@ -64,7 +65,7 @@ func TestConflicts_Manual(t *testing.T) {
 
 	//assert.NoError(t, g.MergeBranch("develop"))
 
-	vm := newDiffVM(viewer, getter, git.UncommittedID)
+	vm := newDiffVM(newUIMock(), viewer, getter, git.UncommittedID)
 	vm.load()
 	viewer.Run()
 	vtl, err := vm.getCommitDiffLeft(cui.ViewPage{Width: 10, Height: 1000})
@@ -82,7 +83,7 @@ func TestDiffVM_Manual(t *testing.T) {
 	viewer := newViewerMock(newUIMock(), nil)
 	getter := &getterMock{git: g}
 	id := git.UncommittedID
-	vm := newDiffVM(viewer, getter, id)
+	vm := newDiffVM(newUIMock(), viewer, getter, id)
 	vm.load()
 	viewer.Run()
 	vt, err := vm.getCommitDiffLeft(cui.ViewPage{Width: 100, Height: 1000})
