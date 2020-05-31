@@ -3,11 +3,13 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/client/console"
 	"github.com/michael-reichenauer/gmc/server"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"io/ioutil"
 	stdlog "log"
+	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/exec"
@@ -81,13 +83,23 @@ func main() {
 
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
+	go func() {
+		// fs := http.FileServer(http.Dir("C:\\code\\gmc\\client\\wui\\build"))
+		// log.Fatal(http.ListenAndServe("127.0.0.1:8081", fs))
+		// mape our `/ws` endpoint to the `serveWs` function
+		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "Simple Server")
+		})
+		http.HandleFunc("/ws", client.ServeWs)
+		panic(log.Fatal(http.ListenAndServe(":8080", nil)))
+	}()
 
 	// Start rpc sever and serve rpc requests
 	rpcServer := rpc.NewServer()
 	if err := rpcServer.RegisterService("", server.NewServer(configService)); err != nil {
 		panic(log.Fatal(err))
 	}
-	if err := rpcServer.Start("http://127.0.0.1:0/api"); err != nil {
+	if err := rpcServer.Start("http://127.0.0.1:9090/api"); err != nil {
 		panic(log.Fatal(err))
 	}
 	defer rpcServer.Close()
