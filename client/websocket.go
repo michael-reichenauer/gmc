@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"net/http"
 
@@ -45,7 +44,7 @@ func reader(conn *websocket.Conn) {
 
 // define our WebSocket endpoint
 func ServeWs(w http.ResponseWriter, r *http.Request) {
-	fmt.Println(r.Host)
+	log.Infof("Connected %s", r.Host)
 
 	// upgrade this connection to a WebSocket
 	// connection
