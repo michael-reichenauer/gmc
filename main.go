@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/client/console"
 	"github.com/michael-reichenauer/gmc/server"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
@@ -90,7 +89,7 @@ func main() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Simple Server")
 		})
-		http.HandleFunc("/ws", client.ServeWs)
+		http.HandleFunc("/ws", server.ServeWs)
 		panic(log.Fatal(http.ListenAndServe(":8080", nil)))
 	}()
 
