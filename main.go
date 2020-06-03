@@ -89,7 +89,13 @@ func main() {
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Simple Server")
 		})
-		http.HandleFunc("/ws", server.ServeWs)
+
+		pool := server.NewPool()
+		go pool.Start()
+
+		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+			server.ServeWs(pool, w, r)
+		})
 		panic(log.Fatal(http.ListenAndServe(":8080", nil)))
 	}()
 
