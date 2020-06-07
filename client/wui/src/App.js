@@ -21,7 +21,7 @@ import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
-
+import rows from "./mockData";
 
 const useStyles = makeStyles((theme) => ({
     table: {
@@ -85,17 +85,7 @@ const useStyles = makeStyles((theme) => ({
     },
 }));
 
-function createData(name, calories, fat, carbs, protein) {
-    return {name, calories, fat, carbs, protein}
-}
 
-const rows = [
-    createData('Frozen', 159, 6.0, 24, 4.0),
-    createData('asdf', 19, 6.0, 24, 4.0),
-    createData('csdff', 23, 6.0, 24, 4.0),
-    createData('Froxzvzen', 15, 6.0, 24, 4.0),
-    createData('Frozen', 3, 6.0, 24, 3.0),
-]
 
 const App = () => {
     const [lightMode, setLightMode] = useState(false)
