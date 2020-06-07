@@ -1,6 +1,5 @@
 // App.js
 import React, {useState} from "react";
-import "./App.css";
 
 import Toolbar from "@material-ui/core/Toolbar";
 import IconButton from "@material-ui/core/IconButton";
