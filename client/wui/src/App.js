@@ -22,6 +22,7 @@ import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
 import rows from "./mockData";
+import {blue, blueGrey, deepPurple, lightBlue, purple} from "@material-ui/core/colors";
 
 const useStyles = makeStyles((theme) => ({
     table: {
@@ -86,16 +87,21 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 
-
 const App = () => {
     const [lightMode, setLightMode] = useState(false)
     const darkTheme = createMuiTheme({
         palette: {
             type: "dark",
+            primary: deepPurple,
+            secondary: purple,
         },
     });
     const lightTheme = createMuiTheme({
-        palette: {},
+        palette: {
+            type: "light",
+            primary: deepPurple,
+            secondary: purple,
+        },
     });
 
     const classes = useStyles();
@@ -109,10 +115,12 @@ const App = () => {
             <Paper style={{height: "100vh"}}>
                 <AppBar position="static">
                     <Toolbar>
-                        <Typography align={"left"} className={classes.title} variant="h6" noWrap>
+                        <Typography className={classes.title} variant="h6" noWrap>
                             gmc
                         </Typography>
+
                         <Switch checked={lightMode} onChange={() => setLightMode(!lightMode)}/>
+
                         <div className={classes.search}>
                             <div className={classes.searchIcon}>
                                 <SearchIcon/>
@@ -126,6 +134,7 @@ const App = () => {
                                 inputProps={{'aria-label': 'search'}}
                             />
                         </div>
+
                         <IconButton
                             edge="start"
                             className={classes.menuButton}
@@ -136,6 +145,7 @@ const App = () => {
                         </IconButton>
                     </Toolbar>
                 </AppBar>
+
                 <TableContainer component={Paper}>
                     <Table className={classes.table} size="small">
                         <TableHead>
