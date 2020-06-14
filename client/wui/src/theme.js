@@ -2,6 +2,7 @@ import {createMuiTheme} from "@material-ui/core/styles";
 import {deepPurple, purple} from "@material-ui/core/colors";
 import {createSlice} from "@reduxjs/toolkit";
 import {useState} from "react";
+import {black} from "color-name";
 
 export const useTheme = () =>{
     const [theme, setTheme]= useState(darkTheme)
@@ -13,6 +14,7 @@ export const darkTheme = createMuiTheme({
         type: "dark",
         primary: deepPurple,
         secondary: purple,
+        background:black,
     },
 });
 

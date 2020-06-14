@@ -2,11 +2,10 @@ import React from "react";
 import TableContainer from "@material-ui/core/TableContainer";
 import Paper from "@material-ui/core/Paper";
 import Table from "@material-ui/core/Table";
-import TableHead from "@material-ui/core/TableHead";
 import TableRow from "@material-ui/core/TableRow";
 import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
-import rows from "../mockData";
+import rows from "./mockData";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 
 
@@ -16,29 +15,23 @@ export const useTableStyles = makeStyles((theme) => ({
     },
 }));
 
-export const Repo = props =>{
+export const Repo = props => {
     const classes = useTableStyles();
 
-    return(
+    return (
         <TableContainer component={Paper}>
             <Table className={classes.table} size="small">
-                <TableHead>
-                    <TableRow>
-                        <TableCell>Dessert</TableCell>
-                        <TableCell align="right">Calories</TableCell>
-                        <TableCell align="right">Fat</TableCell>
-                        <TableCell align="right">Carbs</TableCell>
-                        <TableCell align="right">Protein</TableCell>
-                    </TableRow>
-                </TableHead>
                 <TableBody>
+                    <TableRow>
+                        <TableCell rowSpan={rows.length + 1}>
+                            Graph
+                        </TableCell>
+                    </TableRow>
                     {rows.map((row, index) => (
                         <TableRow key={index}>
-                            <TableCell component="th" scope="row">{row.name}</TableCell>
-                            <TableCell align={"right"}>{row.calories}</TableCell>
-                            <TableCell align={"right"}>{row.fat}</TableCell>
-                            <TableCell align={"right"}>{row.carbs}</TableCell>
-                            <TableCell align={"right"}>{row.protein}</TableCell>
+                            <TableCell align={"left"}>{row.subject}</TableCell>
+                            <TableCell align={"left"}>{row.author}</TableCell>
+                            <TableCell align={"left"}>{row.datetime}</TableCell>
                         </TableRow>
                     ))}
                 </TableBody>
