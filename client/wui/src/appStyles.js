@@ -3,9 +3,6 @@ import {fade} from "@material-ui/core";
 
 
 export const useAppBarStyles = makeStyles((theme) => ({
-    table: {
-        minWidth: 650,
-    },
     root: {
         flexGrow: 1,
     },
@@ -18,10 +15,6 @@ export const useAppBarStyles = makeStyles((theme) => ({
         [theme.breakpoints.up('sm')]: {
             display: 'block',
         },
-    },
-    text: {
-        fontFamily: "monospace",
-
     },
     search: {
         position: 'relative',
