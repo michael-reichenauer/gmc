@@ -1,17 +1,15 @@
 // App.js
-import React, {useState} from "react";
+import React from "react";
 import ThemeProvider from "@material-ui/styles/ThemeProvider";
-import {darkTheme, lightTheme} from "./theme";
 import {ApplicationBar} from "./components/ApplicationBar";
 import {Repo} from "./components/Repo";
 import Paper from "@material-ui/core/Paper";
-
+import {useTheme} from "./theme";
 
 const App = () => {
-    const [lightMode, setLightMode] = useState(false)
-
+    const [value] = useTheme()
     return (
-        <ThemeProvider theme={lightMode ? lightTheme : darkTheme}>
+        <ThemeProvider theme={value}>
             <Paper style={{height: "100vh"}}>
                 <ApplicationBar/>
                 <Repo/>
