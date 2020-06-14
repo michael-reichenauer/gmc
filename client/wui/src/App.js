@@ -5,6 +5,7 @@ import {ApplicationBar} from "./components/ApplicationBar";
 import {Repo} from "./components/Repo/Repo";
 import Paper from "@material-ui/core/Paper";
 import {useTheme} from "./theme";
+import {Graph} from "./components/graph/Graph";
 
 const App = () => {
     const [value] = useTheme()

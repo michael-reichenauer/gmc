@@ -7,6 +7,7 @@ import TableBody from "@material-ui/core/TableBody";
 import makeStyles from "@material-ui/core/styles/makeStyles";
 import Typography from "@material-ui/core/Typography";
 import {useSelector} from "react-redux";
+import {Graph} from "../graph/Graph";
 
 
 
@@ -39,7 +40,7 @@ export const Repo = props => {
                 <TableBody>
                     <TableRow>
                         <TableCell rowSpan={repo.length + 1} className={classes.graphColumn}>
-                            Graph
+                            <Graph width={200} height={repo.length*20}/>
                         </TableCell>
                     </TableRow>
                     {repo.map((commit, index) => (
