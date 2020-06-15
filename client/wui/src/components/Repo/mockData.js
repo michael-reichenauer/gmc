@@ -1,13 +1,32 @@
+const commitCount = 1500
+const branchCount = 5
 
-function createData(subject, author, datetime) {
-    return {subject, author, datetime}
+function random(min, max) {
+     return Math.floor(Math.random() * branchCount) + min
+
+}
+function commit(index, subject, author, datetime) {
+    const branchName= "branch" + random(0, branchCount)
+    return {index, subject, author, datetime, branchName}
 }
 
-export const mockRepo = [
-    createData('msg1', 'michael reichenauer', '2020-06-14 08:15'),
-    createData('msg2', 'michael ', '2020-06-14 08:14'),
-    createData('msg3', 'reichenauer', '2020-06-12 08:00'),
-    createData('msg4', 'michel reichenauer', '2020-06-02 07:15'),
-]
+function branch(name, firstIndex, lastIndex) {
+    return {name, firstIndex, lastIndex}
+}
 
 
+export const mockRepo =createMockData()
+
+
+function createMockData()  {
+    const branches =  [...Array(branchCount).keys()]
+        .map(i =>{
+            const first =  random(0, 50);
+            const last = first +1+ random(0, 50)
+            return branch("branch"+i, first, last);
+        })
+    const commits =  [...Array(commitCount).keys()]
+        .map(i =>commit(i, "msg"+i, "michael reichenauer", '2020-06-14 '+i))
+    
+    return {commits, branches}
+}

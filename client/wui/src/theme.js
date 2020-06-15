@@ -1,6 +1,5 @@
 import {createMuiTheme} from "@material-ui/core/styles";
 import {deepPurple, purple} from "@material-ui/core/colors";
-import {createSlice} from "@reduxjs/toolkit";
 import {useState} from "react";
 import {black} from "color-name";
 
@@ -40,13 +39,5 @@ export const isLight = theme => theme===lightTheme
 //
 // export const getTheme = state => state.theme===0 ? darkTheme:lightTheme
 
-export const counterSlice = createSlice({
-    name: 'counter',
-    initialState:3,
-    reducers:{
-        increment: state => state+1,
-        decrement: state => state-1,
-    }
-})
 
 
