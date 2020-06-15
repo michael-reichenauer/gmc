@@ -1,5 +1,6 @@
 import React from "react";
 import {Circle, Layer, Line, Stage} from 'react-konva';
+import {branchColor} from "./colors";
 
 
 const columnWidth = 20
@@ -19,6 +20,7 @@ export const Graph = props => {
     const {commits, branches} = props.repo
     const width = graphWidth(props.repo)
     const height = graphHeight(props.repo)
+    
     return (
         <Stage width={width} height={height}>
             <Layer>
@@ -29,11 +31,17 @@ export const Graph = props => {
     );
 }
 
-function BranchLines(branches) {
+function BranchLines({branches}) {
     return (
         <>
-            <BranchLine branchIndex={2} firstIndex={2} lastIndex={50} color={0}/>
-            <BranchLine branchIndex={3} firstIndex={0} lastIndex={35} color={4}/>
+            {branches.map((b, i) =>
+                <BranchLine
+                    key={i}
+                    index={b.index}
+                    firstIndex={b.firstIndex}
+                    lastIndex={b.lastIndex}
+                    color={branchColor(b.name)}/>
+            )}
         </>
     )
 }
@@ -51,16 +59,14 @@ function BranchLines(branches) {
 function CommitMarks({commits}) {
     return (
         <>
-            {commits.map((c, i) => {
-                return (
-                    <CommitMark
-                        key={i}
-                        index={i}
-                        branchIndex={3}
-                        isMerge={i % 8 === 0}
-                        color={4}/>
-                )
-            })}
+            {commits.map((c, i) =>
+                <CommitMark
+                    key={i}
+                    index={c.index}
+                    branchIndex={c.branchIndex}
+                    isMerge={c.isMerge}
+                    color={branchColor(c.branchName)}/>
+            )}
         </>
     )
 }
@@ -70,37 +76,25 @@ function CommitMark({index, branchIndex, isMerge, color}) {
     const y = index * rowHeight + middle
     const radius = isMerge ? mergeSize : commitSize
     return (
-        <Circle
-            x={x} y={y}
-            radius={radius}
-            fill={'red'}
-        />
+        <Circle x={x} y={y} radius={radius} fill={color}/>
     )
 }
 
-function BranchLine({branchIndex, firstIndex, lastIndex}) {
-    const x = branchIndex * columnWidth + leftMargin
+function BranchLine({index, firstIndex, lastIndex, color}) {
+    const x = index * columnWidth + leftMargin
     const y1 = firstIndex * rowHeight + middle
     const y2 = lastIndex * rowHeight + middle
     return (
-        <Line
-            points={[x, y1, x, y2]}
-            strokeWidth={branchLineWidth}
-            stroke={'red'}
-        />
+        <Line points={[x, y1, x, y2]} strokeWidth={branchLineWidth} stroke={color}/>
     )
 }
 
-function MergeLine({branchIndex1, firstIndex, branchIndex2, lastIndex}) {
+function MergeLine({branchIndex1, firstIndex, branchIndex2, lastIndex, color}) {
     const x1 = branchIndex1 * columnWidth + leftMargin
     const x2 = branchIndex2 * columnWidth + leftMargin
     const y1 = firstIndex * rowHeight + middle
     const y2 = lastIndex * rowHeight + middle
     return (
-        <Line
-            points={[x1, y1, x2, y2]}
-            strokeWidth={mergeLineWidth}
-            stroke={'red'}
-        />
+        <Line points={[x1, y1, x2, y2]} strokeWidth={mergeLineWidth} stroke={color}/>
     )
 }

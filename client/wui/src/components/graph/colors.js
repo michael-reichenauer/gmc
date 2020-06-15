@@ -18,11 +18,10 @@ const branchColors = [
     '#aaffc3',
     '#808000',
     '#ffd8b1',
-    '#000075',
 ]
 
 export function branchColor(name) {
-    const index = textHash(name) % branchColors.length
+    const index = textHash(name) % (branchColors.length-1)
     return branchColors[index]
 }
 
