@@ -158,7 +158,8 @@ func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 
 	var sbn string
 	if viewPage.CurrentLine < len(t.repo.Commits) {
-		sbn = t.repo.Commits[viewPage.CurrentLine].Branch.Name
+		sc := t.repo.Commits[viewPage.CurrentLine]
+		sbn = t.repo.Branches[sc.BranchIndex].Name
 	}
 	return repoPage{
 		repoPath:           t.repo.RepoPath,

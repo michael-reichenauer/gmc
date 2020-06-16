@@ -196,7 +196,7 @@ func (t *repoLayout) writeSubject(
 		color = cui.CBlue
 	}
 	if currentBranchDisplayName != "" &&
-		c.Branch.DisplayName != currentBranchDisplayName {
+		repo.Branches[c.BranchIndex].DisplayName != currentBranchDisplayName {
 		color = cui.CDark
 	}
 	sb.WriteString(cui.Green(tagsText))

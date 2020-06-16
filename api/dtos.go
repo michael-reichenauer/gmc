@@ -44,6 +44,7 @@ type GetBranchesArgs struct {
 
 type ViewRepo struct {
 	Commits            []Commit
+	Branches           []Branch
 	CurrentBranchName  string
 	RepoPath           string
 	UncommittedChanges int
@@ -85,7 +86,7 @@ type Commit struct {
 	Author             string
 	AuthorTime         time.Time
 	IsCurrent          bool
-	Branch             Branch
+	BranchIndex        int
 	Tags               []string
 	More               utils.Bitmask
 	ParentIDs          []string
