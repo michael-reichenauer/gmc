@@ -47,9 +47,9 @@ func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
 	return diffs
 }
 
-func toViewRepo(repo *repo) api.ViewRepo {
+func toViewRepo(repo *repo) api.Repo {
 	graph := toConsoleGraph(repo)
-	return api.ViewRepo{
+	return api.Repo{
 		Commits:            toCommits(repo),
 		Branches:           toBranches(repo),
 		CurrentBranchName:  repo.CurrentBranchName,

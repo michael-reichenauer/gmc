@@ -42,7 +42,7 @@ type GetBranchesArgs struct {
 	SortOnLatest              bool
 }
 
-type ViewRepo struct {
+type Repo struct {
 	Commits            []Commit
 	Branches           []Branch
 	CurrentBranchName  string
@@ -141,7 +141,7 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 
 type RepoChange struct {
 	IsStarting bool
-	ViewRepo   ViewRepo
+	ViewRepo   Repo
 	SearchText string
 	Error      error
 }
