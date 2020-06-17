@@ -1,10 +1,13 @@
 import React from "react";
 import {Circle, Layer, Line, Stage} from 'react-konva';
 import {branchColor} from "./colors";
+import TableRow from "@material-ui/core/TableRow";
+import TableCell from "@material-ui/core/TableCell";
 
 
 const columnWidth = 20
 const leftMargin = 10
+const rightMargin = 10
 export const rowHeight = 20
 const middle = rowHeight / 2
 const commitSize = 3
@@ -13,17 +16,31 @@ const branchLineWidth = 2
 const mergeLineWidth = 1
 
 
-export const graphWidth = repo => repo.branches.length * columnWidth + leftMargin
-export const graphHeight = repo => repo.commits.length * rowHeight
+export const graphWidth = repo => repo.branches.length * columnWidth + leftMargin  +rightMargin
+export const graphHeight = repo =>35 * rowHeight
 
-export const Graph = props => {
-    const {commits, branches} = props.repo
+export const GraphRows = props =>{
+    const {repo} = props
+    const spanHeight = repo.commits.length + 1
+
+  return(
+      <TableRow>
+          <TableCell rowSpan={spanHeight} style={{verticalAlign: "top", width: graphWidth(repo)}}>
+              <Graph repo={repo}/>
+          </TableCell>
+      </TableRow>
+  )
+}
+
+const Graph = props => {
+    const {commits, branches, merges} = props.repo
     const width = graphWidth(props.repo)
     const height = graphHeight(props.repo)
-    
+
     return (
         <Stage width={width} height={height}>
             <Layer>
+                <MergeLines merges = {merges}/>
                 <BranchLines branches={branches}/>
                 <CommitMarks commits={commits}/>
             </Layer>
@@ -46,14 +63,22 @@ function BranchLines({branches}) {
     )
 }
 
-// function MergeLines(merges) {
-//     return (
-//         <>
-//             <MergeLine branchIndex1={8} firstIndex={2} branchIndex2={9} lastIndex={15} color={0}/>
-//             <MergeLine branchIndex1={9} firstIndex={15} branchIndex2={8} lastIndex={35} color={4}/>
-//         </>
-//     )
-// }
+function MergeLines({merges}) {
+    return (
+        <>
+            {merges.map((m, i) =>
+                <MergeLine
+                    key={i}
+                    branchIndex1={m.branchIndex1}
+                    firstIndex={m.firstCommitIndex}
+                    branchIndex2={m.branchIndex2}
+                    lastIndex={m.lastCommitIndex}
+                    isBranch={m.isBranch}
+                    color={branchColor(m.branchName)}/>
+            )}
+        </>
+    )
+}
 
 
 function CommitMarks({commits}) {
@@ -89,12 +114,13 @@ function BranchLine({index, firstIndex, lastIndex, color}) {
     )
 }
 
-function MergeLine({branchIndex1, firstIndex, branchIndex2, lastIndex, color}) {
+function MergeLine({branchIndex1, firstIndex, branchIndex2, lastIndex, isBranch, color}) {
     const x1 = branchIndex1 * columnWidth + leftMargin
     const x2 = branchIndex2 * columnWidth + leftMargin
     const y1 = firstIndex * rowHeight + middle
     const y2 = lastIndex * rowHeight + middle
+  const  strokeWidth =  isBranch? branchLineWidth:mergeLineWidth
     return (
-        <Line points={[x1, y1, x2, y2]} strokeWidth={mergeLineWidth} stroke={color}/>
+        <Line points={[x1, y1, x2, y2]} strokeWidth={strokeWidth} stroke={color}/>
     )
 }
