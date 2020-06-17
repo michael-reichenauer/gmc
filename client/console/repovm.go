@@ -2,10 +2,8 @@ package console
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -140,16 +138,6 @@ func (t *repoVM) monitorModelRoutine() {
 				return
 			}
 
-			log.Infof("repo change event")
-			log.Infof("repo change event2")
-			js, err := json.Marshal(rc.ViewRepo)
-			log.Infof("repo change event3")
-			if err != nil {
-				log.Warnf("Error: %v", err)
-			}
-			log.Infof("repo change event4")
-			utils.FileWrite("c:\\temp\\repo.json", js)
-			log.Infof("repo change event5")
 			t.repo = rc.ViewRepo
 			t.repoViewer.NotifyChanged()
 
