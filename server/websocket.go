@@ -10,7 +10,7 @@ import (
 
 // define our WebSocket endpoint
 func ServeWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
-	log.Infof("Connected %s", r.Host)
+	log.Infof("Connecting from %s", r.Host)
 
 	conn, err := upgrade(w, r)
 	if err != nil {
@@ -23,7 +23,9 @@ func ServeWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 	}
 
 	pool.Register <- client
+	log.Infof("Reading ... from %s", r.Host)
 	client.Read()
+	log.Infof("Done reading from %s", r.Host)
 }
 
 var upgrader = websocket.Upgrader{
