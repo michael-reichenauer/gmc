@@ -1,19 +1,14 @@
 package rpc
 
 import (
-	"bufio"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"golang.org/x/net/websocket"
-	"io"
-	"net"
-	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"net/url"
 	"runtime"
 	"strings"
-	"sync/atomic"
 	"time"
 )
 
@@ -67,81 +62,6 @@ func (t *Client) Connect(uri string) error {
 	}
 	t.rpcClient = jsonrpc.NewClient(t.connection)
 	return nil
-}
-
-type connection struct {
-	conn              net.Conn
-	onConnectionError func(err error)
-	connErrors        int32
-	latency           time.Duration
-	bandWithMpbs      float32
-}
-
-func (t *connection) Read(p []byte) (n int, err error) {
-	n, err = t.conn.Read(p)
-	if err != nil && t.onConnectionError != nil {
-		if c := atomic.AddInt32(&t.connErrors, 1); c == 1 {
-			t.onConnectionError(err)
-		}
-	}
-	if t.latency != 0 {
-		time.Sleep(t.latency)
-	}
-	return
-}
-
-func (t *connection) Write(p []byte) (n int, err error) {
-	if t.latency != 0 {
-		time.Sleep(t.latency)
-	}
-	n, err = t.conn.Write(p)
-	if err != nil && t.onConnectionError != nil {
-		if c := atomic.AddInt32(&t.connErrors, 1); c == 1 {
-			t.onConnectionError(err)
-		}
-	}
-	return
-}
-
-func (t *connection) Close() error {
-	return t.conn.Close()
-}
-
-func (*Client) connect(uri string) (net.Conn, error) {
-	log.Infof("Connecting to %s", uri)
-	u, err := url.Parse(uri)
-	if err != nil {
-		return nil, err
-	}
-
-	conn, err := net.Dial("tcp", u.Host)
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.WriteString(conn, "CONNECT "+u.Path+" HTTP/1.0\n\n")
-	if err != nil {
-		log.Warnf("Failed to write CONNECT request to %s, %v", uri, err)
-		_ = conn.Close()
-		return nil, err
-	}
-
-	// Require successful HTTP response before switching to RPC protocol.
-	resp, err := http.ReadResponse(bufio.NewReader(conn), &http.Request{Method: "CONNECT"})
-	if err != nil {
-		log.Warnf("Failed to read CONNECT response from %s, %v", uri, err)
-		_ = conn.Close()
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		// OK response, create json rpc client
-		err = fmt.Errorf("invalid http response, code: %d, %s", resp.StatusCode, resp.Status)
-		log.Warnf("Failed to read CONNECT response from %s, %v", uri, err)
-		_ = conn.Close()
-		return nil, err
-	}
-	log.Infof("Connected %s->%s", conn.LocalAddr(), uri)
-	return conn, nil
 }
 
 func (t *Client) Close() {

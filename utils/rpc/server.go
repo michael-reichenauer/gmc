@@ -97,7 +97,17 @@ func (t *Server) webSocketHandler(conn *websocket.Conn) {
 	log.Infof("Connected %s->%s", conn.RemoteAddr(), t.URL)
 	// Keep track of current connections so they can be closed when closing server
 	id := t.storeConnection(conn)
-	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(conn))
+	connection := &connection{
+		conn: conn,
+		onRead: func(p []byte) {
+			log.Infof("Read: %s", string(p))
+		},
+		onWrite: func(p []byte) {
+			log.Infof("Wrote: %s", string(p))
+		},
+	}
+
+	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(connection))
 	t.removeConnection(id)
 	log.Infof("Disconnected %s->%s", conn.RemoteAddr, t.URL)
 }
