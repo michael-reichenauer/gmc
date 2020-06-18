@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"golang.org/x/net/websocket"
 	"io"
 	"net"
 	"net/http"
@@ -42,14 +43,22 @@ func NewClient() *Client {
 }
 
 func (t *Client) Connect(uri string) error {
+	log.Infof("Connect to %q ...", uri)
 	// if t.Latency != 0 {
 	// 	time.Sleep(3 * t.Latency)
 	// }
-	conn, err := t.connect(uri)
+	u, err := url.Parse(uri)
+	if err != nil {
+		return err
+	}
+	origin := fmt.Sprintf("http://%s", u.Host)
+
+	conn, err := websocket.Dial(uri, "", origin)
 	if err != nil {
 		return err
 	}
 	t.uri = uri
+	log.Infof("Connected to  %q", uri)
 	t.connection = &connection{
 		conn:              conn,
 		onConnectionError: t.OnConnectionError,

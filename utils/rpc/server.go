@@ -3,7 +3,7 @@ package rpc
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"io"
+	"golang.org/x/net/websocket"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -46,15 +46,20 @@ func (t *Server) Start(uri string) error {
 	if err != nil {
 		return err
 	}
+
 	listener, err := net.Listen("tcp", u.Host)
 	if err != nil {
 		return err
 	}
+
 	mux := http.NewServeMux()
-	mux.HandleFunc(u.Path, t.httpRpcHandler)
+	t.URL = fmt.Sprintf("ws://%s%s", listener.Addr().String(), u.Path)
+
+	// Websocket
+	mux.Handle(u.Path, websocket.Handler(t.webSocketHandler))
+
 	t.httpServer = &http.Server{Handler: mux}
 	t.listener = listener
-	t.URL = fmt.Sprintf("http://%s%s", listener.Addr().String(), u.Path)
 	log.Infof("Started rpc server on %s", t.URL)
 	return nil
 }
@@ -88,27 +93,13 @@ func (t *Server) Close() {
 	log.Infof("Closed %s", t.URL)
 }
 
-func (t *Server) httpRpcHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != "CONNECT" {
-		http.Error(w, "method must be connect", 405)
-		return
-	}
-	conn, _, err := w.(http.Hijacker).Hijack()
-	if err != nil {
-		http.Error(w, "internal server error", 500)
-		return
-	}
-	defer conn.Close()
-
-	// Return response that connection was accepted
-	_, _ = io.WriteString(conn, "HTTP/1.0 200 Connected\r\n\r\n")
-
-	log.Infof("Connected %s->%s", req.RemoteAddr, t.URL)
+func (t *Server) webSocketHandler(conn *websocket.Conn) {
+	log.Infof("Connected %s->%s", conn.RemoteAddr(), t.URL)
 	// Keep track of current connections so they can be closed when closing server
 	id := t.storeConnection(conn)
 	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(conn))
 	t.removeConnection(id)
-	log.Infof("Disconnected %s->%s", req.RemoteAddr, t.URL)
+	log.Infof("Disconnected %s->%s", conn.RemoteAddr, t.URL)
 }
 
 func (t *Server) storeConnection(conn net.Conn) int {
