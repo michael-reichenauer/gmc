@@ -1,5 +1,5 @@
 // App.js
-import React, {useEffect} from "react";
+import React, {useEffect, useState} from "react";
 import ThemeProvider from "@material-ui/styles/ThemeProvider";
 import {ApplicationBar} from "./components/ApplicationBar";
 import {Repo} from "./components/Repo/Repo";
@@ -7,18 +7,27 @@ import Paper from "@material-ui/core/Paper";
 import {useTheme} from "./theme";
 import {Api} from "./api/api";
 import {RpcClient} from "./api/RpcClient";
+import {useDispatch} from "react-redux";
+import {connectingSlice} from "./components/Connecting/connectingSlice";
 
 const App = () => {
-    const rpcClient = new RpcClient("ws://localhost:9090/api/ws", "api")
+    const target =  "localhost"
+    const url =  `ws://${target}:9090/api/ws`
+    const rpcClient = new RpcClient(url, "api")
     const api = new Api(rpcClient)
+    const dispatch = useDispatch()
+
     useEffect(() => {
-        console.log("Called connect");
+        dispatch(connectingSlice.actions.set(target))
         rpcClient.Connect()
-            .then(()=>{console.log("Connected")})
+            .then(()=>{
+                dispatch(connectingSlice.actions.set(""))
+            })
             .catch(err =>{console.warn("Failed to connect", err)})
-    },[rpcClient]);
+    },[dispatch, rpcClient]);
 
     const [value] = useTheme()
+
     return (
         <ThemeProvider theme={value}>
             <Paper style={{height: "100vh"}}>

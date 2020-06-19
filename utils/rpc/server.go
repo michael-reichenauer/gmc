@@ -99,12 +99,6 @@ func (t *Server) webSocketHandler(conn *websocket.Conn) {
 	id := t.storeConnection(conn)
 	connection := &connection{
 		conn: conn,
-		onRead: func(p []byte) {
-			log.Infof("Read: %s", string(p))
-		},
-		onWrite: func(p []byte) {
-			log.Infof("Wrote: %s", string(p))
-		},
 	}
 
 	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(connection))

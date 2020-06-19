@@ -1,14 +1,15 @@
-import React from "react";
+import React, {useEffect} from "react";
 import TableContainer from "@material-ui/core/TableContainer";
 import Table from "@material-ui/core/Table";
-import TableRow from "@material-ui/core/TableRow";
-import TableCell from "@material-ui/core/TableCell";
 import TableBody from "@material-ui/core/TableBody";
 import makeStyles from "@material-ui/core/styles/makeStyles";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
 import {GraphRows} from "../Graph/Graph";
-import {Timing} from "../../utils";
 import {CommitRows} from "../Commits/Commits";
+import Typography from "@material-ui/core/Typography";
+import CircularProgress from "@material-ui/core/CircularProgress";
+import {repoSlice} from "./RepoSlices";
+import {mockRepo} from "./mockData";
 
 
 export const useTableStyles = makeStyles((theme) => ({
@@ -20,18 +21,36 @@ export const useTableStyles = makeStyles((theme) => ({
 export const Repo = props => {
     const classes = useTableStyles();
     const repo = useSelector(state => state.repo)
+    const connecting = useSelector(state => state.connecting)
+    const dispatch = useDispatch()
 
-    const st = performance.now()
-    const r = (
+    useEffect(() => {
+        if (connecting !== "") {
+            return
+        }
+        setTimeout(()=>{dispatch(repoSlice.actions.set(mockRepo))}, 3000)
+
+    }, [connecting, dispatch]);
+
+    if (connecting !== "") {
+        return (
+            <Typography>Connecting to {connecting} ... </Typography>
+        )
+    }
+    if (repo.none) {
+        return (
+            <CircularProgress/>
+        )
+    }
+
+    return (
         <TableContainer className={classes.container}>
             <Table className={classes.table} size="small" padding="none">
                 <TableBody>
-                   <GraphRows repo={repo}/>
+                    <GraphRows repo={repo}/>
                     <CommitRows commits={repo.commits}/>
                 </TableBody>
             </Table>
         </TableContainer>
     )
-    console.log("Repo: ", Timing(st))
-    return r
 }
