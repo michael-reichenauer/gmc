@@ -134,6 +134,7 @@ func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 }
 
 func (t *server) TriggerRefreshRepo(_ api.NoArg, _ api.NoRsp) error {
+	log.Warnf("TriggerRefreshRepo")
 	t.repo().TriggerRefreshModel()
 	return nil
 }

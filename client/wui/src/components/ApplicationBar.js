@@ -1,7 +1,7 @@
 import React from "react";
 import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
-//import Switch from "@material-ui/core/Switch";
+import Switch from "@material-ui/core/Switch";
 import SearchIcon from "@material-ui/icons/Search";
 import InputBase from "@material-ui/core/InputBase";
 import IconButton from "@material-ui/core/IconButton";
@@ -21,7 +21,7 @@ export const ApplicationBar = props => {
                 <Typography className={classes.title} variant="h6" noWrap>
                     gmc {counter}
                 </Typography>
-                
+                <Switch onChange={()=>{props.api.TriggerRefreshRepo()}}/>
                 <div className={classes.search}>
                     <div className={classes.searchIcon}>
                         <SearchIcon/>

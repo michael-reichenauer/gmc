@@ -1,36 +1,87 @@
-
-
 export class Api {
-    constructor(url, cb) {
-        this.url = url
-        this.cb = cb
+    constructor(rpcClient) {
+        this.rpc = rpcClient
     }
 
-    connect = () => {
-        console.log("connecting ...");
-        this.socket = new WebSocket(this.url);
+    GetRecentWorkingDirs = () => {
+        return this.rpc.Call('GetRecentWorkingDirs')
+    }
 
-        this.socket.onopen = () => {
-            console.log("Successfully Connected");
-        };
+    GetSubDirs = (dirPath) => {
+        return this.rpc.Call('GetSubDirs', dirPath)
+    }
 
-        this.socket.onmessage = msg => {
-            console.log("onmessage", msg);
-            this.cb(msg);
-        };
+    OpenRepo = (path) => {
+        return this.rpc.Call('OpenRepo', path)
+    }
 
-        this.socket.onclose = event => {
-            console.log("Socket Closed Connection: ", event);
-        };
+    CloseRepo = () => {
+        return this.rpc.Call('CloseRepo')
+    }
 
-        this.socket.onerror = error => {
-            console.log("Socket Error: ", error);
-        };
+    GetRepoChanges = () => {
+        return this.rpc.Call('GetRepoChanges')
+    }
+
+    TriggerRefreshRepo = () => {
+        return this.rpc.Call('TriggerRefreshRepo')
     };
 
-    sendMsg = msg => {
-        console.log("sending msg: ", msg);
-        this.socket.send(msg);
-    };
+    
+    TriggerSearch = (text) => {
+        return this.rpc.Call('TriggerSearch', text)
+    }
+
+    GetBranches = (getBranchesArgs) => {
+        return this.rpc.Call('GetBranches', getBranchesArgs)
+    }
+
+    GetCommitDiff = (id) => {
+        return this.rpc.Call('GetCommitDiff', id)
+    }
+
+    Commit = (message) => {
+        return this.rpc.Call('Commit', message)
+    }
+
+    ShowBranch = (name) => {
+        return this.rpc.Call('ShowBranch', name)
+    }
+
+    HideBranch = (name) => {
+        return this.rpc.Call('HideBranch', name)
+    }
+
+    Checkout = (checkoutArgs) => {
+        return this.rpc.Call('Checkout', checkoutArgs)
+    }
+
+    PushBranch = (name) => {
+        return this.rpc.Call('PushBranch', name)
+    }
+
+    PullCurrentBranch = () => {
+        return this.rpc.Call('PullCurrentBranch')
+    }
+
+    MergeBranch = (name) => {
+        return this.rpc.Call('MergeBranch', name)
+    }
+
+    CreateBranch = (name) => {
+        return this.rpc.Call('CreateBranch', name)
+    }
+
+    DeleteBranch = (name) => {
+        return this.rpc.Call('DeleteBranch', name)
+    }
+
+
+    Catch = promise => {
+        promise.then(() => {
+        })
+            .catch(err => {
+                console.warn("Failed:", err)
+            })
+    }
 }
-

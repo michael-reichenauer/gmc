@@ -109,7 +109,7 @@ func (t *Server) webSocketHandler(conn *websocket.Conn) {
 
 	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(connection))
 	t.removeConnection(id)
-	log.Infof("Disconnected %s->%s", conn.RemoteAddr, t.URL)
+	log.Infof("Disconnected %s->%s", conn.RemoteAddr(), t.URL)
 }
 
 func (t *Server) storeConnection(conn net.Conn) int {

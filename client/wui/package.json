@@ -42,6 +42,7 @@
     "history": "^4.10.1",
     "react-konva": "^16.13.0-3",
     "react-redux": "^7.2.0",
-    "react-router-dom": "^5.2.0"
+    "react-router-dom": "^5.2.0",
+    "simple-jsonrpc-js": "^1.0.1"
   }
 }
