@@ -5,16 +5,15 @@ const initialState = {
     isConnecting : false,
     isConnected: false,
     url:"",
-    error:""
 }
 
 export const connectionSlice = createSlice({
     name: 'connection',
     initialState:initialState,
     reducers:{
-        setConnecting: (state, action) => {return {isConnected: false, isConnecting: true, url: action.payload, error: ""}},
-        setConnected: (state, action) => {return {isConnected: true, isConnecting: false, url: state.url, error: ""}},
-        setError: (state, action) => {return {isConnected: false, isConnecting: false, url:state.url, error: action.payload}},
+        setConnecting: (state, action) => {return {isConnected: false, isConnecting: true, url: action.payload}},
+        setConnected: (state, action) => {return {isConnected: true, isConnecting: false, url: state.url}},
+        setDisconnected: (state, action) => {return {isConnected: false, isConnecting: false, url:""}},
     }
 })
 

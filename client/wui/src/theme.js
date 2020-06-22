@@ -1,7 +1,6 @@
 import {createMuiTheme} from "@material-ui/core/styles";
 import {deepPurple, purple} from "@material-ui/core/colors";
 import {useState} from "react";
-import {black} from "color-name";
 
 export const useTheme = () =>{
     const [theme, setTheme]= useState(darkTheme)

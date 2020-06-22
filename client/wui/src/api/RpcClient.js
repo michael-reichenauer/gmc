@@ -2,27 +2,29 @@ const JsonRPC = require('simple-jsonrpc-js');
 const noArg = [0]
 
 export class RpcClient {
-    constructor(url, methodPrefix, onCloseError) {
+    constructor() {
+        console.info("Creating rpc client")
+    }
+
+    Connect = (url, methodPrefix, onCloseError) => {
         this.url = url
         this.methodPrefix = methodPrefix + "."
         this.onCloseError = onCloseError
-    }
 
-    Connect = () => {
         return new Promise((resolve, reject) => {
             const jsonRPC = new JsonRPC();
 
-            console.info(`Connecting to ${this.url} ...`);
-            this.socket = new WebSocket(this.url);
+            console.info(`Connecting to ${url} ...`);
+            this.socket = new WebSocket(url);
 
             this.socket.onopen = () => {
-                console.info(`Connected to ${this.url}`);
+                console.info(`Connected to ${url}`);
                 this.jsonRPC = jsonRPC
                 resolve()
             };
 
             this.socket.onerror = error => {
-                console.warn(`Connection error for ${this.url}, ${error.message}`);
+                console.warn(`Connection error for ${url}, ${error.message}`);
                 reject(error)
             };
 
@@ -37,10 +39,10 @@ export class RpcClient {
 
             this.socket.onclose = event => {
                 if (event.wasClean) {
-                    console.info(`Closed connection to ${this.url}`);
+                    console.info(`Closed connection to ${url}`);
                 } else {
                     const error = `code : ${event.code}, reason: ${event.reason}`
-                    console.warn(`Connection unexpected closed for ${this.url}, ${error}`);
+                    console.warn(`Connection unexpected closed for ${url}, ${error}`);
                     if (this.onCloseError){
                         this.onCloseError(error)
                     }
@@ -52,6 +54,8 @@ export class RpcClient {
     Close = ()=>{
         console.info(`Close connection to ${this.url}`);
         this.socket.close()
+        this.url = ""
+        this.methodPrefix = ""
     }
 
     Call = (method, params) => {

@@ -1,5 +1,5 @@
 import {branchColor} from "../Graph/colors";
-import {Timing} from "../../utils";
+import {Timing} from "../../utils/utils";
 
 const commitCount = 500
 const branchCount = 5
