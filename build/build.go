@@ -13,11 +13,11 @@ func main() {
 	Must(RemoveFile("gmc.exe"))
 	Must(RemoveFile("gmc_linux"))
 	Must(RemoveFile("gmc_mac"))
-	Echo("")
+	EchoLn()
 
 	Echo("Running tests ...")
 	Must(Cmd("go", "test", "-count=1", "./..."))
-	Echo("")
+	EchoLn()
 
 	// linker flags "-ldflags", "-s -w" omits debug and symbols to reduce size
 	// ("-H=windowsgui" would disable console on windows)
@@ -32,15 +32,16 @@ func main() {
 	Echo("Building gmc_mac ...")
 	env = []string{"GOOS=darwin", "GOARCH=amd64"}
 	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_mac", "main.go"))
-	Echo("")
+	EchoLn()
 
 	Echo("Built version:")
 	echoBuiltVersion()
+	EchoLn()
 
 	_ = OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new")
 
-	Echo("")
-	Echo("")
+	EchoLn()
+	EchoLn()
 }
 
 func echoBuiltVersion() {

@@ -13,7 +13,7 @@ export const darkTheme = createMuiTheme({
         type: "dark",
         primary: deepPurple,
         secondary: purple,
-        background:black,
+      
     },
 });
 

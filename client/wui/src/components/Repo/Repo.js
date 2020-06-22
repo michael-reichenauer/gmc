@@ -10,6 +10,7 @@ import Typography from "@material-ui/core/Typography";
 import CircularProgress from "@material-ui/core/CircularProgress";
 import {repoSlice} from "./RepoSlices";
 import {mockRepo} from "./mockData";
+import {IsConnected, IsConnecting} from "../Connection/ConnectionSlice";
 
 
 export const useTableStyles = makeStyles((theme) => ({
@@ -21,23 +22,27 @@ export const useTableStyles = makeStyles((theme) => ({
 export const Repo = props => {
     const classes = useTableStyles();
     const repo = useSelector(state => state.repo)
-    const connecting = useSelector(state => state.connecting)
+    const isConnecting = useSelector(IsConnecting)
+    const isConnected = useSelector(IsConnected)
     const dispatch = useDispatch()
 
     useEffect(() => {
-        if (connecting !== "") {
+        if (isConnecting || !isConnected) {
             return
         }
-        setTimeout(()=>{dispatch(repoSlice.actions.set(mockRepo))}, 3000)
+        setTimeout(() => {
+            dispatch(repoSlice.actions.set(mockRepo))
+        }, 3000)
 
-    }, [connecting, dispatch]);
+    }, [isConnecting, isConnected, dispatch]);
 
-    if (connecting !== "") {
+    if (!isConnecting && !isConnected) {
         return (
-            <Typography>Connecting to {connecting} ... </Typography>
+            <Typography>Click to connect</Typography>
         )
     }
-    if (repo.none) {
+
+    if (isConnecting || repo.none) {
         return (
             <CircularProgress/>
         )

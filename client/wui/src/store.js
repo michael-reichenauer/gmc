@@ -1,10 +1,10 @@
 import {configureStore} from '@reduxjs/toolkit'
 import {repoSlice} from "./components/Repo/RepoSlices";
-import {connectingSlice} from "./components/Connecting/connectingSlice";
+import {connectionSlice} from "./components/Connection/ConnectionSlice";
 
 export const store = configureStore({
     reducer: {
         repo: repoSlice.reducer,
-        connecting: connectingSlice.reducer
+        connection: connectionSlice.reducer
     }
 })

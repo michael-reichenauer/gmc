@@ -2,9 +2,10 @@ const JsonRPC = require('simple-jsonrpc-js');
 const noArg = [0]
 
 export class RpcClient {
-    constructor(url, methodPrefix) {
+    constructor(url, methodPrefix, onCloseError) {
         this.url = url
         this.methodPrefix = methodPrefix + "."
+        this.onCloseError = onCloseError
     }
 
     Connect = () => {
@@ -36,14 +37,22 @@ export class RpcClient {
 
             this.socket.onclose = event => {
                 if (event.wasClean) {
-                    console.info(`Connection close was clean for ${this.url}`);
+                    console.info(`Closed connection to ${this.url}`);
                 } else {
-                    console.warn(`Connection unexpected closed for ${this.url}`);
+                    const error = `code : ${event.code}, reason: ${event.reason}`
+                    console.warn(`Connection unexpected closed for ${this.url}, ${error}`);
+                    if (this.onCloseError){
+                        this.onCloseError(error)
+                    }
                 }
-                console.info(`close code : ${event.code}, reason: ${event.reason}`);
             };
         });
     };
+
+    Close = ()=>{
+        console.info(`Close connection to ${this.url}`);
+        this.socket.close()
+    }
 
     Call = (method, params) => {
         method = this.methodPrefix + method

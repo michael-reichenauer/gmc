@@ -24,10 +24,10 @@ export class Api {
     }
 
     TriggerRefreshRepo = () => {
-        return this.rpc.Call('TriggerRefreshRepo')
+        this.Catch(this.rpc.Call('TriggerRefreshRepo'))
     };
 
-    
+
     TriggerSearch = (text) => {
         return this.rpc.Call('TriggerSearch', text)
     }
@@ -78,10 +78,12 @@ export class Api {
 
 
     Catch = promise => {
-        promise.then(() => {
-        })
+        promise
+            .then(() => {
+
+            })
             .catch(err => {
-                console.warn("Failed:", err)
+                console.warn("Failed xxx:", err)
             })
     }
 }

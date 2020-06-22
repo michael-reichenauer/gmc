@@ -8,20 +8,51 @@ import IconButton from "@material-ui/core/IconButton";
 import MenuIcon from "@material-ui/icons/Menu";
 import AppBar from "@material-ui/core/AppBar";
 import {useAppBarStyles} from "../appStyles";
-import {useSelector} from "react-redux";
+import {useDispatch, useSelector} from "react-redux";
+import {connectionSlice, IsConnected, IsConnecting} from "./Connection/ConnectionSlice";
 
 
 export const ApplicationBar = props => {
+    const {api, rpc} = props
     const classes = useAppBarStyles();
-    const counter = useSelector(state => state.counter)
-    //const dispatch = useDispatch()
+
+    const dispatch = useDispatch()
+    const isConnected = useSelector(IsConnected)
+    const isConnecting = useSelector(IsConnecting)
+
+
+    const connect = () => {
+        dispatch(connectionSlice.actions.setConnecting("localhost"))
+        rpc.Connect()
+            .then(() => {
+                dispatch(connectionSlice.actions.setConnected(true))
+            })
+            .catch(err => {
+                dispatch(connectionSlice.actions.setError("Failed to connect"))
+            })
+    }
+
+    const close = () => {
+        dispatch(connectionSlice.actions.setError(""))
+        rpc.Close()
+        dispatch(connectionSlice.actions.setError(""))
+    }
+
+    const toggle = () => {
+        if (isConnected) {
+            close()
+        } else {
+            connect()
+        }
+    }
+
     return (
         <AppBar position="static">
             <Toolbar>
                 <Typography className={classes.title} variant="h6" noWrap>
-                    gmc {counter}
+                    gmc
                 </Typography>
-                <Switch onChange={()=>{props.api.TriggerRefreshRepo()}}/>
+                <Switch disabled={isConnecting} checked={isConnected} onChange={() => toggle()}/>
                 <div className={classes.search}>
                     <div className={classes.searchIcon}>
                         <SearchIcon/>
