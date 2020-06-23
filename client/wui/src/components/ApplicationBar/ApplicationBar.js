@@ -4,7 +4,7 @@ import Typography from "@material-ui/core/Typography";
 import SearchIcon from "@material-ui/icons/Search";
 import InputBase from "@material-ui/core/InputBase";
 import AppBar from "@material-ui/core/AppBar";
-import {useAppBarStyles} from "../appStyles";
+import {useAppBarStyles} from "./appStyles";
 import {ApplicationMenu} from "./ApplicationMenu";
 
 
