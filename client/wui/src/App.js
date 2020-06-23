@@ -1,16 +1,16 @@
 // App.js
-import React from "react";
+import React, {useState} from "react";
 import ThemeProvider from "@material-ui/styles/ThemeProvider";
 import {ApplicationBar} from "./components/ApplicationBar/ApplicationBar";
 import {Repo} from "./components/Repo/Repo";
 import Paper from "@material-ui/core/Paper";
-import {useTheme} from "./theme";
+import {darkTheme} from "./theme";
 import {SnackbarProvider} from 'notistack';
 import {Connection} from "./components/Connection/Connection";
 
 
 export function App() {
-    const [theme] = useTheme()
+    const [theme, ]= useState(darkTheme)
 
     return (
         <ThemeProvider theme={theme}>
@@ -22,29 +22,12 @@ export function App() {
                         vertical: 'top',
                         horizontal: 'center'
                     }}>
-                    <MainView/>
+                    <ApplicationBar/>
+                    <Connection/>
+                    <Repo/>
                 </SnackbarProvider>
             </Paper>
         </ThemeProvider>
     );
 }
 
-
-const MainView = props => {
-    return (
-        <>
-            <ApplicationBar/>
-            <Connection/>
-            <Repo/>
-        </>
-    );
-}
-
-// useEffect(() => {
-//     dispatch(connectionSlice.actions.setConnecting({isConntectin }))
-//     rpcClient.Connect()
-//         .then(()=>{
-//             dispatch(connectingSlice.actions.set(""))
-//         })
-//         .catch(err =>{console.warn("Failed to connect", err)})
-// },[dispatch, rpcClient]);

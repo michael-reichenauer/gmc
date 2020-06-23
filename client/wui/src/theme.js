@@ -1,11 +1,6 @@
 import {createMuiTheme} from "@material-ui/core/styles";
 import {deepPurple, purple} from "@material-ui/core/colors";
-import {useState} from "react";
 
-export const useTheme = () =>{
-    const [theme, setTheme]= useState(darkTheme)
-    return [theme, setTheme]
-}
 
 export const darkTheme = createMuiTheme({
     palette: {
@@ -25,18 +20,3 @@ export const lightTheme = createMuiTheme({
 });
 
 export const isLight = theme => theme===lightTheme
-
-
-// export const themeSlice = createSlice({
-//     name: 'theme',
-//     initialState: 1,
-//     reducers: {
-//         setDark: state => {alert("set dark");return 0},
-//         setLight: state => {alert("set light");return 1},
-//     }
-// })
-//
-// export const getTheme = state => state.theme===0 ? darkTheme:lightTheme
-
-
-
