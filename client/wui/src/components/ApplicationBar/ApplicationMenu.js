@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import {rpc} from "../Connection/Connection";
-import {connectionSlice, IsConnected} from "../Connection/ConnectionSlice";
+import {IsConnected, SetConnected} from "../Connection/ConnectionSlice";
 import {useDispatch, useSelector} from "react-redux";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
@@ -26,7 +26,7 @@ export function ApplicationMenu() {
     const handleLogout = () => {
         setMenu(null);
         rpc.Close()
-        dispatch(connectionSlice.actions.setDisconnected(null))
+        dispatch(SetConnected(false))
     };
 
     return (

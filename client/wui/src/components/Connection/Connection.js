@@ -1,6 +1,6 @@
 import React from "react";
 import Button from "@material-ui/core/Button";
-import {connectionSlice, IsConnected, IsConnecting} from "./ConnectionSlice";
+import {IsConnected, IsConnecting, SetConnected, SetConnecting} from "./ConnectionSlice";
 import {useDispatch, useSelector} from "react-redux";
 import {useSnackbar} from "notistack";
 import {RpcClient} from "../../api/RpcClient";
@@ -17,7 +17,7 @@ export function Connection() {
     const dispatch = useDispatch()
     const {enqueueSnackbar, closeSnackbar} = useSnackbar();
     const onCloseError = err => {
-        dispatch(connectionSlice.actions.setDisconnected(true))
+        dispatch(SetConnected(false))
         enqueueSnackbar(`Connection failed`, {variant: "error", onClick: () => closeSnackbar()})
     }
 
@@ -30,16 +30,16 @@ export function Connection() {
     }
 
     const connect = () => {
-        dispatch(connectionSlice.actions.setConnecting("localhost"))
+        dispatch(SetConnecting("localhost"))
         rpc.Connect(url, "api", onCloseError)
             .then(() => {
-                dispatch(connectionSlice.actions.setConnected(true))
+                dispatch(SetConnected(true))
             })
             .catch(err => {
-                dispatch(connectionSlice.actions.setDisconnected(true))
+                dispatch(SetConnected(false))
             })
     }
-    
+
     return (
         <>
             <Button

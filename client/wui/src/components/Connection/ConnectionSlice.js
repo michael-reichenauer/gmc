@@ -12,10 +12,15 @@ export const connectionSlice = createSlice({
     initialState:initialState,
     reducers:{
         setConnecting: (state, action) => {return {isConnected: false, isConnecting: true, url: action.payload}},
-        setConnected: (state, action) => {return {isConnected: true, isConnecting: false, url: state.url}},
-        setDisconnected: (state, action) => {return {isConnected: false, isConnecting: false, url:""}},
+        setConnected: (state, action) => {
+            const isConnected = action.payload
+            const url = isConnected ? state.url:""
+            return {isConnected: isConnected, isConnecting: false, url: url}},
     }
 })
+
+export const SetConnected = isConnected=> connectionSlice.actions.setConnected(isConnected)
+export const SetConnecting = url => connectionSlice.actions.setConnecting(url)
 
 export const IsConnecting = state =>state.connection.isConnecting
 export const IsConnected = state =>state.connection.isConnected
