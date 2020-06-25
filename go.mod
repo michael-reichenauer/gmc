@@ -11,6 +11,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.7
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-version v1.2.0
+	github.com/imkira/go-observer v1.0.3
 	github.com/jroimartin/gocui v0.4.0
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/mattn/go-runewidth v0.0.8 // indirect

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
@@ -18,6 +19,7 @@ type server struct {
 	configService *config.Service
 	lock          sync.Mutex
 	viewRepo      *viewrepo.ViewRepo
+	changesStream observer.Stream
 }
 
 func NewServer(configService *config.Service) api.Api {
@@ -94,11 +96,9 @@ func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 
 	// Wait for event or timout
 	select {
-	case change, ok := <-repo.RepoChangesOut:
-		if !ok {
-			log.Infof("chan closed")
-			return nil
-		}
+	case <-t.changesStream.Changes():
+		t.changesStream.Next()
+		change := t.changesStream.Value()
 		log.Infof("one event")
 		changes = append(changes, change.(api.RepoChange))
 	case <-time.After(getChangesTimout):
@@ -116,12 +116,9 @@ func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 	// Got some event, check if there are more events and return them as well
 	for {
 		select {
-		case change, ok := <-repo.RepoChangesOut:
-			if !ok {
-				log.Infof("chan closed")
-				*rsp = changes
-				return nil
-			}
+		case <-t.changesStream.Changes():
+			t.changesStream.Next()
+			change := t.changesStream.Value()
 			changes = append(changes, change.(api.RepoChange))
 			log.Infof("more events event (%d events)", len(changes))
 		default:
@@ -195,6 +192,7 @@ func (t *server) setRepo(repo *viewrepo.ViewRepo) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.viewRepo = repo
+	t.changesStream = repo.ObserveChanges()
 }
 
 func (t *server) repo() *viewrepo.ViewRepo {
