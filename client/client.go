@@ -29,8 +29,8 @@ func (t client) CloseRepo(args api.NoArg, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetRepoChanges(args api.NoArg, rsp *[]api.RepoChange) error {
-	return t.client.Call(args, rsp)
+func (t client) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
+	return t.client.Call(id, rsp)
 }
 
 func (t client) TriggerRefreshRepo(args api.NoArg, rsp api.NoRsp) error {

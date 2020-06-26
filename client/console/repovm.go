@@ -90,7 +90,7 @@ func (t *repoVM) monitorModelRoutine() {
 	go func() {
 		for {
 			var changes []api.RepoChange
-			err := t.api.GetRepoChanges(api.NilArg, &changes)
+			err := t.api.GetRepoChanges("1", &changes)
 			if err != nil {
 				close(repoChanges)
 				return

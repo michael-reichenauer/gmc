@@ -10,6 +10,7 @@ export class RpcClient {
         this.url = url
         this.methodPrefix = methodPrefix + "."
         this.onCloseError = onCloseError
+        this.jsonRPC=null
 
         return new Promise((resolve, reject) => {
             const jsonRPC = new JsonRPC();
@@ -24,7 +25,7 @@ export class RpcClient {
             };
 
             this.socket.onerror = error => {
-                console.warn(`Connection error for ${url}, ${error.message}`);
+                console.warn(`Connect error for ${url}, ${error}`);
                 reject(error)
             };
 
@@ -42,7 +43,12 @@ export class RpcClient {
                     console.info(`Closed connection to ${url}`);
                 } else {
                     const error = `code : ${event.code}, reason: ${event.reason}`
-                    console.warn(`Connection unexpected closed for ${url}, ${error}`);
+
+                    if (this.jsonRPC == null){
+                        console.warn(`Failed to connect to ${url}, ${error}`)
+                    } else {
+                        console.warn(`Connection unexpected closed for ${url}, ${error}`);
+                    }
                     if (this.onCloseError){
                         this.onCloseError(error)
                     }
@@ -64,6 +70,9 @@ export class RpcClient {
         if (RpcClient.isEmpty(params)) {
             // Make sure there is at least one noArg parameter as required by json rps server
             params = noArg
+            console.info("isEmpty")
+        }   else {
+            console.info("Not empty")
         }
 
         return new Promise((resolve, reject) => {

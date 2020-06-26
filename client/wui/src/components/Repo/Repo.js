@@ -10,6 +10,7 @@ import {mockRepo} from "./mockData";
 import {IsConnected, IsConnecting} from "../Connection/ConnectionSlice";
 import {useRepo} from "./RepoState";
 import {useSelector} from "react-redux";
+import {api} from "../Connection/Connection";
 
 
 export const useTableStyles = makeStyles((theme) => ({
@@ -28,6 +29,9 @@ export const Repo = props => {
         if (isConnecting || !isConnected) {
             return
         }
+        api.GetRepoChanges(["2"])
+            .then(rsp => console.info("Got changes", rsp))
+            .catch(err => console.warn("Error", err))
         setRepo(mockRepo)
         // setTimeout(() => {
         //     setRepo(mockRepo)

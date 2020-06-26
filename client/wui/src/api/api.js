@@ -19,14 +19,13 @@ export class Api {
         return this.rpc.Call('CloseRepo')
     }
 
-    GetRepoChanges = () => {
-        return this.rpc.Call('GetRepoChanges')
+    GetRepoChanges = (id) => {
+        return this.rpc.Call('GetRepoChanges', id)
     }
 
     TriggerRefreshRepo = () => {
         this.Catch(this.rpc.Call('TriggerRefreshRepo'))
     };
-
 
     TriggerSearch = (text) => {
         return this.rpc.Call('TriggerSearch', text)

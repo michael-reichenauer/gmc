@@ -7,7 +7,7 @@ type Api interface {
 	OpenRepo(path string, _ NoRsp) error
 	CloseRepo(_ NoArg, _ NoRsp) error
 
-	GetRepoChanges(_ NoArg, changes *[]RepoChange) error
+	GetRepoChanges(id string, changes *[]RepoChange) error
 	TriggerRefreshRepo(_ NoArg, _ NoRsp) error
 	TriggerSearch(text string, _ NoRsp) error
 

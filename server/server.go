@@ -16,14 +16,14 @@ import (
 const getChangesTimout = 5 * time.Minute
 
 type server struct {
-	configService *config.Service
-	lock          sync.Mutex
-	viewRepo      *viewrepo.ViewRepo
-	changesStream observer.Stream
+	configService  *config.Service
+	lock           sync.Mutex
+	viewRepo       *viewrepo.ViewRepo
+	changesStreams map[string]observer.Stream
 }
 
 func NewServer(configService *config.Service) api.Api {
-	return &server{configService: configService}
+	return &server{configService: configService, changesStreams: make(map[string]observer.Stream)}
 }
 
 func (t *server) GetRecentWorkingDirs(_ api.NoArg, rsp *[]string) error {
@@ -83,8 +83,9 @@ func (t *server) CloseRepo(_ api.NoArg, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
+func (t *server) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
 	log.Infof(">")
+	changesStream := t.getStream(id)
 
 	repo := t.repo()
 	if repo == nil {
@@ -96,9 +97,9 @@ func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 
 	// Wait for event or timout
 	select {
-	case <-t.changesStream.Changes():
-		t.changesStream.Next()
-		change := t.changesStream.Value()
+	case <-changesStream.Changes():
+		changesStream.Next()
+		change := changesStream.Value()
 		log.Infof("one event")
 		changes = append(changes, change.(api.RepoChange))
 	case <-time.After(getChangesTimout):
@@ -116,9 +117,9 @@ func (t *server) GetRepoChanges(_ api.NoArg, rsp *[]api.RepoChange) error {
 	// Got some event, check if there are more events and return them as well
 	for {
 		select {
-		case <-t.changesStream.Changes():
-			t.changesStream.Next()
-			change := t.changesStream.Value()
+		case <-changesStream.Changes():
+			changesStream.Next()
+			change := changesStream.Value()
 			changes = append(changes, change.(api.RepoChange))
 			log.Infof("more events event (%d events)", len(changes))
 		default:
@@ -192,11 +193,22 @@ func (t *server) setRepo(repo *viewrepo.ViewRepo) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	t.viewRepo = repo
-	t.changesStream = repo.ObserveChanges()
+
 }
 
 func (t *server) repo() *viewrepo.ViewRepo {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	return t.viewRepo
+}
+
+func (t *server) getStream(id string) observer.Stream {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	s, ok := t.changesStreams[id]
+	if !ok {
+		s = t.viewRepo.ObserveChanges()
+		t.changesStreams[id] = s
+	}
+	return s
 }
