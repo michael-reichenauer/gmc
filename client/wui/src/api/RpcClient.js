@@ -58,8 +58,10 @@ export class RpcClient {
     };
 
     Close = ()=>{
-        console.info(`Close connection to ${this.url}`);
-        this.socket.close()
+        console.info(`Closing connection to ${this.url} ...`);
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.close()
+        }
         this.url = ""
         this.methodPrefix = ""
     }
@@ -70,15 +72,12 @@ export class RpcClient {
         if (RpcClient.isEmpty(params)) {
             // Make sure there is at least one noArg parameter as required by json rps server
             params = noArg
-            console.info("isEmpty")
-        }   else {
-            console.info("Not empty")
         }
 
         return new Promise((resolve, reject) => {
             this.jsonRPC.call(method, params)
                 .then(rsp => {
-                    console.info("OK:", method, rsp)
+                    console.info("OK:", method)
                     resolve(rsp)
                 })
                 .catch(err => {

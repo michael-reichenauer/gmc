@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const getChangesTimout = 5 * time.Minute
+const getChangesTimout = 1 * time.Minute
 
 type server struct {
 	configService  *config.Service
@@ -32,6 +32,8 @@ func (t *server) GetRecentWorkingDirs(_ api.NoArg, rsp *[]string) error {
 }
 
 func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) (err error) {
+	log.Infof(">")
+	defer log.Infof("<")
 	if parentDirPath == "" {
 		// Path not specified, return recent used parent paths and root folders
 		paths := t.configService.GetState().RecentParentFolders
@@ -46,6 +48,8 @@ func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) (err error) {
 }
 
 func (t *server) OpenRepo(path string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	if path == "" {
 		// No path specified, assume current working dir
 		path = utils.CurrentDir()
@@ -78,6 +82,8 @@ func (t *server) OpenRepo(path string, _ api.NoRsp) error {
 }
 
 func (t *server) CloseRepo(_ api.NoArg, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	t.repo().CloseRepo()
 	t.setRepo(nil)
 	return nil
@@ -85,6 +91,7 @@ func (t *server) CloseRepo(_ api.NoArg, _ api.NoRsp) error {
 
 func (t *server) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
 	log.Infof(">")
+	defer log.Infof("<")
 	changesStream := t.getStream(id)
 
 	repo := t.repo()
@@ -132,60 +139,86 @@ func (t *server) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
 }
 
 func (t *server) TriggerRefreshRepo(_ api.NoArg, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	t.repo().TriggerRefreshModel()
 	return nil
 }
 
 func (t *server) TriggerSearch(text string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	t.repo().TriggerSearch(text)
 	return nil
 }
 
 func (t *server) GetBranches(args api.GetBranchesArgs, branches *[]api.Branch) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	*branches = t.repo().GetBranches(args)
 	return nil
 }
 
 func (t *server) ShowBranch(name string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	t.repo().ShowBranch(name)
 	return nil
 }
 
 func (t *server) HideBranch(name string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	t.repo().HideBranch(name)
 	return nil
 }
 
 func (t *server) Checkout(args api.CheckoutArgs, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().SwitchToBranch(args.Name, args.DisplayName)
 }
 
 func (t *server) PushBranch(name string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().PushBranch(name)
 }
 
 func (t *server) PullCurrentBranch(_ api.NoArg, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().PullBranch()
 }
 
 func (t *server) MergeBranch(name string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().MergeBranch(name)
 }
 
 func (t *server) CreateBranch(name string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().CreateBranch(name)
 }
 
 func (t *server) DeleteBranch(name string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().DeleteBranch(name)
 }
 
 func (t *server) GetCommitDiff(id string, diff *api.CommitDiff) (err error) {
+	log.Infof(">")
+	defer log.Infof("<")
 	*diff, err = t.repo().GetCommitDiff(id)
 	return
 }
 
 func (t *server) Commit(message string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
 	return t.repo().Commit(message)
 }
 

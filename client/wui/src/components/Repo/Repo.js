@@ -1,4 +1,4 @@
-import React, {useEffect} from "react";
+import React from "react";
 import TableContainer from "@material-ui/core/TableContainer";
 import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
@@ -6,11 +6,10 @@ import makeStyles from "@material-ui/core/styles/makeStyles";
 import {GraphRows} from "../Graph/Graph";
 import {CommitRows} from "../Commits/Commits";
 import CircularProgress from "@material-ui/core/CircularProgress";
-import {mockRepo} from "./mockData";
 import {IsConnected, IsConnecting} from "../Connection/ConnectionSlice";
 import {useRepo} from "./RepoState";
 import {useSelector} from "react-redux";
-import {api} from "../Connection/Connection";
+
 
 
 export const useTableStyles = makeStyles((theme) => ({
@@ -23,21 +22,8 @@ export const Repo = props => {
     const classes = useTableStyles();
     const isConnecting = useSelector(IsConnecting)
     const isConnected = useSelector(IsConnected)
-    const [repo, setRepo]  = useRepo()
 
-    useEffect(() => {
-        if (isConnecting || !isConnected) {
-            return
-        }
-        api.GetRepoChanges(["2"])
-            .then(rsp => console.info("Got changes", rsp))
-            .catch(err => console.warn("Error", err))
-        setRepo(mockRepo)
-        // setTimeout(() => {
-        //     setRepo(mockRepo)
-        // }, 3000)
-
-    }, [isConnecting, isConnected, setRepo]);
+    const repo = useRepo()
 
     if (!isConnecting && !isConnected) {
         return <div/>
