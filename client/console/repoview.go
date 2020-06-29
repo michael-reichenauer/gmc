@@ -32,11 +32,11 @@ func (t *RepoView) ScrollVertical(scroll int) {
 
 }
 
-func NewRepoView(ui cui.UI, api api.Api) *RepoView {
+func NewRepoView(ui cui.UI, api api.Api, repoID string) *RepoView {
 	h := &RepoView{
 		ui: ui,
 	}
-	h.vm = newRepoVM(ui, h, api)
+	h.vm = newRepoVM(ui, h, api, repoID)
 	h.menuService = newMenuService(ui, h.vm)
 	h.view = h.newView()
 	return h

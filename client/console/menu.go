@@ -77,11 +77,11 @@ func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.Me
 }
 
 func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
-	items := t.getShowCommitBranchesMenuItems(selectedIndex)
-
+	branches := t.vm.GetCommitBranches(selectedIndex)
+	var items []cui.MenuItem
 	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
-		if nil == funk.Find(items, func(b api.Branch) bool {
+		if nil == funk.Find(branches, func(b api.Branch) bool {
 			return current.DisplayName == b.DisplayName
 		}) {
 			items = append(items, t.toOpenBranchMenuItem(current))

@@ -31,6 +31,7 @@ type repoVM struct {
 	onRepoUpdatedFunc func()
 	searchText        string
 	done              chan struct{}
+	repoID            string
 }
 
 type trace struct {
@@ -39,15 +40,12 @@ type trace struct {
 	BranchNames []string
 }
 
-func newRepoVM(
-	ui cui.UI,
-	repoViewer cui.Notifier,
-	api api.Api,
-) *repoVM {
+func newRepoVM(ui cui.UI, repoViewer cui.Notifier, api api.Api, repoID string) *repoVM {
 	return &repoVM{
 		ui:         ui,
 		repoViewer: repoViewer,
 		api:        api,
+		repoID:     repoID,
 		repoLayout: newRepoLayout(),
 		done:       make(chan struct{}),
 	}
@@ -62,7 +60,7 @@ func (t *repoVM) triggerRefresh() {
 	progress := t.ui.ShowProgress("Trigger")
 	t.startCommand(
 		fmt.Sprintf("Trigger refresh repo"),
-		func() error { return t.api.TriggerRefreshRepo(api.NilArg, api.NilRsp) },
+		func() error { return t.api.TriggerRefreshRepo(t.repoID, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		func() {
 			t.ui.Post(func() {
@@ -74,7 +72,7 @@ func (t *repoVM) triggerRefresh() {
 func (t *repoVM) SetSearch(text string) {
 	t.startCommand(
 		fmt.Sprintf("Trigger search repo"),
-		func() error { return t.api.TriggerSearch(text, api.NilRsp) },
+		func() error { return t.api.TriggerSearch(api.Search{RepoID: t.repoID, Text: text}, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		nil)
 }
@@ -82,7 +80,7 @@ func (t *repoVM) SetSearch(text string) {
 func (t *repoVM) close() {
 	log.Infof("Close")
 	close(t.done)
-	_ = t.api.CloseRepo(api.NilArg, api.NilRsp)
+	_ = t.api.CloseRepo(t.repoID, api.NilRsp)
 }
 
 func (t *repoVM) monitorModelRoutine() {
@@ -90,7 +88,7 @@ func (t *repoVM) monitorModelRoutine() {
 	go func() {
 		for {
 			var changes []api.RepoChange
-			err := t.api.GetRepoChanges("1", &changes)
+			err := t.api.GetRepoChanges(t.repoID, &changes)
 			if err != nil {
 				close(repoChanges)
 				return
@@ -202,7 +200,7 @@ func (t *repoVM) showCommitDialog() {
 		t.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
 	}
-	commitView := NewCommitView(t.ui, t.api)
+	commitView := NewCommitView(t.ui, t.api, t.repoID)
 	message := t.repo.MergeMessage
 	commitView.Show(message)
 }
@@ -213,7 +211,7 @@ func (t *repoVM) showCreateBranchDialog() {
 }
 
 func (t *repoVM) showCommitDiff(commitID string) {
-	diffView := NewDiffView(t.ui, t.api, commitID)
+	diffView := NewDiffView(t.ui, t.api, t.repoID, commitID)
 	diffView.Show()
 }
 
@@ -229,7 +227,7 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 	}
 
 	var branches []api.Branch
-	_ = t.api.GetBranches(api.GetBranchesArgs{IncludeOnlyCommitBranches: c.ID}, &branches)
+	_ = t.api.GetBranches(api.GetBranches{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID}, &branches)
 
 	return branches
 }
@@ -237,7 +235,7 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	var branches []api.Branch
 	err := t.api.GetBranches(
-		api.GetBranchesArgs{IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
+		api.GetBranches{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
 		&branches)
 
 	if err != nil || len(branches) == 0 {
@@ -250,7 +248,7 @@ func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	var branches []api.Branch
 	err := t.api.GetBranches(
-		api.GetBranchesArgs{IncludeOnlyCurrent: true},
+		api.GetBranches{RepoID: t.repoID, IncludeOnlyCurrent: true},
 		&branches)
 
 	if err != nil || len(branches) == 0 {
@@ -263,7 +261,8 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranchesArgs{
+	_ = t.api.GetBranches(api.GetBranches{
+		RepoID:              t.repoID,
 		IncludeOnlyNotShown: skipShown,
 		SortOnLatest:        true,
 	}, &branches)
@@ -273,31 +272,31 @@ func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 func (t *repoVM) GetAllBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranchesArgs{IncludeOnlyNotShown: skipShown}, &branches)
+	_ = t.api.GetBranches(api.GetBranches{RepoID: t.repoID, IncludeOnlyNotShown: skipShown}, &branches)
 	return branches
 }
 
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
 	_ = t.api.GetBranches(
-		api.GetBranchesArgs{IncludeOnlyShown: true, SkipMaster: skipMaster},
+		api.GetBranches{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster},
 		&branches)
 	return branches
 }
 
 func (t *repoVM) ShowBranch(name string) {
-	_ = t.api.ShowBranch(name, api.NilRsp)
+	_ = t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 }
 
 func (t *repoVM) HideBranch(name string) {
-	_ = t.api.HideBranch(name, api.NilRsp)
+	_ = t.api.HideBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 }
 
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error {
-			return t.api.Checkout(api.CheckoutArgs{Name: name, DisplayName: displayName}, api.NilRsp)
+			return t.api.Checkout(api.Checkout{RepoID: t.repoID, Name: name, DisplayName: displayName}, api.NilRsp)
 		},
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
@@ -306,7 +305,7 @@ func (t *repoVM) SwitchToBranch(name string, displayName string) {
 func (t *repoVM) PushBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return t.api.PushBranch(name, api.NilRsp) },
+		func() error { return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
@@ -318,7 +317,9 @@ func (t *repoVM) PushCurrentBranch() {
 	}
 	t.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
-		func() error { return t.api.PushBranch(current.Name, api.NilRsp) },
+		func() error {
+			return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: current.Name}, api.NilRsp)
+		},
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -330,7 +331,7 @@ func (t *repoVM) PullCurrentBranch() {
 	}
 	t.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return t.api.PullCurrentBranch(api.NilArg, api.NilRsp) },
+		func() error { return t.api.PullCurrentBranch(t.repoID, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -338,7 +339,7 @@ func (t *repoVM) PullCurrentBranch() {
 func (t *repoVM) MergeFromBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return t.api.MergeBranch(name, api.NilRsp) },
+		func() error { return t.api.MergeBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
@@ -365,24 +366,26 @@ func (t *repoVM) CreateBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := t.api.CreateBranch(name, api.NilRsp)
+			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 			if err != nil {
 				return err
 			}
-			err = t.api.PushBranch(name, api.NilRsp)
+			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 			if err != nil {
 				return err
 			}
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { t.api.ShowBranch(name, api.NilRsp) })
+		func() { t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) })
 }
 
 func (t *repoVM) DeleteBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
-		func() error { return t.api.DeleteBranch(name, api.NilRsp) },
+		func() error {
+			return t.api.DeleteBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+		},
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
 }

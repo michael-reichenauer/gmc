@@ -59,7 +59,8 @@ func (t *MainWindow) Show(serverUri, path string) {
 func (t *MainWindow) showRepo(path string) {
 	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 	go func() {
-		err := t.api.OpenRepo(path, api.NilRsp)
+		var repoID string
+		err := t.api.OpenRepo(path, &repoID)
 		t.ui.Post(func() {
 			if err != nil {
 				log.Warnf("Failed to open %q, %v", path, err)
@@ -71,7 +72,7 @@ func (t *MainWindow) showRepo(path string) {
 			}
 
 			progress.Close()
-			repoView := NewRepoView(t.ui, t.api)
+			repoView := NewRepoView(t.ui, t.api, repoID)
 			repoView.Show()
 		})
 	}()

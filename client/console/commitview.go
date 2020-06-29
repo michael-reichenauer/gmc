@@ -10,12 +10,12 @@ import (
 )
 
 type Committer interface {
-	GetCommitDiff(id string, diff *api.CommitDiff) error
-	Commit(message string, rsp api.NoRsp) error
+	GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) error
+	Commit(info api.CommitInfo, rsp api.NoRsp) error
 }
 
-func NewCommitView(ui cui.UI, committer Committer) *CommitView {
-	h := &CommitView{ui: ui, committer: committer}
+func NewCommitView(ui cui.UI, committer Committer, repoID string) *CommitView {
+	h := &CommitView{ui: ui, committer: committer, repoID: repoID}
 	return h
 }
 
@@ -25,6 +25,7 @@ type CommitView struct {
 	boxView     cui.View
 	textView    cui.View
 	buttonsView cui.View
+	repoID      string
 }
 
 func (h *CommitView) Show(message string) {
@@ -111,7 +112,7 @@ func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
 	progress := h.ui.ShowProgress("Committing ...")
 	go func() {
-		err := h.committer.Commit(msg, api.NilRsp)
+		err := h.committer.Commit(api.CommitInfo{RepoID: h.repoID, Message: msg}, api.NilRsp)
 		h.ui.Post(func() {
 			progress.Close()
 			if err != nil {
@@ -129,6 +130,6 @@ func (h *CommitView) onOk() {
 
 func (h *CommitView) showDiff() {
 	log.Event("commit-show-diff")
-	diffView := NewDiffView(h.ui, h.committer, git.UncommittedID)
+	diffView := NewDiffView(h.ui, h.committer, h.repoID, git.UncommittedID)
 	diffView.Show()
 }

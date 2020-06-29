@@ -27,12 +27,14 @@ var (
 	no     int
 )
 
-type CheckoutArgs struct {
+type Checkout struct {
+	RepoID      string
 	Name        string
 	DisplayName string
 }
 
-type GetBranchesArgs struct {
+type GetBranches struct {
+	RepoID                    string
 	IncludeOnlyCurrent        bool
 	IncludeOnlyGitBranches    bool
 	IncludeOnlyCommitBranches string
@@ -40,6 +42,25 @@ type GetBranchesArgs struct {
 	IncludeOnlyNotShown       bool
 	SkipMaster                bool
 	SortOnLatest              bool
+}
+
+type BranchName struct {
+	RepoID     string
+	BranchName string
+}
+
+type Search struct {
+	RepoID string
+	Text   string
+}
+
+type CommitDiffInfo struct {
+	RepoID   string
+	CommitID string
+}
+type CommitInfo struct {
+	RepoID  string
+	Message string
 }
 
 type Repo struct {

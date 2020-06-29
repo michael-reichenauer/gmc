@@ -142,7 +142,7 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
-func (t *ViewRepo) GetBranches(args api.GetBranchesArgs) []api.Branch {
+func (t *ViewRepo) GetBranches(args api.GetBranches) []api.Branch {
 	branches := []api.Branch{}
 	if args.IncludeOnlyCommitBranches != "" {
 		return append(branches, t.getCommitBranches(args.IncludeOnlyCommitBranches)...)

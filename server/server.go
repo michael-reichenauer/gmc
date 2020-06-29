@@ -1,6 +1,8 @@
 package server
 
 import (
+	"fmt"
+	"github.com/google/uuid"
 	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
@@ -15,15 +17,19 @@ import (
 
 const getChangesTimout = 1 * time.Minute
 
+type repoInfo struct {
+	repo   *viewrepo.ViewRepo
+	stream observer.Stream
+}
+
 type server struct {
-	configService  *config.Service
-	lock           sync.Mutex
-	viewRepo       *viewrepo.ViewRepo
-	changesStreams map[string]observer.Stream
+	configService *config.Service
+	lock          sync.Mutex
+	repos         map[string]repoInfo
 }
 
 func NewServer(configService *config.Service) api.Api {
-	return &server{configService: configService, changesStreams: make(map[string]observer.Stream)}
+	return &server{configService: configService, repos: make(map[string]repoInfo)}
 }
 
 func (t *server) GetRecentWorkingDirs(_ api.NoArg, rsp *[]string) error {
@@ -47,7 +53,7 @@ func (t *server) GetSubDirs(parentDirPath string, dirs *[]string) (err error) {
 	return
 }
 
-func (t *server) OpenRepo(path string, _ api.NoRsp) error {
+func (t *server) OpenRepo(path string, repoID *string) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	if path == "" {
@@ -60,15 +66,9 @@ func (t *server) OpenRepo(path string, _ api.NoRsp) error {
 		return err
 	}
 
-	var previousRepo = t.repo()
-	if previousRepo != nil {
-		// Previous repo was not closed, lets close before starting next
-		previousRepo.CloseRepo()
-	}
-
 	// Got root working dir path, open repo
 	viewRepo := viewrepo.NewViewRepo(t.configService, workingDir)
-	t.setRepo(viewRepo)
+	id := t.storeRepo(viewRepo)
 
 	viewRepo.StartMonitor()
 
@@ -78,27 +78,30 @@ func (t *server) OpenRepo(path string, _ api.NoRsp) error {
 		s.RecentFolders = utils.RecentPaths(s.RecentFolders, workingDir, 10)
 		s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
 	})
+	*repoID = id
 	return nil
 }
 
-func (t *server) CloseRepo(_ api.NoArg, _ api.NoRsp) error {
+func (t *server) CloseRepo(repoID string, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	t.repo().CloseRepo()
-	t.setRepo(nil)
-	return nil
-}
-
-func (t *server) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
-	log.Infof(">")
-	defer log.Infof("<")
-	changesStream := t.getStream(id)
-
-	repo := t.repo()
-	if repo == nil {
-		log.Warnf("no repo")
-		return nil
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
 	}
+	t.removeRepo(repoID)
+	repo.CloseRepo()
+	return nil
+}
+
+func (t *server) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	changesStream, err := t.getStream(repoID)
+	if err != nil {
+		return err
+	}
+
 	var changes []api.RepoChange
 	defer func() { log.Infof("< (%d events)", len(changes)) }()
 
@@ -112,12 +115,6 @@ func (t *server) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
 	case <-time.After(getChangesTimout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
 		log.Infof("timeout")
-		return nil
-	}
-
-	repo = t.repo()
-	if repo == nil {
-		*rsp = changes
 		return nil
 	}
 
@@ -138,110 +135,173 @@ func (t *server) GetRepoChanges(id string, rsp *[]api.RepoChange) error {
 	}
 }
 
-func (t *server) TriggerRefreshRepo(_ api.NoArg, _ api.NoRsp) error {
+func (t *server) TriggerRefreshRepo(repoID string, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	t.repo().TriggerRefreshModel()
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
+	}
+	repo.TriggerRefreshModel()
 	return nil
 }
 
-func (t *server) TriggerSearch(text string, _ api.NoRsp) error {
+func (t *server) TriggerSearch(search api.Search, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	t.repo().TriggerSearch(text)
+	repo, err := t.repo(search.RepoID)
+	if err != nil {
+		return err
+	}
+	repo.TriggerSearch(search.Text)
 	return nil
 }
 
-func (t *server) GetBranches(args api.GetBranchesArgs, branches *[]api.Branch) error {
+func (t *server) GetBranches(args api.GetBranches, branches *[]api.Branch) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	*branches = t.repo().GetBranches(args)
+	repo, err := t.repo(args.RepoID)
+	if err != nil {
+		return err
+	}
+	*branches = repo.GetBranches(args)
 	return nil
 }
 
-func (t *server) ShowBranch(name string, _ api.NoRsp) error {
+func (t *server) ShowBranch(name api.BranchName, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	t.repo().ShowBranch(name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	repo.ShowBranch(name.BranchName)
 	return nil
 }
 
-func (t *server) HideBranch(name string, _ api.NoRsp) error {
+func (t *server) HideBranch(name api.BranchName, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	t.repo().HideBranch(name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	repo.HideBranch(name.BranchName)
 	return nil
 }
 
-func (t *server) Checkout(args api.CheckoutArgs, _ api.NoRsp) error {
+func (t *server) Checkout(args api.Checkout, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().SwitchToBranch(args.Name, args.DisplayName)
+	repo, err := t.repo(args.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.SwitchToBranch(args.Name, args.DisplayName)
 }
 
-func (t *server) PushBranch(name string, _ api.NoRsp) error {
+func (t *server) PushBranch(name api.BranchName, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().PushBranch(name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.PushBranch(name.BranchName)
 }
 
-func (t *server) PullCurrentBranch(_ api.NoArg, _ api.NoRsp) error {
+func (t *server) PullCurrentBranch(repoID string, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().PullBranch()
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
+	}
+	return repo.PullBranch()
 }
 
-func (t *server) MergeBranch(name string, _ api.NoRsp) error {
+func (t *server) MergeBranch(name api.BranchName, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().MergeBranch(name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.MergeBranch(name.BranchName)
 }
 
-func (t *server) CreateBranch(name string, _ api.NoRsp) error {
+func (t *server) CreateBranch(name api.BranchName, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().CreateBranch(name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.CreateBranch(name.BranchName)
 }
 
-func (t *server) DeleteBranch(name string, _ api.NoRsp) error {
+func (t *server) DeleteBranch(name api.BranchName, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().DeleteBranch(name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.DeleteBranch(name.BranchName)
 }
 
-func (t *server) GetCommitDiff(id string, diff *api.CommitDiff) (err error) {
+func (t *server) GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) (err error) {
 	log.Infof(">")
 	defer log.Infof("<")
-	*diff, err = t.repo().GetCommitDiff(id)
+	repo, err := t.repo(info.RepoID)
+	if err != nil {
+		return err
+	}
+	*diff, err = repo.GetCommitDiff(info.CommitID)
 	return
 }
 
-func (t *server) Commit(message string, _ api.NoRsp) error {
+func (t *server) Commit(info api.CommitInfo, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	return t.repo().Commit(message)
-}
-
-func (t *server) setRepo(repo *viewrepo.ViewRepo) {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	t.viewRepo = repo
-
-}
-
-func (t *server) repo() *viewrepo.ViewRepo {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	return t.viewRepo
-}
-
-func (t *server) getStream(id string) observer.Stream {
-	t.lock.Lock()
-	defer t.lock.Unlock()
-	s, ok := t.changesStreams[id]
-	if !ok {
-		s = t.viewRepo.ObserveChanges()
-		t.changesStreams[id] = s
+	repo, err := t.repo(info.RepoID)
+	if err != nil {
+		return err
 	}
-	return s
+	return repo.Commit(info.Message)
+}
+
+func (t *server) storeRepo(repo *viewrepo.ViewRepo) string {
+	stream := repo.ObserveChanges()
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	id := uuid.New().String()
+	t.repos[id] = repoInfo{repo: repo, stream: stream}
+	return id
+}
+
+func (t *server) removeRepo(id string) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	delete(t.repos, id)
+}
+
+func (t *server) repo(id string) (*viewrepo.ViewRepo, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	r, ok := t.repos[id]
+	if !ok {
+		return nil, fmt.Errorf("repo not open")
+	}
+	return r.repo, nil
+}
+
+func (t *server) getStream(id string) (observer.Stream, error) {
+	t.lock.Lock()
+	defer t.lock.Unlock()
+	r, ok := t.repos[id]
+	if !ok {
+		return nil, fmt.Errorf("repo not open")
+	}
+	return r.stream, nil
 }

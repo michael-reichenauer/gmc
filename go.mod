@@ -9,6 +9,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/denisbrodbeck/machineid v1.0.1
 	github.com/fsnotify/fsnotify v1.4.7
+	github.com/google/uuid v1.1.1
 	github.com/gorilla/websocket v1.4.2
 	github.com/hashicorp/go-version v1.2.0
 	github.com/imkira/go-observer v1.0.3
