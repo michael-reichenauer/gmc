@@ -3,7 +3,6 @@ package console
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
@@ -40,7 +39,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 			//	rpcClient.Interrupt()
 		})
 		err := rpcClient.Connect(serverUri)
-		api := client.NewClient(rpcClient.ServiceClient(""))
+		api := NewClient(rpcClient.ServiceClient(""))
 
 		t.ui.Post(func() {
 			if err != nil {

@@ -1,4 +1,4 @@
-package client
+package console
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
