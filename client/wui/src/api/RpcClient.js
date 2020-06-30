@@ -25,7 +25,7 @@ export class RpcClient {
             };
 
             this.socket.onerror = error => {
-                console.warn(`Connect error for ${url}, ${error}`);
+                console.warn(`Connect to ${url} failed, ${error}`);
                 reject(error)
             };
 
@@ -66,16 +66,18 @@ export class RpcClient {
         this.methodPrefix = ""
     }
 
-    Call = (method, params) => {
+    Call = (method, param) => {
         method = this.methodPrefix + method
-        console.info("Calling:", method, params)
-        if (RpcClient.isEmpty(params)) {
-            // Make sure there is at least one noArg parameter as required by json rps server
-            params = noArg
+        if (param === undefined){
+            param = noArg
+            console.info(`Calling: ${method} ()`)
+        }  else {
+            console.info(`Calling: ${method} (`, param, ")")
+            param = [param]
         }
 
         return new Promise((resolve, reject) => {
-            this.jsonRPC.call(method, params)
+            this.jsonRPC.call(method, param)
                 .then(rsp => {
                     console.info("OK:", method)
                     resolve(rsp)

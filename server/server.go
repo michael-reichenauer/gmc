@@ -68,7 +68,8 @@ func (t *server) OpenRepo(path string, repoID *string) error {
 
 	// Got root working dir path, open repo
 	viewRepo := viewrepo.NewViewRepo(t.configService, workingDir)
-	id := t.storeRepo(viewRepo)
+	stream := viewRepo.ObserveChanges()
+	id := t.storeRepo(viewRepo, stream)
 
 	viewRepo.StartMonitor()
 
@@ -271,8 +272,7 @@ func (t *server) Commit(info api.CommitInfo, _ api.NoRsp) error {
 	return repo.Commit(info.Message)
 }
 
-func (t *server) storeRepo(repo *viewrepo.ViewRepo) string {
-	stream := repo.ObserveChanges()
+func (t *server) storeRepo(repo *viewrepo.ViewRepo, stream observer.Stream) string {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	id := uuid.New().String()

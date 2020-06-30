@@ -97,7 +97,7 @@ func (s *gitRepo) TriggerManualRefresh() {
 }
 
 func (s *gitRepo) monitorRoutine(ctx context.Context) {
-	log.Infof("monitorRoutine start")
+	log.Infof("monitorRoutine start.")
 	defer close(s.repoChanges)
 	defer log.Infof("Closed monitor of %s", s.git.RepoPath())
 	s.folderMonitor.Start(ctx)
