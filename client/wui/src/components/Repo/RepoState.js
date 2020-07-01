@@ -14,14 +14,14 @@ function commit(index, subject, author, datetime) {
 
 function toRepo(viewRepo) {
     const commits = viewRepo.Commits.map((c, i) => {
-        const d= new Date(c.AuthorTime)
-        const date = d.getFullYear() +"-" +("0"+(d.getMonth()+1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) +
+        const d = new Date(c.AuthorTime)
+        const date = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) +
             " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2);
         return commit(i, c.Subject, c.Author, date, "m", 0, false);
     })
     const branches = []
     const merges = []
-          return {commits, branches, merges}
+    return {commits, branches, merges}
 }
 
 function processChanges(changes, setRepo) {
@@ -30,23 +30,39 @@ function processChanges(changes, setRepo) {
         if (changes[i].IsStarting || changes[i].Error !== null) {
             continue
         }
+        console.info("New repo")
         setRepo(toRepo(changes[i].ViewRepo))
     }
 }
 
+function getRepoChanges(repoID, setRepo) {
+    console.info("getRepoChanges:Getting repo changes ...")
+    api.GetRepoChanges(repoID)
+        .then(rsp => {
+                console.info("getRepoChanges: Got changes", rsp);
+                //commits= rsp[0].viewport.
+                processChanges(rsp, setRepo)
+                //setCallCount(callCount + 1)
+                getRepoChanges(repoID, setRepo)
+            }
+        )
+        .catch(err => {
+            console.warn("getRepoChanges: Error", err)
+        })
+}
+
 export function useRepo() {
     const isConnected = useSelector(IsConnected)
-    const [callCount, setCallCount] = useState(0)
+    //const [callCount, setCallCount] = useState(0)
     const [repo, setRepo] = useState(null)
     const [repoID, setRepoID] = useState("")
 
     useEffect(() => {
         if (!isConnected) {
             console.info("useRepo: Not connected")
-            if (callCount !== 0) {
+            if (repoID !== "") {
                 // Reset repo data after disconnect
                 console.info("useRepo: rest call count");
-                setCallCount(0)
                 setRepoID("")
             }
             return
@@ -59,23 +75,12 @@ export function useRepo() {
             return
         }
 
-        api.GetRepoChanges(repoID)
-            .then(rsp => {
-                    console.info("useRepo: Got changes", rsp);
-                    //commits= rsp[0].viewport.
-                    processChanges(rsp, setRepo)
-                    setCallCount(callCount + 1)
-                }
-            )
-            .catch(err => {
-                console.warn("useRepo: Error", err)
-            })
+        getRepoChanges(repoID, setRepo)
+        
+        console.info("useRepo: TriggerRefreshRepo")
+        api.TriggerRefreshRepo(repoID)
 
-        if (callCount === 0) {
-            // First time after connect
-            api.TriggerRefreshRepo(repoID)
-        }
-    }, [isConnected, callCount, repoID])
+    }, [isConnected, repoID])
 
     return repo
 }
