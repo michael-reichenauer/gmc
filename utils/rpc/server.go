@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"golang.org/x/net/websocket"
@@ -10,6 +11,7 @@ import (
 	"net/rpc/jsonrpc"
 	"net/url"
 	"sync"
+	"time"
 )
 
 const defaultServiceName = "api"
@@ -57,6 +59,7 @@ func (t *Server) Start(uri string) error {
 
 	// Websocket
 	mux.Handle(u.Path, websocket.Handler(t.webSocketHandler))
+	mux.HandleFunc(u.Path+"/events", t.eventHandler)
 
 	t.httpServer = &http.Server{Handler: mux}
 	t.listener = listener
@@ -95,13 +98,15 @@ func (t *Server) Close() {
 
 func (t *Server) webSocketHandler(conn *websocket.Conn) {
 	log.Infof("Connected %s->%s", conn.RemoteAddr(), t.URL)
+
+	conn.Request().Context()
 	// Keep track of current connections so they can be closed when closing server
 	id := t.storeConnection(conn)
-	connection := &connection{
-		conn: conn,
-	}
+	// connection := &connection{
+	// 	conn: conn,
+	// }
 
-	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(connection))
+	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(conn))
 	t.removeConnection(id)
 	log.Infof("Disconnected %s->%s", conn.RemoteAddr(), t.URL)
 }
@@ -132,4 +137,52 @@ func (t *Server) closeAllCurrentConnections() {
 		delete(t.connections, k)
 	}
 	t.lock.Unlock()
+}
+
+type event struct {
+	Time string
+}
+
+func (t *Server) eventHandler(rw http.ResponseWriter, req *http.Request) {
+	log.Warnf("Events start")
+	flusher, ok := rw.(http.Flusher)
+	if !ok {
+		http.Error(rw, "Streaming unsupported!", http.StatusInternalServerError)
+		return
+	}
+
+	rw.Header().Set("Content-Type", "text/event-stream")
+	rw.Header().Set("Cache-Control", "no-cache")
+	rw.Header().Set("Connection", "keep-alive")
+	rw.Header().Set("Access-Control-Allow-Origin", "*")
+
+	// Remove this client from the map of connected clients
+	// when this handler exits.
+	defer func() {
+		//	broker.closingClients <- messageChan
+		log.Warnf("Closed")
+	}()
+
+	// Listen to connection close and un-register messageChan
+	// notify := rw.(http.CloseNotifier).CloseNotify()
+	notify := req.Context().Done()
+	go func() {
+		<-notify
+		log.Warnf("Closing")
+	}()
+
+	for {
+		// Write to the ResponseWriter
+		// Server Sent Events compatible
+		time.Sleep(1 * time.Second)
+		if req.Context().Err() != nil {
+			break
+		}
+		es, _ := json.Marshal(event{Time: time.Now().String()})
+		log.Warnf("Send %s", string(es))
+		fmt.Fprintf(rw, "data: %s\n\n", string(es))
+
+		// Flush the data immediately instead of buffering it for later.
+		flusher.Flush()
+	}
 }

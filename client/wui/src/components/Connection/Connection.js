@@ -13,6 +13,7 @@ export const api = new Api(rpc)
 export function Connection() {
     const target = "localhost"
     const url = `ws://${target}:9090/api/ws`
+    const eventsUrl = `http://${target}:9090/api/ws/events`
 
     const dispatch = useDispatch()
     const {enqueueSnackbar, closeSnackbar} = useSnackbar();
@@ -31,7 +32,7 @@ export function Connection() {
 
     const connect = () => {
         dispatch(SetConnecting("localhost"))
-        rpc.Connect(url, "api", onCloseError)
+        rpc.connect(url,eventsUrl, "api", onCloseError)
             .then(() => {
                 dispatch(SetConnected(true))
             })

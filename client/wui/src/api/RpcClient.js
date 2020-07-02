@@ -6,11 +6,11 @@ export class RpcClient {
         console.info("Creating rpc client")
     }
 
-    Connect = (url, methodPrefix, onCloseError) => {
+    connect = (url, eventsUrl, methodPrefix, onCloseError) => {
         this.url = url
         this.methodPrefix = methodPrefix + "."
         this.onCloseError = onCloseError
-        this.jsonRPC=null
+        this.jsonRPC = null
 
         return new Promise((resolve, reject) => {
             const jsonRPC = new JsonRPC();
@@ -21,6 +21,16 @@ export class RpcClient {
             this.socket.onopen = () => {
                 console.info(`Connected to ${url}`);
                 this.jsonRPC = jsonRPC
+                this.eventClient = new EventSource(eventsUrl)
+                this.eventClient.onmessage = function (msg) {
+                    console.log("event:", msg.data)
+                }
+                this.eventClient.onerror = error =>{
+                    console.warn(`Connect to ${eventsUrl} failed, ${error}`);
+                }
+                this.eventClient.onopen = e => {
+                    console.warn("onopen:", e)
+                }
                 resolve()
             };
 
@@ -39,17 +49,20 @@ export class RpcClient {
             };
 
             this.socket.onclose = event => {
+                if (this.eventClient && this.eventClient.readyState !== EventSource.CLOSED){
+                    this.eventClient.close()
+                }
                 if (event.wasClean) {
                     console.info(`Closed connection to ${url}`);
                 } else {
                     const error = `code : ${event.code}, reason: ${event.reason}`
 
-                    if (this.jsonRPC == null){
+                    if (this.jsonRPC == null) {
                         console.warn(`Failed to connect to ${url}, ${error}`)
                     } else {
                         console.warn(`Connection unexpected closed for ${url}, ${error}`);
                     }
-                    if (this.onCloseError){
+                    if (this.onCloseError) {
                         this.onCloseError(error)
                     }
                 }
@@ -57,21 +70,24 @@ export class RpcClient {
         });
     };
 
-    Close = ()=>{
+    close = () => {
         console.info(`Closing connection to ${this.url} ...`);
-        if (this.socket.readyState === WebSocket.OPEN) {
+        if (this.eventClient && this.eventClient.readyState === EventSource.OPEN) {
+            this.eventClient.close()
+        }
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.close()
         }
         this.url = ""
         this.methodPrefix = ""
     }
 
-    Call = (method, param) => {
+    call = (method, param) => {
         method = this.methodPrefix + method
-        if (param === undefined){
+        if (param === undefined) {
             param = noArg
             console.info(`Calling: ${method} ()`)
-        }  else {
+        } else {
             console.info(`Calling: ${method} (`, param, ")")
             param = [param]
         }

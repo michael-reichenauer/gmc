@@ -4,79 +4,79 @@ export class Api {
     }
 
     GetRecentWorkingDirs = () => {
-        return this.rpc.Call('GetRecentWorkingDirs')
+        return this.rpc.call('GetRecentWorkingDirs')
     }
 
     GetSubDirs = (dirPath) => {
-        return this.rpc.Call('GetSubDirs', dirPath)
+        return this.rpc.call('GetSubDirs', dirPath)
     }
 
     OpenRepo = (path) => {
-        return this.rpc.Call('OpenRepo', path)
+        return this.rpc.call('OpenRepo', path)
     }
 
     CloseRepo = (repoID) => {
-        return this.rpc.Call('CloseRepo', repoID)
+        return this.rpc.call('CloseRepo', repoID)
     }
 
     GetRepoChanges = (repoID) => {
-        return this.rpc.Call('GetRepoChanges', repoID)
+        return this.rpc.call('GetRepoChanges', repoID)
     }
 
     TriggerRefreshRepo = (repoID) => {
-        this.Catch(this.rpc.Call('TriggerRefreshRepo', repoID))
+        this.catch(this.rpc.call('TriggerRefreshRepo', repoID))
     };
 
     TriggerSearch = (search) => {
-        return this.rpc.Call('TriggerSearch', search)
+        return this.rpc.call('TriggerSearch', search)
     }
 
     GetBranches = (getBranches) => {
-        return this.rpc.Call('GetBranches', getBranches)
+        return this.rpc.call('GetBranches', getBranches)
     }
 
     GetCommitDiff = (commitDiffInfo) => {
-        return this.rpc.Call('GetCommitDiff', commitDiffInfo)
+        return this.rpc.call('GetCommitDiff', commitDiffInfo)
     }
 
     Commit = (commitInfo) => {
-        return this.rpc.Call('Commit', commitInfo)
+        return this.rpc.call('Commit', commitInfo)
     }
 
     ShowBranch = (branchName) => {
-        return this.rpc.Call('ShowBranch', branchName)
+        return this.rpc.call('ShowBranch', branchName)
     }
 
     HideBranch = (branchName) => {
-        return this.rpc.Call('HideBranch', branchName)
+        return this.rpc.call('HideBranch', branchName)
     }
 
     Checkout = (checkout) => {
-        return this.rpc.Call('Checkout', checkout)
+        return this.rpc.call('Checkout', checkout)
     }
 
     PushBranch = (branchName) => {
-        return this.rpc.Call('PushBranch', branchName)
+        return this.rpc.call('PushBranch', branchName)
     }
 
     PullCurrentBranch = (repoID) => {
-        return this.rpc.Call('PullCurrentBranch', repoID)
+        return this.rpc.call('PullCurrentBranch', repoID)
     }
 
     MergeBranch = (branchName) => {
-        return this.rpc.Call('MergeBranch', branchName)
+        return this.rpc.call('MergeBranch', branchName)
     }
 
     CreateBranch = (branchName) => {
-        return this.rpc.Call('CreateBranch', branchName)
+        return this.rpc.call('CreateBranch', branchName)
     }
 
     DeleteBranch = (branchName) => {
-        return this.rpc.Call('DeleteBranch', branchName)
+        return this.rpc.call('DeleteBranch', branchName)
     }
 
 
-    Catch = promise => {
+    catch = promise => {
         promise
             .then(() => {
 

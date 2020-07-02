@@ -25,7 +25,7 @@ export function ApplicationMenu() {
 
     const handleLogout = () => {
         setMenu(null);
-        rpc.Close()
+        rpc.close()
         dispatch(SetConnected(false))
     };
 
