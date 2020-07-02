@@ -21,16 +21,16 @@ export class RpcClient {
             this.socket.onopen = () => {
                 console.info(`Connected to ${url}`);
                 this.jsonRPC = jsonRPC
-                this.eventClient = new EventSource(eventsUrl)
-                this.eventClient.onmessage = function (msg) {
-                    console.log("event:", msg.data)
-                }
-                this.eventClient.onerror = error =>{
-                    console.warn(`Connect to ${eventsUrl} failed, ${error}`);
-                }
-                this.eventClient.onopen = e => {
-                    console.warn("onopen:", e)
-                }
+                // this.eventClient = new EventSource(eventsUrl)
+                // this.eventClient.onmessage = function (msg) {
+                //     console.log("event:", msg.data)
+                // }
+                // this.eventClient.onerror = error =>{
+                //     console.warn(`Connect to ${eventsUrl} failed, ${error}`);
+                // }
+                // this.eventClient.onopen = e => {
+                //     console.warn("onopen:", e)
+                // }
                 resolve()
             };
 
@@ -49,9 +49,9 @@ export class RpcClient {
             };
 
             this.socket.onclose = event => {
-                if (this.eventClient && this.eventClient.readyState !== EventSource.CLOSED){
-                    this.eventClient.close()
-                }
+                // if (this.eventClient && this.eventClient.readyState !== EventSource.CLOSED){
+                //     this.eventClient.close()
+                // }
                 if (event.wasClean) {
                     console.info(`Closed connection to ${url}`);
                 } else {
@@ -72,9 +72,9 @@ export class RpcClient {
 
     close = () => {
         console.info(`Closing connection to ${this.url} ...`);
-        if (this.eventClient && this.eventClient.readyState === EventSource.OPEN) {
-            this.eventClient.close()
-        }
+        // if (this.eventClient && this.eventClient.readyState === EventSource.OPEN) {
+        //     this.eventClient.close()
+        // }
         if (this.socket && this.socket.readyState === WebSocket.OPEN) {
             this.socket.close()
         }
@@ -103,26 +103,6 @@ export class RpcClient {
                     reject(err)
                 })
         })
-    };
-
-    static isEmpty = (value) => {
-        if (RpcClient.isObject(value)) {
-            for (let idx in value) {
-                if (value.hasOwnProperty(idx)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-        if (Array.isArray(value)) {
-            return !value.length;
-        }
-        return !value;
-    };
-
-    static isObject = (value) => {
-        const type = typeof value;
-        return value != null && (type === 'object' || type === 'function');
     };
 }
 

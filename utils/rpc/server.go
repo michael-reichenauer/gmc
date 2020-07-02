@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"golang.org/x/net/websocket"
+	"io"
 	"net"
 	"net/http"
 	"net/rpc"
@@ -21,7 +22,7 @@ type Server struct {
 	rpcServer *rpc.Server
 
 	done         chan struct{}
-	connections  map[int]net.Conn
+	connections  map[int]io.ReadWriteCloser
 	lock         sync.Mutex
 	httpServer   *http.Server
 	listener     net.Listener
@@ -32,7 +33,7 @@ func NewServer() *Server {
 	return &Server{
 		rpcServer:   rpc.NewServer(),
 		done:        make(chan struct{}),
-		connections: make(map[int]net.Conn),
+		connections: make(map[int]io.ReadWriteCloser),
 	}
 }
 
@@ -59,7 +60,7 @@ func (t *Server) Start(uri string) error {
 
 	// Websocket
 	mux.Handle(u.Path, websocket.Handler(t.webSocketHandler))
-	mux.HandleFunc(u.Path+"/events", t.eventHandler)
+	//mux.HandleFunc(u.Path+"/events", t.eventHandler)
 
 	t.httpServer = &http.Server{Handler: mux}
 	t.listener = listener
@@ -99,19 +100,16 @@ func (t *Server) Close() {
 func (t *Server) webSocketHandler(conn *websocket.Conn) {
 	log.Infof("Connected %s->%s", conn.RemoteAddr(), t.URL)
 
-	conn.Request().Context()
 	// Keep track of current connections so they can be closed when closing server
-	id := t.storeConnection(conn)
-	// connection := &connection{
-	// 	conn: conn,
-	// }
+	connection := &connection{conn: conn}
+	id := t.storeConnection(connection)
 
-	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(conn))
+	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(connection))
 	t.removeConnection(id)
 	log.Infof("Disconnected %s->%s", conn.RemoteAddr(), t.URL)
 }
 
-func (t *Server) storeConnection(conn net.Conn) int {
+func (t *Server) storeConnection(conn io.ReadWriteCloser) int {
 	var id int
 	t.lock.Lock()
 	t.connectionID++
