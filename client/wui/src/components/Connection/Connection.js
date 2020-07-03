@@ -5,19 +5,20 @@ import {useDispatch, useSelector} from "react-redux";
 import {useSnackbar} from "notistack";
 import {RpcClient} from "../../api/RpcClient";
 import {Api} from "../../api/api";
+import {EventsClient} from "../../api/EventsClient";
 
 export const rpc = new RpcClient()
+export const events = new EventsClient()
 export const api = new Api(rpc)
 
 
 export function Connection() {
-    const target = "localhost"
-    const url = `ws://${target}:9090/api/ws`
-    const eventsUrl = `http://${target}:9090/api/ws/events`
+    const url = `ws://localhost:9090/api/ws`
 
     const dispatch = useDispatch()
     const {enqueueSnackbar, closeSnackbar} = useSnackbar();
     const onCloseError = err => {
+        events.close()
         dispatch(SetConnected(false))
         enqueueSnackbar(`Connection failed`, {variant: "error", onClick: () => closeSnackbar()})
     }
@@ -32,7 +33,7 @@ export function Connection() {
 
     const connect = () => {
         dispatch(SetConnecting("localhost"))
-        rpc.connect(url,eventsUrl, "api", onCloseError)
+        rpc.connect(url, "api", onCloseError)
             .then(() => {
                 dispatch(SetConnected(true))
             })

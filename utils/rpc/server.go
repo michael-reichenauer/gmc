@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/rs/cors"
 	"golang.org/x/net/websocket"
 	"io"
 	"net"
@@ -11,6 +12,7 @@ import (
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 )
@@ -19,21 +21,25 @@ const defaultServiceName = "api"
 
 type Server struct {
 	URL       string
+	EventsURL string
 	rpcServer *rpc.Server
 
-	done         chan struct{}
-	connections  map[int]io.ReadWriteCloser
-	lock         sync.Mutex
-	httpServer   *http.Server
-	listener     net.Listener
-	connectionID int
+	done          chan struct{}
+	connections   map[int]io.ReadWriteCloser
+	lock          sync.Mutex
+	httpServer    *http.Server
+	listener      net.Listener
+	connectionID  int
+	eventChannels map[chan []byte]string
+	eventsPath    string
 }
 
 func NewServer() *Server {
 	return &Server{
-		rpcServer:   rpc.NewServer(),
-		done:        make(chan struct{}),
-		connections: make(map[int]io.ReadWriteCloser),
+		rpcServer:     rpc.NewServer(),
+		done:          make(chan struct{}),
+		connections:   make(map[int]io.ReadWriteCloser),
+		eventChannels: make(map[chan []byte]string),
 	}
 }
 
@@ -44,11 +50,15 @@ func (t *Server) RegisterService(serviceName string, service interface{}) error 
 	return t.rpcServer.RegisterName(serviceName, service)
 }
 
-func (t *Server) Start(uri string) error {
+func (t *Server) Start(uri, eventsPath string) error {
 	u, err := url.Parse(uri)
 	if err != nil {
 		return err
 	}
+	if !strings.HasSuffix(eventsPath, "/") {
+		eventsPath = eventsPath + "/"
+	}
+	t.eventsPath = eventsPath
 
 	listener, err := net.Listen("tcp", u.Host)
 	if err != nil {
@@ -56,13 +66,16 @@ func (t *Server) Start(uri string) error {
 	}
 
 	mux := http.NewServeMux()
+
 	t.URL = fmt.Sprintf("ws://%s%s", listener.Addr().String(), u.Path)
 
 	// Websocket
 	mux.Handle(u.Path, websocket.Handler(t.webSocketHandler))
-	//mux.HandleFunc(u.Path+"/events", t.eventHandler)
+	mux.HandleFunc(eventsPath, t.eventHandler)
 
-	t.httpServer = &http.Server{Handler: mux}
+	handler := cors.Default().Handler(mux)
+
+	t.httpServer = &http.Server{Handler: handler}
 	t.listener = listener
 	log.Infof("Started rpc server on %s", t.URL)
 	return nil
@@ -81,6 +94,31 @@ func (t *Server) Serve() error {
 	return err
 }
 
+func (t *Server) PostEvent(id string, event interface{}) {
+	eventBytes, err := json.Marshal(event)
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+
+	var eventChannels []chan []byte
+	t.lock.Lock()
+	for eventChannel, channelID := range t.eventChannels {
+		if id == channelID {
+			eventChannels = append(eventChannels, eventChannel)
+		}
+	}
+	t.lock.Unlock()
+
+	for _, eventChannel := range eventChannels {
+		select {
+		case eventChannel <- eventBytes:
+		case <-t.done:
+			// Closed, no error
+			return
+		}
+	}
+}
+
 func (t *Server) Close() {
 	log.Infof("Closing %s ...", t.URL)
 	select {
@@ -89,7 +127,15 @@ func (t *Server) Close() {
 		return
 	default:
 	}
+
 	close(t.done)
+
+	t.lock.Lock()
+	for eventChannel := range t.eventChannels {
+		close(eventChannel)
+		delete(t.eventChannels, eventChannel)
+	}
+	t.lock.Unlock()
 
 	// Close server for new connections
 	t.httpServer.Close()
@@ -137,10 +183,6 @@ func (t *Server) closeAllCurrentConnections() {
 	t.lock.Unlock()
 }
 
-type event struct {
-	Time string
-}
-
 func (t *Server) eventHandler(rw http.ResponseWriter, req *http.Request) {
 	log.Warnf("Events start")
 	flusher, ok := rw.(http.Flusher)
@@ -148,39 +190,53 @@ func (t *Server) eventHandler(rw http.ResponseWriter, req *http.Request) {
 		http.Error(rw, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
+	log.Warnf("Request: %q", req.RequestURI)
+	index := strings.LastIndex(req.RequestURI, t.eventsPath)
+	if index == -1 || len(req.RequestURI) == index+len(t.eventsPath) {
+		log.Warnf("Invalid id")
+		http.Error(rw, "invalid id", http.StatusBadRequest)
+		return
+	}
+	id := req.RequestURI[index+len(t.eventsPath):]
+	log.Infof("id: %d %q %q", index, req.RequestURI, id)
 
 	rw.Header().Set("Content-Type", "text/event-stream")
 	rw.Header().Set("Cache-Control", "no-cache")
 	rw.Header().Set("Connection", "keep-alive")
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 
-	// Remove this client from the map of connected clients
-	// when this handler exits.
+	eventChannel := make(chan []byte)
+	t.lock.Lock()
+	t.eventChannels[eventChannel] = id
+	t.lock.Unlock()
+
+	// Remove this eventChannel from the map of eventChannels when this handler exits.
 	defer func() {
 		//	broker.closingClients <- messageChan
+		t.lock.Lock()
+		delete(t.eventChannels, eventChannel)
+		t.lock.Unlock()
 		log.Warnf("Closed")
 	}()
 
-	// Listen to connection close and un-register messageChan
-	// notify := rw.(http.CloseNotifier).CloseNotify()
-	notify := req.Context().Done()
-	go func() {
-		<-notify
-		log.Warnf("Closing")
-	}()
+	time.AfterFunc(5*time.Second, func() {
+		t.PostEvent(id, "some event")
+	})
 
+	// flush to signal to client that event stream is open (no need to wait for first event)
+	flusher.Flush()
 	for {
-		// Write to the ResponseWriter
-		// Server Sent Events compatible
-		time.Sleep(1 * time.Second)
-		if req.Context().Err() != nil {
-			break
+		select {
+		case <-req.Context().Done():
+			return
+		case event, ok := <-eventChannel:
+			if !ok {
+				return
+			}
+			log.Warnf("Send %s", string(event))
+			fmt.Fprintf(rw, "data: %s\n\n", string(event))
 		}
-		es, _ := json.Marshal(event{Time: time.Now().String()})
-		log.Warnf("Send %s", string(es))
-		fmt.Fprintf(rw, "data: %s\n\n", string(es))
 
-		// Flush the data immediately instead of buffering it for later.
 		flusher.Flush()
 	}
 }

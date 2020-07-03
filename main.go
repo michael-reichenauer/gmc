@@ -104,7 +104,7 @@ func main() {
 	if err := rpcServer.RegisterService("", server.NewServer(configService)); err != nil {
 		panic(log.Fatal(err))
 	}
-	if err := rpcServer.Start("http://127.0.0.1:9090/api/ws"); err != nil {
+	if err := rpcServer.Start("http://127.0.0.1:9090/api/ws", "/api/events"); err != nil {
 		panic(log.Fatal(err))
 	}
 	defer rpcServer.Close()

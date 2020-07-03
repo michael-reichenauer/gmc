@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {useSelector} from "react-redux";
 import {IsConnected} from "../Connection/ConnectionSlice";
-import {api} from "../Connection/Connection";
+import {api, events} from "../Connection/Connection";
 
 
 function commit(index, subject, author, datetime) {
@@ -36,19 +36,28 @@ function processChanges(changes, setRepo) {
 }
 
 function getRepoChanges(repoID, setRepo) {
-    console.info("getRepoChanges:Getting repo changes ...")
-    api.GetRepoChanges(repoID)
-        .then(rsp => {
-                console.info("getRepoChanges: Got changes", rsp);
-                //commits= rsp[0].viewport.
-                processChanges(rsp, setRepo)
-                //setCallCount(callCount + 1)
-                getRepoChanges(repoID, setRepo)
-            }
-        )
-        .catch(err => {
-            console.warn("getRepoChanges: Error", err)
-        })
+    console.info(`getRepoChanges:Getting repo changes from ${repoID} ...`)
+    const onEvents = event =>{
+        console.warn("On event: ", event)
+    }
+
+    events.connect(`http://localhost:9090/api/events/${repoID}`, onEvents)
+        .then(()=> api.TriggerRefreshRepo(repoID))
+        .catch(err=>{console.warn("Failed to connect")})
+    
+
+    // api.GetRepoChanges(repoID)
+    //     .then(rsp => {
+    //             console.info("getRepoChanges: Got changes", rsp);
+    //             //commits= rsp[0].viewport.
+    //             processChanges(rsp, setRepo)
+    //             //setCallCount(callCount + 1)
+    //             getRepoChanges(repoID, setRepo)
+    //         }
+    //     )
+    //     .catch(err => {
+    //         console.warn("getRepoChanges: Error", err)
+    //     })
 }
 
 export function useRepo() {
@@ -70,15 +79,15 @@ export function useRepo() {
 
         if (repoID === "") {
             api.OpenRepo("")
-                .then(rsp => setRepoID(rsp))
+                .then(repoID => {
+                    setRepoID(repoID)
+                    getRepoChanges(repoID, setRepo)
+                })
                 .catch(err => console.warn("Failed to open repo", err))
             return
         }
 
-        getRepoChanges(repoID, setRepo)
-        
-        console.info("useRepo: TriggerRefreshRepo")
-        api.TriggerRefreshRepo(repoID)
+
 
     }, [isConnected, repoID])
 

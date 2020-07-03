@@ -21,6 +21,7 @@ require (
 	github.com/onsi/ginkgo v1.12.0 // indirect
 	github.com/onsi/gomega v1.10.0 // indirect
 	github.com/rapid7/go-get-proxied v0.0.0-20181210221417-16249a544090
+	github.com/rs/cors v1.7.0
 	github.com/satori/go.uuid v1.2.0 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
