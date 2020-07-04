@@ -4,7 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"github.com/michael-reichenauer/gmc/client/console"
-	"github.com/michael-reichenauer/gmc/server"
+	"github.com/michael-reichenauer/gmc/server"np
 	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"io/ioutil"
 	stdlog "log"
