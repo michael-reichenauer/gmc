@@ -2,14 +2,15 @@ package tests
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type TempFolder string
@@ -88,8 +89,9 @@ func ManualTest(t *testing.T) {
 	p := strings.ReplaceAll(path, "/", "_")
 	p = strings.ReplaceAll(p, ".", "_")
 	p = strings.ReplaceAll(p, "-", "_")
-	if strings.Contains(os.Args[0], p) &&
-		stringsContains(os.Args, fmt.Sprintf("^%s$", name)) {
+	args := fmt.Sprintf("%v", os.Args)
+	log.Infof("Args %v", args)
+	if strings.Contains(args, fmt.Sprintf("^%s$", name)) {
 		// The test runner is specified to run test for that function name
 		return
 	}
