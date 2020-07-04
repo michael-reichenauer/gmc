@@ -27,12 +27,14 @@ var (
 	no     int
 )
 
-type CheckoutArgs struct {
+type Checkout struct {
+	RepoID      string
 	Name        string
 	DisplayName string
 }
 
-type GetBranchesArgs struct {
+type GetBranches struct {
+	RepoID                    string
 	IncludeOnlyCurrent        bool
 	IncludeOnlyGitBranches    bool
 	IncludeOnlyCommitBranches string
@@ -42,8 +44,28 @@ type GetBranchesArgs struct {
 	SortOnLatest              bool
 }
 
-type ViewRepo struct {
+type BranchName struct {
+	RepoID     string
+	BranchName string
+}
+
+type Search struct {
+	RepoID string
+	Text   string
+}
+
+type CommitDiffInfo struct {
+	RepoID   string
+	CommitID string
+}
+type CommitInfo struct {
+	RepoID  string
+	Message string
+}
+
+type Repo struct {
 	Commits            []Commit
+	Branches           []Branch
 	CurrentBranchName  string
 	RepoPath           string
 	UncommittedChanges int
@@ -85,7 +107,7 @@ type Commit struct {
 	Author             string
 	AuthorTime         time.Time
 	IsCurrent          bool
-	Branch             Branch
+	BranchIndex        int
 	Tags               []string
 	More               utils.Bitmask
 	ParentIDs          []string
@@ -140,7 +162,7 @@ func (bs Branches) Contains(predicate func(b Branch) bool) bool {
 
 type RepoChange struct {
 	IsStarting bool
-	ViewRepo   ViewRepo
+	ViewRepo   Repo
 	SearchText string
 	Error      error
 }

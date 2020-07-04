@@ -3,6 +3,7 @@ package viewrepo
 import (
 	"context"
 	"fmt"
+	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
@@ -29,8 +30,7 @@ type showRequest struct {
 }
 
 type ViewRepo struct {
-	repoChangesIn  chan<- interface{}
-	RepoChangesOut <-chan interface{}
+	changes observer.Property
 
 	gitRepo       gitrepo.GitRepo
 	configService *config.Service
@@ -47,11 +47,9 @@ type ViewRepo struct {
 
 func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo {
 	ctx, cancel := context.WithCancel(context.Background())
-	in, out := utils.InfiniteChannel()
 
 	return &ViewRepo{
-		repoChangesIn:   in,
-		RepoChangesOut:  out,
+		changes:         observer.NewProperty(nil),
 		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
@@ -60,6 +58,9 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 		ctx:             ctx,
 		cancel:          cancel,
 	}
+}
+func (t *ViewRepo) ObserveChanges() observer.Stream {
+	return t.changes.Observe()
 }
 
 func (t *ViewRepo) storeViewRepo(viewRepo *repo) {
@@ -80,7 +81,7 @@ func (t *ViewRepo) StartMonitor() {
 
 func (t *ViewRepo) CloseRepo() {
 	t.cancel()
-	close(t.repoChangesIn)
+	//close(t.repoChangesIn)
 }
 
 func (t *ViewRepo) TriggerRefreshModel() {
@@ -141,7 +142,7 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
-func (t *ViewRepo) GetBranches(args api.GetBranchesArgs) []api.Branch {
+func (t *ViewRepo) GetBranches(args api.GetBranches) []api.Branch {
 	branches := []api.Branch{}
 	if args.IncludeOnlyCommitBranches != "" {
 		return append(branches, t.getCommitBranches(args.IncludeOnlyCommitBranches)...)
@@ -385,9 +386,10 @@ func (t *ViewRepo) monitorViewModelRoutine(ctx context.Context) {
 			if change.IsStarting {
 				log.Infof("Send repo start change ...")
 				select {
-				case t.repoChangesIn <- api.RepoChange{IsStarting: true}:
 				case <-ctx.Done():
 					return
+				default:
+					t.changes.Update(api.RepoChange{IsStarting: true})
 				}
 				break
 			}
@@ -398,10 +400,12 @@ func (t *ViewRepo) monitorViewModelRoutine(ctx context.Context) {
 				log.Event("vms-error-repo")
 				log.Infof("Send repo error event ...")
 				select {
-				case t.repoChangesIn <- api.RepoChange{Error: change.Error}:
 				case <-ctx.Done():
 					return
+				default:
+					t.changes.Update(api.RepoChange{Error: change.Error})
 				}
+
 				break
 			}
 			log.Event("vms-changed-repo")
@@ -437,8 +441,9 @@ func (t *ViewRepo) triggerSearchRepo(ctx context.Context, searchText string, rep
 		repoChange := api.RepoChange{SearchText: searchText, ViewRepo: toViewRepo(vRepo)}
 		log.Infof("Send new search repo event ...")
 		select {
-		case t.repoChangesIn <- repoChange:
 		case <-ctx.Done():
+		default:
+			t.changes.Update(repoChange)
 		}
 	}()
 }
@@ -452,9 +457,10 @@ func (t *ViewRepo) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, 
 		repoChange := api.RepoChange{ViewRepo: vr}
 		log.Infof("Send new view repo event ...")
 		select {
-		case t.repoChangesIn <- repoChange:
-			t.storeShownBranchesInConfig(branchNames)
 		case <-ctx.Done():
+		default:
+			t.changes.Update(repoChange)
+			t.storeShownBranchesInConfig(branchNames)
 		}
 		branchNames := t.getBranchNames(vRepo)
 		select {

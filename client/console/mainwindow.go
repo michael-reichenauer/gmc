@@ -3,7 +3,6 @@ package console
 import (
 	"fmt"
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/client"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
@@ -28,7 +27,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 		// Create rpc client and create service client
 		rpcClient := rpc.NewClient()
 		rpcClient.IsLogCalls = true
-		rpcClient.Latency = 600 * time.Millisecond
+		//rpcClient.Latency = 600 * time.Millisecond
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
@@ -40,7 +39,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 			//	rpcClient.Interrupt()
 		})
 		err := rpcClient.Connect(serverUri)
-		api := client.NewClient(rpcClient.ServiceClient(""))
+		api := NewClient(rpcClient.ServiceClient(""))
 
 		t.ui.Post(func() {
 			if err != nil {
@@ -59,7 +58,8 @@ func (t *MainWindow) Show(serverUri, path string) {
 func (t *MainWindow) showRepo(path string) {
 	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 	go func() {
-		err := t.api.OpenRepo(path, api.NilRsp)
+		var repoID string
+		err := t.api.OpenRepo(path, &repoID)
 		t.ui.Post(func() {
 			if err != nil {
 				log.Warnf("Failed to open %q, %v", path, err)
@@ -71,7 +71,7 @@ func (t *MainWindow) showRepo(path string) {
 			}
 
 			progress.Close()
-			repoView := NewRepoView(t.ui, t.api)
+			repoView := NewRepoView(t.ui, t.api, repoID)
 			repoView.Show()
 		})
 	}()

@@ -6,20 +6,29 @@ import (
 	"os/exec"
 	"path"
 	"runtime"
+	"time"
 )
 
 var Root = getRoot()
 
+func EchoLn() {
+	fmt.Printf("\n")
+}
+
 func Echo(format string, args ...interface{}) {
-	fmt.Printf(format+"\n", args...)
+	fmt.Printf(Now() + " " + format+"\n", args...)
 }
 
 func ErrorEcho(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", args...)
+	fmt.Fprintf(os.Stderr, Now() + " " + format+"\n", args...)
 }
 
 func Cmd(cmd string, args ...string) error {
 	return CmdWithEnv(nil, cmd, args...)
+}
+
+func Now() string{
+    return time.Now().Format("2006-01-02T15:04:05.0000")
 }
 
 // https://blog.kowalczyk.info/article/wOYk/advanced-command-execution-in-go-with-osexec.html
@@ -48,7 +57,7 @@ func Must(err error) {
 	if err != nil {
 		_, file, line, _ := runtime.Caller(1)
 		ErrorEcho("Error: %v\nat:\n  %s:%d", err, file, line)
-		ErrorEcho("")
+		EchoLn()
 		os.Exit(1)
 	}
 }

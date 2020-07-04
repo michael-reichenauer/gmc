@@ -26,7 +26,7 @@ func (t *repoLayout) getPageLines(
 	graphRows []api.GraphRow,
 	viewWidth int,
 	currentBranchDisplayName string,
-	repo api.ViewRepo,
+	repo api.Repo,
 ) []string {
 	if len(commits) < 1 {
 		return nil
@@ -55,7 +55,7 @@ func (t *repoLayout) getPageLines(
 	return lines
 }
 
-func (t *repoLayout) getMoreIndex(repo api.ViewRepo) int {
+func (t *repoLayout) getMoreIndex(repo api.Repo) int {
 	graphWidth := t.getGraphWidth(repo.ConsoleGraph)
 	return graphWidth - 2
 }
@@ -168,7 +168,7 @@ func (t *repoLayout) writeSubject(
 	c api.Commit,
 	currentBranchDisplayName string,
 	length int,
-	repo api.ViewRepo,
+	repo api.Repo,
 ) {
 	tagsText := t.toTagsText(c, length)
 
@@ -196,7 +196,7 @@ func (t *repoLayout) writeSubject(
 		color = cui.CBlue
 	}
 	if currentBranchDisplayName != "" &&
-		c.Branch.DisplayName != currentBranchDisplayName {
+		repo.Branches[c.BranchIndex].DisplayName != currentBranchDisplayName {
 		color = cui.CDark
 	}
 	sb.WriteString(cui.Green(tagsText))

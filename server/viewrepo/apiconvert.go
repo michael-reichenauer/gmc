@@ -47,10 +47,11 @@ func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
 	return diffs
 }
 
-func toViewRepo(repo *repo) api.ViewRepo {
+func toViewRepo(repo *repo) api.Repo {
 	graph := toConsoleGraph(repo)
-	return api.ViewRepo{
+	return api.Repo{
 		Commits:            toCommits(repo),
+		Branches:           toBranches(repo),
 		CurrentBranchName:  repo.CurrentBranchName,
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
@@ -60,12 +61,12 @@ func toViewRepo(repo *repo) api.ViewRepo {
 	}
 }
 
-func toConsoleGraph(repo *repo) api.Graph {
-	rows := make([]api.GraphRow, len(repo.Commits))
-	for i, c := range repo.Commits {
-		rows[i] = c.graph
+func toBranches(repo *repo) []api.Branch {
+	branches := make([]api.Branch, len(repo.Branches))
+	for i, b := range repo.Branches {
+		branches[i] = toBranch(b)
 	}
-	return rows
+	return branches
 }
 
 func toCommits(repo *repo) []api.Commit {
@@ -74,6 +75,14 @@ func toCommits(repo *repo) []api.Commit {
 		commits[i] = toCommit(c)
 	}
 	return commits
+}
+
+func toConsoleGraph(repo *repo) api.Graph {
+	rows := make([]api.GraphRow, len(repo.Commits))
+	for i, c := range repo.Commits {
+		rows[i] = c.graph
+	}
+	return rows
 }
 
 func toCommit(c *commit) api.Commit {
@@ -87,7 +96,7 @@ func toCommit(c *commit) api.Commit {
 		Author:             c.Author,
 		AuthorTime:         c.AuthorTime,
 		IsCurrent:          c.IsCurrent,
-		Branch:             toBranch(c.Branch),
+		BranchIndex:        c.Branch.index,
 		More:               c.More,
 		BranchTips:         c.BranchTips,
 		IsLocalOnly:        c.IsLocalOnly,

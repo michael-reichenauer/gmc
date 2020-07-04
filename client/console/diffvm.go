@@ -9,7 +9,7 @@ import (
 )
 
 type DiffGetter interface {
-	GetCommitDiff(id string, diff *api.CommitDiff) error
+	GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) error
 }
 
 type diffVM struct {
@@ -25,12 +25,13 @@ type diffVM struct {
 	isUnified      bool
 	firstCharIndex int
 	maxWidth       int
+	repoID         string
 }
 
 const viewWidth = 200
 
-func newDiffVM(ui cui.UI, viewer cui.Viewer, diffGetter DiffGetter, commitID string) *diffVM {
-	return &diffVM{ui: ui, viewer: viewer, diffGetter: diffGetter, commitID: commitID}
+func newDiffVM(ui cui.UI, viewer cui.Viewer, diffGetter DiffGetter, repoID string, commitID string) *diffVM {
+	return &diffVM{ui: ui, viewer: viewer, diffGetter: diffGetter, repoID: repoID, commitID: commitID}
 }
 
 func (t *diffVM) load() {
@@ -38,7 +39,7 @@ func (t *diffVM) load() {
 
 	go func() {
 		var diff api.CommitDiff
-		err := t.diffGetter.GetCommitDiff(t.commitID, &diff)
+		err := t.diffGetter.GetCommitDiff(api.CommitDiffInfo{RepoID: t.repoID, CommitID: t.commitID}, &diff)
 		t.viewer.PostOnUIThread(func() {
 			progress.Close()
 			if err != nil {

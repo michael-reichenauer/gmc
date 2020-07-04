@@ -4,24 +4,24 @@ type Api interface {
 	GetRecentWorkingDirs(_ NoArg, dirs *[]string) error
 	GetSubDirs(dirPath string, dirs *[]string) error
 
-	OpenRepo(path string, _ NoRsp) error
-	CloseRepo(_ NoArg, _ NoRsp) error
+	OpenRepo(path string, repoID *string) error
+	CloseRepo(repoID string, _ NoRsp) error
 
-	GetRepoChanges(_ NoArg, changes *[]RepoChange) error
-	TriggerRefreshRepo(_ NoArg, _ NoRsp) error
-	TriggerSearch(text string, _ NoRsp) error
+	GetRepoChanges(repoID string, changes *[]RepoChange) error
+	TriggerRefreshRepo(repoID string, _ NoRsp) error
+	TriggerSearch(search Search, _ NoRsp) error
 
-	GetBranches(args GetBranchesArgs, branches *[]Branch) error
-	GetCommitDiff(id string, diff *CommitDiff) error
+	GetBranches(args GetBranches, branches *[]Branch) error
+	GetCommitDiff(info CommitDiffInfo, diff *CommitDiff) error
 
-	Commit(message string, _ NoRsp) error
+	Commit(info CommitInfo, _ NoRsp) error
 
-	ShowBranch(name string, _ NoRsp) error
-	HideBranch(name string, _ NoRsp) error
-	Checkout(args CheckoutArgs, _ NoRsp) error
-	PushBranch(name string, _ NoRsp) error
-	PullCurrentBranch(_ NoArg, _ NoRsp) error
-	MergeBranch(name string, _ NoRsp) error
-	CreateBranch(name string, _ NoRsp) error
-	DeleteBranch(name string, _ NoRsp) error
+	ShowBranch(name BranchName, _ NoRsp) error
+	HideBranch(name BranchName, _ NoRsp) error
+	Checkout(args Checkout, _ NoRsp) error
+	PushBranch(name BranchName, _ NoRsp) error
+	PullCurrentBranch(repoID string, _ NoRsp) error
+	MergeBranch(name BranchName, _ NoRsp) error
+	CreateBranch(name BranchName, _ NoRsp) error
+	DeleteBranch(name BranchName, _ NoRsp) error
 }

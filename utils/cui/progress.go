@@ -41,9 +41,6 @@ func showProgress(ui *ui, format string, v ...interface{}) Progress {
 		startTime := time.Now()
 		if time.Since(instanceCloseTime) < showIconTimeout {
 			startTime = instanceStartTime
-			log.Infof("Reuse start time at %v", startTime)
-		} else {
-			log.Warnf("Use new start time %v", startTime)
 		}
 		instanceStartTime = startTime
 		instance = newProgress(ui, startTime)

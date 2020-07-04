@@ -3,6 +3,7 @@
 echo Building docker container ...
 docker build -q -t gmcbuilder -f ./build/Dockerfile_gmcbuilder build 
 if %ERRORLEVEL% neq 0 goto :ERROR
+echo Building gmc ...
 docker run -it --rm --mount type=bind,source="%CD%",target=/app -w /app gmcbuilder go run /app/build/build.go
 if %ERRORLEVEL% neq 0 goto :ERROR
 

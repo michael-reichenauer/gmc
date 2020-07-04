@@ -26,12 +26,12 @@ func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewDiffView(ui cui.UI, diffGetter DiffGetter, commitID string) DiffView {
+func NewDiffView(ui cui.UI, diffGetter DiffGetter, repoID string, commitID string) DiffView {
 	t := &diffView{
 		ui:       ui,
 		commitID: commitID,
 	}
-	t.vm = newDiffVM(t.ui, t, diffGetter, commitID)
+	t.vm = newDiffVM(t.ui, t, diffGetter, repoID, commitID)
 	t.vm.setUnified(t.isUnified)
 	t.leftSide = t.newLeftSide()
 	t.rightSide = t.newRightSide()
