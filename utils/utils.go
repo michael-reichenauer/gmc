@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 )
@@ -70,10 +71,49 @@ func GetVolumes() []string {
 	return []string{"/"}
 }
 
+func GetSubDirs(parentDirPath string) ([]string, error) {
+	files, err := ioutil.ReadDir(parentDirPath)
+	if err != nil {
+		// Folder not readable, might be e.g. access denied
+		return nil, err
+	}
+
+	var paths []string
+	for _, f := range files {
+		if !f.IsDir() || f.Name() == "$RECYCLE.BIN" {
+			continue
+		}
+		paths = append(paths, filepath.Join(parentDirPath, f.Name()))
+	}
+	// Sort with but ignore case
+	sort.SliceStable(paths, func(l, r int) bool {
+		return -1 == strings.Compare(strings.ToLower(paths[l]), strings.ToLower(paths[r]))
+	})
+	return paths, nil
+}
+
 func RecentItems(items []string, item string, maxSize int) []string {
 	if i := StringsIndex(items, item); i != -1 {
 		items = append(items[:i], items[i+1:]...)
 	}
+	if len(items) > maxSize {
+		items = items[0:1]
+	}
+	return append([]string{item}, items...)
+}
+
+func RecentPaths(items []string, item string, maxSize int) []string {
+	if runtime.GOOS == "windows" {
+		// Ignore paths case on Windows
+		if i := StringsIndexIC(items, item); i != -1 {
+			items = append(items[:i], items[i+1:]...)
+		}
+	} else {
+		if i := StringsIndex(items, item); i != -1 {
+			items = append(items[:i], items[i+1:]...)
+		}
+	}
+
 	if len(items) > maxSize {
 		items = items[0:1]
 	}
@@ -203,6 +243,15 @@ func StringsIndex(s []string, e string) int {
 	return -1
 }
 
+func StringsIndexIC(s []string, e string) int {
+	for i, a := range s {
+		if strings.EqualFold(a, e) {
+			return i
+		}
+	}
+	return -1
+}
+
 func init() {
 	rand.Seed(time.Now().UnixNano())
 }
@@ -215,4 +264,44 @@ func RandomString(n int) string {
 		b[i] = letterRunes[rand.Intn(len(letterRunes))]
 	}
 	return string(b)
+}
+
+// InfiniteChannel returns infinite in and out channels
+// https://medium.com/capital-one-tech/building-an-unbounded-channel-in-go-789e175cd2cd
+func InfiniteChannel() (chan<- interface{}, <-chan interface{}) {
+	in := make(chan interface{})
+	out := make(chan interface{})
+
+	go func() {
+		var inQueue []interface{}
+		outCh := func() chan interface{} {
+			if len(inQueue) == 0 {
+				return nil
+			}
+			return out
+		}
+		curVal := func() interface{} {
+			if len(inQueue) == 0 {
+				return nil
+			}
+			return inQueue[0]
+		}
+		for len(inQueue) > 0 || in != nil {
+			select {
+			case v, ok := <-in:
+				if !ok {
+					in = nil
+				} else {
+					inQueue = append(inQueue, v)
+				}
+			case outCh() <- curVal():
+				inQueue = inQueue[1:]
+
+			}
+
+		}
+		close(out)
+	}()
+
+	return in, out
 }

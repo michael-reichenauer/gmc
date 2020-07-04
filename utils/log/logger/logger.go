@@ -2,6 +2,7 @@ package logger
 
 import (
 	"fmt"
+	"github.com/denisbrodbeck/machineid"
 	"io/ioutil"
 	"net"
 	"os"
@@ -27,7 +28,7 @@ const (
 
 var (
 	baseFilePathLength = getBaseFileBathLength()
-	StdLogger          = NewLogger("gmc:")
+	StdLogger          = NewLogger(fmt.Sprintf("%s:gmc:", getLogID()))
 )
 
 type Logger struct {
@@ -67,7 +68,7 @@ func RedirectStdErrorToFile() {
 
 func NewLogger(prefix string) *Logger {
 	// fmt.Printf("log target: %s\n", logTarget)
-	remoteAddr, err := net.ResolveUDPAddr("udp", "127.0.0.1:40000")
+	remoteAddr, err := net.ResolveUDPAddr("udp", "192.168.0.9:40000")
 	if err != nil {
 		panic(err)
 	}
@@ -176,4 +177,12 @@ func caller(skip int) (pc uintptr, file string, line int, function string, ok bo
 	}
 	frame, _ := runtime.CallersFrames(rpc).Next()
 	return frame.PC, frame.File, frame.Line, frame.Function, frame.PC != 0
+}
+
+func getLogID() string {
+	id, err := machineid.ProtectedID("gmc")
+	if err != nil {
+		panic(err)
+	}
+	return strings.ToUpper(id[:4])
 }

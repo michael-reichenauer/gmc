@@ -8,6 +8,18 @@
 gmc.exe
 gmc_linux
 gmc_mac
+main
+
+# web
+# dependencies
+**/node_modules
+**/.pnp
+
+# testing
+**/coverage
+
+# production
+client/wui/build
 
 # Test binary, build with `go test -c`
 *.test

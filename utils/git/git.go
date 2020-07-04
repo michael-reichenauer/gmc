@@ -34,6 +34,7 @@ type Git interface {
 	GetBranches() (Branches, error)
 
 	InitRepo() error
+	ConfigRepoUser(name, email string) error
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
@@ -85,6 +86,19 @@ func NewWithCmd(cmd gitCommander) Git {
 func (t *git) InitRepo() error {
 	_, err := t.cmd.Git("init", t.cmd.WorkingDir())
 	return err
+}
+
+func (t *git) ConfigRepoUser(name, email string) error {
+	_, err := t.cmd.Git("config", "user.name", name)
+	if err != nil {
+		return err
+	}
+	_, err = t.cmd.Git("config", "user.email", email)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *git) GetRepo(maxCommitCount int) (Repo, error) {
@@ -196,14 +210,14 @@ func StripRemotePrefix(name string) string {
 }
 
 func CurrentRoot() string {
-	root, err := WorkingFolderRoot(utils.CurrentDir())
+	root, err := WorkingDirRoot(utils.CurrentDir())
 	if err != nil {
 		panic(log.Fatal(err))
 	}
 	return root
 }
 
-func WorkingFolderRoot(path string) (string, error) {
+func WorkingDirRoot(path string) (string, error) {
 	current := path
 	if strings.HasSuffix(path, ".git") || strings.HasSuffix(path, ".git/") || strings.HasSuffix(path, ".git\\") {
 		current = filepath.Dir(path)
@@ -221,5 +235,5 @@ func WorkingFolderRoot(path string) (string, error) {
 		}
 		current = parent
 	}
-	return "", fmt.Errorf("could not locater working folder root from " + path)
+	return "", fmt.Errorf("could not locate git repo in or above " + path)
 }
