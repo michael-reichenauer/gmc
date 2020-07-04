@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/client/console"
-	"github.com/michael-reichenauer/gmc/server"np
-	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"io/ioutil"
 	stdlog "log"
 	"net/http"
@@ -14,14 +11,17 @@ import (
 	"os/exec"
 	"runtime"
 
+	"github.com/michael-reichenauer/gmc/client/console"
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/installation"
 	"github.com/michael-reichenauer/gmc/program"
+	"github.com/michael-reichenauer/gmc/server"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
@@ -37,6 +37,7 @@ var (
 )
 
 func main() {
+	log.Infof("Start")
 	st := timer.Start()
 	flag.Parse()
 	if *showVersionFlag {
@@ -45,11 +46,13 @@ func main() {
 	}
 
 	if isWindowsGolandConsole() {
+		log.Infof("startAsExternalProcess")
 		// Seems program is run within a debugger console, which does not support termbox
 		// So a new external process is started and this instance ends
 		startAsExternalProcess()
 		return
 	}
+	log.Infof("Start normal")
 
 	// go func() {
 	// 	log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
@@ -96,7 +99,7 @@ func main() {
 		http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 			server.ServeWs(pool, w, r)
 		})
-		panic(log.Fatal(http.ListenAndServe(":8080", nil)))
+		panic(log.Fatal(http.ListenAndServe("127.0.0.1:8080", nil)))
 	}()
 
 	// Start rpc sever and serve rpc requests
