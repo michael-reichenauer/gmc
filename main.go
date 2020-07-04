@@ -37,7 +37,6 @@ var (
 )
 
 func main() {
-	log.Infof("Start")
 	st := timer.Start()
 	flag.Parse()
 	if *showVersionFlag {
@@ -46,13 +45,11 @@ func main() {
 	}
 
 	if isWindowsGolandConsole() {
-		log.Infof("startAsExternalProcess")
 		// Seems program is run within a debugger console, which does not support termbox
 		// So a new external process is started and this instance ends
 		startAsExternalProcess()
 		return
 	}
-	log.Infof("Start normal")
 
 	// go func() {
 	// 	log.Infof("prof on port 6060 %v", http.ListenAndServe("localhost:6060", nil))
