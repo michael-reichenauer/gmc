@@ -1,22 +1,23 @@
 package console
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 type getterMock struct {
 	git git.Git
 }
 
-func (t getterMock) GetCommitDiff(id string, rsp *api.CommitDiff) error {
-	diff, err := t.git.CommitDiff(id)
+func (t getterMock) GetCommitDiff(info api.CommitDiffInfo, rsp *api.CommitDiff) error {
+	diff, err := t.git.CommitDiff(info.CommitID)
 	if err != nil {
 		return err
 	}
@@ -65,7 +66,7 @@ func TestConflicts_Manual(t *testing.T) {
 
 	//assert.NoError(t, g.MergeBranch("develop"))
 
-	vm := newDiffVM(newUIMock(), viewer, getter, git.UncommittedID)
+	vm := newDiffVM(newUIMock(), viewer, getter, "", git.UncommittedID)
 	vm.load()
 	viewer.Run()
 	vtl, err := vm.getCommitDiffLeft(cui.ViewPage{Width: 10, Height: 1000})
@@ -83,7 +84,7 @@ func TestDiffVM_Manual(t *testing.T) {
 	viewer := newViewerMock(newUIMock(), nil)
 	getter := &getterMock{git: g}
 	id := git.UncommittedID
-	vm := newDiffVM(newUIMock(), viewer, getter, id)
+	vm := newDiffVM(newUIMock(), viewer, getter, "", id)
 	vm.load()
 	viewer.Run()
 	vt, err := vm.getCommitDiffLeft(cui.ViewPage{Width: 100, Height: 1000})

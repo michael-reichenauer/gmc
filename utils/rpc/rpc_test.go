@@ -24,6 +24,12 @@ type Api interface {
 	Set(arg Args, rsp None) error
 	Get(arg None, rsp *int) error
 	Trigger(arg None, rsp None) error
+	GenerateEvents(count int, rsp None) error
+}
+
+type Event struct {
+	name  string
+	count int
 }
 
 // The service client
@@ -31,8 +37,12 @@ type ApiClient struct {
 	client rpc.ServiceClient
 }
 
-func NewApiClient(client rpc.ServiceClient) Api {
+func NewApiClient(client rpc.ServiceClient) *ApiClient {
 	return &ApiClient{client: client}
+}
+
+func (t *ApiClient) Events(id string) (chan Event, error) {
+	return make(chan Event), nil
 }
 
 func (t *ApiClient) Add(args Args, rsp *int) error {
@@ -57,10 +67,14 @@ func (t *ApiClient) Trigger(args None, rsp None) error {
 	return t.client.Call(args, rsp)
 }
 
+func (t *ApiClient) GenerateEvents(args int, rsp None) error {
+	return t.client.Call(args, rsp)
+}
+
 type ApiServer struct {
 }
 
-func NewApiServer() Api {
+func NewApiServer() *ApiServer {
 	return &ApiServer{}
 }
 
@@ -93,6 +107,10 @@ func (t *ApiServer) Get(arg None, rsp *int) error {
 
 func (t *ApiServer) Trigger(_ None, _ None) error {
 	return nil
+}
+
+func (t *ApiServer) GenerateEvents(args int, rsp None) error {
+	return t.client.Call(args, rsp)
 }
 
 func TestRpc(t *testing.T) {
@@ -135,6 +153,15 @@ func TestRpc(t *testing.T) {
 	require.NoError(t, apiClient.Get(Nil, &rsp))
 	require.Equal(t, 5, rsp)
 	require.NoError(t, apiClient.Trigger(Nil, Nil))
+
+	events, err := apiClient.Events("1234")
+	require.NoError(t, err)
+	count := 0
+	for e := range events {
+		require.Equal(t, fmt.Sprintf("%d", count), e.name)
+		require.Equal(t, count, e.count)
+		count++
+	}
 }
 
 func TestRpcWithCloseServer(t *testing.T) {
