@@ -85,7 +85,7 @@ func main() {
 	go func() {
 		// fs := http.FileServer(http.Dir("C:\\code\\gmc\\client\\wui\\build"))
 		// log.Fatal(http.ListenAndServe("127.0.0.1:8081", fs))
-		// mape our `/ws` endpoint to the `serveWs` function
+		// map our `/ws` endpoint to the `serveWs` function
 		http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "Simple Server")
 		})

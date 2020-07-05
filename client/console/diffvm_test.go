@@ -53,12 +53,12 @@ func TestConflicts_Manual(t *testing.T) {
 	assert.Equal(t, "1\n22\n3\n", wf.File(file1).Read())
 
 	wf.File(file1).Write("1\nx2\n3\n")
-	assert.NoError(t, g.Commit("commitonmaster"))
+	assert.NoError(t, g.Commit("commit on master"))
 
 	assert.NoError(t, g.Checkout("develop"))
 	wf.File(file1).Write("1\ny2\n3\n")
 	wf.File(file2).Write("5\n63\n7\n")
-	assert.NoError(t, g.Commit("commitondevelop"))
+	assert.NoError(t, g.Commit("commit on develop"))
 
 	assert.NoError(t, g.Checkout("master"))
 

@@ -110,7 +110,8 @@ func (t *ApiServer) Trigger(_ None, _ None) error {
 }
 
 func (t *ApiServer) GenerateEvents(args int, rsp None) error {
-	return t.client.Call(args, rsp)
+	//return t.client.Call(args, rsp)
+	return nil
 }
 
 func TestRpc(t *testing.T) {

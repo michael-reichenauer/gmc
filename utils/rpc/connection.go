@@ -11,7 +11,7 @@ type connection struct {
 	onConnectionError func(err error)
 	connErrors        int32
 	latency           time.Duration
-	bandWithMpbs      float32
+	bandWithMbit      float32
 	onRead            func(p []byte)
 	onWrite           func(p []byte)
 }

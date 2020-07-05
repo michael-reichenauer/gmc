@@ -2,16 +2,18 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"golang.org/x/net/websocket"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"net/url"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"golang.org/x/net/websocket"
 )
 
+// ServiceClient supports making remote calls
 type ServiceClient interface {
 	Call(arg interface{}, rsp interface{}) error
 }
@@ -22,6 +24,7 @@ type serviceClient struct {
 	isLogCalls  bool
 }
 
+// Client supports rpc client functionality
 type Client struct {
 	IsLogCalls        bool
 	OnConnectionError func(err error)
@@ -30,13 +33,15 @@ type Client struct {
 	done              chan struct{}
 	uri               string
 	Latency           time.Duration
-	BandWithMpbs      float32
+	BandWithMbit      float32
 }
 
+// NewClient returns a new rpc client
 func NewClient() *Client {
 	return &Client{done: make(chan struct{})}
 }
 
+// Connect to the specified uri
 func (t *Client) Connect(uri string) error {
 	log.Infof("Connect to %q ...", uri)
 	// if t.Latency != 0 {
@@ -58,12 +63,13 @@ func (t *Client) Connect(uri string) error {
 		conn:              conn,
 		onConnectionError: t.OnConnectionError,
 		latency:           t.Latency,
-		bandWithMpbs:      t.BandWithMpbs,
+		bandWithMbit:      t.BandWithMbit,
 	}
 	t.rpcClient = jsonrpc.NewClient(t.connection)
 	return nil
 }
 
+// Close closes the connection
 func (t *Client) Close() {
 	select {
 	case <-t.done:
@@ -77,10 +83,12 @@ func (t *Client) Close() {
 	log.Infof("Closed %s", t.uri)
 }
 
+// Interrupt the connection (used in tests)
 func (t *Client) Interrupt() {
 	t.connection.conn.Close()
 }
 
+// ServiceClient returns service client, which supports making remote calls
 func (t *Client) ServiceClient(serviceName string) ServiceClient {
 	if serviceName == "" {
 		serviceName = defaultServiceName

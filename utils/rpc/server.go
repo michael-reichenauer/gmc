@@ -3,9 +3,6 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/rs/cors"
-	"golang.org/x/net/websocket"
 	"io"
 	"net"
 	"net/http"
@@ -15,10 +12,15 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/rs/cors"
+	"golang.org/x/net/websocket"
 )
 
 const defaultServiceName = "api"
 
+// Server supports rpc server functionality
 type Server struct {
 	URL       string
 	EventsURL string
@@ -34,6 +36,7 @@ type Server struct {
 	eventsPath    string
 }
 
+// NewServer returns a new rpc server
 func NewServer() *Server {
 	return &Server{
 		rpcServer:     rpc.NewServer(),
@@ -43,6 +46,7 @@ func NewServer() *Server {
 	}
 }
 
+// RegisterService to register a rpc service
 func (t *Server) RegisterService(serviceName string, service interface{}) error {
 	if serviceName == "" {
 		serviceName = defaultServiceName
@@ -50,6 +54,7 @@ func (t *Server) RegisterService(serviceName string, service interface{}) error 
 	return t.rpcServer.RegisterName(serviceName, service)
 }
 
+// Start to start rpc server
 func (t *Server) Start(uri, eventsPath string) error {
 	u, err := url.Parse(uri)
 	if err != nil {
@@ -81,6 +86,7 @@ func (t *Server) Start(uri, eventsPath string) error {
 	return nil
 }
 
+// Serve runs the https server
 func (t *Server) Serve() error {
 	err := t.httpServer.Serve(t.listener)
 
@@ -94,6 +100,7 @@ func (t *Server) Serve() error {
 	return err
 }
 
+// PostEvent to post events for the specified id
 func (t *Server) PostEvent(id string, event interface{}) {
 	eventBytes, err := json.Marshal(event)
 	if err != nil {
@@ -119,6 +126,7 @@ func (t *Server) PostEvent(id string, event interface{}) {
 	}
 }
 
+// Close the rpc server
 func (t *Server) Close() {
 	log.Infof("Closing %s ...", t.URL)
 	select {
