@@ -2,13 +2,14 @@ package server
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"net/http"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
 
 	"github.com/gorilla/websocket"
 )
 
-// define our WebSocket endpoint
+// ServeWs define our WebSocket endpoint
 func ServeWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 	log.Infof("Connecting from %s", r.Host)
 

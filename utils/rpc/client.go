@@ -1,7 +1,11 @@
 package rpc
 
 import (
+	"bufio"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"net/url"
@@ -9,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"golang.org/x/net/websocket"
 )
@@ -16,6 +21,7 @@ import (
 // ServiceClient supports making remote calls
 type ServiceClient interface {
 	Call(arg interface{}, rsp interface{}) error
+	Events(url string) (chan string, error)
 }
 
 type serviceClient struct {
@@ -32,6 +38,8 @@ type Client struct {
 	rpcClient         *rpc.Client
 	done              chan struct{}
 	uri               string
+	eventsURI         string
+	host              string
 	Latency           time.Duration
 	BandWithMbit      float32
 }
@@ -42,8 +50,7 @@ func NewClient() *Client {
 }
 
 // Connect to the specified uri
-func (t *Client) Connect(uri string) error {
-	log.Infof("Connect to %q ...", uri)
+func (t *Client) Connect(uri, eventsURI string) error {
 	// if t.Latency != 0 {
 	// 	time.Sleep(3 * t.Latency)
 	// }
@@ -51,6 +58,7 @@ func (t *Client) Connect(uri string) error {
 	if err != nil {
 		return err
 	}
+	t.host = u.Host
 	origin := fmt.Sprintf("http://%s", u.Host)
 
 	conn, err := websocket.Dial(uri, "", origin)
@@ -58,6 +66,7 @@ func (t *Client) Connect(uri string) error {
 		return err
 	}
 	t.uri = uri
+	t.eventsURI = eventsURI
 	log.Infof("Connected to  %q", uri)
 	t.connection = &connection{
 		conn:              conn,
@@ -67,6 +76,82 @@ func (t *Client) Connect(uri string) error {
 	}
 	t.rpcClient = jsonrpc.NewClient(t.connection)
 	return nil
+}
+
+// ConnectEvents connect to the event channel
+func (t *Client) events(id string) (chan string, error) {
+	url := fmt.Sprintf("%s%s", t.eventsURI, id)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Accept", "text/event-stream")
+
+	httpClient := &http.Client{Transport: &http.Transport{Proxy: utils.GetHTTPProxy()}}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		log.Infof("No contact with %s, %s", url, err)
+		return nil, err
+	}
+
+	if resp.StatusCode != 200 {
+		message, _ := ioutil.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Error code: %d, %s", resp.StatusCode, message)
+	}
+	eventChan := make(chan string)
+
+	go func() {
+		defer func() { _ = resp.Body.Close() }()
+		defer func() { eventChan <- "" }()
+
+		r := bufio.NewReader(resp.Body)
+		for {
+			e, err := t.readEvent(r)
+			if err == io.EOF {
+				log.Infof("Event stream closed")
+				return
+			}
+			if err != nil {
+				log.Warnf("Error %v", err)
+				return
+			}
+			eventChan <- e
+			//log.Infof("Event %q", e)
+		}
+	}()
+
+	return eventChan, nil
+}
+
+func (t *Client) readEvent(r *bufio.Reader) (string, error) {
+	_, err := r.Peek(1)
+	if err == io.ErrUnexpectedEOF {
+		err = io.EOF
+	}
+	if err != nil {
+		return "", err
+	}
+
+	line, err := r.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	// Skip last '\n' of the double '\n'
+	_, err = r.ReadString('\n')
+	if err != nil {
+		return "", err
+	}
+
+	if !strings.HasPrefix(line, "data: ") {
+		return "", fmt.Errorf("invalid event format")
+
+	}
+	line = line[6:]
+	line = strings.TrimSuffix(line, "\n")
+
+	return line, nil
 }
 
 // Close closes the connection
@@ -115,13 +200,17 @@ func (t *serviceClient) Call(arg interface{}, rsp interface{}) error {
 	return err
 }
 
+func (t *serviceClient) Events(url string) (chan string, error) {
+	return t.client.events(url)
+}
+
 func (*serviceClient) callerMethodName() string {
-	rpc := make([]uintptr, 1)
-	n := runtime.Callers(3, rpc[:])
+	pc := make([]uintptr, 1)
+	n := runtime.Callers(3, pc[:])
 	if n < 1 {
 		return ""
 	}
-	frame, _ := runtime.CallersFrames(rpc).Next()
+	frame, _ := runtime.CallersFrames(pc).Next()
 	callerName := frame.Function
 	i := strings.LastIndex(callerName, ".")
 	if i != -1 {

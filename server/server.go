@@ -2,6 +2,10 @@ package server
 
 import (
 	"fmt"
+	"path/filepath"
+	"sync"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
@@ -10,9 +14,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"path/filepath"
-	"sync"
-	"time"
 )
 
 const getChangesTimout = 1 * time.Minute
@@ -28,6 +29,7 @@ type server struct {
 	repos         map[string]repoInfo
 }
 
+// NewServer returns a server
 func NewServer(configService *config.Service) api.Api {
 	return &server{configService: configService, repos: make(map[string]repoInfo)}
 }

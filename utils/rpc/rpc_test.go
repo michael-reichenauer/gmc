@@ -1,9 +1,11 @@
 package rpc_test
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"github.com/stretchr/testify/assert"
@@ -24,12 +26,14 @@ type Api interface {
 	Set(arg Args, rsp None) error
 	Get(arg None, rsp *int) error
 	Trigger(arg None, rsp None) error
+	OpenEvents(arg None, rsp *string) error
 	GenerateEvents(count int, rsp None) error
+	CloseEvents(arg string, rsp None) error
 }
 
 type Event struct {
-	name  string
-	count int
+	Name  string
+	Count int
 }
 
 // The service client
@@ -42,7 +46,28 @@ func NewApiClient(client rpc.ServiceClient) *ApiClient {
 }
 
 func (t *ApiClient) Events(id string) (chan Event, error) {
-	return make(chan Event), nil
+	rawEvents, err := t.client.Events(id)
+	if err != nil {
+		return nil, err
+	}
+	events := make(chan Event)
+
+	go func() {
+		defer close(events)
+		for e := range rawEvents {
+			if e == "" {
+				break
+			}
+			var event Event
+			err := json.Unmarshal([]byte(e), &event)
+			if err != nil {
+				panic(log.Fatal(err))
+			}
+			events <- event
+		}
+	}()
+
+	return events, nil
 }
 
 func (t *ApiClient) Add(args Args, rsp *int) error {
@@ -67,15 +92,25 @@ func (t *ApiClient) Trigger(args None, rsp None) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t *ApiClient) GenerateEvents(args int, rsp None) error {
+func (t *ApiClient) OpenEvents(args None, rsp *string) error {
 	return t.client.Call(args, rsp)
 }
 
-type ApiServer struct {
+func (t *ApiClient) GenerateEvents(arg int, rsp None) error {
+	return t.client.Call(arg, rsp)
 }
 
-func NewApiServer() *ApiServer {
-	return &ApiServer{}
+func (t *ApiClient) CloseEvents(arg string, rsp None) error {
+	return t.client.Call(arg, rsp)
+}
+
+type ApiServer struct {
+	rpcServer *rpc.Server
+	eventsID  string
+}
+
+func NewApiServer(rpcServer *rpc.Server) *ApiServer {
+	return &ApiServer{rpcServer: rpcServer}
 }
 
 type Args struct {
@@ -109,15 +144,32 @@ func (t *ApiServer) Trigger(_ None, _ None) error {
 	return nil
 }
 
+func (t *ApiServer) OpenEvents(_ None, rsp *string) error {
+	t.eventsID = uuid.New().String()
+	t.rpcServer.CreateEvents(t.eventsID)
+	*rsp = t.eventsID
+	return nil
+}
+
 func (t *ApiServer) GenerateEvents(args int, rsp None) error {
-	//return t.client.Call(args, rsp)
+	go func() {
+		for i := 0; i < args; i++ {
+			t.rpcServer.PostEvent(t.eventsID, Event{Name: fmt.Sprintf("%d", i), Count: i})
+		}
+	}()
+	return nil
+}
+
+func (t *ApiServer) CloseEvents(arg string, _ None) error {
+	t.rpcServer.CloseEvents(arg)
 	return nil
 }
 
 func TestRpc(t *testing.T) {
 	// Create rpc server and register service server
 	rpcServer := rpc.NewServer()
-	err := rpcServer.RegisterService("api", NewApiServer())
+	apiServer := NewApiServer(rpcServer)
+	err := rpcServer.RegisterService("api", apiServer)
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
@@ -132,7 +184,7 @@ func TestRpc(t *testing.T) {
 
 	// Create rpc client and create service client
 	rpcClient := rpc.NewClient()
-	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
+	assert.NoError(t, rpcClient.Connect(rpcServer.RPCURL, rpcServer.EventsURL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
 
@@ -155,20 +207,28 @@ func TestRpc(t *testing.T) {
 	require.Equal(t, 5, rsp)
 	require.NoError(t, apiClient.Trigger(Nil, Nil))
 
-	events, err := apiClient.Events("1234")
+	var eventsID string
+	require.NoError(t, apiClient.OpenEvents(Nil, &eventsID))
+	events, err := apiClient.Events(eventsID)
 	require.NoError(t, err)
+
+	apiClient.GenerateEvents(5, Nil)
 	count := 0
 	for e := range events {
-		require.Equal(t, fmt.Sprintf("%d", count), e.name)
-		require.Equal(t, count, e.count)
+		require.Equal(t, fmt.Sprintf("%d", count), e.Name)
+		require.Equal(t, count, e.Count)
 		count++
+		if count == 5 {
+			require.NoError(t, apiClient.CloseEvents(eventsID, Nil))
+		}
 	}
+	require.Equal(t, 5, count)
 }
 
 func TestRpcWithCloseServer(t *testing.T) {
 	// Create rpc server and register service server
 	rpcServer := rpc.NewServer()
-	err := rpcServer.RegisterService("api", NewApiServer())
+	err := rpcServer.RegisterService("api", NewApiServer(rpcServer))
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
@@ -184,7 +244,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 	// Create rpc client and create service client
 	rpcClient := rpc.NewClient()
 	rpcClient.OnConnectionError = func(err error) { log.Warnf("Connection error: %v", err) }
-	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
+	assert.NoError(t, rpcClient.Connect(rpcServer.RPCURL, rpcServer.EventsURL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
 
@@ -210,7 +270,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 func TestRpcWithCloseClient(t *testing.T) {
 	// Create rpc server and register service server
 	rpcServer := rpc.NewServer()
-	err := rpcServer.RegisterService("api", NewApiServer())
+	err := rpcServer.RegisterService("api", NewApiServer(rpcServer))
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
@@ -226,7 +286,7 @@ func TestRpcWithCloseClient(t *testing.T) {
 	// Create rpc client and create service client
 	rpcClient := rpc.NewClient()
 	rpcClient.OnConnectionError = func(err error) { log.Warnf("Connection error: %v", err) }
-	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
+	assert.NoError(t, rpcClient.Connect(rpcServer.RPCURL, rpcServer.EventsURL))
 	defer rpcClient.Close()
 	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
 

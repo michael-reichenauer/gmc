@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"strings"
 	"sync"
-	"time"
 
+	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/rs/cors"
 	"golang.org/x/net/websocket"
@@ -22,7 +22,7 @@ const defaultServiceName = "api"
 
 // Server supports rpc server functionality
 type Server struct {
-	URL       string
+	RPCURL    string
 	EventsURL string
 	rpcServer *rpc.Server
 
@@ -32,7 +32,7 @@ type Server struct {
 	httpServer    *http.Server
 	listener      net.Listener
 	connectionID  int
-	eventChannels map[chan []byte]string
+	eventChannels map[string]observer.Property
 	eventsPath    string
 }
 
@@ -42,7 +42,7 @@ func NewServer() *Server {
 		rpcServer:     rpc.NewServer(),
 		done:          make(chan struct{}),
 		connections:   make(map[int]io.ReadWriteCloser),
-		eventChannels: make(map[chan []byte]string),
+		eventChannels: make(map[string]observer.Property),
 	}
 }
 
@@ -72,7 +72,8 @@ func (t *Server) Start(uri, eventsPath string) error {
 
 	mux := http.NewServeMux()
 
-	t.URL = fmt.Sprintf("ws://%s%s", listener.Addr().String(), u.Path)
+	t.RPCURL = fmt.Sprintf("ws://%s%s", listener.Addr().String(), u.Path)
+	t.EventsURL = fmt.Sprintf("http://%s%s", listener.Addr().String(), eventsPath)
 
 	// Websocket
 	mux.Handle(u.Path, websocket.Handler(t.webSocketHandler))
@@ -82,7 +83,7 @@ func (t *Server) Start(uri, eventsPath string) error {
 
 	t.httpServer = &http.Server{Handler: handler}
 	t.listener = listener
-	log.Infof("Started rpc server on %s", t.URL)
+	log.Infof("Started rpc server on %s", t.RPCURL)
 	return nil
 }
 
@@ -100,35 +101,43 @@ func (t *Server) Serve() error {
 	return err
 }
 
-// PostEvent to post events for the specified id
-func (t *Server) PostEvent(id string, event interface{}) {
-	eventBytes, err := json.Marshal(event)
-	if err != nil {
-		panic(log.Fatal(err))
-	}
-
-	var eventChannels []chan []byte
+// CreateEvents creates event channel
+func (t *Server) CreateEvents(id string) {
+	log.Infof("Create events %s", id)
 	t.lock.Lock()
-	for eventChannel, channelID := range t.eventChannels {
-		if id == channelID {
-			eventChannels = append(eventChannels, eventChannel)
-		}
+	t.eventChannels[id] = observer.NewProperty(nil)
+	t.lock.Unlock()
+}
+
+func (t *Server) CloseEvents(id string) {
+	log.Infof("Close events %s", id)
+	t.lock.Lock()
+	events, ok := t.eventChannels[id]
+	if ok {
+		events.Update(nil)
+		delete(t.eventChannels, id)
 	}
 	t.lock.Unlock()
+}
 
-	for _, eventChannel := range eventChannels {
-		select {
-		case eventChannel <- eventBytes:
-		case <-t.done:
-			// Closed, no error
-			return
-		}
+// PostEvent to post events for the specified id
+func (t *Server) PostEvent(id string, event interface{}) {
+	//log.Infof("Post events %s %v", id, event)
+	if event == nil {
+		return
 	}
+
+	t.lock.Lock()
+	events, ok := t.eventChannels[id]
+	if ok {
+		events.Update(event)
+	}
+	t.lock.Unlock()
 }
 
 // Close the rpc server
 func (t *Server) Close() {
-	log.Infof("Closing %s ...", t.URL)
+	log.Infof("Closing %s ...", t.RPCURL)
 	select {
 	case <-t.done:
 		// Already closed
@@ -139,20 +148,20 @@ func (t *Server) Close() {
 	close(t.done)
 
 	t.lock.Lock()
-	for eventChannel := range t.eventChannels {
-		close(eventChannel)
-		delete(t.eventChannels, eventChannel)
+	for id, events := range t.eventChannels {
+		events.Update(nil)
+		delete(t.eventChannels, id)
 	}
 	t.lock.Unlock()
 
 	// Close server for new connections
 	t.httpServer.Close()
 	t.closeAllCurrentConnections()
-	log.Infof("Closed %s", t.URL)
+	log.Infof("Closed %s", t.RPCURL)
 }
 
 func (t *Server) webSocketHandler(conn *websocket.Conn) {
-	log.Infof("Connected %s->%s", conn.RemoteAddr(), t.URL)
+	log.Infof("Connected %s->%s", conn.RemoteAddr(), t.RPCURL)
 
 	// Keep track of current connections so they can be closed when closing server
 	connection := &connection{conn: conn}
@@ -160,7 +169,7 @@ func (t *Server) webSocketHandler(conn *websocket.Conn) {
 
 	t.rpcServer.ServeCodec(jsonrpc.NewServerCodec(connection))
 	t.removeConnection(id)
-	log.Infof("Disconnected %s->%s", conn.RemoteAddr(), t.URL)
+	log.Infof("Disconnected %s->%s", conn.RemoteAddr(), t.RPCURL)
 }
 
 func (t *Server) storeConnection(conn io.ReadWriteCloser) int {
@@ -192,13 +201,12 @@ func (t *Server) closeAllCurrentConnections() {
 }
 
 func (t *Server) eventHandler(rw http.ResponseWriter, req *http.Request) {
-	log.Warnf("Events start")
 	flusher, ok := rw.(http.Flusher)
 	if !ok {
 		http.Error(rw, "Streaming unsupported!", http.StatusInternalServerError)
 		return
 	}
-	log.Warnf("Request: %q", req.RequestURI)
+	log.Infof("Events request: %q", req.RequestURI)
 	index := strings.LastIndex(req.RequestURI, t.eventsPath)
 	if index == -1 || len(req.RequestURI) == index+len(t.eventsPath) {
 		log.Warnf("Invalid id")
@@ -206,43 +214,56 @@ func (t *Server) eventHandler(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 	id := req.RequestURI[index+len(t.eventsPath):]
-	log.Infof("id: %d %q %q", index, req.RequestURI, id)
+
+	var eventsStream observer.Stream
+	t.lock.Lock()
+	events, ok := t.eventChannels[id]
+	if ok {
+		eventsStream = events.Observe()
+	}
+	t.lock.Unlock()
+
+	if eventsStream == nil {
+		log.Warnf("Unknown events id: %s", id)
+		http.Error(rw, "Unknown id", http.StatusBadRequest)
+		return
+	}
 
 	rw.Header().Set("Content-Type", "text/event-stream")
 	rw.Header().Set("Cache-Control", "no-cache")
 	rw.Header().Set("Connection", "keep-alive")
 	rw.Header().Set("Access-Control-Allow-Origin", "*")
 
-	eventChannel := make(chan []byte)
-	t.lock.Lock()
-	t.eventChannels[eventChannel] = id
-	t.lock.Unlock()
-
 	// Remove this eventChannel from the map of eventChannels when this handler exits.
 	defer func() {
 		//	broker.closingClients <- messageChan
-		t.lock.Lock()
-		delete(t.eventChannels, eventChannel)
-		t.lock.Unlock()
-		log.Warnf("Closed")
+		log.Infof("Closed eventHandler %q", id)
 	}()
-
-	time.AfterFunc(5*time.Second, func() {
-		t.PostEvent(id, "some event")
-	})
 
 	// flush to signal to client that event stream is open (no need to wait for first event)
 	flusher.Flush()
 	for {
 		select {
 		case <-req.Context().Done():
+			log.Infof("Request was closed")
 			return
-		case event, ok := <-eventChannel:
-			if !ok {
+		case <-t.done:
+			log.Infof("Server was closed")
+			return
+		case <-eventsStream.Changes():
+			eventsStream.Next()
+			event := eventsStream.Value()
+			if event == nil {
+				log.Infof("Event stream was closed")
 				return
 			}
-			log.Warnf("Send %s", string(event))
-			fmt.Fprintf(rw, "data: %s\n\n", string(event))
+
+			eventBytes, err := json.Marshal(event)
+			if err != nil {
+				panic(log.Fatal(err))
+			}
+			//log.Infof("Send %s", string(eventBytes))
+			fmt.Fprintf(rw, "data: %s\n\n", string(eventBytes))
 		}
 
 		flusher.Flush()

@@ -6,12 +6,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+// Client is a remote client
 type Client struct {
 	ID   string
 	Conn *websocket.Conn
 	Pool *Pool
 }
 
+// Message is a message
 type Message struct {
 	Type int    `json:"type"`
 	Body string `json:"body"`

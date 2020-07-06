@@ -4,10 +4,15 @@
         "Cygwin",
         "Debugf",
         "Mbit",
+        "Unregister",
         "Warnf",
         "gmctmp",
+        "imkira",
         "isatty",
+        "repos",
         "stretchr",
+        "upgrader",
+        "uuid",
         "viewrepo"
     ]
 }
