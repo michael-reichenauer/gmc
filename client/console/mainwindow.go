@@ -2,13 +2,14 @@ package console
 
 import (
 	"fmt"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
-	"path"
-	"strings"
-	"time"
 )
 
 type MainWindow struct {
@@ -21,7 +22,7 @@ func NewMainWindow(ui cui.UI) *MainWindow {
 	return &MainWindow{ui: ui}
 }
 
-func (t *MainWindow) Show(serverUri, path string) {
+func (t *MainWindow) Show(serverUri, eventsUrl, path string) {
 	progress := t.ui.ShowProgress("Connecting")
 	go func() {
 		// Create rpc client and create service client
@@ -31,14 +32,14 @@ func (t *MainWindow) Show(serverUri, path string) {
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
-				msgBox.OnOK = func() { t.ui.Post(func() { t.Show(serverUri, path) }) }
+				msgBox.OnOK = func() { t.ui.Post(func() { t.Show(serverUri, eventsUrl, path) }) }
 				msgBox.Show()
 			})
 		}
 		time.AfterFunc(20*time.Second, func() {
 			//	rpcClient.Interrupt()
 		})
-		err := rpcClient.Connect(serverUri)
+		err := rpcClient.Connect(serverUri, eventsUrl)
 		api := NewClient(rpcClient.ServiceClient(""))
 
 		t.ui.Post(func() {

@@ -118,7 +118,7 @@ func main() {
 	ui.Run(func() {
 		log.Infof("Show main window %s", st)
 		mainWindow := console.NewMainWindow(ui)
-		mainWindow.Show(rpcServer.RPCURL, *workingDirFlag)
+		mainWindow.Show(rpcServer.RPCURL, rpcServer.EventsURL, *workingDirFlag)
 	})
 }
 
