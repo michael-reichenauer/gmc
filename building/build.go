@@ -1,9 +1,10 @@
 package main
 
 import (
-	. "github.com/michael-reichenauer/gmc/build/utils"
 	"os"
 	"runtime"
+
+	. "github.com/michael-reichenauer/gmc/building/utils"
 )
 
 func main() {
@@ -21,18 +22,18 @@ func main() {
 
 	// linker flags "-ldflags", "-s -w" omits debug and symbols to reduce size
 	// ("-H=windowsgui" would disable console on windows)
-	Echo("Building gmc.exe ...")
-	env := []string{"GOOS=windows", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
+	// Echo("Building gmc.exe ...")
+	// env := []string{"GOOS=windows", "GOARCH=amd64"}
+	// Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
 
 	Echo("Building gmc_linux ...")
-	env = []string{"GOOS=linux", "GOARCH=amd64"}
+	env := []string{"GOOS=linux", "GOARCH=amd64"}
 	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_linux", "main.go"))
 
-	Echo("Building gmc_mac ...")
-	env = []string{"GOOS=darwin", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_mac", "main.go"))
-	EchoLn()
+	// Echo("Building gmc_mac ...")
+	// env = []string{"GOOS=darwin", "GOARCH=amd64"}
+	// Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_mac", "main.go"))
+	// EchoLn()
 
 	Echo("Built version:")
 	echoBuiltVersion()

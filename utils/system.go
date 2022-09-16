@@ -11,7 +11,8 @@ var MachineID = getMachineID()
 func getMachineID() string {
 	id, err := machineid.ProtectedID(appID)
 	if err != nil {
-		panic(err)
+		return "gmcid"
+		//panic(err) ! investigate !!!!!!!!!
 	}
 	return id
 }

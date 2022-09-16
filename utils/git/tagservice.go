@@ -21,7 +21,7 @@ func newTagService(cmd gitCommander) *tagService {
 func (t *tagService) getTags() ([]Tag, error) {
 	output, err := t.cmd.Git("show-ref", "--dereference", "--tags")
 	if err != nil {
-		return nil, err
+		return []Tag{}, nil
 	}
 	tags := t.parseTags(output)
 	return tags, nil

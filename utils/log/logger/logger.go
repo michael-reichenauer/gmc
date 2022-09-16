@@ -2,8 +2,8 @@ package logger
 
 import (
 	"fmt"
-	"github.com/denisbrodbeck/machineid"
 	"io/ioutil"
+	"log"
 	"net"
 	"os"
 	"path"
@@ -11,6 +11,8 @@ import (
 	"runtime/debug"
 	"strings"
 	"time"
+
+	"github.com/denisbrodbeck/machineid"
 )
 
 const (
@@ -31,10 +33,15 @@ var (
 	StdLogger          = NewLogger(fmt.Sprintf("%s:gmc:", getLogID()))
 )
 
+const (
+	timeFormat = "15:04:05.000"
+)
+
 type Logger struct {
 	prefix    string // prefix to write at beginning of each line
 	isWindows bool
 	udpLogger *net.UDPConn
+	file      *os.File
 }
 
 func RedirectStdErrorToFile() {
@@ -46,7 +53,7 @@ func RedirectStdErrorToFile() {
 	errorsPath := path.Join(home, errorsFile)
 
 	// Log previous error for last instance if it exists
-	previousErrorData, err := ioutil.ReadFile(errorsPath)
+	previousErrorData, _ := ioutil.ReadFile(errorsPath)
 	previousError := string(previousErrorData)
 	if previousError != "" {
 		fileTime := time.Now()
@@ -82,8 +89,14 @@ func NewLogger(prefix string) *Logger {
 	}
 
 	udpLogger := udp
+	logFilePath := fmt.Sprintf("%s/gmclog.txt", os.TempDir())
+	_ = os.Remove(logFilePath)
+	f, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		log.Println(err)
+	}
 
-	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows", udpLogger: udpLogger}
+	return &Logger{prefix: prefix, isWindows: runtime.GOOS == "windows", udpLogger: udpLogger, file: f}
 }
 
 func (l *Logger) Debugf(format string, v ...interface{}) {
@@ -112,8 +125,7 @@ func (l *Logger) Fatalf(err error, format string, v ...interface{}) string {
 
 func (l *Logger) Fatal(err error, v ...interface{}) string {
 	msg := fmt.Sprint(v...)
-	emsg := err.Error()
-	emsg = fmt.Sprintf("%s, %v\n%s", msg, err, debug.Stack())
+	emsg := fmt.Sprintf("%s, %v\n%s", msg, err, debug.Stack())
 
 	l.Output(Fatal, emsg)
 	l.FatalError(err, msg)
@@ -141,6 +153,14 @@ func (l *Logger) output(level, message string) {
 	for _, ml := range lines {
 		txt := fmt.Sprintf("%s%s %s:%s(%d) %s", l.prefix, level, file, function, line, ml)
 		_, _ = l.udpLogger.Write([]byte(txt))
+		txt2 := fmt.Sprintf("%s %s %s(%d) %s: %s", time.Now().Format(timeFormat), level, file, line, function, ml)
+		l.outputToFile(txt2)
+	}
+}
+
+func (l *Logger) outputToFile(text string) {
+	if _, err := l.file.WriteString(text + "\n"); err != nil {
+		log.Println(err)
 	}
 }
 
@@ -182,7 +202,8 @@ func caller(skip int) (pc uintptr, file string, line int, function string, ok bo
 func getLogID() string {
 	id, err := machineid.ProtectedID("gmc")
 	if err != nil {
-		panic(err)
+		return "gmcid"
+		//panic(err) ! investigate !!!!!!!!!
 	}
 	return strings.ToUpper(id[:4])
 }
