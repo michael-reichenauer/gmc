@@ -479,60 +479,60 @@ func (t *ViewRepo) storeShownBranchesInConfig(branchNames []string) {
 	})
 }
 
-func (t *ViewRepo) getSearchModel(grepo gitrepo.Repo, searchText string) *repo {
+func (t *ViewRepo) getSearchModel(gRepo gitrepo.Repo, searchText string) *repo {
 	log.Infof("getSearchModel")
 	ti := timer.Start()
 	repo := newRepo()
-	repo.gitRepo = grepo
-	repo.WorkingFolder = grepo.RepoPath
-	currentBranch, ok := grepo.CurrentBranch()
-	repo.UncommittedChanges = grepo.Status.AllChanges()
-	repo.Conflicts = grepo.Status.Conflicted
+	repo.gitRepo = gRepo
+	repo.WorkingFolder = gRepo.RepoPath
+	currentBranch, ok := gRepo.CurrentBranch()
+	repo.UncommittedChanges = gRepo.Status.AllChanges()
+	repo.Conflicts = gRepo.Status.Conflicted
 
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
-	for _, b := range grepo.Branches {
+	for _, b := range gRepo.Branches {
 		repo.addBranch(b)
 	}
 
-	for _, c := range grepo.SearchCommits(searchText) {
+	for _, c := range gRepo.SearchCommits(searchText) {
 		repo.addSearchCommit(c)
 	}
-	t.addTags(repo, grepo.Tags)
+	t.addTags(repo, gRepo.Tags)
 	log.Infof("done, %s", ti)
 	return repo
 }
 
-func (t *ViewRepo) getViewModel(grepo gitrepo.Repo, branchNames []string) *repo {
+func (t *ViewRepo) getViewModel(gRepo gitrepo.Repo, branchNames []string) *repo {
 	log.Infof("getViewModel")
 	ti := timer.Start()
 	repo := newRepo()
-	repo.gitRepo = grepo
-	repo.WorkingFolder = grepo.RepoPath
-	repo.UncommittedChanges = grepo.Status.AllChanges()
-	repo.Conflicts = grepo.Status.Conflicted
-	repo.MergeMessage = grepo.Status.MergeMessage
+	repo.gitRepo = gRepo
+	repo.WorkingFolder = gRepo.RepoPath
+	repo.UncommittedChanges = gRepo.Status.AllChanges()
+	repo.Conflicts = gRepo.Status.Conflicted
+	repo.MergeMessage = gRepo.Status.MergeMessage
 
-	branches := t.getGitRepoBranches(branchNames, grepo)
+	branches := t.getGitRepoBranches(branchNames, gRepo)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
 
-	currentBranch, ok := grepo.CurrentBranch()
+	currentBranch, ok := gRepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
-	if !grepo.Status.OK() {
-		repo.addVirtualStatusCommit(grepo)
+	if !gRepo.Status.OK() {
+		repo.addVirtualStatusCommit(gRepo)
 	}
-	for _, c := range grepo.Commits {
+	for _, c := range gRepo.Commits {
 		repo.addGitCommit(c)
 	}
 
-	t.addTags(repo, grepo.Tags)
+	t.addTags(repo, gRepo.Tags)
 
 	t.adjustCurrentBranchIfStatus(repo)
 	t.setBranchParentChildRelations(repo)
