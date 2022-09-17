@@ -5,6 +5,7 @@
     "imkira",
     "ldflags",
     "rundll",
+    "stdlog",
     "thoas",
     "viewrepo",
     "windowsgui"

@@ -1,7 +1,6 @@
 package log
 
 import (
-	"fmt"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 )
 
@@ -26,11 +25,11 @@ func Fatal(err error, v ...interface{}) string {
 }
 
 func Event(eventName string) {
-	logger.StdLogger.Infof("Telemetry: event: %q", eventName)
-	logger.StdTelemetry.SendEvent(eventName)
+	// logger.StdLogger.Infof("Telemetry: event: %q", eventName)
+	// logger.StdTelemetry.SendEvent(eventName)
 }
 
 func Eventf(eventName, message string, v ...interface{}) {
-	logger.StdLogger.Infof("Telemetry: event: %q %q", eventName, fmt.Sprintf(message, v...))
-	logger.StdTelemetry.SendEventf(eventName, message, v...)
+	// logger.StdLogger.Infof("Telemetry: event: %q %q", eventName, fmt.Sprintf(message, v...))
+	// logger.StdTelemetry.SendEventf(eventName, message, v...)
 }
