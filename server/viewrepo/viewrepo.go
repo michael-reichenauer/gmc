@@ -3,6 +3,11 @@ package viewrepo
 import (
 	"context"
 	"fmt"
+	"hash/fnv"
+	"sort"
+	"strings"
+	"sync"
+
 	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
@@ -13,15 +18,13 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/thoas/go-funk"
-	"hash/fnv"
-	"sort"
-	"strings"
-	"sync"
 )
 
 const (
 	masterName       = "master"
 	remoteMasterName = "origin/master"
+	mainName         = "main"
+	remoteMainName   = "origin/main"
 )
 
 type showRequest struct {
@@ -129,7 +132,7 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	if ok {
 		return cui.Color(color)
 	}
-	if name == "master" {
+	if name == masterName || name == mainName {
 		return cui.CMagenta
 	}
 	if name == "develop" {
@@ -279,13 +282,14 @@ func (t *ViewRepo) getCommitOpenOutBranches(commitID string) []api.Branch {
 	return bs
 }
 
-//
 func (t *ViewRepo) getShownBranches(skipMaster bool) []api.Branch {
 	viewRepo := t.getViewRepo()
 	bs := []api.Branch{}
 	for _, b := range viewRepo.Branches {
-		if skipMaster && (b.name == masterName || b.name == remoteMasterName) {
-			// Do not support closing master branch
+		if skipMaster &&
+			(b.name == masterName || b.name == remoteMasterName ||
+				b.name == mainName || b.name == remoteMainName) {
+			// Do not support closing main branch
 			continue
 		}
 		if b.isRemote && nil != funk.Find(viewRepo.Branches, func(bsb *branch) bool {
@@ -329,7 +333,6 @@ func (t *ViewRepo) TriggerSearch(text string) {
 	}
 }
 
-//
 func (t *ViewRepo) HideBranch(name string) {
 	viewRepo := t.getViewRepo()
 	hideBranch, ok := funk.Find(viewRepo.Branches, func(b *branch) bool {
@@ -590,7 +593,6 @@ func containsDisplayNameBranch(branches []api.Branch, displayName string) bool {
 	return false
 }
 
-//
 func containsBranch(branches []*branch, name string) bool {
 	for _, b := range branches {
 		if name == b.name {
