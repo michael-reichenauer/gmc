@@ -3,9 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/client/console"
-	"github.com/michael-reichenauer/gmc/server"
-	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"io/ioutil"
 	stdlog "log"
 	"net/http"
@@ -13,6 +10,10 @@ import (
 	"os"
 	"os/exec"
 	"runtime"
+
+	"github.com/michael-reichenauer/gmc/client/console"
+	"github.com/michael-reichenauer/gmc/server"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/installation"
@@ -69,7 +70,7 @@ func main() {
 	utils.SetDefaultHTTPProxy()
 
 	// Enable telemetry and logging
-	logger.StdTelemetry.Enable(version)
+	// logger.StdTelemetry.Enable(version)
 	defer logger.StdTelemetry.Close()
 	log.Eventf("program-start", "Starting gmc %s ...", version)
 	logger.RedirectStdErrorToFile()

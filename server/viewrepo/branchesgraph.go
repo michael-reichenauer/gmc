@@ -48,7 +48,7 @@ func (s *branchesGraph) drawBranchLine(branch *branch) {
 			c.graph[branch.index].Branch.Set(api.BActiveTip) // ┣   (indicate possible more commits in the future)
 		}
 		if c == c.Branch.bottom {
-			c.graph[branch.index].Branch.Set(api.BBottom) // ┗   (bottom commit (e.g. initial commit on master)
+			c.graph[branch.index].Branch.Set(api.BBottom) // ┗   (bottom commit (e.g. initial commit on main)
 		}
 		if c != c.Branch.tip && c != c.Branch.bottom { // ┣   (normal commit, in the middle)
 			c.graph[branch.index].Branch.Set(api.BCommit)

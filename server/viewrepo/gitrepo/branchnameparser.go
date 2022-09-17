@@ -7,7 +7,7 @@ import (
 
 var (
 	prefixes   = []string{"refs/remotes/origin/", "remotes/origin/", "origin/"}
-	nameRegExp = regexp.MustCompile( // parse subject like e.g. "Merge branch 'develop' into master"
+	nameRegExp = regexp.MustCompile( // parse subject like e.g. "Merge branch 'develop' into main"
 		`[Mm]erged?` + //                                     'Merge' or 'merged' word
 			`(\s+remote-tracking)?` + //                      'remote-tracking' optional word when merging remote branches
 			`(\s+(from branch|branch|commit|from))?` + //                 'branch'|'commit'|'from' word

@@ -1,10 +1,11 @@
 package viewrepo
 
 import (
+	"sort"
+
 	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"sort"
 )
 
 // getGitModelBranches returns the git branches based on the name together with ancestor branches
@@ -80,7 +81,7 @@ func (t *ViewRepo) getBranchNamesToShow(branchNames []string, gitRepo gitrepo.Re
 		return branchNames
 	}
 
-	// No specified branches, default to current, or master
+	// No specified branches, default to current, or main
 	rc := t.configService.GetRepo(t.gitRepo.RepoPath())
 	branchNames = rc.ShownBranches
 	if len(branchNames) == 0 {
@@ -139,6 +140,14 @@ func (t *ViewRepo) sortBranches(branches []*gitrepo.Branch) {
 func (t *ViewRepo) getDefaultBranchIDs(gmRepo gitrepo.Repo) []string {
 	var branchIDs []string
 	branch, ok := gmRepo.CurrentBranch()
+	if ok {
+		return t.addBranchWithAncestors(branchIDs, branch)
+	}
+	branch, ok = gmRepo.BranchByName(remoteMainName)
+	if ok {
+		return t.addBranchWithAncestors(branchIDs, branch)
+	}
+	branch, ok = gmRepo.BranchByName(mainName)
 	if ok {
 		return t.addBranchWithAncestors(branchIDs, branch)
 	}
