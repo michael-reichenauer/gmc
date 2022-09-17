@@ -28,7 +28,7 @@ func main() {
 
 	Echo("Building gmc_linux ...")
 	env := []string{"GOOS=linux", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_linux", "main.go"))
+	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc", "main.go"))
 
 	// Echo("Building gmc_mac ...")
 	// env = []string{"GOOS=darwin", "GOARCH=amd64"}
