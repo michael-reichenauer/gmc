@@ -4,6 +4,7 @@ import (
 	"os"
 	"runtime"
 
+	//lint:ignore ST1001 dot import is ok here to increase readability
 	. "github.com/michael-reichenauer/gmc/building/utils"
 )
 
