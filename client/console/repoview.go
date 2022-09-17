@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
@@ -57,6 +58,7 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey(gocui.KeyCtrlS, t.vm.showCommitDialog)
 	view.SetKey(gocui.KeyCtrlB, t.vm.showCreateBranchDialog)
 	view.SetKey(gocui.KeyCtrlP, t.vm.PushCurrentBranch)
+	view.SetKey('p', t.vm.PushCurrentBranch)
 	view.SetKey(gocui.KeyCtrlU, t.vm.PullCurrentBranch)
 	view.SetKey(gocui.KeyCtrlF, t.showSearchView)
 	view.SetKey(gocui.KeyTab, t.nextView)
