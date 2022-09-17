@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"fmt"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -202,7 +203,8 @@ func (t *repoVM) showCommitDialog() {
 		t.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
 	}
-	commitView := NewCommitView(t.ui, t.api, t.repoID)
+
+	commitView := NewCommitView(t.ui, t.api, t.repoID, t.repo.CurrentBranchName)
 	message := t.repo.MergeMessage
 	commitView.Show(message)
 }
