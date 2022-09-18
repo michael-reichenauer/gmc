@@ -56,6 +56,10 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getMergeMenuItems()
 	}})
 
+	menu.Add(cui.MenuItem{Text: "Branch Order", SubItemsFunc: func() []cui.MenuItem {
+		return t.getBranchOrderMenuItems()
+	}})
+
 	// menu.Add(t.vm.mainService.RecentReposMenuItem())
 	// menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
@@ -279,4 +283,21 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 	}
 	return items
 
+}
+
+func (t *menuService) getBranchOrderMenuItems() []cui.MenuItem {
+	var items []cui.MenuItem
+	_, ok := t.vm.CurrentBranch()
+	if !ok {
+		return items
+	}
+
+	items = append(items, cui.MenuItem{Text: "Move Current Left", Key: "Ctrl-Left", Action: func() {
+		t.vm.MoveCurrentBranchLeft()
+	}})
+	items = append(items, cui.MenuItem{Text: "Move Current Right", Key: "Ctrl-Right", Action: func() {
+		t.vm.MoveCurrentBranchRight()
+	}})
+
+	return items
 }

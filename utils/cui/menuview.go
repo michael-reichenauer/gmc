@@ -2,10 +2,11 @@ package cui
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 )
 
 const margin = 8
@@ -31,6 +32,7 @@ func newMenuView(ui *ui, title string, parent *menuView) *menuView {
 	h.View.Properties().OnMouseOutside = h.onClose
 	h.View.Properties().OnMouseLeft = h.onMouseLeft
 	h.View.Properties().HideHorizontalScrollbar = true
+	h.View.Properties().IsMoveUpDownWrap = true
 	return h
 }
 
@@ -212,12 +214,12 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 }
 
 func (t *menuView) onClose() {
-	log.Infof("On close")
+	log.Debugf("On close")
 	t.Close()
 }
 
 func (t *menuView) closeAll() {
-	log.Infof("Close all from")
+	log.Debugf("Close all from")
 	if t.parent == nil {
 		t.onClose()
 		return
@@ -228,7 +230,7 @@ func (t *menuView) closeAll() {
 
 func (t *menuView) onEnter() {
 	vp := t.ViewPage()
-	log.Infof("enter %d", vp.CurrentLine)
+	log.Debugf("enter %d", vp.CurrentLine)
 	t.action(vp.FirstLine, vp.CurrentLine, false)
 }
 
@@ -239,14 +241,14 @@ func (t *menuView) onSubItem() {
 
 func (t *menuView) onMouseLeft(x int, y int) {
 	vp := t.ViewPage()
-	log.Infof("mouse %d", vp.FirstLine+y)
+	log.Debugf("mouse %d", vp.FirstLine+y)
 	isMoreClicked := vp.Width-x < 2
 	t.action(vp.FirstLine, vp.FirstLine+y, isMoreClicked)
 }
 
 func (t *menuView) action(firstLine, index int, isMoreClicked bool) {
 	item := t.items[index]
-	log.Infof("action item %d %q, %v", index, item.Text, item.Action == nil)
+	log.Debugf("action item %d %q, %v", index, item.Text, item.Action == nil)
 
 	hasSubActions := len(item.SubItems) != 0 || item.SubItemsFunc != nil
 	if hasSubActions && (item.Action == nil || isMoreClicked) {
@@ -266,7 +268,7 @@ func (t *menuView) subItem(firstLine, index int) {
 		return
 	}
 	item := t.items[index]
-	log.Infof("sub item %d %q", index, item.Text)
+	log.Debugf("sub item %d %q", index, item.Text)
 
 	if item.SubItemsFunc != nil {
 		t.showSubItemsPlaceholderMenu(firstLine, index, item, item.SubItemsFunc)

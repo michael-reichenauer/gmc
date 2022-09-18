@@ -262,6 +262,14 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
+func (t *repoVM) MoveCurrentBranchLeft() {
+	log.Infof("move left")
+}
+
+func (t *repoVM) MoveCurrentBranchRight() {
+	log.Infof("move right")
+}
+
 func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
