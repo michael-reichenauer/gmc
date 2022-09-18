@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
@@ -57,10 +58,13 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey(gocui.KeyCtrlS, t.vm.showCommitDialog)
 	view.SetKey(gocui.KeyCtrlB, t.vm.showCreateBranchDialog)
 	view.SetKey(gocui.KeyCtrlP, t.vm.PushCurrentBranch)
+	view.SetKey('p', t.vm.PushCurrentBranch)
 	view.SetKey(gocui.KeyCtrlU, t.vm.PullCurrentBranch)
 	view.SetKey(gocui.KeyCtrlF, t.showSearchView)
 	view.SetKey(gocui.KeyTab, t.nextView)
 	view.SetKey('f', t.showSearchView)
+
+	view.SetKey(gocui.KeyArrowRight, t.showOpenBranch)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
@@ -114,6 +118,10 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 	}
 	cui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s   (%s)",
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
+}
+
+func (t *RepoView) showOpenBranch() {
+	log.Debugf("show open branch")
 }
 
 func (t *RepoView) showContextMenu() {

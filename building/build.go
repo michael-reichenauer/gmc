@@ -30,7 +30,8 @@ func main() {
 
 	Echo("Building Linux gmc ...")
 	env := []string{"GOOS=linux", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc", "main.go"))
+	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_linux", "main.go"))
+	Must(CopyFile("gmc_linux", "gmc"))
 
 	// Echo("Building Mac gmc_mac ...")
 	// env = []string{"GOOS=darwin", "GOARCH=amd64"}
@@ -41,6 +42,7 @@ func main() {
 	echoBuiltVersion()
 	EchoLn()
 
+	Echo("Publish url: https://github.com/michael-reichenauer/gmc/releases/new")
 	_ = OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new")
 
 	EchoLn()

@@ -2,6 +2,7 @@ package tools
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -50,6 +51,21 @@ func RemoveFile(path string) error {
 	if err := os.Remove(path); !os.IsNotExist(err) {
 		return err
 	}
+
+	return nil
+}
+
+func CopyFile(src, dst string) error {
+    bytesRead, err := ioutil.ReadFile(src)
+    if err != nil {
+        return err
+    }
+
+    err = ioutil.WriteFile(dst, bytesRead, 0755)
+    if err != nil {
+		return err
+    }
+
 	return nil
 }
 

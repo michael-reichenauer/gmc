@@ -1,12 +1,13 @@
 package console
 
 import (
+	"strings"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 )
 
 type Committer interface {
@@ -14,8 +15,8 @@ type Committer interface {
 	Commit(info api.CommitInfo, rsp api.NoRsp) error
 }
 
-func NewCommitView(ui cui.UI, committer Committer, repoID string) *CommitView {
-	h := &CommitView{ui: ui, committer: committer, repoID: repoID}
+func NewCommitView(ui cui.UI, committer Committer, repoID, branchName string) *CommitView {
+	h := &CommitView{ui: ui, committer: committer, repoID: repoID, branchName: branchName}
 	return h
 }
 
@@ -26,6 +27,7 @@ type CommitView struct {
 	textView    cui.View
 	buttonsView cui.View
 	repoID      string
+	branchName  string
 }
 
 func (h *CommitView) Show(message string) {
@@ -47,7 +49,7 @@ func (h *CommitView) Show(message string) {
 
 func (h *CommitView) newCommitView() cui.View {
 	view := h.ui.NewView("")
-	view.Properties().Title = "Commit on: " + "branch name"
+	view.Properties().Title = "Commit on: " + h.branchName
 	view.Properties().Name = "CommitView"
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
