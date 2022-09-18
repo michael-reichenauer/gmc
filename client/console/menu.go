@@ -194,7 +194,13 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 }
 
 func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
-	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+	text := t.branchItemText(branch)
+	if !branch.IsGitBranch {
+		// Not a git branch, mark the branch a bit darker
+		text = cui.Dark(text)
+	}
+
+	return cui.MenuItem{Text: text, Action: func() {
 		t.vm.ShowBranch(branch.Name)
 	}}
 }

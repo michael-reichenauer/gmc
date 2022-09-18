@@ -121,6 +121,7 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
+// Called by left-arrow, to show a hide branches menu
 func (t *RepoView) showHideBranchesMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
@@ -129,11 +130,13 @@ func (t *RepoView) showHideBranchesMenu() {
 	menu.Show(11, line-vp.FirstLine)
 }
 
+// Called by right-arrow to show commit branches to show/expand
 func (t *RepoView) showCommitBranchesMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
 	if len(t.vm.GetCommitBranches(line)) == 0 {
+		// Commit has no branches
 		return
 	}
 
