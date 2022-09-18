@@ -1,0 +1,3 @@
+#!/bin/bash
+
+lnav /tmp/gmc.log

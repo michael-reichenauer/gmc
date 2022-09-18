@@ -63,6 +63,8 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey(gocui.KeyCtrlF, t.showSearchView)
 	view.SetKey(gocui.KeyTab, t.nextView)
 	view.SetKey('f', t.showSearchView)
+
+	view.SetKey(gocui.KeyArrowRight, t.showOpenBranch)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
@@ -116,6 +118,10 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 	}
 	cui.SetWindowTitle(fmt.Sprintf("gmc: %s - %s%s   (%s)",
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
+}
+
+func (t *RepoView) showOpenBranch() {
+	log.Debugf("show open branch")
 }
 
 func (t *RepoView) showContextMenu() {

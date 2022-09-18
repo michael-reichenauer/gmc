@@ -89,7 +89,7 @@ func NewLogger(prefix string) *Logger {
 	}
 
 	udpLogger := udp
-	logFilePath := fmt.Sprintf("%s/gmclog.txt", os.TempDir())
+	logFilePath := fmt.Sprintf("%s/gmc.log", os.TempDir())
 	_ = os.Remove(logFilePath)
 	f, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
