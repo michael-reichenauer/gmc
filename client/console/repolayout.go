@@ -2,10 +2,11 @@ package console
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"strings"
 )
 
 const (
@@ -182,10 +183,7 @@ func (t *repoLayout) writeSubject(
 			sb.WriteString(cui.Red(subject))
 			return
 		}
-		if repo.MergeMessage != "" {
-			sb.WriteString(cui.RedDk(subject))
-			return
-		}
+
 		sb.WriteString(cui.YellowDk(subject))
 		return
 	}
