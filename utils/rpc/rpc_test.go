@@ -2,11 +2,12 @@ package rpc_test
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
 )
 
 type None *int
@@ -101,7 +102,7 @@ func TestRpc(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
-	assert.NoError(t, rpcServer.Start("http://127.0.0.1:0/rpc"))
+	assert.NoError(t, rpcServer.Start("http://127.0.0.1:0/rpc", "/api/events"))
 	defer rpcServer.Close()
 	go func() {
 		err := rpcServer.Serve()
@@ -143,7 +144,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
-	assert.NoError(t, rpcServer.Start("http://127.0.0.1:0/rpc"))
+	assert.NoError(t, rpcServer.Start("http://127.0.0.1:0/rpc", "/api/events"))
 	defer rpcServer.Close()
 	go func() {
 		err := rpcServer.Serve()
@@ -185,7 +186,7 @@ func TestRpcWithCloseClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Start rpc sever and serve rpc requests
-	assert.NoError(t, rpcServer.Start("http://127.0.0.1:0/rpc"))
+	assert.NoError(t, rpcServer.Start("http://127.0.0.1:0/rpc", "/api/events"))
 	defer rpcServer.Close()
 	go func() {
 		err := rpcServer.Serve()

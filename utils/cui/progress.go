@@ -2,9 +2,10 @@ package cui
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"strings"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 const (
@@ -36,7 +37,7 @@ type progress struct {
 
 func showProgress(ui *ui, format string, v ...interface{}) Progress {
 	text := fmt.Sprintf(format, v...)
-	log.Infof("Start progress for %q, ...", text)
+
 	if instance == nil {
 		startTime := time.Now()
 		if time.Since(instanceCloseTime) < showIconTimeout {
@@ -46,6 +47,7 @@ func showProgress(ui *ui, format string, v ...interface{}) Progress {
 		instance = newProgress(ui, startTime)
 	}
 	instance.showCount++
+	log.Infof("Start progress for %q, #%d ...", text, instance.showCount)
 
 	if instance.showCount == 1 {
 		instance.show()
@@ -93,7 +95,7 @@ func (t *progress) SetText(text string) {
 }
 
 func (t *progress) Close() {
-	log.Infof("Stop progress")
+	log.Infof("End progress #%d", instance.showCount)
 	instance.showCount--
 	if instance.showCount == 0 {
 		instanceCloseTime = time.Now()
@@ -108,14 +110,14 @@ func (t *progress) textFunc(ViewPage) string {
 	sinceStart := time.Since(t.startTime)
 	if sinceStart < showIconTimeout {
 		// Show no progress for a show while in case operation completes fast
-		log.Infof("Show no progress for %q, ...", t.text)
+		log.Infof("Show progress for %q, ...", t.text)
 		return ""
 	}
 	t.view.SetTop()
 
 	if sinceStart < showFullTimeout {
 		// Show just a small wait icon for a while
-		log.Infof("Show icon progress for %q, ...", t.text)
+		// log.Infof("Show icon progress for %q, ...", t.text)
 		if t.length%2 == 1 {
 			return MagentaDk(waitMark)
 		} else {
@@ -123,7 +125,7 @@ func (t *progress) textFunc(ViewPage) string {
 		}
 	}
 
-	log.Infof("Show full progress for %q, ...", t.text)
+	// log.Infof("Show full progress for %q, ...", t.text)
 	if !t.showProgress {
 		t.showProgress = true
 		t.length = 0

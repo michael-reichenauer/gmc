@@ -1,4 +1,4 @@
 @echo off&setlocal
 
-go run build/build.go
+go run building/build.go
 pause

@@ -1,9 +1,11 @@
 package main
 
 import (
-	. "github.com/michael-reichenauer/gmc/build/utils"
 	"os"
 	"runtime"
+
+	//lint:ignore ST1001 dot import is ok here to increase readability
+	. "github.com/michael-reichenauer/gmc/building/utils"
 )
 
 func main() {
@@ -12,6 +14,7 @@ func main() {
 	Echo("Cleaning ...")
 	Must(RemoveFile("gmc.exe"))
 	Must(RemoveFile("gmc_linux"))
+	Must(RemoveFile("gmc"))
 	Must(RemoveFile("gmc_mac"))
 	EchoLn()
 
@@ -21,23 +24,25 @@ func main() {
 
 	// linker flags "-ldflags", "-s -w" omits debug and symbols to reduce size
 	// ("-H=windowsgui" would disable console on windows)
-	Echo("Building gmc.exe ...")
-	env := []string{"GOOS=windows", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
+	// Echo("Building Windows gmc.exe ...")
+	// env := []string{"GOOS=windows", "GOARCH=amd64"}
+	// Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
 
-	Echo("Building gmc_linux ...")
-	env = []string{"GOOS=linux", "GOARCH=amd64"}
+	Echo("Building Linux gmc ...")
+	env := []string{"GOOS=linux", "GOARCH=amd64"}
 	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_linux", "main.go"))
+	Must(CopyFile("gmc_linux", "gmc"))
 
-	Echo("Building gmc_mac ...")
-	env = []string{"GOOS=darwin", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_mac", "main.go"))
-	EchoLn()
+	// Echo("Building Mac gmc_mac ...")
+	// env = []string{"GOOS=darwin", "GOARCH=amd64"}
+	// Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_mac", "main.go"))
+	// EchoLn()
 
 	Echo("Built version:")
 	echoBuiltVersion()
 	EchoLn()
 
+	Echo("Publish url: https://github.com/michael-reichenauer/gmc/releases/new")
 	_ = OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new")
 
 	EchoLn()
@@ -47,7 +52,7 @@ func main() {
 func echoBuiltVersion() {
 	switch runtime.GOOS {
 	case "linux":
-		Must(Cmd("./gmc_linux", "-version"))
+		Must(Cmd("./gmc", "-version"))
 	case "windows":
 		Must(Cmd("./gmc.exe", "-version"))
 	case "darwin":

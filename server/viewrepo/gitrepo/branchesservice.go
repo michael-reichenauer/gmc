@@ -5,7 +5,7 @@ import (
 )
 
 // Default branch priority determines parent child branch relations.
-var DefaultBranchPriority = []string{"origin/master", "master", "origin/develop", "develop"}
+var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master", "origin/develop", "develop"}
 
 type branchesService struct {
 	branchNames *branchNameParser
@@ -102,7 +102,7 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 		return
 	}
 	if utils.StringsContains(DefaultBranchPriority, c.Branch.Name) {
-		// master and develop are special and will make a "backbone" for other branches to depend on
+		// main and develop are special and will make a "backbone" for other branches to depend on
 		c.FirstParent.addBranch(c.Branch)
 	}
 }
@@ -142,7 +142,7 @@ func (h *branchesService) determineBranch(repo *Repo, c *Commit) {
 	}
 
 	if branch := h.hasPriorityBranch(c); branch != nil {
-		// Commit, has many possible branches, and one is in the priority list, e.g. master, develop, ...
+		// Commit, has many possible branches, and one is in the priority list, e.g. main, develop, ...
 		c.Branch = branch
 		return
 	}
