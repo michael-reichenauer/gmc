@@ -61,10 +61,16 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	return menu
 }
 
+func (t *menuService) getShowHideBranchesMenu() cui.Menu {
+	menu := t.ui.NewMenu("Hide Branch")
+	menu.AddItems(t.getHideBranchMenuItems())
+	return menu
+}
+
 func (t *menuService) getShowCommitBranchesMenu(selectedIndex int) cui.Menu {
-	menu := t.ui.NewMenu("")
+	menu := t.ui.NewMenu("Show branch")
 	menu.AddItems(t.getShowCommitBranchesMenuItems(selectedIndex))
-	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getHideBranchMenuItems()})
+	// menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getHideBranchMenuItems()})
 	return menu
 }
 

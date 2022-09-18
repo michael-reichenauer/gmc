@@ -64,7 +64,8 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey(gocui.KeyTab, t.nextView)
 	view.SetKey('f', t.showSearchView)
 
-	view.SetKey(gocui.KeyArrowRight, t.showOpenBranch)
+	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
+	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
@@ -98,9 +99,9 @@ func (t *RepoView) viewPageData(viewPort cui.ViewPage) cui.ViewText {
 
 	t.setWindowTitle(repoPage)
 
-	if len(repoPage.lines) > 0 {
-		//h.detailsView.SetCurrent(repoPage.currentIndex)
-	}
+	// if len(repoPage.lines) > 0 {
+	// 	//h.detailsView.SetCurrent(repoPage.currentIndex)
+	// }
 
 	return cui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
 }
@@ -120,8 +121,24 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
-func (t *RepoView) showOpenBranch() {
-	log.Debugf("show open branch")
+func (t *RepoView) showHideBranchesMenu() {
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+
+	menu := t.menuService.getShowHideBranchesMenu()
+	menu.Show(11, line-vp.FirstLine)
+}
+
+func (t *RepoView) showCommitBranchesMenu() {
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+
+	if len(t.vm.GetCommitBranches(line)) == 0 {
+		return
+	}
+
+	menu := t.menuService.getShowCommitBranchesMenu(line)
+	menu.Show(11, line-vp.FirstLine)
 }
 
 func (t *RepoView) showContextMenu() {
@@ -141,6 +158,9 @@ func (t *RepoView) mouseLeft(x int, y int) {
 	selectedLine := vp.FirstLine + y
 	t.view.SetCurrentLine(selectedLine)
 	if !t.vm.isMoreClick(x, y) {
+		return
+	}
+	if len(t.vm.GetCommitBranches(selectedLine)) == 0 {
 		return
 	}
 

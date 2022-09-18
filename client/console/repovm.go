@@ -114,19 +114,19 @@ func (t *repoVM) monitorModelRoutine() {
 		t.ui.Post(func() {
 			log.Infof("Repo change event:")
 			if progress != nil {
-				log.Infof("Repo change event: closing previous progress")
+				log.Debugf("Repo change event: closing previous progress")
 				progress.Close()
 				progress = nil
 			}
 			if rc.IsStarting {
-				log.Infof("Repo change event: repo starting event")
+				log.Debugf("Repo change event: repo starting event")
 				progress = t.ui.ShowProgress("Loading repo")
 				return
 			}
 			log.Infof("Repo change event (not starting event)")
 
 			if rc.Error != nil {
-				log.Infof("Repo change event: repo error event")
+				log.Warnf("Repo change event: repo error event")
 				t.ui.ShowErrorMessageBox("Error: %v", rc.Error)
 				return
 			}
