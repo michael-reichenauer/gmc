@@ -2,16 +2,17 @@ package gitrepo
 
 import (
 	"context"
+	"time"
+
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
-	"time"
 )
 
 const (
 	fetchInterval = 10 * time.Minute
 	batchInterval = 1 * time.Second
-	partialMax    = 30000
+	partialMax    = 30000 // Max number of commits to handle
 )
 
 type RepoChange struct {
