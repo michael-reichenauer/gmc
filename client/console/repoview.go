@@ -23,16 +23,6 @@ type RepoView struct {
 	searchView  *SearchView
 }
 
-func (t *RepoView) SetCurrentView() {
-	t.view.SetCurrentView()
-	t.view.NotifyChanged()
-}
-
-func (t *RepoView) ScrollVertical(scroll int) {
-	t.view.ScrollVertical(scroll)
-
-}
-
 func NewRepoView(ui cui.UI, api api.Api, repoID string) *RepoView {
 	h := &RepoView{
 		ui: ui,
@@ -41,6 +31,16 @@ func NewRepoView(ui cui.UI, api api.Api, repoID string) *RepoView {
 	h.menuService = newMenuService(ui, h.vm)
 	h.view = h.newView()
 	return h
+}
+
+func (t *RepoView) SetCurrentView() {
+	t.view.SetCurrentView()
+	t.view.NotifyChanged()
+}
+
+func (t *RepoView) ScrollVertical(scroll int) {
+	t.view.ScrollVertical(scroll)
+
 }
 
 func (t *RepoView) newView() cui.View {

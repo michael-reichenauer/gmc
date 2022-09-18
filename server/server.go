@@ -2,6 +2,10 @@ package server
 
 import (
 	"fmt"
+	"path/filepath"
+	"sync"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
@@ -10,9 +14,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"path/filepath"
-	"sync"
-	"time"
 )
 
 const getChangesTimout = 1 * time.Minute
@@ -111,11 +112,11 @@ func (t *server) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
 	case <-changesStream.Changes():
 		changesStream.Next()
 		change := changesStream.Value()
-		log.Infof("one event")
+		log.Debugf("one event")
 		changes = append(changes, change.(api.RepoChange))
 	case <-time.After(getChangesTimout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
-		log.Infof("timeout")
+		log.Debugf("timeout")
 		return nil
 	}
 
@@ -126,10 +127,10 @@ func (t *server) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
 			changesStream.Next()
 			change := changesStream.Value()
 			changes = append(changes, change.(api.RepoChange))
-			log.Infof("more events event (%d events)", len(changes))
+			log.Debugf("more events event (%d events)", len(changes))
 		default:
 			// no more queued changes,
-			log.Infof("no more events (%d events)", len(changes))
+			log.Debugf("no more events (%d events)", len(changes))
 			*rsp = changes
 			return nil
 		}
