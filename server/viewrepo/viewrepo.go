@@ -56,7 +56,7 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
-		gitRepo:         gitrepo.NewGitRepo(workingFolder),
+		gitRepo:         gitrepo.NewGitRepo(configService, workingFolder),
 		configService:   configService,
 		ctx:             ctx,
 		cancel:          cancel,

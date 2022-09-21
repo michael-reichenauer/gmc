@@ -105,9 +105,9 @@ func (t *server) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
 	}
 
 	var changes []api.RepoChange
-	defer func() { log.Infof("< (%d events)", len(changes)) }()
+	defer func() { log.Infof("GetRepoChanges: < (%d events)", len(changes)) }()
 
-	// Wait for event or timout
+	// Wait for event or timeout
 	select {
 	case <-changesStream.Changes():
 		changesStream.Next()

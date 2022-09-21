@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
@@ -43,6 +44,7 @@ type gitRepo struct {
 	repoChanges chan RepoChange
 
 	branchesService *branchesService
+	configService   *config.Service
 	folderMonitor   *monitor
 	git             git.Git
 	rootPath        string
@@ -50,11 +52,12 @@ type gitRepo struct {
 	manualRefresh   chan struct{}
 }
 
-func NewGitRepo(workingFolder string) GitRepo {
+func NewGitRepo(configService *config.Service, workingFolder string) GitRepo {
 	g := git.New(workingFolder)
 	return &gitRepo{
 		rootPath:        workingFolder,
 		branchesService: newBranchesService(),
+		configService:   configService,
 		git:             g,
 		folderMonitor:   newMonitor(workingFolder, g),
 		repoChanges:     make(chan RepoChange, 1),
@@ -257,7 +260,8 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
-	s.branchesService.setBranchForAllCommits(repo)
+	branchesChildren := s.configService.GetRepo(s.rootPath).BranchesChildren
+	s.branchesService.setBranchForAllCommits(repo, branchesChildren)
 	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
 }
