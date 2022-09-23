@@ -152,8 +152,6 @@ func (t *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath str
 			fileText = fmt.Sprintf("<Not a text file: '%s'>", filePath)
 		}
 
-		log.Infof("file %s length %d", filePath, len(file))
-		log.Infof("IsText %t", isText(file))
 		lines := strings.Split(fileText, "\n")
 		var lds []LinesDiff
 		for _, line := range lines {

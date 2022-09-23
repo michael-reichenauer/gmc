@@ -2,6 +2,7 @@ package gitrepo
 
 import (
 	"fmt"
+
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
@@ -18,6 +19,7 @@ type Branch struct {
 	IsGitBranch   bool
 	IsMultiBranch bool
 	IsNamedBranch bool
+	MultiBranches []*Branch
 }
 
 func newGitBranch(gb git.Branch) *Branch {

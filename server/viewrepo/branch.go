@@ -23,6 +23,7 @@ type branch struct {
 	HasLocalOnly     bool
 	HasRemoteOnly    bool
 	color            cui.Color
+	multiBranchNames []string
 }
 
 func (t *branch) String() string {

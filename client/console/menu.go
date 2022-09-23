@@ -33,6 +33,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.SeparatorMenuItem)
 
 	c := t.vm.repo.Commits[currentLineIndex]
+
 	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
@@ -56,9 +57,12 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getMergeMenuItems()
 	}})
 
-	menu.Add(cui.MenuItem{Text: "Branch Order", SubItemsFunc: func() []cui.MenuItem {
-		return t.getBranchOrderMenuItems()
-	}})
+	b := t.vm.repo.Branches[c.BranchIndex]
+	if b.IsMultiBranch {
+		menu.Add(cui.MenuItem{Text: "Set Branch Parent", SubItemsFunc: func() []cui.MenuItem {
+			return t.getMultiBranchBranchesMenuItems()
+		}})
+	}
 
 	// menu.Add(t.vm.mainService.RecentReposMenuItem())
 	// menu.Add(t.vm.mainService.MainMenuItem())
@@ -88,6 +92,7 @@ func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.Me
 }
 
 func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
+	multiBranches := t.vm.GetNotShownMultiBranches()
 	branches := t.vm.GetCommitBranches(selectedIndex)
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentNotShownBranch()
@@ -128,6 +133,16 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		}
 		return allSubItems
 	}})
+
+	if len(multiBranches) > 0 {
+		items = append(items, cui.MenuItem{Text: "Multi Branches", SubItemsFunc: func() []cui.MenuItem {
+			var allSubItems []cui.MenuItem
+			for _, b := range t.vm.GetNotShownMultiBranches() {
+				allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
+			}
+			return allSubItems
+		}})
+	}
 
 	return items
 }
@@ -209,6 +224,14 @@ func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 	}}
 }
 
+func (t *menuService) toSetAsParentBranchMenuItem(branch api.Branch) cui.MenuItem {
+	text := t.branchItemText(branch)
+
+	return cui.MenuItem{Text: text, Action: func() {
+		t.vm.SetAsParentBranch(branch.Name)
+	}}
+}
+
 func (t *menuService) branchItemText(branch api.Branch) string {
 	prefix := " "
 	if branch.IsIn {
@@ -285,19 +308,13 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 
 }
 
-func (t *menuService) getBranchOrderMenuItems() []cui.MenuItem {
+func (t *menuService) getMultiBranchBranchesMenuItems() []cui.MenuItem {
+	log.Infof("get branch order")
 	var items []cui.MenuItem
-	_, ok := t.vm.CurrentBranch()
-	if !ok {
-		return items
-	}
 
-	items = append(items, cui.MenuItem{Text: "Move Current Left", Key: "Ctrl-Left", Action: func() {
-		t.vm.MoveCurrentBranchLeft()
-	}})
-	items = append(items, cui.MenuItem{Text: "Move Current Right", Key: "Ctrl-Right", Action: func() {
-		t.vm.MoveCurrentBranchRight()
-	}})
+	for _, b := range t.vm.GetMultiBranchBranchesMenuItems() {
+		items = append(items, t.toSetAsParentBranchMenuItem(b))
+	}
 
 	return items
 }

@@ -2,9 +2,10 @@ package viewrepo
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
-	"time"
 )
 
 type commit struct {

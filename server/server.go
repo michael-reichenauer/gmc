@@ -159,7 +159,7 @@ func (t *server) TriggerSearch(search api.Search, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *server) GetBranches(args api.GetBranches, branches *[]api.Branch) error {
+func (t *server) GetBranches(args api.GetBranchesReq, branches *[]api.Branch) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(args.RepoID)
@@ -167,6 +167,17 @@ func (t *server) GetBranches(args api.GetBranches, branches *[]api.Branch) error
 		return err
 	}
 	*branches = repo.GetBranches(args)
+	return nil
+}
+
+func (t *server) GetMultiBranchBranches(args api.MultiBranchBranchesReq, branches *[]api.Branch) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(args.RepoID)
+	if err != nil {
+		return err
+	}
+	*branches = repo.GetMultiBranchBranches(args)
 	return nil
 }
 
@@ -192,7 +203,7 @@ func (t *server) HideBranch(name api.BranchName, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *server) Checkout(args api.Checkout, _ api.NoRsp) error {
+func (t *server) Checkout(args api.CheckoutReq, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(args.RepoID)
@@ -252,7 +263,7 @@ func (t *server) DeleteBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.DeleteBranch(name.BranchName)
 }
 
-func (t *server) GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) (err error) {
+func (t *server) GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) (err error) {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(info.RepoID)
@@ -263,7 +274,7 @@ func (t *server) GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) (e
 	return
 }
 
-func (t *server) Commit(info api.CommitInfo, _ api.NoRsp) error {
+func (t *server) Commit(info api.CommitInfoReq, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(info.RepoID)
@@ -271,6 +282,18 @@ func (t *server) Commit(info api.CommitInfo, _ api.NoRsp) error {
 		return err
 	}
 	return repo.Commit(info.Message)
+}
+
+func (t *server) SetAsParentBranch(name api.BranchName, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	log.Infof("Set as parent %q", name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+
+	return repo.SetAsParentBranch(name.BranchName)
 }
 
 func (t *server) storeRepo(repo *viewrepo.ViewRepo, stream observer.Stream) string {

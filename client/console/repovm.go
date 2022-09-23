@@ -231,7 +231,7 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 	}
 
 	var branches []api.Branch
-	_ = t.api.GetBranches(api.GetBranches{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID}, &branches)
 
 	return branches
 }
@@ -239,7 +239,7 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 	var branches []api.Branch
 	err := t.api.GetBranches(
-		api.GetBranches{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
 		&branches)
 
 	if err != nil || len(branches) == 0 {
@@ -252,7 +252,7 @@ func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	var branches []api.Branch
 	err := t.api.GetBranches(
-		api.GetBranches{RepoID: t.repoID, IncludeOnlyCurrent: true},
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true},
 		&branches)
 
 	if err != nil || len(branches) == 0 {
@@ -262,18 +262,10 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (t *repoVM) MoveCurrentBranchLeft() {
-	log.Infof("move left")
-}
-
-func (t *repoVM) MoveCurrentBranchRight() {
-	log.Infof("move right")
-}
-
 func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranches{
+	_ = t.api.GetBranches(api.GetBranchesReq{
 		RepoID:              t.repoID,
 		IncludeOnlyNotShown: skipShown,
 		SortOnLatest:        true,
@@ -284,20 +276,38 @@ func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 func (t *repoVM) GetAllBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranches{RepoID: t.repoID, IncludeOnlyNotShown: skipShown}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: skipShown}, &branches)
 	return branches
 }
 
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
 	_ = t.api.GetBranches(
-		api.GetBranches{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster},
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster},
 		&branches)
 	return branches
 }
 
+func (t *repoVM) GetNotShownMultiBranches() []api.Branch {
+	var branches []api.Branch
+
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: true}, &branches)
+
+	var bs []api.Branch
+	for _, b := range branches {
+		if b.IsMultiBranch {
+			bs = append(bs, b)
+		}
+	}
+	return bs
+}
+
 func (t *repoVM) ShowBranch(name string) {
 	_ = t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+}
+
+func (t *repoVM) SetAsParentBranch(name string) {
+	_ = t.api.SetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 }
 
 func (t *repoVM) HideBranch(name string) {
@@ -308,7 +318,7 @@ func (t *repoVM) SwitchToBranch(name string, displayName string) {
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error {
-			return t.api.Checkout(api.Checkout{RepoID: t.repoID, Name: name, DisplayName: displayName}, api.NilRsp)
+			return t.api.Checkout(api.CheckoutReq{RepoID: t.repoID, Name: name, DisplayName: displayName}, api.NilRsp)
 		},
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
@@ -400,4 +410,17 @@ func (t *repoVM) DeleteBranch(name string) {
 		},
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
+}
+
+func (t *repoVM) GetMultiBranchBranchesMenuItems() []api.Branch {
+	commit := t.repo.Commits[t.currentIndex]
+	branch := t.repo.Branches[commit.BranchIndex]
+	if !branch.IsMultiBranch {
+		return nil
+	}
+
+	var branches []api.Branch
+	_ = t.api.GetMultiBranchBranches(api.MultiBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
+
+	return branches
 }

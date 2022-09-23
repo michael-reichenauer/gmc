@@ -11,17 +11,20 @@ type Api interface {
 	TriggerRefreshRepo(repoID string, _ NoRsp) error
 	TriggerSearch(search Search, _ NoRsp) error
 
-	GetBranches(args GetBranches, branches *[]Branch) error
-	GetCommitDiff(info CommitDiffInfo, diff *CommitDiff) error
+	GetBranches(args GetBranchesReq, branches *[]Branch) error
+	GetCommitDiff(info CommitDiffInfoReq, diff *CommitDiff) error
+	GetMultiBranchBranches(args MultiBranchBranchesReq, branches *[]Branch) error
 
-	Commit(info CommitInfo, _ NoRsp) error
+	Commit(info CommitInfoReq, _ NoRsp) error
 
 	ShowBranch(name BranchName, _ NoRsp) error
 	HideBranch(name BranchName, _ NoRsp) error
-	Checkout(args Checkout, _ NoRsp) error
+
+	Checkout(args CheckoutReq, _ NoRsp) error
 	PushBranch(name BranchName, _ NoRsp) error
 	PullCurrentBranch(repoID string, _ NoRsp) error
 	MergeBranch(name BranchName, _ NoRsp) error
 	CreateBranch(name BranchName, _ NoRsp) error
 	DeleteBranch(name BranchName, _ NoRsp) error
+	SetAsParentBranch(name BranchName, _ NoRsp) error
 }

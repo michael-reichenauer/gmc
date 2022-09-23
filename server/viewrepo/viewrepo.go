@@ -145,7 +145,7 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
-func (t *ViewRepo) GetBranches(args api.GetBranches) []api.Branch {
+func (t *ViewRepo) GetBranches(args api.GetBranchesReq) []api.Branch {
 	branches := []api.Branch{}
 	if args.IncludeOnlyCommitBranches != "" {
 		return append(branches, t.getCommitBranches(args.IncludeOnlyCommitBranches)...)
@@ -161,6 +161,39 @@ func (t *ViewRepo) GetBranches(args api.GetBranches) []api.Branch {
 	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
 }
 
+func (t *ViewRepo) GetMultiBranchBranches(args api.MultiBranchBranchesReq) []api.Branch {
+	branches := []api.Branch{}
+
+	viewRepo := t.getViewRepo()
+
+	commit, ok := viewRepo.CommitById(args.CommitID)
+	if !ok {
+		return nil
+	}
+
+	for _, name := range commit.Branch.multiBranchNames {
+		branch, ok := viewRepo.gitRepo.BranchByName((name))
+		if !ok {
+			continue
+		}
+
+		// found := false
+		// for _, bbb := range viewRepo.Branches {
+		// 	if name == bbb.name {
+		// 		found = true
+		// 		break
+		// 	}
+		// }
+		// if found {
+		// 	continue
+		// }
+
+		branches = append(branches, toBranch(viewRepo.toBranch(branch, 0)))
+	}
+
+	return branches
+}
+
 func (t *ViewRepo) getAllBranchesC(skipShown bool, sortOnLatest bool) []api.Branch {
 	viewRepo := t.getViewRepo()
 	branches := t.getAllBranches(viewRepo, skipShown)
@@ -170,7 +203,7 @@ func (t *ViewRepo) getAllBranchesC(skipShown bool, sortOnLatest bool) []api.Bran
 		})
 	} else {
 		sort.SliceStable(branches, func(i, j int) bool {
-			return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+			return strings.Compare(branches[i].DisplayName, branches[j].DisplayName) == -1
 		})
 	}
 
@@ -800,6 +833,37 @@ func (t *ViewRepo) DeleteBranch(name string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (t *ViewRepo) SetAsParentBranch(name string) error {
+	viewRepo := t.getViewRepo()
+	b, ok := viewRepo.gitRepo.BranchByName(name)
+	if !ok {
+		return fmt.Errorf("unknown branch %q", name)
+	}
+	if b.ParentBranch == nil {
+		return fmt.Errorf("branch has no parent branch %q", name)
+	}
+
+	if !b.ParentBranch.IsMultiBranch {
+		return fmt.Errorf("parent branch is not a multi branch %q", b.ParentBranch.Name)
+	}
+
+	// parent:=b.ParentBranch.Name
+	// var children []string
+	// for _, b:= range b.ParentBranch.MultiBranches{
+	// 	children = append(children, b.Name)
+	// }
+
+	// t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
+	// 	for _, child:= range children{
+	// 		// Remove parent from
+	// 	}
+	// 	log.Infof("children %v", r.BranchesChildren)
+	// })
+
+	log.Infof("Branch %v: %v", b.ParentBranch, b.ParentBranch.MultiBranches)
 	return nil
 }
 

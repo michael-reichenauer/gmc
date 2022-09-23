@@ -1,8 +1,9 @@
 package api
 
 import (
-	"github.com/michael-reichenauer/gmc/utils"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils"
 )
 
 type DiffMode int
@@ -27,13 +28,13 @@ var (
 	no     int
 )
 
-type Checkout struct {
+type CheckoutReq struct {
 	RepoID      string
 	Name        string
 	DisplayName string
 }
 
-type GetBranches struct {
+type GetBranchesReq struct {
 	RepoID                    string
 	IncludeOnlyCurrent        bool
 	IncludeOnlyGitBranches    bool
@@ -54,11 +55,17 @@ type Search struct {
 	Text   string
 }
 
-type CommitDiffInfo struct {
+type CommitDiffInfoReq struct {
 	RepoID   string
 	CommitID string
 }
-type CommitInfo struct {
+
+type MultiBranchBranchesReq struct {
+	RepoID   string
+	CommitID string
+}
+
+type CommitInfoReq struct {
 	RepoID  string
 	Message string
 }
@@ -130,19 +137,20 @@ type GraphRow []GraphColumn
 type Graph []GraphRow
 
 type Branch struct {
-	Name          string
-	DisplayName   string
-	Index         int
-	IsMultiBranch bool
-	RemoteName    string
-	LocalName     string
-	IsRemote      bool
-	IsGitBranch   bool
-	IsCurrent     bool
-	TipID         string
-	HasLocalOnly  bool
-	HasRemoteOnly bool
-	Color         Color
+	Name             string
+	DisplayName      string
+	Index            int
+	IsMultiBranch    bool
+	RemoteName       string
+	LocalName        string
+	IsRemote         bool
+	IsGitBranch      bool
+	IsCurrent        bool
+	TipID            string
+	HasLocalOnly     bool
+	HasRemoteOnly    bool
+	Color            Color
+	MultiBranchNames []string
 
 	IsShown bool
 	IsIn    bool

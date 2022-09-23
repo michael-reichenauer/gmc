@@ -2,14 +2,15 @@ package console
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"strings"
 )
 
 type DiffGetter interface {
-	GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) error
+	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
 }
 
 type diffVM struct {
@@ -39,7 +40,7 @@ func (t *diffVM) load() {
 
 	go func() {
 		var diff api.CommitDiff
-		err := t.diffGetter.GetCommitDiff(api.CommitDiffInfo{RepoID: t.repoID, CommitID: t.commitID}, &diff)
+		err := t.diffGetter.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: t.commitID}, &diff)
 		t.viewer.PostOnUIThread(func() {
 			progress.Close()
 			if err != nil {

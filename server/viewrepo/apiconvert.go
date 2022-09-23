@@ -109,18 +109,19 @@ func toCommit(c *commit) api.Commit {
 
 func toBranch(b *branch) api.Branch {
 	return api.Branch{
-		Name:          b.name,
-		DisplayName:   b.displayName,
-		Index:         b.index,
-		IsMultiBranch: b.isMultiBranch,
-		RemoteName:    b.remoteName,
-		LocalName:     b.localName,
-		IsRemote:      b.isRemote,
-		IsGitBranch:   b.isGitBranch,
-		TipID:         b.tipId,
-		IsCurrent:     b.isCurrent,
-		HasRemoteOnly: b.HasRemoteOnly,
-		HasLocalOnly:  b.HasLocalOnly,
-		Color:         api.Color(b.color),
+		Name:             b.name,
+		DisplayName:      b.displayName,
+		Index:            b.index,
+		IsMultiBranch:    b.isMultiBranch,
+		RemoteName:       b.remoteName,
+		LocalName:        b.localName,
+		IsRemote:         b.isRemote,
+		IsGitBranch:      b.isGitBranch,
+		TipID:            b.tipId,
+		IsCurrent:        b.isCurrent,
+		HasRemoteOnly:    b.HasRemoteOnly,
+		HasLocalOnly:     b.HasLocalOnly,
+		Color:            api.Color(b.color),
+		MultiBranchNames: b.multiBranchNames,
 	}
 }
