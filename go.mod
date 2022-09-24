@@ -22,14 +22,13 @@ require (
 	github.com/onsi/gomega v1.10.0 // indirect
 	github.com/rapid7/go-get-proxied v0.0.0-20181210221417-16249a544090
 	github.com/rs/cors v1.7.0
+	github.com/samber/lo v1.28.2 // indirect
 	github.com/satori/go.uuid v1.2.0 // indirect
-	github.com/stretchr/testify v1.4.0
+	github.com/stretchr/testify v1.7.1
 	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
-	github.com/thoas/go-funk v0.5.0
-	golang.org/x/net v0.0.0-20180906233101-161cd47e91fd
-	golang.org/x/sync v0.0.0-20200317015054-43a5402ce75a
-	golang.org/x/sys v0.0.0-20200116001909-b77594299b42 // indirect
+	github.com/thoas/go-funk v0.9.1
+	golang.org/x/net v0.0.0-20211015210444-4f30a5c0130f
+	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.7 // indirect
 )
