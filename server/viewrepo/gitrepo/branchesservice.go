@@ -34,7 +34,7 @@ func (h *branchesService) setGitBranchTips(repo *Repo) {
 		tip, ok := repo.TryGetCommitByID(b.TipID)
 		if !ok {
 			// A branch tip id, which commit id does not exist in the repo
-			// Store that branch name so it can be removed from the list below
+			// Store that branch name so it can be recmoved from the list below
 			missingBranches = append(missingBranches, b.Name)
 			continue
 		}
@@ -140,9 +140,8 @@ func (h *branchesService) determineCommitBranch(
 		return
 	}
 
-	if branch := h.isMergedDeletedBranchCommit(repo, c); branch != nil {
-		// Commit is middle commit in deleted branch (merged into a parent branch),
-		// use the only one child commit branch
+	if branch := h.hasOneChild(repo, c); branch != nil {
+		// Commit is middle commit in branch, use the only one child commit branch
 		c.Branch = branch
 		c.addBranch(c.Branch)
 		return
@@ -299,10 +298,9 @@ func (h *branchesService) isMergedDeletedBranchTip(repo *Repo, c *Commit) *Branc
 	return nil
 }
 
-func (h *branchesService) isMergedDeletedBranchCommit(repo *Repo, c *Commit) *Branch {
+func (h *branchesService) hasOneChild(repo *Repo, c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 1 {
-		// Commit has no branch, must be a deleted branch merged into some branch
-		// But it has one child commit, use that child commit branch
+		// Commit has no branch, but it has one child commit, use that child commit branch
 		return c.Children[0].Branch
 	}
 	return nil

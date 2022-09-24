@@ -17,6 +17,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
+	"github.com/samber/lo"
 	"github.com/thoas/go-funk"
 )
 
@@ -842,6 +843,7 @@ func (t *ViewRepo) SetAsParentBranch(name string) error {
 	if !ok {
 		return fmt.Errorf("unknown branch %q", name)
 	}
+
 	if b.ParentBranch == nil {
 		return fmt.Errorf("branch has no parent branch %q", name)
 	}
@@ -850,20 +852,40 @@ func (t *ViewRepo) SetAsParentBranch(name string) error {
 		return fmt.Errorf("parent branch is not a multi branch %q", b.ParentBranch.Name)
 	}
 
-	// parent:=b.ParentBranch.Name
-	// var children []string
-	// for _, b:= range b.ParentBranch.MultiBranches{
-	// 	children = append(children, b.Name)
-	// }
+	parentName := name
+	otherChildren := lo.Filter(b.ParentBranch.MultiBranches, func(v *gitrepo.Branch, _ int) bool {
+		return v.Name != name
+	})
+	childNames := lo.Map(otherChildren, func(v *gitrepo.Branch, _ int) string {
+		return v.Name
+	})
 
-	// t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
-	// 	for _, child:= range children{
-	// 		// Remove parent from
-	// 	}
-	// 	log.Infof("children %v", r.BranchesChildren)
-	// })
+	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
+		parentChildrenNames, ok := r.BranchesChildren[parentName]
+		if !ok {
+			parentChildrenNames = []string{}
+			r.BranchesChildren[parentName] = parentChildrenNames
+		}
 
-	log.Infof("Branch %v: %v", b.ParentBranch, b.ParentBranch.MultiBranches)
+		for _, childName := range childNames {
+			// Ensure parent branch is not a child of any of the children
+			childChildrenNames, ok := r.BranchesChildren[childName]
+			if ok {
+				childChildrenNames = lo.Filter(childChildrenNames, func(v string, _ int) bool {
+					return v != parentName
+				})
+				r.BranchesChildren[childName] = childChildrenNames
+			}
+
+			// Add child name as child to parent
+			if !lo.Contains(parentChildrenNames, childName) {
+				parentChildrenNames = append(parentChildrenNames, childName)
+				r.BranchesChildren[parentName] = parentChildrenNames
+			}
+		}
+	})
+
+	t.TriggerRefreshModel()
 	return nil
 }
 
