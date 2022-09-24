@@ -86,7 +86,7 @@ func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.Me
 	var items []cui.MenuItem
 	branches := t.vm.GetCommitBranches(selectedIndex)
 	for _, b := range branches {
-		items = append(items, t.toOpenBranchMenuItem(b))
+		items = append(items, t.toOpenBranchMenuItem(b, false))
 	}
 	return items
 }
@@ -100,7 +100,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		if nil == funk.Find(branches, func(b api.Branch) bool {
 			return current.DisplayName == b.DisplayName
 		}) {
-			items = append(items, t.toOpenBranchMenuItem(current))
+			items = append(items, t.toOpenBranchMenuItem(current, false))
 		}
 	}
 
@@ -111,7 +111,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 	items = append(items, cui.MenuItem{Text: "Latest Branches", SubItemsFunc: func() []cui.MenuItem {
 		var latestSubItems []cui.MenuItem
 		for _, b := range t.vm.GetLatestBranches(true) {
-			latestSubItems = append(latestSubItems, t.toOpenBranchMenuItem(b))
+			latestSubItems = append(latestSubItems, t.toOpenBranchMenuItem(b, false))
 		}
 		return latestSubItems
 	}})
@@ -120,7 +120,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		var allGitSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			if b.IsGitBranch {
-				allGitSubItems = append(allGitSubItems, t.toOpenBranchMenuItem(b))
+				allGitSubItems = append(allGitSubItems, t.toOpenBranchMenuItem(b, false))
 			}
 		}
 		return allGitSubItems
@@ -129,7 +129,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 	items = append(items, cui.MenuItem{Text: "All Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
-			allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
+			allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b, false))
 		}
 		return allSubItems
 	}})
@@ -138,7 +138,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		items = append(items, cui.MenuItem{Text: "Multi Branches", SubItemsFunc: func() []cui.MenuItem {
 			var allSubItems []cui.MenuItem
 			for _, b := range t.vm.GetNotShownMultiBranches() {
-				allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
+				allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b, true))
 			}
 			return allSubItems
 		}})
@@ -212,7 +212,7 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
+func (t *menuService) toOpenBranchMenuItem(branch api.Branch, showChildren bool) cui.MenuItem {
 	text := t.branchItemText(branch)
 	if !branch.IsGitBranch {
 		// Not a git branch, mark the branch a bit darker
@@ -220,7 +220,7 @@ func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 	}
 
 	return cui.MenuItem{Text: text, Action: func() {
-		t.vm.ShowBranch(branch.Name)
+		t.vm.ShowBranch(branch.Name, showChildren)
 	}}
 }
 
@@ -309,7 +309,6 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 }
 
 func (t *menuService) getMultiBranchBranchesMenuItems() []cui.MenuItem {
-	log.Infof("get branch order")
 	var items []cui.MenuItem
 
 	for _, b := range t.vm.GetMultiBranchBranchesMenuItems() {
