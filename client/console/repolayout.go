@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 const (
@@ -37,6 +38,7 @@ func (t *repoLayout) getPageLines(
 	commitWidth := viewWidth - graphWidth
 	messageWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
 
+	log.Infof("sel br", currentBranchDisplayName)
 	var lines []string
 	for i, c := range commits {
 		var sb strings.Builder
@@ -194,6 +196,7 @@ func (t *repoLayout) writeSubject(
 	} else if c.IsRemoteOnly {
 		color = cui.CBlue
 	}
+
 	if currentBranchDisplayName != "" &&
 		repo.Branches[c.BranchIndex].DisplayName != currentBranchDisplayName {
 		color = cui.CDark

@@ -2,14 +2,15 @@ package rpc
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"golang.org/x/net/websocket"
 	"net/rpc"
 	"net/rpc/jsonrpc"
 	"net/url"
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"golang.org/x/net/websocket"
 )
 
 type ServiceClient interface {

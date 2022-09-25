@@ -55,6 +55,18 @@ type Search struct {
 	Text   string
 }
 
+type CommitDetailsReq struct {
+	RepoID   string
+	CommitID string
+}
+
+type CommitDetailsRsp struct {
+	Id         string
+	BranchName string
+	Message    string
+	Files      []string
+}
+
 type CommitDiffInfoReq struct {
 	RepoID   string
 	CommitID string

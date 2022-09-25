@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
@@ -197,6 +198,29 @@ func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphR
 	commits := t.repo.Commits[firstIndex : firstIndex+count]
 	graphRows := t.repo.ConsoleGraph[firstIndex : firstIndex+count]
 	return firstIndex, commits, graphRows
+}
+
+func (t *repoVM) showCommitDetails() {
+	c := t.repo.Commits[t.currentIndex]
+
+	var cd api.CommitDetailsRsp
+	err := t.api.GetCommitDetails(api.CommitDetailsReq{RepoID: t.repoID, CommitID: c.ID}, &cd)
+	if err != nil {
+		log.Warnf("Failed: %v", err)
+		return
+	}
+	files := strings.Join(cd.Files, "\n")
+
+	title := fmt.Sprintf("Commit %s", c.SID)
+	text := fmt.Sprintf(cui.Blue("Id:")+"       %s\n"+
+		cui.Blue("Branches:")+" %s\n"+
+		"%s\n"+
+		cui.Blue(strings.Repeat("_", 50))+
+		cui.Blue("\n\n%d Files:\n")+
+		"%s",
+		cd.Id, cd.BranchName, cd.Message, len(cd.Files), files)
+
+	t.ui.ShowMessageBox(title, text)
 }
 
 func (t *repoVM) showCommitDialog() {
