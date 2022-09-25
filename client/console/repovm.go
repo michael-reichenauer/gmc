@@ -7,6 +7,7 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
@@ -210,15 +211,21 @@ func (t *repoVM) showCommitDetails() {
 		return
 	}
 	files := strings.Join(cd.Files, "\n")
-
 	title := fmt.Sprintf("Commit %s", c.SID)
+	id := c.ID
+
+	if c.ID == git.UncommittedID {
+		title = "Uncommitted"
+		id = ""
+	}
+
 	text := fmt.Sprintf(cui.Blue("Id:")+"       %s\n"+
 		cui.Blue("Branches:")+" %s\n"+
-		"%s\n"+
+		"%s\n\n"+
 		cui.Blue(strings.Repeat("_", 50))+
-		cui.Blue("\n\n%d Files:\n")+
+		cui.Blue("\n%d Files:\n")+
 		"%s",
-		cd.Id, cd.BranchName, cd.Message, len(cd.Files), files)
+		id, cd.BranchName, cd.Message, len(cd.Files), files)
 
 	t.ui.ShowMessageBox(title, text)
 }
