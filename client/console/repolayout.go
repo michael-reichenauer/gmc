@@ -149,8 +149,8 @@ func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c api.Commit) {
 }
 
 func (t *repoLayout) writeAuthor(sb *strings.Builder, commit api.Commit, length int) {
-	//sb.WriteString(cui.Dark(utils.Text(commit.Author, length)))
-	sb.WriteString(cui.Dark(utils.Text(commit.ID, length)))
+	sb.WriteString(cui.Dark(utils.Text(commit.Author, length)))
+	// sb.WriteString(cui.Dark(utils.Text(commit.ID, length)))
 }
 
 func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c api.Commit, length int) {
