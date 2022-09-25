@@ -21,7 +21,7 @@ func (h *branchesService) setBranchForAllCommits(
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo, branchesChildren)
-	h.determineBranchHierarchy(repo)
+	h.determineBranchHierarchy(repo, branchesChildren)
 }
 
 // setGitBranchTips iterates all branches and
@@ -376,8 +376,11 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 	}
 }
 
-func (h *branchesService) determineBranchHierarchy(repo *Repo) {
+func (h *branchesService) determineBranchHierarchy(repo *Repo, branchesChildren map[string][]string) {
 	for _, b := range repo.Branches {
+		bs, _ := branchesChildren[b.Name]
+		b.IsSetAsParent = len(bs) > 0
+
 		if b.BottomID == "" {
 			b.BottomID = b.TipID
 		}

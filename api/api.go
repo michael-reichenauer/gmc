@@ -27,4 +27,5 @@ type Api interface {
 	CreateBranch(name BranchName, _ NoRsp) error
 	DeleteBranch(name BranchName, _ NoRsp) error
 	SetAsParentBranch(name BranchName, _ NoRsp) error
+	UnsetAsParentBranch(name BranchName, _ NoRsp) error
 }

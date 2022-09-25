@@ -21,6 +21,25 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	log.Infof(">")
 	defer log.Infof("<")
 	menu := t.ui.NewMenu("")
+	c := t.vm.repo.Commits[currentLineIndex]
+	b := t.vm.repo.Branches[c.BranchIndex]
+	hasBranchItems := false
+	if b.IsSetAsParent {
+		hasBranchItems = true
+		menu.Add(cui.MenuItem{Text: "Unset Branch as Parent", Action: func() {
+			t.vm.UnsetAsParentBranch(b.Name)
+		}})
+	}
+
+	if b.IsMultiBranch {
+		hasBranchItems = true
+		menu.Add(cui.MenuItem{Text: "Set Branch Parent", SubItemsFunc: func() []cui.MenuItem {
+			return t.getMultiBranchBranchesMenuItems()
+		}})
+	}
+	if hasBranchItems {
+		menu.Add(cui.SeparatorMenuItem)
+	}
 
 	menu.Add(cui.MenuItem{Text: "Show Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesMenuItems(currentLineIndex)
@@ -31,8 +50,6 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	}})
 
 	menu.Add(cui.SeparatorMenuItem)
-
-	c := t.vm.repo.Commits[currentLineIndex]
 
 	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
@@ -56,13 +73,6 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.MenuItem{Text: "Merge", SubItemsFunc: func() []cui.MenuItem {
 		return t.getMergeMenuItems()
 	}})
-
-	b := t.vm.repo.Branches[c.BranchIndex]
-	if b.IsMultiBranch {
-		menu.Add(cui.MenuItem{Text: "Set Branch Parent", SubItemsFunc: func() []cui.MenuItem {
-			return t.getMultiBranchBranchesMenuItems()
-		}})
-	}
 
 	// menu.Add(t.vm.mainService.RecentReposMenuItem())
 	// menu.Add(t.vm.mainService.MainMenuItem())

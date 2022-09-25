@@ -19,6 +19,7 @@ type Branch struct {
 	IsGitBranch   bool
 	IsMultiBranch bool
 	IsNamedBranch bool
+	IsSetAsParent bool
 	MultiBranches []*Branch
 }
 

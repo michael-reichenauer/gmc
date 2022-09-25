@@ -296,6 +296,18 @@ func (t *server) SetAsParentBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.SetAsParentBranch(name.BranchName)
 }
 
+func (t *server) UnsetAsParentBranch(name api.BranchName, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	log.Infof("Set as parent %q", name)
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+
+	return repo.UnsetAsParentBranch(name.BranchName)
+}
+
 func (t *server) storeRepo(repo *viewrepo.ViewRepo, stream observer.Stream) string {
 	t.lock.Lock()
 	defer t.lock.Unlock()

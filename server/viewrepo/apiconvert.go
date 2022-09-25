@@ -119,6 +119,7 @@ func toBranch(b *branch) api.Branch {
 		IsGitBranch:      b.isGitBranch,
 		TipID:            b.tipId,
 		IsCurrent:        b.isCurrent,
+		IsSetAsParent:    b.isSetAsParent,
 		HasRemoteOnly:    b.HasRemoteOnly,
 		HasLocalOnly:     b.HasLocalOnly,
 		Color:            api.Color(b.color),

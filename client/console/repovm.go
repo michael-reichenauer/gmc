@@ -311,6 +311,10 @@ func (t *repoVM) SetAsParentBranch(name string) {
 	_ = t.api.SetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 }
 
+func (t *repoVM) UnsetAsParentBranch(name string) {
+	_ = t.api.UnsetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+}
+
 func (t *repoVM) HideBranch(name string) {
 	_ = t.api.HideBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 }

@@ -896,6 +896,21 @@ func (t *ViewRepo) SetAsParentBranch(name string) error {
 	return nil
 }
 
+func (t *ViewRepo) UnsetAsParentBranch(name string) error {
+	viewRepo := t.getViewRepo()
+
+	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
+		_, ok := r.BranchesChildren[name]
+		if !ok {
+			return
+		}
+		delete(r.BranchesChildren, name)
+	})
+
+	t.TriggerRefreshModel()
+	return nil
+}
+
 func (t *ViewRepo) addTags(repo *repo, tags []gitrepo.Tag) {
 	for _, tag := range tags {
 		c, ok := repo.commitById[tag.CommitID]
