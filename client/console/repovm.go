@@ -152,15 +152,16 @@ func (t *repoVM) monitorModelRoutine() {
 }
 
 func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
-	firstIndex, lines := t.getLines(viewPage)
-	t.firstIndex = firstIndex
-	t.currentIndex = viewPage.CurrentLine
-
 	var sbn string
 	if viewPage.CurrentLine < len(t.repo.Commits) {
 		sc := t.repo.Commits[viewPage.CurrentLine]
-		sbn = t.repo.Branches[sc.BranchIndex].Name
+		sbn = t.repo.Branches[sc.BranchIndex].DisplayName
 	}
+
+	firstIndex, lines := t.getLines(viewPage, sbn)
+	t.firstIndex = firstIndex
+	t.currentIndex = viewPage.CurrentLine
+
 	return repoPage{
 		repoPath:           t.repo.RepoPath,
 		lines:              lines,
@@ -171,9 +172,9 @@ func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 	}, nil
 }
 
-func (t *repoVM) getLines(viewPage cui.ViewPage) (int, []string) {
+func (t *repoVM) getLines(viewPage cui.ViewPage, selectedBranchName string) (int, []string) {
 	firstIndex, commits, graph := t.getPage(viewPage)
-	return firstIndex, t.repoLayout.getPageLines(commits, graph, viewPage.Width, "", t.repo)
+	return firstIndex, t.repoLayout.getPageLines(commits, graph, viewPage.Width, selectedBranchName, t.repo)
 }
 
 func (t *repoVM) isMoreClick(x int, y int) bool {
