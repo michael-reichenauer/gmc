@@ -2,10 +2,11 @@ package console
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"strings"
 )
 
 const (
@@ -149,6 +150,7 @@ func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c api.Commit) {
 
 func (t *repoLayout) writeAuthor(sb *strings.Builder, commit api.Commit, length int) {
 	sb.WriteString(cui.Dark(utils.Text(commit.Author, length)))
+	// sb.WriteString(cui.Dark(utils.Text(commit.ID, length)))
 }
 
 func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c api.Commit, length int) {
@@ -182,10 +184,7 @@ func (t *repoLayout) writeSubject(
 			sb.WriteString(cui.Red(subject))
 			return
 		}
-		if repo.MergeMessage != "" {
-			sb.WriteString(cui.RedDk(subject))
-			return
-		}
+
 		sb.WriteString(cui.YellowDk(subject))
 		return
 	}

@@ -2,11 +2,12 @@ package viewrepo
 
 import (
 	"fmt"
+	"time"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"time"
 )
 
 type repo struct {
@@ -131,6 +132,10 @@ func (t *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	if b.ParentBranch != nil {
 		parentBranchName = b.ParentBranch.Name
 	}
+	var multiBranchNames []string
+	for _, bb := range b.MultiBranches {
+		multiBranchNames = append(multiBranchNames, bb.Name)
+	}
 	return &branch{
 		name:             b.Name,
 		displayName:      b.DisplayName,
@@ -144,30 +149,38 @@ func (t *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 		remoteName:       b.RemoteName,
 		localName:        b.LocalName,
 		isCurrent:        b.IsCurrent,
+		isSetAsParent:    b.IsSetAsParent,
+		multiBranchNames: multiBranchNames,
 	}
 }
 
-func (t *repo) toCommit(repo *gitrepo.Commit, index int, includeGraph bool) *commit {
-	var branch = t.BranchByName(repo.Branch.Name)
+func (t *repo) toCommit(c *gitrepo.Commit, index int, includeGraph bool) *commit {
+	var branch = t.BranchByName(c.Branch.Name)
 
 	var graph []api.GraphColumn
 	if includeGraph {
 		graph = make([]api.GraphColumn, len(t.Branches))
 	}
+	var multiBranches []string
+	if branch.isMultiBranch {
+		for _, b := range c.Branches {
+			multiBranches = append(multiBranches, b.Name)
+		}
+	}
 	return &commit{
-		ID:         repo.Id,
-		SID:        repo.Sid,
-		Subject:    repo.Subject,
-		Message:    repo.Message,
-		Author:     repo.Author,
-		AuthorTime: repo.AuthorTime,
-		ParentIDs:  repo.ParentIDs,
-		ChildIDs:   repo.ChildIDs,
-		IsCurrent:  repo.IsCurrent,
+		ID:         c.Id,
+		SID:        c.Sid,
+		Subject:    c.Subject,
+		Message:    c.Message,
+		Author:     c.Author,
+		AuthorTime: c.AuthorTime,
+		ParentIDs:  c.ParentIDs,
+		ChildIDs:   c.ChildIDs,
+		IsCurrent:  c.IsCurrent,
 		Branch:     branch,
 		Index:      index,
 		graph:      graph,
-		BranchTips: repo.BranchTipNames,
+		BranchTips: c.BranchTipNames,
 	}
 }
 

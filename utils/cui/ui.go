@@ -2,6 +2,7 @@ package cui
 
 import (
 	"fmt"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -133,7 +134,7 @@ func (t *ui) setCurrentView(v *view) {
 		panic(log.Fatal(err))
 	}
 	t.gui.Cursor = v.properties.IsEditable
-	log.Infof("Set current %q %q", v.guiView.Name(), v.properties.Name)
+	log.Debugf("Set current %q %q", v.guiView.Name(), v.properties.Name)
 	t.addCurrentView(v)
 	if previousCurrentView != nil {
 		previousCurrentView.NotifyChanged()

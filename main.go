@@ -8,21 +8,20 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/michael-reichenauer/gmc/client/console"
-	"github.com/michael-reichenauer/gmc/server"
-	"github.com/michael-reichenauer/gmc/utils/rpc"
-
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/installation"
 	"github.com/michael-reichenauer/gmc/program"
+	"github.com/michael-reichenauer/gmc/server"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/rpc"
 	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
 const (
-	version = "0.31"
+	version = "0.32"
 )
 
 var (
@@ -79,23 +78,6 @@ func main() {
 
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
-
-	// go func() {
-	// 	// fs := http.FileServer(http.Dir("C:\\code\\gmc\\client\\wui\\build"))
-	// 	// log.Fatal(http.ListenAndServe("127.0.0.1:8081", fs))
-	// 	// mape our `/ws` endpoint to the `serveWs` function
-	// 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 		fmt.Fprintf(w, "Simple Server")
-	// 	})
-
-	// 	pool := server.NewPool()
-	// 	go pool.Start()
-
-	// 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-	// 		server.ServeWs(pool, w, r)
-	// 	})
-	// 	panic(log.Fatal(http.ListenAndServe(":8080", nil)))
-	// }()
 
 	// Start rpc sever and serve rpc requests
 	rpcServer := rpc.NewServer()

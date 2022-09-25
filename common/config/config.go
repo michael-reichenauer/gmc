@@ -2,10 +2,11 @@ package config
 
 import (
 	"encoding/json"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"os"
 	"path/filepath"
+
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 const (
@@ -29,9 +30,10 @@ type State struct {
 }
 
 type Repo struct {
-	Path          string
-	ShownBranches []string
-	Branches      []Branch
+	Path             string
+	ShownBranches    []string
+	BranchesChildren map[string][]string
+	// Branches      []Branch
 }
 
 type Branch struct {
@@ -39,7 +41,6 @@ type Branch struct {
 	Color       int
 }
 
-//
 type Release struct {
 	Version string
 	Preview bool
@@ -114,6 +115,9 @@ func (s *Service) GetRepo(path string) Repo {
 	log.Infof("get repo for %q", path)
 	for _, repo := range config.Repos {
 		if path == repo.Path {
+			if repo.BranchesChildren == nil {
+				repo.BranchesChildren = make(map[string][]string)
+			}
 			return repo
 		}
 	}
@@ -135,6 +139,10 @@ func (s *Service) SetRepo(path string, setFunc func(r *Repo)) {
 		// New repo, add to config
 		index = len(state.Repos)
 		state.Repos = append(state.Repos, repo)
+	}
+
+	if repo.BranchesChildren == nil {
+		repo.BranchesChildren = make(map[string][]string)
 	}
 
 	setFunc(&repo)
@@ -183,5 +191,5 @@ func (s *Service) defaultConfig() Config {
 }
 
 func (s *Service) defaultRepo(path string) Repo {
-	return Repo{Path: path}
+	return Repo{Path: path, BranchesChildren: make(map[string][]string)}
 }

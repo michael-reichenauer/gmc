@@ -48,9 +48,9 @@ func (s *branchesGraph) drawBranchLine(branch *branch) {
 			c.graph[branch.index].Branch.Set(api.BActiveTip) // ┣   (indicate possible more commits in the future)
 		}
 		if c == c.Branch.bottom {
-			c.graph[branch.index].Branch.Set(api.BBottom) // ┗   (bottom commit (e.g. initial commit on main)
+			c.graph[branch.index].Branch.Set(api.BBottom) //    ┗   (bottom commit (e.g. initial commit on main)
 		}
-		if c != c.Branch.tip && c != c.Branch.bottom { // ┣   (normal commit, in the middle)
+		if c != c.Branch.tip && c != c.Branch.bottom { //       ┣   (normal commit, in the middle)
 			c.graph[branch.index].Branch.Set(api.BCommit)
 		}
 
@@ -86,16 +86,20 @@ func (s *branchesGraph) drawConnectorLines(repo *repo) {
 							}
 						}
 						// Draw vertical down line │
-						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
-							cc := repo.Commits[j]
-							cc.graph[i].Connect.Set(api.BMLine)
+						if c.Branch != c.MergeParent.Branch {
+							for j := c.Index + 1; j < c.MergeParent.Index; j++ {
+								cc := repo.Commits[j]
+								cc.graph[i].Connect.Set(api.BMLine)
+							}
 						}
 						// Draw ╯
 						c.MergeParent.graph[i].Connect.Set(api.BBranchRight)
 					} else {
 						// Other branch is right side  ╮
 						// Draw merge in rune
-						c.graph[c.MergeParent.Branch.index].Connect.Set(api.BMergeRight)
+						if c.Branch != c.MergeParent.Branch {
+							c.graph[c.MergeParent.Branch.index].Connect.Set(api.BMergeRight)
+						}
 						// Draw horizontal pass through line ───
 						for k := i + 1; k < c.MergeParent.Branch.index; k++ {
 							c.graph[k].Connect.Set(api.BPass)
@@ -106,16 +110,23 @@ func (s *branchesGraph) drawConnectorLines(repo *repo) {
 								c.graph[k].PassColor = api.Color(cui.CWhite)
 							}
 						}
-						// Draw vertical down line │
-						for j := c.Index + 1; j < c.MergeParent.Index; j++ {
-							cc := repo.Commits[j]
-							cc.graph[c.MergeParent.Branch.index].Connect.Set(api.BMLine)
+						if c.Branch != c.MergeParent.Branch {
+							// Draw vertical down line │
+							for j := c.Index + 1; j < c.MergeParent.Index; j++ {
+								cc := repo.Commits[j]
+								cc.graph[c.MergeParent.Branch.index].Connect.Set(api.BMLine)
+							}
 						}
 						// Draw branch out rune ╰
-						c.MergeParent.graph[c.MergeParent.Branch.index].Connect.Set(api.BBranchLeft)
-						c.MergeParent.graph[c.MergeParent.Branch.index].Branch.Set(api.BBranchLeft)
+						if c.Branch != c.MergeParent.Branch {
+							c.MergeParent.graph[c.MergeParent.Branch.index].Connect.Set(api.BBranchLeft)
+							c.MergeParent.graph[c.MergeParent.Branch.index].Branch.Set(api.BBranchLeft)
+						} else {
+							c.MergeParent.graph[c.MergeParent.Branch.index].Branch.Set(api.BCommit)
+						}
 					}
 				}
+
 				if c.Parent != nil && c.Parent.Branch != c.Branch {
 					// Commit parent is on other branch (bottom/first commit on this branch)
 					if c.Parent.Branch.index < c.Branch.index {

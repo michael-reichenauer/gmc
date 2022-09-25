@@ -11,8 +11,8 @@ import (
 )
 
 type Committer interface {
-	GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) error
-	Commit(info api.CommitInfo, rsp api.NoRsp) error
+	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
+	Commit(info api.CommitInfoReq, rsp api.NoRsp) error
 }
 
 func NewCommitView(ui cui.UI, committer Committer, repoID, branchName string) *CommitView {
@@ -114,7 +114,7 @@ func (h *CommitView) onOk() {
 	msg := strings.Join(h.textView.ReadLines(), "\n")
 	progress := h.ui.ShowProgress("Committing ...")
 	go func() {
-		err := h.committer.Commit(api.CommitInfo{RepoID: h.repoID, Message: msg}, api.NilRsp)
+		err := h.committer.Commit(api.CommitInfoReq{RepoID: h.repoID, Message: msg}, api.NilRsp)
 		h.ui.Post(func() {
 			progress.Close()
 			if err != nil {

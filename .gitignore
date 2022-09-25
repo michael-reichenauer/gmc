@@ -10,6 +10,7 @@ gmc_linux
 gmc_mac
 main
 gmc
+__debug_bin
 
 # web
 # dependencies

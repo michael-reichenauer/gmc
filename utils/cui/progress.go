@@ -47,7 +47,7 @@ func showProgress(ui *ui, format string, v ...interface{}) Progress {
 		instance = newProgress(ui, startTime)
 	}
 	instance.showCount++
-	log.Infof("Start progress for %q, #%d ...", text, instance.showCount)
+	log.Debugf("Start progress for %q, #%d ...", text, instance.showCount)
 
 	if instance.showCount == 1 {
 		instance.show()
@@ -64,7 +64,7 @@ func newProgress(ui *ui, startTime time.Time) *progress {
 }
 
 func (t *progress) show() {
-	log.Infof("Show progress %q at %v", t.text, t.startTime)
+	log.Debugf("Show progress %q at %v", t.text, t.startTime)
 	t.view.Show(CenterBounds(30, 3, 30, 3))
 	t.view.SetTop()
 	t.view.SetCurrentView()
@@ -82,7 +82,7 @@ func (t *progress) newView() View {
 }
 
 func (t *progress) SetText(text string) {
-	log.Infof("Progress text: %q", text)
+	log.Debugf("Progress text: %q", text)
 	// Calculate margin between text and progress indicator (max two lines of text)
 	lines := strings.Split(text, "\n")
 	if len(lines) > 2 {
@@ -95,11 +95,11 @@ func (t *progress) SetText(text string) {
 }
 
 func (t *progress) Close() {
-	log.Infof("End progress #%d", instance.showCount)
+	log.Debugf("End progress #%d", instance.showCount)
 	instance.showCount--
 	if instance.showCount == 0 {
 		instanceCloseTime = time.Now()
-		log.Infof("Close Progress %v", time.Since(t.startTime))
+		log.Debugf("Close Progress %v", time.Since(t.startTime))
 		t.view.Close()
 		t.view = nil
 		instance = nil
@@ -110,7 +110,7 @@ func (t *progress) textFunc(ViewPage) string {
 	sinceStart := time.Since(t.startTime)
 	if sinceStart < showIconTimeout {
 		// Show no progress for a show while in case operation completes fast
-		log.Infof("Show progress for %q, ...", t.text)
+		log.Debugf("Show progress for %q, ...", t.text)
 		return ""
 	}
 	t.view.SetTop()

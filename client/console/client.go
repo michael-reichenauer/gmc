@@ -41,15 +41,19 @@ func (t client) TriggerSearch(args api.Search, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetBranches(args api.GetBranches, rsp *[]api.Branch) error {
+func (t client) GetBranches(args api.GetBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) Commit(args api.CommitInfo, rsp api.NoRsp) error {
+func (t *client) GetMultiBranchBranches(args api.MultiBranchBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) GetCommitDiff(args api.CommitDiffInfo, rsp *api.CommitDiff) error {
+func (t client) Commit(args api.CommitInfoReq, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t client) GetCommitDiff(args api.CommitDiffInfoReq, rsp *api.CommitDiff) error {
 	return t.client.Call(args, rsp)
 }
 
@@ -61,7 +65,7 @@ func (t client) HideBranch(args api.BranchName, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t client) Checkout(args api.Checkout, rsp api.NoRsp) error {
+func (t client) Checkout(args api.CheckoutReq, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
@@ -82,5 +86,13 @@ func (t client) CreateBranch(args api.BranchName, rsp api.NoRsp) error {
 }
 
 func (t client) DeleteBranch(args api.BranchName, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *client) SetAsParentBranch(args api.BranchName, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *client) UnsetAsParentBranch(args api.BranchName, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }

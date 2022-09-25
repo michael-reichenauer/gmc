@@ -20,9 +20,11 @@ type branch struct {
 	isMultiBranch    bool
 	isRemote         bool
 	isCurrent        bool
+	isSetAsParent    bool
 	HasLocalOnly     bool
 	HasRemoteOnly    bool
 	color            cui.Color
+	multiBranchNames []string
 }
 
 func (t *branch) String() string {
