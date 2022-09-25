@@ -188,7 +188,7 @@ func (t *server) ShowBranch(name api.BranchName, _ api.NoRsp) error {
 	if err != nil {
 		return err
 	}
-	repo.ShowBranch(name.BranchName, name.ShowChildren)
+	repo.ShowBranch(name.BranchName)
 	return nil
 }
 

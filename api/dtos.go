@@ -46,9 +46,8 @@ type GetBranchesReq struct {
 }
 
 type BranchName struct {
-	RepoID       string
-	BranchName   string
-	ShowChildren bool
+	RepoID     string
+	BranchName string
 }
 
 type Search struct {

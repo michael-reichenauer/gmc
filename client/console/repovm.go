@@ -302,8 +302,8 @@ func (t *repoVM) GetNotShownMultiBranches() []api.Branch {
 	return bs
 }
 
-func (t *repoVM) ShowBranch(name string, showChildren bool) {
-	_ = t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name, ShowChildren: showChildren}, api.NilRsp)
+func (t *repoVM) ShowBranch(name string) {
+	_ = t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 }
 
 func (t *repoVM) SetAsParentBranch(name string) {

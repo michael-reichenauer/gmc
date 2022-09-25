@@ -103,7 +103,7 @@ func (t *ViewRepo) GetCommitDiff(id string) (api.CommitDiff, error) {
 
 func (t *ViewRepo) SwitchToBranch(name string, displayName string) error {
 	name = strings.TrimPrefix(name, "origin/")
-	t.ShowBranch(name, false)
+	t.ShowBranch(name)
 	// exist := false
 	// for _, b := range repo.viewRepo.gitRepo.Branches {
 	// 	if b.IsGitBranch && b.DisplayName == displayName {
@@ -342,7 +342,7 @@ func (t *ViewRepo) getShownBranches(skipMaster bool) []api.Branch {
 	return bs
 }
 
-func (t *ViewRepo) ShowBranch(name string, showChildren bool) {
+func (t *ViewRepo) ShowBranch(name string) {
 	viewRepo := t.getViewRepo()
 	branchNames := t.toBranchNames(viewRepo.Branches)
 
@@ -352,7 +352,9 @@ func (t *ViewRepo) ShowBranch(name string, showChildren bool) {
 	}
 
 	branchNames = t.addBranchWithAncestors(branchNames, branch)
-	if showChildren {
+	if branch.IsMultiBranch {
+		// For multi branches, lets show its children branches as well to determine which
+		// child should be the parent
 		for _, b := range branch.MultiBranches {
 			if !lo.Contains(branchNames, b.Name) {
 				branchNames = append(branchNames, b.Name)

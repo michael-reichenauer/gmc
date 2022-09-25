@@ -133,6 +133,18 @@ func (h *branchesService) determineCommitBranch(
 		return
 	}
 
+	if branch := h.isSameChildrenBranches(repo, c); branch != nil {
+		c.Branch = branch
+		c.addBranch(c.Branch)
+		return
+	}
+
+	if branch := h.isMergedDeletedRemoteBranchTip(repo, c); branch != nil {
+		c.Branch = branch
+		c.addBranch(c.Branch)
+		return
+	}
+
 	if branch := h.isMergedDeletedBranchTip(repo, c); branch != nil {
 		// Commit is a tip of a deleted branch, which was merged into a parent branch
 		c.Branch = branch
@@ -278,6 +290,36 @@ func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
 		if name == b.DisplayName {
 			return b
 		}
+	}
+	return nil
+}
+
+func (h *branchesService) isSameChildrenBranches(repo *Repo, c *Commit) *Branch {
+	if len(c.Branches) == 0 && len(c.Children) == 2 &&
+		c.Children[0].Branch == c.Children[1].Branch {
+		// Commit has no branch and no children, but has 2 children with same branch use that
+		return c.Children[0].Branch
+	}
+	return nil
+}
+
+func (h *branchesService) isMergedDeletedRemoteBranchTip(repo *Repo, c *Commit) *Branch {
+	if len(c.Branches) == 0 && len(c.Children) == 0 && len(c.MergeChildren) == 1 {
+		// Commit has no branch and no children, but has a merge child, lets check if pull merger
+		// Trying to use parsed branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
+		name := h.branchNames.branchName(c.Id)
+		if name != "" {
+			// Managed to parse a branch name
+			mergeChildBranch := c.MergeChildren[0].Branch
+			if name == mergeChildBranch.DisplayName {
+				return mergeChildBranch
+			}
+
+			return repo.addNamedBranch(c, name)
+		}
+
+		// could not parse a name from any of the merge children, use id named branch
+		return repo.addIdNamedBranch(c)
 	}
 	return nil
 }
