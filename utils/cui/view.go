@@ -2,10 +2,11 @@ package cui
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"golang.org/x/sync/semaphore"
-	"strings"
 )
 
 const (
@@ -81,17 +82,18 @@ type ViewProperties struct {
 	HideVerticalScrollbar   bool
 	HideHorizontalScrollbar bool
 
-	OnLoad         func()
-	OnClose        func()
-	OnMouseLeft    func(x, y int)
-	OnMouseRight   func(x, y int)
-	OnMouseOutside func()
-	OnMoved        func()
-	Name           string
-	IsEditable     bool
-	IsWrap         bool
-	OnEdit         func()
-	OnMoveCursor   func()
+	OnLoad           func()
+	OnClose          func()
+	OnMouseLeft      func(x, y int)
+	OnMouseRight     func(x, y int)
+	OnMouseOutside   func()
+	OnMoved          func()
+	Name             string
+	IsEditable       bool
+	IsWrap           bool
+	IsMoveUpDownWrap bool
+	OnEdit           func()
+	OnMoveCursor     func()
 }
 
 type ViewPage struct {
@@ -213,7 +215,7 @@ func (h *view) Show(bf BoundFunc) {
 	h.boundFunc = bf
 
 	h.ui.addShownView(h)
-	log.Infof("Show %s %s", h.guiView.Name(), h.properties.Name)
+	log.Debugf("Show %s %s", h.guiView.Name(), h.properties.Name)
 	h.guiView.Frame = h.properties.Title != "" || h.properties.HasFrame
 	h.guiView.Editable = false
 	h.guiView.Wrap = false
@@ -425,7 +427,7 @@ func (h *view) PostOnUIThread(f func()) {
 }
 
 func (h *view) Close() {
-	log.Infof("Close %s %s", h.guiView.Name(), h.properties.Name)
+	log.Debugf("Close %s %s", h.guiView.Name(), h.properties.Name)
 	if h.properties.OnClose != nil {
 		h.properties.OnClose()
 	}

@@ -3,11 +3,6 @@ package installation
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/hashicorp/go-version"
-	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/program"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -15,6 +10,12 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/hashicorp/go-version"
+	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/program"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 const (

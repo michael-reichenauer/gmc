@@ -153,7 +153,7 @@ func (l *Logger) output(level, message string) {
 	for _, ml := range lines {
 		txt := fmt.Sprintf("%s%s %s:%s(%d) %s", l.prefix, level, file, function, line, ml)
 		_, _ = l.udpLogger.Write([]byte(txt))
-		txt2 := fmt.Sprintf("%s %s %s(%d) %s: %s", time.Now().Format(timeFormat), level, file, line, function, ml)
+		txt2 := fmt.Sprintf("%s %s %s:%d %s: %s", time.Now().Format(timeFormat), level, file, line, function, ml)
 		l.outputToFile(txt2)
 	}
 }

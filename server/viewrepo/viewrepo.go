@@ -17,6 +17,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
+	"github.com/samber/lo"
 	"github.com/thoas/go-funk"
 )
 
@@ -56,7 +57,7 @@ func NewViewRepo(configService *config.Service, workingFolder string) *ViewRepo 
 		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
-		gitRepo:         gitrepo.NewGitRepo(workingFolder),
+		gitRepo:         gitrepo.NewGitRepo(configService, workingFolder),
 		configService:   configService,
 		ctx:             ctx,
 		cancel:          cancel,
@@ -101,9 +102,7 @@ func (t *ViewRepo) GetCommitDiff(id string) (api.CommitDiff, error) {
 }
 
 func (t *ViewRepo) SwitchToBranch(name string, displayName string) error {
-	if strings.HasPrefix(name, "origin/") {
-		name = name[7:]
-	}
+	name = strings.TrimPrefix(name, "origin/")
 	t.ShowBranch(name)
 	// exist := false
 	// for _, b := range repo.viewRepo.gitRepo.Branches {
@@ -145,7 +144,7 @@ func (t *ViewRepo) BranchColor(name string) cui.Color {
 	return branchColors[index]
 }
 
-func (t *ViewRepo) GetBranches(args api.GetBranches) []api.Branch {
+func (t *ViewRepo) GetBranches(args api.GetBranchesReq) []api.Branch {
 	branches := []api.Branch{}
 	if args.IncludeOnlyCommitBranches != "" {
 		return append(branches, t.getCommitBranches(args.IncludeOnlyCommitBranches)...)
@@ -161,6 +160,39 @@ func (t *ViewRepo) GetBranches(args api.GetBranches) []api.Branch {
 	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
 }
 
+func (t *ViewRepo) GetMultiBranchBranches(args api.MultiBranchBranchesReq) []api.Branch {
+	branches := []api.Branch{}
+
+	viewRepo := t.getViewRepo()
+
+	commit, ok := viewRepo.CommitById(args.CommitID)
+	if !ok {
+		return nil
+	}
+
+	for _, name := range commit.Branch.multiBranchNames {
+		branch, ok := viewRepo.gitRepo.BranchByName((name))
+		if !ok {
+			continue
+		}
+
+		// found := false
+		// for _, bbb := range viewRepo.Branches {
+		// 	if name == bbb.name {
+		// 		found = true
+		// 		break
+		// 	}
+		// }
+		// if found {
+		// 	continue
+		// }
+
+		branches = append(branches, toBranch(viewRepo.toBranch(branch, 0)))
+	}
+
+	return branches
+}
+
 func (t *ViewRepo) getAllBranchesC(skipShown bool, sortOnLatest bool) []api.Branch {
 	viewRepo := t.getViewRepo()
 	branches := t.getAllBranches(viewRepo, skipShown)
@@ -170,7 +202,7 @@ func (t *ViewRepo) getAllBranchesC(skipShown bool, sortOnLatest bool) []api.Bran
 		})
 	} else {
 		sort.SliceStable(branches, func(i, j int) bool {
-			return -1 == strings.Compare(branches[i].DisplayName, branches[j].DisplayName)
+			return strings.Compare(branches[i].DisplayName, branches[j].DisplayName) == -1
 		})
 	}
 
@@ -320,6 +352,15 @@ func (t *ViewRepo) ShowBranch(name string) {
 	}
 
 	branchNames = t.addBranchWithAncestors(branchNames, branch)
+	if branch.IsMultiBranch {
+		// For multi branches, lets show its children branches as well to determine which
+		// child should be the parent
+		for _, b := range branch.MultiBranches {
+			if !lo.Contains(branchNames, b.Name) {
+				branchNames = append(branchNames, b.Name)
+			}
+		}
+	}
 
 	log.Event("vms-branches-open")
 	t.showBranches(branchNames)
@@ -800,6 +841,73 @@ func (t *ViewRepo) DeleteBranch(name string) error {
 			return err
 		}
 	}
+	return nil
+}
+
+func (t *ViewRepo) SetAsParentBranch(name string) error {
+	viewRepo := t.getViewRepo()
+	b, ok := viewRepo.gitRepo.BranchByName(name)
+	if !ok {
+		return fmt.Errorf("unknown branch %q", name)
+	}
+
+	if b.ParentBranch == nil {
+		return fmt.Errorf("branch has no parent branch %q", name)
+	}
+
+	if !b.ParentBranch.IsMultiBranch {
+		return fmt.Errorf("parent branch is not a multi branch %q", b.ParentBranch.Name)
+	}
+
+	parentName := name
+	otherChildren := lo.Filter(b.ParentBranch.MultiBranches, func(v *gitrepo.Branch, _ int) bool {
+		return v.Name != name
+	})
+	childNames := lo.Map(otherChildren, func(v *gitrepo.Branch, _ int) string {
+		return v.Name
+	})
+
+	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
+		parentChildrenNames, ok := r.BranchesChildren[parentName]
+		if !ok {
+			parentChildrenNames = []string{}
+			r.BranchesChildren[parentName] = parentChildrenNames
+		}
+
+		for _, childName := range childNames {
+			// Ensure parent branch is not a child of any of the children
+			childChildrenNames, ok := r.BranchesChildren[childName]
+			if ok {
+				childChildrenNames = lo.Filter(childChildrenNames, func(v string, _ int) bool {
+					return v != parentName
+				})
+				r.BranchesChildren[childName] = childChildrenNames
+			}
+
+			// Add child name as child to parent
+			if !lo.Contains(parentChildrenNames, childName) {
+				parentChildrenNames = append(parentChildrenNames, childName)
+				r.BranchesChildren[parentName] = parentChildrenNames
+			}
+		}
+	})
+
+	t.TriggerRefreshModel()
+	return nil
+}
+
+func (t *ViewRepo) UnsetAsParentBranch(name string) error {
+	viewRepo := t.getViewRepo()
+
+	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
+		_, ok := r.BranchesChildren[name]
+		if !ok {
+			return
+		}
+		delete(r.BranchesChildren, name)
+	})
+
+	t.TriggerRefreshModel()
 	return nil
 }
 

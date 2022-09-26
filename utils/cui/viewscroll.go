@@ -1,10 +1,11 @@
 package cui
 
 import (
-	"github.com/jroimartin/gocui"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"math"
 	"strings"
+
+	"github.com/jroimartin/gocui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 const (
@@ -109,10 +110,20 @@ func (h *view) moveVertically(move int) {
 	newCurrent := h.currentIndex + move
 
 	if newCurrent < 0 {
-		newCurrent = 0
+		if h.properties.IsMoveUpDownWrap {
+			newCurrent = h.total - 1
+		} else {
+			newCurrent = 0
+		}
+
 	}
+
 	if newCurrent >= h.total {
-		newCurrent = h.total - 1
+		if h.properties.IsMoveUpDownWrap {
+			newCurrent = 0
+		} else {
+			newCurrent = h.total - 1
+		}
 	}
 	if newCurrent == h.currentIndex {
 		// No move, reached top or bottom

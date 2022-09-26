@@ -10,7 +10,7 @@ var (
 	nameRegExp = regexp.MustCompile( // parse subject like e.g. "Merge branch 'develop' into main"
 		`[Mm]erged?` + //                                     'Merge' or 'merged' word
 			`(\s+remote-tracking)?` + //                      'remote-tracking' optional word when merging remote branches
-			`(\s+(from branch|branch|commit|from))?` + //                 'branch'|'commit'|'from' word
+			`(\s+(pull request #[0-9]+ from|from branch|branch|commit|from))?` + //     'branch'|'commit'|'from' word
 			`\s+'?(?P<from>[0-9A-Za-z_/-]+)'?` + //           the <from> branch name
 			`(?P<direction>\s+of\s+[^\s]+)?` + //             the optional 'of repo url'
 			`(\s+(into|to)\s+(?P<into>[0-9A-Za-z_/-]+))?`) // the <into> branch name

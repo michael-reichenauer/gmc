@@ -21,6 +21,25 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	log.Infof(">")
 	defer log.Infof("<")
 	menu := t.ui.NewMenu("")
+	c := t.vm.repo.Commits[currentLineIndex]
+	b := t.vm.repo.Branches[c.BranchIndex]
+	hasBranchItems := false
+	if b.IsSetAsParent {
+		hasBranchItems = true
+		menu.Add(cui.MenuItem{Text: "Unset Branch as Parent", Action: func() {
+			t.vm.UnsetAsParentBranch(b.Name)
+		}})
+	}
+
+	if b.IsMultiBranch {
+		hasBranchItems = true
+		menu.Add(cui.MenuItem{Text: "Set Branch Parent", SubItemsFunc: func() []cui.MenuItem {
+			return t.getMultiBranchBranchesMenuItems()
+		}})
+	}
+	if hasBranchItems {
+		menu.Add(cui.SeparatorMenuItem)
+	}
 
 	menu.Add(cui.MenuItem{Text: "Show Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesMenuItems(currentLineIndex)
@@ -32,7 +51,6 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 
 	menu.Add(cui.SeparatorMenuItem)
 
-	c := t.vm.repo.Commits[currentLineIndex]
 	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
@@ -61,10 +79,16 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	return menu
 }
 
+func (t *menuService) getShowHideBranchesMenu() cui.Menu {
+	menu := t.ui.NewMenu("Hide Branch")
+	menu.AddItems(t.getHideBranchMenuItems())
+	return menu
+}
+
 func (t *menuService) getShowCommitBranchesMenu(selectedIndex int) cui.Menu {
-	menu := t.ui.NewMenu("")
+	menu := t.ui.NewMenu("Show branch")
 	menu.AddItems(t.getShowCommitBranchesMenuItems(selectedIndex))
-	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getHideBranchMenuItems()})
+	// menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getHideBranchMenuItems()})
 	return menu
 }
 
@@ -78,6 +102,7 @@ func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.Me
 }
 
 func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
+	multiBranches := t.vm.GetNotShownMultiBranches()
 	branches := t.vm.GetCommitBranches(selectedIndex)
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentNotShownBranch()
@@ -118,6 +143,16 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		}
 		return allSubItems
 	}})
+
+	if len(multiBranches) > 0 {
+		items = append(items, cui.MenuItem{Text: "Multi Branches", SubItemsFunc: func() []cui.MenuItem {
+			var allSubItems []cui.MenuItem
+			for _, b := range t.vm.GetNotShownMultiBranches() {
+				allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
+			}
+			return allSubItems
+		}})
+	}
 
 	return items
 }
@@ -188,8 +223,22 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 }
 
 func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
-	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+	text := t.branchItemText(branch)
+	if !branch.IsGitBranch {
+		// Not a git branch, mark the branch a bit darker
+		text = cui.Dark(text)
+	}
+
+	return cui.MenuItem{Text: text, Action: func() {
 		t.vm.ShowBranch(branch.Name)
+	}}
+}
+
+func (t *menuService) toSetAsParentBranchMenuItem(branch api.Branch) cui.MenuItem {
+	text := t.branchItemText(branch)
+
+	return cui.MenuItem{Text: text, Action: func() {
+		t.vm.SetAsParentBranch(branch.Name)
 	}}
 }
 
@@ -267,4 +316,14 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 	}
 	return items
 
+}
+
+func (t *menuService) getMultiBranchBranchesMenuItems() []cui.MenuItem {
+	var items []cui.MenuItem
+
+	for _, b := range t.vm.GetMultiBranchBranchesMenuItems() {
+		items = append(items, t.toSetAsParentBranchMenuItem(b))
+	}
+
+	return items
 }

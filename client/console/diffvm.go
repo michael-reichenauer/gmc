@@ -2,14 +2,15 @@ package console
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"strings"
 )
 
 type DiffGetter interface {
-	GetCommitDiff(info api.CommitDiffInfo, diff *api.CommitDiff) error
+	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
 }
 
 type diffVM struct {
@@ -39,7 +40,7 @@ func (t *diffVM) load() {
 
 	go func() {
 		var diff api.CommitDiff
-		err := t.diffGetter.GetCommitDiff(api.CommitDiffInfo{RepoID: t.repoID, CommitID: t.commitID}, &diff)
+		err := t.diffGetter.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: t.commitID}, &diff)
 		t.viewer.PostOnUIThread(func() {
 			progress.Close()
 			if err != nil {
@@ -131,7 +132,7 @@ func (t *diffVM) setDiffSides(firstCharIndex int) {
 
 		// Add all diff sections in a file
 		for _, ds := range df.SectionDiffs {
-			t.addDiffSectionHeader(ds)
+			t.addDiffSectionHeader(df, ds)
 			t.addDiffSectionLines(ds)
 			t.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 		}
@@ -173,21 +174,23 @@ func (t *diffVM) addFileHeader(df api.FileDiff) {
 	}
 }
 
-func (t *diffVM) addDiffSectionHeader(ds api.SectionDiff) {
+func (t *diffVM) addDiffSectionHeader(df api.FileDiff, ds api.SectionDiff) {
 	t.addLeftAndRight("")
-	leftLines, rightLines := t.parseLinesTexts(ds)
+	leftLines, rightLines := t.parseLinesTexts(df, ds)
 	t.add(cui.Dark(leftLines), cui.Dark(rightLines))
 	t.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 }
 
-func (t *diffVM) parseLinesTexts(ds api.SectionDiff) (string, string) {
+func (t *diffVM) parseLinesTexts(df api.FileDiff, ds api.SectionDiff) (string, string) {
 	if t.isUnified {
-		return fmt.Sprintf("Lines %s:", ds.ChangedIndexes), ""
+		return fmt.Sprintf("%s:%s:", df.PathAfter, ds.ChangedIndexes), ""
 	}
 
 	parts := strings.Split(ds.ChangedIndexes, "+")
-	leftText := fmt.Sprintf("Lines %s:", strings.TrimSpace(parts[0][1:]))
-	rightText := fmt.Sprintf("Lines %s:", strings.TrimSpace(parts[1]))
+	leftLines := strings.Replace(strings.TrimSpace(parts[0][1:]), ",", " to ", 1)
+	rightLines := strings.Replace(strings.TrimSpace(parts[1]), ",", " to ", 1)
+	leftText := fmt.Sprintf("%s:%s:", df.PathBefore, leftLines)
+	rightText := fmt.Sprintf("%s:%s:", df.PathAfter, rightLines)
 	return leftText, rightText
 }
 

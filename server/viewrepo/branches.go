@@ -118,20 +118,27 @@ func (t *ViewRepo) containsBranch(branches []*gitrepo.Branch, name string) bool 
 
 func (t *ViewRepo) sortBranches(branches []*gitrepo.Branch) {
 	sort.SliceStable(branches, func(l, r int) bool {
-		if branches[l].Name == branches[r].RemoteName {
+		left := branches[l]
+		right := branches[r]
+
+		if left.Name == right.RemoteName {
+			// left branch is the remote branch of the right branch
 			// Prioritize remote branch before local
 			return true
 		}
+
 		// Prioritize known branches like master, develop
-		il := utils.StringsIndex(gitrepo.DefaultBranchPriority, branches[l].Name)
-		ir := utils.StringsIndex(gitrepo.DefaultBranchPriority, branches[r].Name)
+		il := utils.StringsIndex(gitrepo.DefaultBranchPriority, left.Name)
+		ir := utils.StringsIndex(gitrepo.DefaultBranchPriority, right.Name)
 		if il != -1 && (il < ir || ir == -1) {
 			// Left item is known branch with higher priority
 			return true
 		}
-		if branches[r].IsAncestorBranch(branches[l].Name) {
+
+		if right.IsAncestorBranch(left.Name) {
 			return true
 		}
+
 		// no known order for the pair
 		return false
 	})

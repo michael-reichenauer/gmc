@@ -2,10 +2,13 @@ package git
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
 	"path/filepath"
 	"sort"
 	"strings"
+	"unicode/utf8"
+
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type DiffMode int
@@ -139,10 +142,17 @@ func (t *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath str
 	for _, name := range status.AddedFiles {
 		filePath := filepath.Join(dirPath, name)
 		file, err := utils.FileRead(filePath)
+		fileText := ""
 		if err != nil {
-			return nil, err
+			log.Warnf("Failed to read file %s, %t", filePath, err)
+			fileText = fmt.Sprintf("<Error: %v>", err)
+		} else if isText(file) {
+			fileText = string(file)
+		} else {
+			fileText = fmt.Sprintf("<Not a text file: '%s'>", filePath)
 		}
-		lines := strings.Split(string(file), "\n")
+
+		lines := strings.Split(fileText, "\n")
 		var lds []LinesDiff
 		for _, line := range lines {
 			line = strings.TrimRight(line, "\r")
@@ -243,4 +253,22 @@ func asLine(line string) string {
 }
 func asConflictLine(line string) string {
 	return strings.ReplaceAll(line[2:], "\t", "   ")
+}
+
+func isText(s []byte) bool {
+	const max = 1024 // at least utf8.UTFMax
+	if len(s) > max {
+		s = s[0:max]
+	}
+	for i, c := range string(s) {
+		if i+utf8.UTFMax > len(s) {
+			// last char may be incomplete - ignore
+			break
+		}
+		if c == 0xFFFD || c < ' ' && c != '\n' && c != '\t' && c != '\f' {
+			// decoding error or control character - not a text file
+			return false
+		}
+	}
+	return true
 }

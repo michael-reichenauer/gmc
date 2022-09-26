@@ -2,9 +2,10 @@ package gitrepo
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 )
 
 type Tag struct {
@@ -155,6 +156,9 @@ func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 
 func (r *Repo) addMultiBranch(c *Commit) *Branch {
 	b := newMultiBranch(c.Id)
+	for _, cc := range c.Children {
+		b.MultiBranches = append(b.MultiBranches, cc.Branch)
+	}
 	r.Branches = append(r.Branches, b)
 	return b
 }

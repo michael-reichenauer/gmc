@@ -2,15 +2,16 @@ package gitrepo
 
 import (
 	"context"
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/michael-reichenauer/gmc/utils/timer"
-	"testing"
 )
 
 func TestCurrentRepo_Manual(t *testing.T) {
-	tests.ManualTest(t)
-	gr := NewGitRepo(git.CurrentRoot())
+	// tests.ManualTest(t)
+	gr := NewGitRepo(nil, git.CurrentRoot())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	gr.StartMonitor(ctx)
@@ -30,7 +31,7 @@ func TestCurrentRepo_Manual(t *testing.T) {
 
 func TestAcsRepo_Manual(t *testing.T) {
 	tests.ManualTest(t)
-	gr := NewGitRepo("C:\\Work Files\\AcmAcs")
+	gr := NewGitRepo(nil, "C:\\Work Files\\AcmAcs")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	gr.StartMonitor(ctx)
