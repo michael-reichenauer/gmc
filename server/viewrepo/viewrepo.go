@@ -101,6 +101,23 @@ func (t *ViewRepo) GetCommitDiff(id string) (api.CommitDiff, error) {
 	return ToCommitDiff(diff), nil
 }
 
+func (t *ViewRepo) GetCommitDetails(id string) (api.CommitDetailsRsp, error) {
+	c, ok := t.viewRepo.CommitById(id)
+	if !ok {
+		return api.CommitDetailsRsp{}, fmt.Errorf("unknown commit %q", id)
+	}
+	diff, err := t.gitRepo.GetCommitDiff(id)
+	if err != nil {
+		return api.CommitDetailsRsp{}, err
+	}
+
+	files := lo.Map(diff.FileDiffs, func(v git.FileDiff, _ int) string {
+		return v.PathBefore
+	})
+
+	return api.CommitDetailsRsp{Id: c.ID, BranchName: c.Branch.displayName, Message: c.Message, Files: files}, nil
+}
+
 func (t *ViewRepo) SwitchToBranch(name string, displayName string) error {
 	name = strings.TrimPrefix(name, "origin/")
 	t.ShowBranch(name)

@@ -13,6 +13,7 @@ type Api interface {
 
 	GetBranches(args GetBranchesReq, branches *[]Branch) error
 	GetCommitDiff(info CommitDiffInfoReq, diff *CommitDiff) error
+	GetCommitDetails(req CommitDetailsReq, rsp *CommitDetailsRsp) error
 	GetMultiBranchBranches(args MultiBranchBranchesReq, branches *[]Branch) error
 
 	Commit(info CommitInfoReq, _ NoRsp) error

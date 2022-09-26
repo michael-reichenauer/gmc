@@ -194,6 +194,7 @@ func (t *repoLayout) writeSubject(
 	} else if c.IsRemoteOnly {
 		color = cui.CBlue
 	}
+
 	if currentBranchDisplayName != "" &&
 		repo.Branches[c.BranchIndex].DisplayName != currentBranchDisplayName {
 		color = cui.CDark
