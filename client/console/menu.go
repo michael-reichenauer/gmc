@@ -126,7 +126,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return latestSubItems
 	}})
 
-	items = append(items, cui.MenuItem{Text: "All Git Branches", SubItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "All Live Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allGitSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			if b.IsGitBranch {
@@ -136,7 +136,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return allGitSubItems
 	}})
 
-	items = append(items, cui.MenuItem{Text: "All Branches", SubItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "All Live and Deleted Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))

@@ -40,7 +40,6 @@ func (t *RepoView) SetCurrentView() {
 
 func (t *RepoView) ScrollVertical(scroll int) {
 	t.view.ScrollVertical(scroll)
-
 }
 
 func (t *RepoView) newView() cui.View {
@@ -89,6 +88,10 @@ func (t *RepoView) Close() {
 
 func (t *RepoView) NotifyChanged() {
 	t.view.NotifyChanged()
+}
+
+func (t *RepoView) ShowLineAtTop(line int) {
+	t.view.ShowLineAtTop(line)
 }
 
 func (t *RepoView) viewPageData(viewPort cui.ViewPage) cui.ViewText {
