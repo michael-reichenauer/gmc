@@ -154,10 +154,10 @@ func (r *Repo) setGitBranches(gitBranches []git.Branch) {
 	}
 }
 
-func (r *Repo) addMultiBranch(c *Commit) *Branch {
-	b := newMultiBranch(c.Id)
+func (r *Repo) addAmbiguousBranch(c *Commit) *Branch {
+	b := newAmbiguousBranch(c.Id)
 	for _, cc := range c.Children {
-		b.MultiBranches = append(b.MultiBranches, cc.Branch)
+		b.AmbiguousBranches = append(b.AmbiguousBranches, cc.Branch)
 	}
 	r.Branches = append(r.Branches, b)
 	return b

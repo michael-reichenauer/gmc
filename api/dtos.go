@@ -72,7 +72,7 @@ type CommitDiffInfoReq struct {
 	CommitID string
 }
 
-type MultiBranchBranchesReq struct {
+type AmbiguousBranchBranchesReq struct {
 	RepoID   string
 	CommitID string
 }
@@ -149,21 +149,21 @@ type GraphRow []GraphColumn
 type Graph []GraphRow
 
 type Branch struct {
-	Name             string
-	DisplayName      string
-	Index            int
-	IsMultiBranch    bool
-	RemoteName       string
-	LocalName        string
-	IsRemote         bool
-	IsGitBranch      bool
-	IsCurrent        bool
-	IsSetAsParent    bool
-	TipID            string
-	HasLocalOnly     bool
-	HasRemoteOnly    bool
-	Color            Color
-	MultiBranchNames []string
+	Name                 string
+	DisplayName          string
+	Index                int
+	IsAmbiguousBranch    bool
+	RemoteName           string
+	LocalName            string
+	IsRemote             bool
+	IsGitBranch          bool
+	IsCurrent            bool
+	IsSetAsParent        bool
+	TipID                string
+	HasLocalOnly         bool
+	HasRemoteOnly        bool
+	Color                Color
+	AmbiguousBranchNames []string
 
 	IsShown bool
 	IsIn    bool

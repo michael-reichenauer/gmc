@@ -320,14 +320,14 @@ func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	return branches
 }
 
-func (t *repoVM) GetNotShownMultiBranches() []api.Branch {
+func (t *repoVM) GetNotShownAmbiguousBranches() []api.Branch {
 	var branches []api.Branch
 
 	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: true}, &branches)
 
 	var bs []api.Branch
 	for _, b := range branches {
-		if b.IsMultiBranch {
+		if b.IsAmbiguousBranch {
 			bs = append(bs, b)
 		}
 	}
@@ -448,15 +448,15 @@ func (t *repoVM) DeleteBranch(name string) {
 		nil)
 }
 
-func (t *repoVM) GetMultiBranchBranchesMenuItems() []api.Branch {
+func (t *repoVM) GetAmbiguousBranchBranchesMenuItems() []api.Branch {
 	commit := t.repo.Commits[t.currentIndex]
 	branch := t.repo.Branches[commit.BranchIndex]
-	if !branch.IsMultiBranch {
+	if !branch.IsAmbiguousBranch {
 		return nil
 	}
 
 	var branches []api.Branch
-	_ = t.api.GetMultiBranchBranches(api.MultiBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
+	_ = t.api.GetAmbiguousBranchBranches(api.AmbiguousBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
 
 	return branches
 }

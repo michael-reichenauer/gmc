@@ -38,7 +38,7 @@ func (s *branchesGraph) drawBranchLine(branch *branch) {
 	c := branch.tip
 	for {
 		if c.Branch != branch {
-			// this commit is not part of the branch (multiple branches on the same commit)
+			// this commit is not part of the branch (several branches on the same commit)
 			break
 		}
 		if c == c.Branch.tip {
