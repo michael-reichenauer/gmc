@@ -274,6 +274,18 @@ func (t *server) GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff)
 	return
 }
 
+func (t *server) GetCommitDetails(args api.CommitDetailsReq, rsp *api.CommitDetailsRsp) (err error) {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(args.RepoID)
+	if err != nil {
+		return err
+	}
+
+	*rsp, err = repo.GetCommitDetails(args.CommitID)
+	return
+}
+
 func (t *server) Commit(info api.CommitInfoReq, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
