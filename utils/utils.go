@@ -3,7 +3,6 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 func CurrentDir() string {
@@ -50,7 +51,9 @@ func BinPath() string {
 		name, err = exec.LookPath(filepath.Clean(name))
 	}
 	if err != nil {
-		panic(log.Fatal(err))
+		log.Fatal(err)
+		return ""
+		//panic(log.Fatal(err))
 	}
 	return name
 }
