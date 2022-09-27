@@ -51,7 +51,7 @@ func (h *branchNameParser) parseCommit(c *Commit) fromInto {
 	fi := h.parseMergeBranchNames(c.Subject)
 
 	// set the branch name of the commit and merge parent.
-	// could actually be multiple names, but lets ignore that
+	// could actually be several names, but lets ignore that
 	h.parsedCommits[c.Id] = fi
 	h.branchNames[c.Id] = fi.into
 	if !h.isPullMergeCommit(fi) {

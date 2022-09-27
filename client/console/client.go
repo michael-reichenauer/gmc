@@ -45,7 +45,7 @@ func (t client) GetBranches(args api.GetBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t *client) GetMultiBranchBranches(args api.MultiBranchBranchesReq, rsp *[]api.Branch) error {
+func (t *client) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 

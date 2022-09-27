@@ -115,7 +115,7 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 		select {
 		case <-wait:
 			// Some time has passed, check if there is a repo or status change event to act on
-			// This is to avoid that multiple change events in a short interval is batched
+			// This is to avoid that several change events in a short interval is batched
 			if change != noChange {
 				log.Infof("waited for %v", change)
 				if change == statusChange && hasRepo {
@@ -140,7 +140,7 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 			}
 			if change == noChange {
 				// First change event, ensure we do wait a while before acting on the event
-				// This is to avoid that multiple change events in a short interval is batched
+				// This is to avoid that several change events in a short interval is batched
 				wait = time.After(batchInterval)
 				log.Infof("Got repo start change ...")
 				select {

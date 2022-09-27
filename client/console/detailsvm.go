@@ -2,9 +2,10 @@ package console
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"strings"
 )
 
 var (
@@ -94,8 +95,8 @@ func toHeader(text string) string {
 // 	typeText := ""
 //
 // 	switch {
-// 	case c.Branch.IsMultiBranch:
-// 		typeText = cui.Dark(" (multiple) >")
+// 	case c.Branch.IsAmbiguousBranch:
+// 		typeText = cui.Dark(" (ambiguous) >")
 // 	case !c.Branch.IsGitBranch:
 // 		typeText = cui.Dark(" ()")
 // 	case c.IsUncommitted:

@@ -132,25 +132,25 @@ func (t *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	if b.ParentBranch != nil {
 		parentBranchName = b.ParentBranch.Name
 	}
-	var multiBranchNames []string
-	for _, bb := range b.MultiBranches {
-		multiBranchNames = append(multiBranchNames, bb.Name)
+	var ambiguousBranchNames []string
+	for _, bb := range b.AmbiguousBranches {
+		ambiguousBranchNames = append(ambiguousBranchNames, bb.Name)
 	}
 	return &branch{
-		name:             b.Name,
-		displayName:      b.DisplayName,
-		index:            index,
-		tipId:            b.TipID,
-		bottomId:         b.BottomID,
-		parentBranchName: parentBranchName,
-		isGitBranch:      b.IsGitBranch,
-		isRemote:         b.IsRemote,
-		isMultiBranch:    b.IsMultiBranch,
-		remoteName:       b.RemoteName,
-		localName:        b.LocalName,
-		isCurrent:        b.IsCurrent,
-		isSetAsParent:    b.IsSetAsParent,
-		multiBranchNames: multiBranchNames,
+		name:                 b.Name,
+		displayName:          b.DisplayName,
+		index:                index,
+		tipId:                b.TipID,
+		bottomId:             b.BottomID,
+		parentBranchName:     parentBranchName,
+		isGitBranch:          b.IsGitBranch,
+		isRemote:             b.IsRemote,
+		isAmbiguousBranch:    b.IsAmbiguousBranch,
+		remoteName:           b.RemoteName,
+		localName:            b.LocalName,
+		isCurrent:            b.IsCurrent,
+		isSetAsParent:        b.IsSetAsParent,
+		ambiguousBranchNames: ambiguousBranchNames,
 	}
 }
 
@@ -161,12 +161,7 @@ func (t *repo) toCommit(c *gitrepo.Commit, index int, includeGraph bool) *commit
 	if includeGraph {
 		graph = make([]api.GraphColumn, len(t.Branches))
 	}
-	var multiBranches []string
-	if branch.isMultiBranch {
-		for _, b := range c.Branches {
-			multiBranches = append(multiBranches, b.Name)
-		}
-	}
+
 	return &commit{
 		ID:         c.Id,
 		SID:        c.Sid,

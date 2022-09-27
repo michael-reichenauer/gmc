@@ -31,10 +31,10 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		}})
 	}
 
-	if b.IsMultiBranch {
+	if b.IsAmbiguousBranch {
 		hasBranchItems = true
-		menu.Add(cui.MenuItem{Text: "Set Branch Parent", SubItemsFunc: func() []cui.MenuItem {
-			return t.getMultiBranchBranchesMenuItems()
+		menu.Add(cui.MenuItem{Text: "Set Ambiguous Branch Parent", SubItemsFunc: func() []cui.MenuItem {
+			return t.getAmbiguousBranchBranchesMenuItems()
 		}})
 	}
 	if hasBranchItems {
@@ -102,7 +102,7 @@ func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.Me
 }
 
 func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
-	multiBranches := t.vm.GetNotShownMultiBranches()
+	ambiguousBranches := t.vm.GetNotShownAmbiguousBranches()
 	branches := t.vm.GetCommitBranches(selectedIndex)
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentNotShownBranch()
@@ -126,7 +126,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return latestSubItems
 	}})
 
-	items = append(items, cui.MenuItem{Text: "All Git Branches", SubItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "All Live Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allGitSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			if b.IsGitBranch {
@@ -136,7 +136,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return allGitSubItems
 	}})
 
-	items = append(items, cui.MenuItem{Text: "All Branches", SubItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "All Live and Deleted Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
@@ -144,10 +144,10 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return allSubItems
 	}})
 
-	if len(multiBranches) > 0 {
-		items = append(items, cui.MenuItem{Text: "Multi Branches", SubItemsFunc: func() []cui.MenuItem {
+	if len(ambiguousBranches) > 0 {
+		items = append(items, cui.MenuItem{Text: "Ambiguous Branches", SubItemsFunc: func() []cui.MenuItem {
 			var allSubItems []cui.MenuItem
-			for _, b := range t.vm.GetNotShownMultiBranches() {
+			for _, b := range t.vm.GetNotShownAmbiguousBranches() {
 				allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
 			}
 			return allSubItems
@@ -318,10 +318,10 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 
 }
 
-func (t *menuService) getMultiBranchBranchesMenuItems() []cui.MenuItem {
+func (t *menuService) getAmbiguousBranchBranchesMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 
-	for _, b := range t.vm.GetMultiBranchBranchesMenuItems() {
+	for _, b := range t.vm.GetAmbiguousBranchBranchesMenuItems() {
 		items = append(items, t.toSetAsParentBranchMenuItem(b))
 	}
 

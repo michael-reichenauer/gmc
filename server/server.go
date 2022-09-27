@@ -170,14 +170,14 @@ func (t *server) GetBranches(args api.GetBranchesReq, branches *[]api.Branch) er
 	return nil
 }
 
-func (t *server) GetMultiBranchBranches(args api.MultiBranchBranchesReq, branches *[]api.Branch) error {
+func (t *server) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, branches *[]api.Branch) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
 		return err
 	}
-	*branches = repo.GetMultiBranchBranches(args)
+	*branches = repo.GetAmbiguousBranchBranches(args)
 	return nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/samber/lo"
 )
 
 type repoPage struct {
@@ -20,9 +21,14 @@ type repoPage struct {
 	selectedBranchName string
 }
 
+type RepoViewer interface {
+	NotifyChanged()
+	ShowLineAtTop(line int)
+}
+
 type repoVM struct {
 	ui                cui.UI
-	repoViewer        cui.Notifier
+	repoViewer        RepoViewer
 	api               api.Api
 	repoLayout        *repoLayout
 	isDetails         bool
@@ -43,7 +49,7 @@ type trace struct {
 	BranchNames []string
 }
 
-func newRepoVM(ui cui.UI, repoViewer cui.Notifier, api api.Api, repoID string) *repoVM {
+func newRepoVM(ui cui.UI, repoViewer RepoViewer, api api.Api, repoID string) *repoVM {
 	return &repoVM{
 		ui:         ui,
 		repoViewer: repoViewer,
@@ -320,14 +326,14 @@ func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	return branches
 }
 
-func (t *repoVM) GetNotShownMultiBranches() []api.Branch {
+func (t *repoVM) GetNotShownAmbiguousBranches() []api.Branch {
 	var branches []api.Branch
 
 	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: true}, &branches)
 
 	var bs []api.Branch
 	for _, b := range branches {
-		if b.IsMultiBranch {
+		if b.IsAmbiguousBranch {
 			bs = append(bs, b)
 		}
 	}
@@ -335,7 +341,28 @@ func (t *repoVM) GetNotShownMultiBranches() []api.Branch {
 }
 
 func (t *repoVM) ShowBranch(name string) {
-	_ = t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+	t.startCommand(
+		fmt.Sprintf("Show Branch:\n%s", name), func() error {
+			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+		},
+		func(err error) string { return fmt.Sprintf("Failed to show branch:\n%s\n%s", name, err) },
+		func() { t.ScrollToBranch(name) })
+}
+
+func (t *repoVM) ScrollToBranch(name string) {
+	t.ui.Post(func() {
+		branch, ok := lo.Find(t.repo.Branches, func(v api.Branch) bool { return v.Name == name })
+		if !ok {
+			return
+		}
+		log.Infof("Branch %v", branch)
+		tip, i, ok := lo.FindIndexOf(t.repo.Commits, func(v api.Commit) bool { return v.ID == branch.TipID })
+		if !ok {
+			return
+		}
+		log.Infof("Tip index #%d, %v", i, tip)
+		t.repoViewer.ShowLineAtTop(i - 4)
+	})
 }
 
 func (t *repoVM) SetAsParentBranch(name string) {
@@ -406,7 +433,8 @@ func (t *repoVM) startCommand(
 	progressText string,
 	doFunc func() error,
 	errorFunc func(err error) string,
-	onRepoUpdatedFunc func()) {
+	onRepoUpdatedFunc func(),
+) {
 	progress := t.ui.ShowProgress(progressText)
 	t.onRepoUpdatedFunc = onRepoUpdatedFunc
 	go func() {
@@ -435,7 +463,7 @@ func (t *repoVM) CreateBranch(name string) {
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) })
+		func() { t.ShowBranch(name) })
 }
 
 func (t *repoVM) DeleteBranch(name string) {
@@ -448,15 +476,15 @@ func (t *repoVM) DeleteBranch(name string) {
 		nil)
 }
 
-func (t *repoVM) GetMultiBranchBranchesMenuItems() []api.Branch {
+func (t *repoVM) GetAmbiguousBranchBranchesMenuItems() []api.Branch {
 	commit := t.repo.Commits[t.currentIndex]
 	branch := t.repo.Branches[commit.BranchIndex]
-	if !branch.IsMultiBranch {
+	if !branch.IsAmbiguousBranch {
 		return nil
 	}
 
 	var branches []api.Branch
-	_ = t.api.GetMultiBranchBranches(api.MultiBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
+	_ = t.api.GetAmbiguousBranchBranches(api.AmbiguousBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
 
 	return branches
 }
