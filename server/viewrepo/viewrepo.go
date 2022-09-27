@@ -141,7 +141,7 @@ func (t *ViewRepo) Commit(Commit string) error {
 }
 
 func (t *ViewRepo) BranchColor(name string) cui.Color {
-	if strings.HasPrefix(name, "multiple@") {
+	if strings.HasPrefix(name, "ambiguous@") {
 		return cui.CWhite
 	}
 	color, ok := t.customBranchColors[name]
@@ -177,7 +177,7 @@ func (t *ViewRepo) GetBranches(args api.GetBranchesReq) []api.Branch {
 	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
 }
 
-func (t *ViewRepo) GetMultiBranchBranches(args api.MultiBranchBranchesReq) []api.Branch {
+func (t *ViewRepo) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq) []api.Branch {
 	branches := []api.Branch{}
 
 	viewRepo := t.getViewRepo()
@@ -187,7 +187,7 @@ func (t *ViewRepo) GetMultiBranchBranches(args api.MultiBranchBranchesReq) []api
 		return nil
 	}
 
-	for _, name := range commit.Branch.multiBranchNames {
+	for _, name := range commit.Branch.ambiguousBranchNames {
 		branch, ok := viewRepo.gitRepo.BranchByName((name))
 		if !ok {
 			continue
@@ -369,10 +369,10 @@ func (t *ViewRepo) ShowBranch(name string) {
 	}
 
 	branchNames = t.addBranchWithAncestors(branchNames, branch)
-	if branch.IsMultiBranch {
-		// For multi branches, lets show its children branches as well to determine which
+	if branch.IsAmbiguousBranch {
+		// For ambiguous branches, lets show its children branches as well to determine which
 		// child should be the parent
-		for _, b := range branch.MultiBranches {
+		for _, b := range branch.AmbiguousBranches {
 			if !lo.Contains(branchNames, b.Name) {
 				branchNames = append(branchNames, b.Name)
 			}
@@ -872,12 +872,12 @@ func (t *ViewRepo) SetAsParentBranch(name string) error {
 		return fmt.Errorf("branch has no parent branch %q", name)
 	}
 
-	if !b.ParentBranch.IsMultiBranch {
-		return fmt.Errorf("parent branch is not a multi branch %q", b.ParentBranch.Name)
+	if !b.ParentBranch.IsAmbiguousBranch {
+		return fmt.Errorf("parent branch is not a ambiguous branch %q", b.ParentBranch.Name)
 	}
 
 	parentName := name
-	otherChildren := lo.Filter(b.ParentBranch.MultiBranches, func(v *gitrepo.Branch, _ int) bool {
+	otherChildren := lo.Filter(b.ParentBranch.AmbiguousBranches, func(v *gitrepo.Branch, _ int) bool {
 		return v.Name != name
 	})
 	childNames := lo.Map(otherChildren, func(v *gitrepo.Branch, _ int) string {

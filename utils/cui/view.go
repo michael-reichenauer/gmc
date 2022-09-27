@@ -136,6 +136,7 @@ type View interface {
 	ScrollHorizontal(scroll int)
 	ScrollVertical(scroll int)
 	SetCurrentLine(line int)
+	ShowLineAtTop(line int)
 	ShowFrame(isShow bool)
 }
 
@@ -461,6 +462,10 @@ func (h *view) ReadLines() []string {
 
 func (h *view) Size() (int, int) {
 	return h.guiView.Size()
+}
+
+func (h *view) ShowLineAtTop(line int) {
+	h.ScrollVertical(line - h.firstIndex)
 }
 
 func (h *view) onKeyArrowUp() {

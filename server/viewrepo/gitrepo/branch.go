@@ -7,20 +7,20 @@ import (
 )
 
 type Branch struct {
-	Name          string
-	DisplayName   string
-	TipID         string
-	BottomID      string
-	ParentBranch  *Branch
-	IsRemote      bool
-	RemoteName    string
-	LocalName     string
-	IsCurrent     bool
-	IsGitBranch   bool
-	IsMultiBranch bool
-	IsNamedBranch bool
-	IsSetAsParent bool
-	MultiBranches []*Branch
+	Name              string
+	DisplayName       string
+	TipID             string
+	BottomID          string
+	ParentBranch      *Branch
+	IsRemote          bool
+	RemoteName        string
+	LocalName         string
+	IsCurrent         bool
+	IsGitBranch       bool
+	IsAmbiguousBranch bool
+	IsNamedBranch     bool
+	IsSetAsParent     bool
+	AmbiguousBranches []*Branch
 }
 
 func newGitBranch(gb git.Branch) *Branch {
@@ -55,13 +55,13 @@ func newBranch(commitID string) *Branch {
 	}
 }
 
-func newMultiBranch(commitID string) *Branch {
+func newAmbiguousBranch(commitID string) *Branch {
 	sid := git.ToSid(commitID)
 	return &Branch{
-		Name:          fmt.Sprintf("multi:%s", sid),
-		DisplayName:   fmt.Sprintf("multiple@%s", sid),
-		TipID:         commitID,
-		IsMultiBranch: true,
+		Name:              fmt.Sprintf("ambiguous:%s", sid),
+		DisplayName:       fmt.Sprintf("ambiguous@%s", sid),
+		TipID:             commitID,
+		IsAmbiguousBranch: true,
 	}
 }
 

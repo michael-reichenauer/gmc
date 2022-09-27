@@ -5,26 +5,26 @@ import (
 )
 
 type branch struct {
-	index            int
-	name             string
-	displayName      string
-	tipId            string
-	bottomId         string
-	parentBranchName string
-	remoteName       string
-	localName        string
-	tip              *commit
-	bottom           *commit
-	parentBranch     *branch
-	isGitBranch      bool
-	isMultiBranch    bool
-	isRemote         bool
-	isCurrent        bool
-	isSetAsParent    bool
-	HasLocalOnly     bool
-	HasRemoteOnly    bool
-	color            cui.Color
-	multiBranchNames []string
+	index                int
+	name                 string
+	displayName          string
+	tipId                string
+	bottomId             string
+	parentBranchName     string
+	remoteName           string
+	localName            string
+	tip                  *commit
+	bottom               *commit
+	parentBranch         *branch
+	isGitBranch          bool
+	isAmbiguousBranch    bool
+	isRemote             bool
+	isCurrent            bool
+	isSetAsParent        bool
+	HasLocalOnly         bool
+	HasRemoteOnly        bool
+	color                cui.Color
+	ambiguousBranchNames []string
 }
 
 func (t *branch) String() string {
