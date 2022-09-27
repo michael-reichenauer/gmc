@@ -24,12 +24,12 @@ func main() {
 
 	// linker flags "-ldflags", "-s -w" omits debug and symbols to reduce size
 	// ("-H=windowsgui" would disable console on windows)
-	// Echo("Building Windows gmc.exe ...")
-	// env := []string{"GOOS=windows", "GOARCH=amd64"}
-	// Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
+	Echo("Building Windows gmc.exe ...")
+	env := []string{"GOOS=windows", "GOARCH=amd64"}
+	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
 
 	Echo("Building Linux gmc ...")
-	env := []string{"GOOS=linux", "GOARCH=amd64"}
+	env = []string{"GOOS=linux", "GOARCH=amd64"}
 	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_linux", "main.go"))
 	Must(CopyFile("gmc_linux", "gmc"))
 
@@ -52,7 +52,7 @@ func main() {
 func echoBuiltVersion() {
 	switch runtime.GOOS {
 	case "linux":
-		Must(Cmd("./gmc", "-version"))
+		Must(Cmd("./gmc_linux", "-version"))
 	case "windows":
 		Must(Cmd("./gmc.exe", "-version"))
 	case "darwin":
