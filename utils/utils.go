@@ -71,27 +71,33 @@ func GetVolumes() []string {
 		}
 		return volumes
 	}
+
+	// Linux/Mac, use root
 	return []string{"/"}
 }
 
 func GetSubDirs(parentDirPath string) ([]string, error) {
+	log.Infof("Get sub dirs of %q", parentDirPath)
 	files, err := ioutil.ReadDir(parentDirPath)
 	if err != nil {
 		// Folder not readable, might be e.g. access denied
-		return nil, err
+		log.Warnf("Folder not readable %q, %v", parentDirPath, err)
+		return []string{}, err
 	}
 
-	var paths []string
+	var paths []string = []string{}
 	for _, f := range files {
 		if !f.IsDir() || f.Name() == "$RECYCLE.BIN" {
 			continue
 		}
 		paths = append(paths, filepath.Join(parentDirPath, f.Name()))
 	}
+
 	// Sort with but ignore case
 	sort.SliceStable(paths, func(l, r int) bool {
-		return -1 == strings.Compare(strings.ToLower(paths[l]), strings.ToLower(paths[r]))
+		return strings.Compare(strings.ToLower(paths[l]), strings.ToLower(paths[r])) == -1
 	})
+	log.Infof("Paths: %v", paths)
 	return paths, nil
 }
 

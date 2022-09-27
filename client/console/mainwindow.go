@@ -2,13 +2,14 @@ package console
 
 import (
 	"fmt"
+	"path"
+	"strings"
+	"time"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
-	"path"
-	"strings"
-	"time"
 )
 
 type MainWindow struct {
@@ -22,7 +23,7 @@ func NewMainWindow(ui cui.UI) *MainWindow {
 }
 
 func (t *MainWindow) Show(serverUri, path string) {
-	progress := t.ui.ShowProgress("Connecting")
+	// progress := t.ui.ShowProgress("Connecting")
 	go func() {
 		// Create rpc client and create service client
 		rpcClient := rpc.NewClient()
@@ -31,7 +32,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
-				msgBox.OnOK = func() { t.ui.Post(func() { t.Show(serverUri, path) }) }
+				msgBox.OnClose = func() { t.ui.Post(func() { t.Show(serverUri, path) }) }
 				msgBox.Show()
 			})
 		}
@@ -48,7 +49,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 			}
 			t.api = api
 			t.rpcClient = rpcClient
-			progress.Close()
+			//progress.Close()
 
 			t.showRepo(path)
 		})
@@ -56,21 +57,25 @@ func (t *MainWindow) Show(serverUri, path string) {
 }
 
 func (t *MainWindow) showRepo(path string) {
-	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
+	//progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 	go func() {
 		var repoID string
 		err := t.api.OpenRepo(path, &repoID)
 		t.ui.Post(func() {
 			if err != nil {
-				log.Warnf("Failed to open %q, %v", path, err)
 				if path != "" {
-					t.ui.ShowErrorMessageBox("Failed to show repo for:\n%s\nError: %v", path, err)
+					log.Warnf("Failed to open %q, %v", path, err)
+					msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to show repo for:\n%s\nError: %v", path, err)))
+					msgBox.OnClose = func() { t.ui.Post(func() { t.showOpenRepoMenu() }) }
+					msgBox.Show()
+				} else {
+					t.showOpenRepoMenu()
 				}
-				t.showOpenRepoMenu()
+
 				return
 			}
 
-			progress.Close()
+			//progress.Close()
 			repoView := NewRepoView(t.ui, t.api, repoID)
 			repoView.Show()
 		})
@@ -82,6 +87,7 @@ func (t *MainWindow) Close() {
 }
 
 func (t *MainWindow) showOpenRepoMenu() {
+	log.Infof("showOpenRepoMenu")
 	menu := t.ui.NewMenu("Open repo")
 
 	var recentDirs []string
@@ -133,8 +139,8 @@ func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.Me
 				var dirs []string
 				err := t.api.GetSubDirs(path, &dirs)
 				if err != nil {
-					t.ui.ShowErrorMessageBox("Failed to list of folders to open,\nError: %v", err)
-					return nil
+					//t.ui.ShowErrorMessageBox("Failed to list of folders to open,\nError: %v", err)
+					return t.getDirItems(dirs, action)
 				}
 				return t.getDirItems(dirs, action)
 			},
@@ -143,21 +149,3 @@ func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.Me
 	}
 	return items
 }
-
-//
-// func (t *MainWindow) MainMenuItem() cui.MenuItem {
-// 	var subItems []cui.MenuItem
-// 	subItems = append(subItems, t.OpenRepoMenuItems()...)
-// 	subItems = append(subItems, cui.MenuItem{Text: "About", Action: t.showAbout})
-// 	menuItem := cui.MenuItem{
-// 		Text:     "Main Menu",
-// 		Title:    "Main Menu",
-// 		SubItems: subItems,
-// 	}
-//
-// 	return menuItem
-// }
-
-// func (t *MainWindow) showAbout() {
-// 	t.ui.ShowMessageBox("About", "gmc version %s\n%s", t.configService.ProgramVersion, git.Version())
-// }

@@ -239,7 +239,8 @@ func (t *ui) deleteView(v *gocui.View) {
 		return
 	}
 	if err := t.gui.DeleteView(v.Name()); err != nil {
-		panic(log.Fatal(err))
+		log.Warnf("View already deleted %v", err)
+		//panic(log.Fatal(err))
 	}
 }
 

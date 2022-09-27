@@ -101,5 +101,6 @@ func main() {
 		log.Infof("Show main window %s", st)
 		mainWindow := console.NewMainWindow(ui)
 		mainWindow.Show(rpcServer.URL, *workingDirFlag)
+		//mainWindow.Show(rpcServer.URL, "/")
 	})
 }
