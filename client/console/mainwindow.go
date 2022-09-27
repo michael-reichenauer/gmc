@@ -31,8 +31,8 @@ func (t *MainWindow) Show(serverUri, path string) {
 		//rpcClient.Latency = 600 * time.Millisecond
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
-				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
-				msgBox.OnClose = func() { t.ui.Post(func() { t.Show(serverUri, path) }) }
+				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to connect to server:\n%v", err)))
+				msgBox.OnClose = func() { t.ui.Post(func() { t.ui.Quit() }) }
 				msgBox.Show()
 			})
 		}
@@ -44,7 +44,9 @@ func (t *MainWindow) Show(serverUri, path string) {
 
 		t.ui.Post(func() {
 			if err != nil {
-				t.ui.ShowErrorMessageBox("Failed to connect:\n%v", err)
+				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to connect to server:\n%v", err)))
+				msgBox.OnClose = func() { t.ui.Post(func() { t.ui.Quit() }) }
+				msgBox.Show()
 				return
 			}
 			t.api = api
@@ -139,8 +141,7 @@ func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.Me
 				var dirs []string
 				err := t.api.GetSubDirs(path, &dirs)
 				if err != nil {
-					//t.ui.ShowErrorMessageBox("Failed to list of folders to open,\nError: %v", err)
-					return t.getDirItems(dirs, action)
+					log.Warnf("Failed to list %q folder, %v", path, err)
 				}
 				return t.getDirItems(dirs, action)
 			},
