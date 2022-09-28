@@ -278,6 +278,7 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
+	log.Infof("Branches %#v", t.vm.repo.Branches)
 	if ok && current.HasRemoteOnly {
 		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-U", Action: func() {
 			t.vm.PullCurrentBranch()
