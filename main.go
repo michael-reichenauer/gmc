@@ -84,7 +84,7 @@ func main() {
 	if err := rpcServer.RegisterService("", server.NewServer(configService)); err != nil {
 		panic(log.Fatal(err))
 	}
-	if err := rpcServer.Start("http://127.0.0.1:9090/api/ws", "/api/events"); err != nil {
+	if err := rpcServer.Start("http://127.0.0.1:0/api/ws", "/api/events"); err != nil {
 		panic(log.Fatal(err))
 	}
 	defer rpcServer.Close()
@@ -101,5 +101,6 @@ func main() {
 		log.Infof("Show main window %s", st)
 		mainWindow := console.NewMainWindow(ui)
 		mainWindow.Show(rpcServer.URL, *workingDirFlag)
+		//mainWindow.Show(rpcServer.URL, "/")
 	})
 }

@@ -24,6 +24,7 @@ type repoPage struct {
 type RepoViewer interface {
 	NotifyChanged()
 	ShowLineAtTop(line int)
+	OpenRepoMenuItems() []cui.MenuItem
 }
 
 type repoVM struct {
@@ -411,9 +412,10 @@ func (t *repoVM) PushCurrentBranch() {
 
 func (t *repoVM) PullCurrentBranch() {
 	current, ok := t.CurrentBranch()
-	if !ok || !current.HasLocalOnly {
+	if !ok || current.HasLocalOnly {
 		return
 	}
+
 	t.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
 		func() error { return t.api.PullCurrentBranch(t.repoID, api.NilRsp) },

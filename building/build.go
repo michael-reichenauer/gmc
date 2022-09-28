@@ -52,7 +52,7 @@ func main() {
 func echoBuiltVersion() {
 	switch runtime.GOOS {
 	case "linux":
-		Must(Cmd("./gmc", "-version"))
+		Must(Cmd("./gmc_linux", "-version"))
 	case "windows":
 		Must(Cmd("./gmc.exe", "-version"))
 	case "darwin":

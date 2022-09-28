@@ -82,7 +82,7 @@ func (t *Client) Interrupt() {
 	t.connection.conn.Close()
 }
 
-func (t *Client) ServiceClient(serviceName string) ServiceClient {
+func (t *Client) NewServiceClient(serviceName string) ServiceClient {
 	if serviceName == "" {
 		serviceName = defaultServiceName
 	}

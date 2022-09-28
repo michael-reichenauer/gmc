@@ -1,6 +1,8 @@
 package console
 
 import (
+	"fmt"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
@@ -66,15 +68,20 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getPullBranchMenuItems()
 	}})
 
-	menu.Add(cui.MenuItem{Text: "Switch/Checkout", SubItemsFunc: func() []cui.MenuItem {
+	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "To", SubItemsFunc: func() []cui.MenuItem {
 		return t.getSwitchBranchMenuItems()
 	}})
 
-	menu.Add(cui.MenuItem{Text: "Merge", SubItemsFunc: func() []cui.MenuItem {
+	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Into: %s", b.DisplayName), SubItemsFunc: func() []cui.MenuItem {
 		return t.getMergeMenuItems()
 	}})
 
-	// menu.Add(t.vm.mainService.RecentReposMenuItem())
+	menu.Add(cui.SeparatorMenuItem)
+
+	menu.Add(cui.MenuItem{Text: "Open Repo", Title: "Open", SubItemsFunc: func() []cui.MenuItem {
+		return t.vm.repoViewer.OpenRepoMenuItems()
+	}})
+
 	// menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
 }
