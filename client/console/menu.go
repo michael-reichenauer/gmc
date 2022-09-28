@@ -72,7 +72,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getSwitchBranchMenuItems()
 	}})
 
-	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Into: %s", b.DisplayName), SubItemsFunc: func() []cui.MenuItem {
+	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Into: %s", t.vm.repo.CurrentBranchName), SubItemsFunc: func() []cui.MenuItem {
 		return t.getMergeMenuItems()
 	}})
 
@@ -133,7 +133,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return latestSubItems
 	}})
 
-	items = append(items, cui.MenuItem{Text: "All Live Branches", SubItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "Live Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allGitSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			if b.IsGitBranch {
@@ -143,7 +143,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 		return allGitSubItems
 	}})
 
-	items = append(items, cui.MenuItem{Text: "All Live and Deleted Branches", SubItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "Live and Deleted Branches", SubItemsFunc: func() []cui.MenuItem {
 		var allSubItems []cui.MenuItem
 		for _, b := range t.vm.GetAllBranches(true) {
 			allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
@@ -278,13 +278,24 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
-	log.Infof("Branches %#v", t.vm.repo.Branches)
+
 	if ok && current.HasRemoteOnly {
 		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-U", Action: func() {
 			t.vm.PullCurrentBranch()
 		}}
 		items = append(items, pushItem)
 	}
+
+	for _, b := range t.vm.repo.Branches {
+		if !b.IsCurrent && b.IsRemote && b.HasRemoteOnly && !b.HasLocalOnly {
+			bb := b
+			pushItem := cui.MenuItem{Text: t.branchItemText(bb), Action: func() {
+				t.vm.PullBranch(bb.DisplayName)
+			}}
+			items = append(items, pushItem)
+		}
+	}
+
 	return items
 }
 

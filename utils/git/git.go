@@ -54,7 +54,8 @@ type Git interface {
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
 	GetTags() ([]Tag, error)
-	PullBranch() error
+	PullCurrentBranch() error
+	PullBranch(name string) error
 }
 
 type git struct {
@@ -178,8 +179,12 @@ func (t *git) PushBranch(name string) error {
 	return t.remoteService.pushBranch(name)
 }
 
-func (t *git) PullBranch() error {
-	return t.remoteService.pullBranch()
+func (t *git) PullCurrentBranch() error {
+	return t.remoteService.pullCurrentBranch()
+}
+
+func (t *git) PullBranch(name string) error {
+	return t.remoteService.pullBranch(name)
 }
 
 func (t *git) MergeBranch(name string) error {

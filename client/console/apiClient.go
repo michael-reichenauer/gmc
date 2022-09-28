@@ -81,6 +81,10 @@ func (t client) PullCurrentBranch(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
+func (t client) PullBranch(args api.BranchName, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
 func (t client) MergeBranch(args api.BranchName, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }

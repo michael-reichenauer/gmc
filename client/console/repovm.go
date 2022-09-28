@@ -423,6 +423,15 @@ func (t *repoVM) PullCurrentBranch() {
 		nil)
 }
 
+func (t *repoVM) PullBranch(name string) {
+	log.Infof("Pull branch %q", name)
+	t.startCommand(
+		fmt.Sprintf("Pull/Update branch:\n%s", name),
+		func() error { return t.api.PullBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", name, err) },
+		nil)
+}
+
 func (t *repoVM) MergeFromBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),

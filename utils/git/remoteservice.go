@@ -32,8 +32,15 @@ func (t *remoteService) deleteRemoteBranch(name string) error {
 	return err
 }
 
-func (t *remoteService) pullBranch() error {
+func (t *remoteService) pullCurrentBranch() error {
 	// "pull --ff --no-rebase --progress"
 	_, err := t.cmd.Git("pull", "--ff", "--no-rebase")
+	return err
+}
+
+func (t *remoteService) pullBranch(name string) error {
+	// fetch origin
+	branchRefs := fmt.Sprintf("%s:%s", name, name)
+	_, err := t.cmd.Git("fetch", "origin", branchRefs)
 	return err
 }

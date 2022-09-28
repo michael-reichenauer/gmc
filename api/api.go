@@ -24,6 +24,7 @@ type Api interface {
 	Checkout(args CheckoutReq, _ NoRsp) error
 	PushBranch(name BranchName, _ NoRsp) error
 	PullCurrentBranch(repoID string, _ NoRsp) error
+	PullBranch(name BranchName, _ NoRsp) error
 	MergeBranch(name BranchName, _ NoRsp) error
 	CreateBranch(name BranchName, _ NoRsp) error
 	DeleteBranch(name BranchName, _ NoRsp) error

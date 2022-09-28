@@ -37,7 +37,8 @@ type GitRepo interface {
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
-	PullBranch() error
+	PullCurrentBranch() error
+	PullBranch(name string) error
 }
 
 type gitRepo struct {
@@ -284,8 +285,12 @@ func (s *gitRepo) PushBranch(name string) error {
 	return s.git.PushBranch(name)
 }
 
-func (s *gitRepo) PullBranch() error {
-	return s.git.PullBranch()
+func (s *gitRepo) PullCurrentBranch() error {
+	return s.git.PullCurrentBranch()
+}
+
+func (s *gitRepo) PullBranch(name string) error {
+	return s.git.PullBranch(name)
 }
 
 func (s *gitRepo) MergeBranch(name string) error {
