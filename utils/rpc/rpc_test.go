@@ -115,7 +115,7 @@ func TestRpc(t *testing.T) {
 	rpcClient := rpc.NewClient()
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
+	apiClient := NewApiClient(rpcClient.NewServiceClient("api"))
 
 	// Make rpc requests
 	var rsp int
@@ -158,7 +158,7 @@ func TestRpcWithCloseServer(t *testing.T) {
 	rpcClient.OnConnectionError = func(err error) { log.Warnf("Connection error: %v", err) }
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
+	apiClient := NewApiClient(rpcClient.NewServiceClient("api"))
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {
@@ -200,7 +200,7 @@ func TestRpcWithCloseClient(t *testing.T) {
 	rpcClient.OnConnectionError = func(err error) { log.Warnf("Connection error: %v", err) }
 	assert.NoError(t, rpcClient.Connect(rpcServer.URL))
 	defer rpcClient.Close()
-	apiClient := NewApiClient(rpcClient.ServiceClient("api"))
+	apiClient := NewApiClient(rpcClient.NewServiceClient("api"))
 
 	// Make rpc requests
 	for i := 0; i < 1000; i++ {

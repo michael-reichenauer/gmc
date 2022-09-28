@@ -76,7 +76,12 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getMergeMenuItems()
 	}})
 
-	// menu.Add(t.vm.mainService.RecentReposMenuItem())
+	menu.Add(cui.SeparatorMenuItem)
+
+	menu.Add(cui.MenuItem{Text: "Open Repo", Title: "Open", SubItemsFunc: func() []cui.MenuItem {
+		return t.vm.repoViewer.OpenRepoMenuItems()
+	}})
+
 	// menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
 }

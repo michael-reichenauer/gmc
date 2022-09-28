@@ -10,22 +10,22 @@ import (
 )
 
 type mainService interface {
-	MainMenuItem() cui.MenuItem
 	OpenRepoMenuItems() []cui.MenuItem
-	RecentReposMenuItem() cui.MenuItem
 }
 
 type RepoView struct {
 	view        cui.View
 	ui          cui.UI
+	mainService mainService
 	vm          *repoVM
 	menuService *menuService
 	searchView  *SearchView
 }
 
-func NewRepoView(ui cui.UI, api api.Api, repoID string) *RepoView {
+func NewRepoView(ui cui.UI, api api.Api, mainService mainService, repoID string) *RepoView {
 	h := &RepoView{
-		ui: ui,
+		ui:          ui,
+		mainService: mainService,
 	}
 	h.vm = newRepoVM(ui, h, api, repoID)
 	h.menuService = newMenuService(ui, h.vm)
@@ -40,6 +40,10 @@ func (t *RepoView) SetCurrentView() {
 
 func (t *RepoView) ScrollVertical(scroll int) {
 	t.view.ScrollVertical(scroll)
+}
+
+func (t *RepoView) OpenRepoMenuItems() []cui.MenuItem {
+	return t.mainService.OpenRepoMenuItems()
 }
 
 func (t *RepoView) newView() cui.View {

@@ -1,12 +1,14 @@
 package cui
 
 import (
-	"github.com/jroimartin/gocui"
 	"strings"
+
+	"github.com/jroimartin/gocui"
 )
 
 type MessageBox struct {
 	OnOK        func()
+	OnClose     func()
 	ui          *ui
 	boxView     View
 	textView    View
@@ -61,8 +63,8 @@ func (t *MessageBox) newTextView() View {
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().IsWrap = true
-	view.SetKey(gocui.KeyEnter, t.Close)
-	view.SetKey(gocui.KeyCtrlO, t.Close)
+	view.SetKey(gocui.KeyEnter, t.handleOk)
+	view.SetKey(gocui.KeyCtrlO, t.handleOk)
 	view.SetKey(gocui.KeyEsc, t.Close)
 	view.SetKey(gocui.KeyCtrlC, t.Close)
 	return view
@@ -72,6 +74,16 @@ func (t *MessageBox) Close() {
 	t.textView.Close()
 	t.buttonsView.Close()
 	t.boxView.Close()
+	if t.OnClose != nil {
+		t.OnClose()
+	}
+}
+
+func (t *MessageBox) handleOk() {
+	t.Close()
+	if t.OnOK != nil {
+		t.OnOK()
+	}
 }
 
 func (t *MessageBox) getBounds() (BoundFunc, BoundFunc, BoundFunc) {
@@ -116,9 +128,6 @@ func (t *MessageBox) maxTextWidth(lines []string) int {
 
 func (t *MessageBox) onButtonsClick(x int, y int) {
 	if x < 4 {
-		t.Close()
-		if t.OnOK != nil {
-			t.OnOK()
-		}
+		t.handleOk()
 	}
 }
