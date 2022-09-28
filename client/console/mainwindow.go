@@ -80,7 +80,7 @@ func (t *MainWindow) showRepo(path string) {
 			}
 
 			//progress.Close()
-			repoView := NewRepoView(t.ui, t.api, repoID)
+			repoView := NewRepoView(t.ui, t.api, t, repoID)
 			repoView.Show()
 		})
 	}()
@@ -94,33 +94,36 @@ func (t *MainWindow) showOpenRepoMenu() {
 	menu := t.ui.NewMenu("Open repo")
 	menu.OnClose(func() { t.ui.Quit() })
 
+	items := t.OpenRepoMenuItems()
+	menu.AddItems(items)
+	menu.Show(3, 1)
+}
+
+func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
+	var items []cui.MenuItem
+
 	var recentDirs []string
 	err := t.api.GetRecentWorkingDirs(api.NilArg, &recentDirs)
 	if err != nil {
-		t.ui.ShowErrorMessageBox("Failed to get recent dirs,\nError: %v", err)
+		return items
 	}
 	if len(recentDirs) > 0 {
-		menu.Add(t.getRecentRepoMenuItems(recentDirs)...)
-		menu.Add(cui.SeparatorMenuItem)
+		items = append(items, t.getRecentRepoMenuItems(recentDirs)...)
+		items = append(items, cui.SeparatorMenuItem)
 	}
 
 	var paths []string
 	err = t.api.GetSubDirs("", &paths)
 	if err != nil {
-		t.ui.ShowErrorMessageBox("Failed to list of folders to open,\nError: %v", err)
-		return
+		return items
 	}
 
 	openItemsFunc := func() []cui.MenuItem {
-		return t.getDirItems(paths, func(path string) {
-			//menu.OnClose(nil)
-			t.showRepo(path)
-		})
+		return t.getDirItems(paths, func(path string) { t.showRepo(path) })
 	}
 
-	menu.Add(cui.MenuItem{Text: "Open Repo", SubItemsFunc: openItemsFunc})
-
-	menu.Show(3, 1)
+	items = append(items, cui.MenuItem{Text: "Browse Folders", Title: "Browse", SubItemsFunc: openItemsFunc})
+	return items
 }
 
 func (t *MainWindow) getRecentRepoMenuItems(recentDirs []string) []cui.MenuItem {

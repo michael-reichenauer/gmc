@@ -24,6 +24,7 @@ type repoPage struct {
 type RepoViewer interface {
 	NotifyChanged()
 	ShowLineAtTop(line int)
+	OpenRepoMenuItems() []cui.MenuItem
 }
 
 type repoVM struct {
