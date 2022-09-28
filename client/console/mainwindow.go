@@ -113,7 +113,7 @@ func (t *MainWindow) showOpenRepoMenu() {
 
 	openItemsFunc := func() []cui.MenuItem {
 		return t.getDirItems(paths, func(path string) {
-			menu.OnClose(nil)
+			//menu.OnClose(nil)
 			t.showRepo(path)
 		})
 	}
