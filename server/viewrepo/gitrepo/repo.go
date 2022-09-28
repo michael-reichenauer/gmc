@@ -22,6 +22,7 @@ type Repo struct {
 	RepoPath   string
 }
 
+// augmented
 func newRepo() *Repo {
 	return &Repo{commitById: make(map[string]*Commit)}
 }

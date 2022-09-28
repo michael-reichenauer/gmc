@@ -31,6 +31,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 		//rpcClient.Latency = 600 * time.Millisecond
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
+				log.Warnf("connection error")
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to connect to server:\n%v", err)))
 				msgBox.OnClose = func() { t.ui.Post(func() { t.ui.Quit() }) }
 				msgBox.Show()
@@ -40,7 +41,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 			//	rpcClient.Interrupt()
 		})
 		err := rpcClient.Connect(serverUri)
-		api := NewClient(rpcClient.ServiceClient(""))
+		api := NewApiClient(rpcClient.ServiceClient(""))
 
 		t.ui.Post(func() {
 			if err != nil {

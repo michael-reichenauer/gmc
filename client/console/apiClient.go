@@ -9,7 +9,7 @@ type client struct {
 	client rpc.ServiceClient
 }
 
-func NewClient(serviceClient rpc.ServiceClient) api.Api {
+func NewApiClient(serviceClient rpc.ServiceClient) api.Api {
 	return &client{client: serviceClient}
 }
 
