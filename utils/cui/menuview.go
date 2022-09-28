@@ -21,6 +21,7 @@ type menuView struct {
 	moreWidth    int
 	keyWidth     int
 	marginsWidth int
+	onClose      func()
 }
 
 func newMenuView(ui *ui, title string, parent *menuView) *menuView {
@@ -29,7 +30,7 @@ func newMenuView(ui *ui, title string, parent *menuView) *menuView {
 	h.View.Properties().Name = "Menu"
 	h.View.Properties().HasFrame = true
 	h.View.Properties().Title = title
-	h.View.Properties().OnMouseOutside = h.onClose
+	h.View.Properties().OnMouseOutside = h.onCloseMenu
 	h.View.Properties().OnMouseLeft = h.onMouseLeft
 	h.View.Properties().HideHorizontalScrollbar = true
 	h.View.Properties().IsMoveUpDownWrap = true
@@ -42,9 +43,9 @@ func (t *menuView) addItems(items []MenuItem) {
 
 func (t *menuView) show(bounds Rect) {
 	t.bounds = t.getBounds(t.items, bounds)
-	t.SetKey(gocui.KeyEsc, t.onClose)
+	t.SetKey(gocui.KeyEsc, t.onCloseMenu)
 	t.SetKey(gocui.KeyEnter, t.onEnter)
-	t.SetKey(gocui.KeyArrowLeft, t.onClose)
+	t.SetKey(gocui.KeyArrowLeft, t.onArrowLeft)
 	t.SetKey(gocui.KeyArrowRight, t.onSubItem)
 	t.Show(Bounds(Rect{X: t.bounds.X, Y: t.bounds.Y, W: t.bounds.W, H: t.bounds.H}))
 	t.SetCurrentView()
@@ -213,7 +214,24 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 	return fmt.Sprintf("%s%s%s", text, key, more)
 }
 
-func (t *menuView) onClose() {
+func (t *menuView) onArrowLeft() {
+	log.Infof("on arror left")
+	if t.parent == nil {
+		// No parent, do not close main menu on left (use esc)
+		return
+	}
+
+	t.onCloseMenu()
+}
+
+func (t *menuView) onCloseMenu() {
+	t.Close()
+	if t.onClose != nil {
+		t.onClose()
+	}
+}
+
+func (t *menuView) onCloseView() {
 	log.Debugf("On close")
 	t.Close()
 }
@@ -221,7 +239,7 @@ func (t *menuView) onClose() {
 func (t *menuView) closeAll() {
 	log.Debugf("Close all from")
 	if t.parent == nil {
-		t.onClose()
+		t.onCloseView()
 		return
 	}
 	t.Close()
