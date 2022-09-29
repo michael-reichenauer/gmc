@@ -1,8 +1,9 @@
-package gitrepo
+package augmented
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestParseBranchNames(t *testing.T) {

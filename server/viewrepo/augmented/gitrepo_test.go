@@ -1,4 +1,4 @@
-package gitrepo
+package augmented
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 func TestCurrentRepo_Manual(t *testing.T) {
 	// tests.ManualTest(t)
-	gr := NewGitRepo(nil, git.CurrentRoot())
+	gr := NewRepoService(nil, git.CurrentRoot())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	gr.StartMonitor(ctx)
@@ -31,7 +31,7 @@ func TestCurrentRepo_Manual(t *testing.T) {
 
 func TestAcsRepo_Manual(t *testing.T) {
 	tests.ManualTest(t)
-	gr := NewGitRepo(nil, "C:\\Work Files\\AcmAcs")
+	gr := NewRepoService(nil, "C:\\Work Files\\AcmAcs")
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	gr.StartMonitor(ctx)

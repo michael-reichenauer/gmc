@@ -1,4 +1,4 @@
-package gitrepo
+package augmented
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
