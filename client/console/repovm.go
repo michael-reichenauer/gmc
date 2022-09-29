@@ -412,7 +412,7 @@ func (t *repoVM) PushCurrentBranch() {
 
 func (t *repoVM) PullCurrentBranch() {
 	current, ok := t.CurrentBranch()
-	if !ok || current.HasLocalOnly {
+	if !ok {
 		return
 	}
 
@@ -420,6 +420,15 @@ func (t *repoVM) PullCurrentBranch() {
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
 		func() error { return t.api.PullCurrentBranch(t.repoID, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
+		nil)
+}
+
+func (t *repoVM) PullBranch(name string) {
+	log.Infof("Pull branch %q", name)
+	t.startCommand(
+		fmt.Sprintf("Pull/Update branch:\n%s", name),
+		func() error { return t.api.PullBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", name, err) },
 		nil)
 }
 

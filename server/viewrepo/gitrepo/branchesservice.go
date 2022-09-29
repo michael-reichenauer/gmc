@@ -5,7 +5,7 @@ import (
 )
 
 // Default branch priority determines parent child branch relations.
-var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master", "origin/develop", "develop"}
+var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master", "origin/develop", "develop", "origin/dev", "dev"}
 
 type branchesService struct {
 	branchNames *branchNameParser

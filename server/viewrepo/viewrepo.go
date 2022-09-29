@@ -795,8 +795,12 @@ func (t *ViewRepo) PushBranch(name string) error {
 	return t.gitRepo.PushBranch(name)
 }
 
-func (t *ViewRepo) PullBranch() error {
-	return t.gitRepo.PullBranch()
+func (t *ViewRepo) PullCurrentBranch() error {
+	return t.gitRepo.PullCurrentBranch()
+}
+
+func (t *ViewRepo) PullBranch(name string) error {
+	return t.gitRepo.PullBranch(name)
 }
 
 func (t *ViewRepo) MergeBranch(name string) error {

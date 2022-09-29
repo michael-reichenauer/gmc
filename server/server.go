@@ -230,7 +230,17 @@ func (t *server) PullCurrentBranch(repoID string, _ api.NoRsp) error {
 	if err != nil {
 		return err
 	}
-	return repo.PullBranch()
+	return repo.PullCurrentBranch()
+}
+
+func (t *server) PullBranch(name api.BranchName, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(name.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.PullBranch(name.BranchName)
 }
 
 func (t *server) MergeBranch(name api.BranchName, _ api.NoRsp) error {
