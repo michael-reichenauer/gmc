@@ -27,6 +27,8 @@ type RepoService interface {
 	DeleteLocalBranch(name string) error
 	PullCurrentBranch() error
 	PullBranch(name string) error
+
+	GetFreshRepo() (Repo, error)
 }
 
 type RepoChange struct {
@@ -90,6 +92,34 @@ func (s *repoService) SwitchToBranch(name string) error {
 
 func (s *repoService) Commit(message string) error {
 	return s.git.Commit(message)
+}
+
+func (s *repoService) PushBranch(name string) error {
+	return s.git.PushBranch(name)
+}
+
+func (s *repoService) PullCurrentBranch() error {
+	return s.git.PullCurrentBranch()
+}
+
+func (s *repoService) PullBranch(name string) error {
+	return s.git.PullBranch(name)
+}
+
+func (s *repoService) MergeBranch(name string) error {
+	return s.git.MergeBranch(name)
+}
+
+func (s *repoService) CreateBranch(name string) error {
+	return s.git.CreateBranch(name)
+}
+
+func (s *repoService) DeleteRemoteBranch(name string) error {
+	return s.git.DeleteRemoteBranch(name)
+}
+
+func (s *repoService) DeleteLocalBranch(name string) error {
+	return s.git.DeleteLocalBranch(name)
 }
 
 func (s *repoService) TriggerManualRefresh() {
@@ -203,7 +233,7 @@ func (s *repoService) triggerStatus(ctx context.Context, repo Repo) {
 func (s *repoService) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 	log.Infof("TriggerRefreshRepo")
 	go func() {
-		repo, err := s.getFreshRepo()
+		repo, err := s.GetFreshRepo()
 		if err != nil {
 			select {
 			case s.repoChanges <- RepoChange{Error: err}:
@@ -244,7 +274,7 @@ func (s *repoService) getFreshStatus(repo Repo) (Repo, error) {
 	return repo, nil
 }
 
-func (s *repoService) getFreshRepo() (Repo, error) {
+func (s *repoService) GetFreshRepo() (Repo, error) {
 	log.Infof("Getting fresh repo for %s", s.git.RepoPath())
 	st := timer.Start()
 	repo := newRepo()
@@ -256,7 +286,7 @@ func (s *repoService) getFreshRepo() (Repo, error) {
 	}
 
 	repo.Status = newStatus(gitRepo.Status)
-	repo.Tags = s.toTags(gitRepo.Tags)
+	repo.Tags = toTags(gitRepo.Tags)
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
@@ -278,40 +308,4 @@ func (s *repoService) fetchRoutine(ctx context.Context) {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
-}
-
-func (s *repoService) PushBranch(name string) error {
-	return s.git.PushBranch(name)
-}
-
-func (s *repoService) PullCurrentBranch() error {
-	return s.git.PullCurrentBranch()
-}
-
-func (s *repoService) PullBranch(name string) error {
-	return s.git.PullBranch(name)
-}
-
-func (s *repoService) MergeBranch(name string) error {
-	return s.git.MergeBranch(name)
-}
-
-func (s *repoService) CreateBranch(name string) error {
-	return s.git.CreateBranch(name)
-}
-
-func (s *repoService) DeleteRemoteBranch(name string) error {
-	return s.git.DeleteRemoteBranch(name)
-}
-
-func (s *repoService) DeleteLocalBranch(name string) error {
-	return s.git.DeleteLocalBranch(name)
-}
-
-func (s *repoService) toTags(gitTags []git.Tag) []Tag {
-	tags := make([]Tag, len(gitTags))
-	for i, tag := range gitTags {
-		tags[i] = Tag{CommitID: tag.CommitID, TagName: tag.TagName}
-	}
-	return tags
 }

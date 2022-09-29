@@ -8,11 +8,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
-type Tag struct {
-	CommitID string
-	TagName  string
-}
-
 type Repo struct {
 	Commits    []*Commit
 	commitById map[string]*Commit

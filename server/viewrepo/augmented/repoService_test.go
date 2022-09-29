@@ -9,10 +9,19 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/michael-reichenauer/gmc/utils/timer"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCurrentRepo_Manual(t *testing.T) {
-	// tests.ManualTest(t)
+	//tests.ManualTest(t)
+	repoService := NewRepoService(nil, CurrentRoot())
+	repo, err := repoService.GetFreshRepo()
+	assert.NoError(t, err)
+	assert.Greater(t, len(repo.Commits), 0)
+}
+
+func TestCurrentRepoTrigger_Manual(t *testing.T) {
+	tests.ManualTest(t)
 	repoService := NewRepoService(nil, CurrentRoot())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
