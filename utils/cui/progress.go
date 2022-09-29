@@ -11,7 +11,8 @@ import (
 const (
 	progressInterval = 500 * time.Millisecond
 	waitMark         = " ● ● ● ● "
-	showIconTimeout  = 1000 * time.Millisecond
+	waitMark2        = " ●"
+	showIconTimeout  = 800 * time.Millisecond
 	showFullTimeout  = 8 * time.Second
 )
 
@@ -110,7 +111,6 @@ func (t *progress) textFunc(ViewPage) string {
 	sinceStart := time.Since(t.startTime)
 	if sinceStart < showIconTimeout {
 		// Show no progress for a show while in case operation completes fast
-		log.Debugf("Show progress for %q, ...", t.text)
 		return ""
 	}
 	t.view.SetTop()
@@ -118,10 +118,16 @@ func (t *progress) textFunc(ViewPage) string {
 	if sinceStart < showFullTimeout {
 		// Show just a small wait icon for a while
 		// log.Infof("Show icon progress for %q, ...", t.text)
+		length := t.length - 3
+		if length < 0 {
+			length = 0
+		}
+
+		mark := fmt.Sprintf("%s ", strings.Repeat(waitMark2, length%15))
 		if t.length%2 == 1 {
-			return MagentaDk(waitMark)
+			return MagentaDk(mark)
 		} else {
-			return Dark(waitMark)
+			return Dark(mark)
 		}
 	}
 

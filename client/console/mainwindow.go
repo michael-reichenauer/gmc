@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
@@ -28,7 +29,7 @@ func (t *MainWindow) Show(serverUri, path string) {
 		// Create rpc client and create service client
 		rpcClient := rpc.NewClient()
 		rpcClient.IsLogCalls = true
-		//rpcClient.Latency = 600 * time.Millisecond
+		rpcClient.Latency = 600 * time.Millisecond
 		rpcClient.OnConnectionError = func(err error) {
 			t.ui.Post(func() {
 				progress.Close()
