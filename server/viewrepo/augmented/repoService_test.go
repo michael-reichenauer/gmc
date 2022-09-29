@@ -4,20 +4,22 @@ import (
 	"context"
 	"testing"
 
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
 func TestCurrentRepo_Manual(t *testing.T) {
 	// tests.ManualTest(t)
-	gr := NewRepoService(nil, git.CurrentRoot())
+	repoService := NewRepoService(nil, CurrentRoot())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	gr.StartMonitor(ctx)
+	repoService.StartMonitor(ctx)
 
-	gr.TriggerManualRefresh()
-	for r := range gr.RepoChanges() {
+	repoService.TriggerManualRefresh()
+	for r := range repoService.RepoChanges() {
 		if r.IsStarting {
 			continue
 		}
@@ -49,4 +51,12 @@ func TestAcsRepo_Manual(t *testing.T) {
 	st := timer.Start()
 	commits := repo.SearchCommits("1011")
 	t.Logf("Commits: %d of %d %s", len(commits), len(repo.Commits), st)
+}
+
+func CurrentRoot() string {
+	root, err := git.WorkingTreeRoot(utils.CurrentDir())
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	return root
 }

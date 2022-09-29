@@ -49,7 +49,7 @@ type ViewRepoService struct {
 	repoLock           sync.Mutex
 }
 
-func NewViewRepoService(configService *config.Service, workingFolder string) *ViewRepoService {
+func NewViewRepoService(configService *config.Service, rootPath string) *ViewRepoService {
 	ctx, cancel := context.WithCancel(context.Background())
 
 	return &ViewRepoService{
@@ -57,7 +57,7 @@ func NewViewRepoService(configService *config.Service, workingFolder string) *Vi
 		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
-		augmentedRepo:   augmented.NewRepoService(configService, workingFolder),
+		augmentedRepo:   augmented.NewRepoService(configService, rootPath),
 		configService:   configService,
 		ctx:             ctx,
 		cancel:          cancel,

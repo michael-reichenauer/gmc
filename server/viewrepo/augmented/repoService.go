@@ -10,18 +10,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
-const (
-	fetchInterval = 10 * time.Minute
-	batchInterval = 1 * time.Second
-	partialMax    = 30000 // Max number of commits to handle
-)
-
-type RepoChange struct {
-	IsStarting bool
-	Repo       Repo
-	Error      error
-}
-
 type RepoService interface {
 	RepoChanges() chan RepoChange
 	RepoPath() string
@@ -41,26 +29,37 @@ type RepoService interface {
 	PullBranch(name string) error
 }
 
-type repoService struct {
-	repoChanges chan RepoChange
+type RepoChange struct {
+	IsStarting bool
+	Repo       Repo
+	Error      error
+}
 
+type repoService struct {
 	branchesService *branchesService
 	configService   *config.Service
 	folderMonitor   *monitor
-	git             git.Git
-	rootPath        string
-	repo            chan Repo
-	manualRefresh   chan struct{}
+
+	repoChanges   chan RepoChange
+	git           git.Git
+	repo          chan Repo
+	manualRefresh chan struct{}
 }
 
-func NewRepoService(configService *config.Service, workingFolder string) RepoService {
-	g := git.New(workingFolder)
+const (
+	fetchInterval = 10 * time.Minute
+	batchInterval = 1 * time.Second
+	partialMax    = 30000 // Max number of commits to handle
+)
+
+func NewRepoService(configService *config.Service, rootPath string) RepoService {
+	g := git.New(rootPath)
+
 	return &repoService{
-		rootPath:        workingFolder,
 		branchesService: newBranchesService(),
 		configService:   configService,
 		git:             g,
-		folderMonitor:   newMonitor(workingFolder, g),
+		folderMonitor:   newMonitor(rootPath, g),
 		repoChanges:     make(chan RepoChange, 1),
 		repo:            make(chan Repo, 1),
 		manualRefresh:   make(chan struct{}, 1),
@@ -261,7 +260,7 @@ func (s *repoService) getFreshRepo() (Repo, error) {
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
-	branchesChildren := s.configService.GetRepo(s.rootPath).BranchesChildren
+	branchesChildren := s.configService.GetRepo(s.git.RepoPath()).BranchesChildren
 	s.branchesService.setBranchForAllCommits(repo, branchesChildren)
 	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil

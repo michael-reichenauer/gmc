@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 const (
@@ -209,21 +208,10 @@ func Version() string {
 }
 
 func StripRemotePrefix(name string) string {
-	if strings.HasPrefix(name, "origin/") {
-		name = name[7:]
-	}
-	return name
+	return strings.TrimPrefix(name, "origin/")
 }
 
-func CurrentRoot() string {
-	root, err := WorkingDirRoot(utils.CurrentDir())
-	if err != nil {
-		panic(log.Fatal(err))
-	}
-	return root
-}
-
-func WorkingDirRoot(path string) (string, error) {
+func WorkingTreeRoot(path string) (string, error) {
 	current := path
 	if strings.HasSuffix(path, ".git") || strings.HasSuffix(path, ".git/") || strings.HasSuffix(path, ".git\\") {
 		current = filepath.Dir(path)

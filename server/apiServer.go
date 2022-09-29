@@ -61,23 +61,23 @@ func (t *apiServer) OpenRepo(path string, repoID *string) error {
 		// No path specified, assume current working dir
 		path = utils.CurrentDir()
 	}
-	workingDir, err := git.WorkingDirRoot(path)
+	rootPath, err := git.WorkingTreeRoot(path)
 	if err != nil {
 		// Could not locate a working dir root
 		return err
 	}
 
 	// Got root working dir path, open repo
-	viewRepo := viewrepo.NewViewRepoService(t.configService, workingDir)
+	viewRepo := viewrepo.NewViewRepoService(t.configService, rootPath)
 	stream := viewRepo.ObserveChanges()
 	id := t.storeRepo(viewRepo, stream)
 
 	viewRepo.StartMonitor()
 
 	// Remember working dir paths to use for "open recent" lists
-	parentDir := filepath.Dir(workingDir)
+	parentDir := filepath.Dir(rootPath)
 	t.configService.SetState(func(s *config.State) {
-		s.RecentFolders = utils.RecentPaths(s.RecentFolders, workingDir, 10)
+		s.RecentFolders = utils.RecentPaths(s.RecentFolders, rootPath, 10)
 		s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
 	})
 	*repoID = id
