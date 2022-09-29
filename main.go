@@ -81,7 +81,7 @@ func main() {
 
 	// Start rpc sever and serve rpc requests
 	rpcServer := rpc.NewServer()
-	if err := rpcServer.RegisterService("", server.NewServer(configService)); err != nil {
+	if err := rpcServer.RegisterService("", server.NewApiServer(configService)); err != nil {
 		panic(log.Fatal(err))
 	}
 	if err := rpcServer.Start("http://127.0.0.1:0/api/ws", "/api/events"); err != nil {
