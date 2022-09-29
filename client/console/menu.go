@@ -272,6 +272,26 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 		}}
 		items = append(items, pushItem)
 	}
+
+	// Add other branches if they have commits (but only if the can be pushed cleanly)
+	var otherItems []cui.MenuItem
+	for _, b := range t.vm.repo.Branches {
+		if !b.IsCurrent && !b.IsRemote && b.HasLocalOnly && !b.HasRemoteOnly {
+			bClosure := b
+			pushItem := cui.MenuItem{Text: t.branchItemText(bClosure), Action: func() {
+				t.vm.PushBranch(bClosure.DisplayName)
+			}}
+			otherItems = append(otherItems, pushItem)
+		}
+	}
+
+	// Add separator between current and other branches
+	if len(items) > 0 && len(otherItems) > 0 {
+		items = append(items, cui.SeparatorMenuItem)
+	}
+
+	items = append(items, otherItems...)
+
 	return items
 }
 
@@ -279,6 +299,7 @@ func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 
+	// Add current branch if it has commits that can be pulled
 	if ok && current.HasRemoteOnly {
 		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-U", Action: func() {
 			t.vm.PullCurrentBranch()
@@ -286,16 +307,24 @@ func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 		items = append(items, pushItem)
 	}
 
+	// Add other branches if they have commits (but only if the can be pulled cleanly)
+	var otherItems []cui.MenuItem
 	for _, b := range t.vm.repo.Branches {
 		if !b.IsCurrent && b.IsRemote && b.HasRemoteOnly && !b.HasLocalOnly {
-			bb := b
-			pushItem := cui.MenuItem{Text: t.branchItemText(bb), Action: func() {
-				t.vm.PullBranch(bb.DisplayName)
+			bClosure := b
+			pushItem := cui.MenuItem{Text: t.branchItemText(bClosure), Action: func() {
+				t.vm.PullBranch(bClosure.DisplayName)
 			}}
-			items = append(items, pushItem)
+			otherItems = append(otherItems, pushItem)
 		}
 	}
 
+	// Add separator between current and other branches
+	if len(items) > 0 && len(otherItems) > 0 {
+		items = append(items, cui.SeparatorMenuItem)
+	}
+
+	items = append(items, otherItems...)
 	return items
 }
 

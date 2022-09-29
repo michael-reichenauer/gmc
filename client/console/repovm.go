@@ -412,7 +412,7 @@ func (t *repoVM) PushCurrentBranch() {
 
 func (t *repoVM) PullCurrentBranch() {
 	current, ok := t.CurrentBranch()
-	if !ok || current.HasLocalOnly {
+	if !ok {
 		return
 	}
 
