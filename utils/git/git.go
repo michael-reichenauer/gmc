@@ -15,11 +15,6 @@ const (
 	UncommittedID      = "0000000000000000000000000000000000000000"
 	UncommittedSID     = "000000"
 	PartialLogCommitID = "ffffffffffffffffffffffffffffffffffffffff"
-
-	masterName       = "master"
-	remoteMasterName = "origin/master"
-	mainName         = "main"
-	remoteMainName   = "origin/main"
 )
 
 var ErrConflicts = errors.New("merge resulted in conflict(s)")
@@ -73,10 +68,6 @@ type git struct {
 func New(path string) Git {
 	cmd := newGitCmd(path)
 	return NewWithCmd(cmd)
-}
-
-func IsMainBranch(name string) bool {
-	return name == masterName || name == remoteMasterName || name == mainName || name == remoteMainName
 }
 
 func NewWithCmd(cmd gitCommander) Git {

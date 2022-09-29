@@ -941,3 +941,7 @@ func (t *ViewRepoService) addTags(repo *repo, tags []augmented.Tag) {
 		c.Tags = append(c.Tags, tag.TagName)
 	}
 }
+
+func isMainBranch(name string) bool {
+	return name == masterName || name == remoteMasterName || name == mainName || name == remoteMainName
+}

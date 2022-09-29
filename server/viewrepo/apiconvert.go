@@ -117,6 +117,7 @@ func toApiBranch(b *branch) api.Branch {
 		LocalName:            b.localName,
 		IsRemote:             b.isRemote,
 		IsGitBranch:          b.isGitBranch,
+		IsMainBranch:         isMainBranch(b.name),
 		TipID:                b.tipId,
 		IsCurrent:            b.isCurrent,
 		IsSetAsParent:        b.isSetAsParent,
