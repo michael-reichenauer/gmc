@@ -45,7 +45,7 @@ func newNamedBranch(commitID string, branchName string) *Branch {
 	}
 }
 
-func newBranch(commitID string) *Branch {
+func newUnnamedBranch(commitID string) *Branch {
 	sid := git.ToSid(commitID)
 	return &Branch{
 		Name:          fmt.Sprintf("branch:%s", sid),

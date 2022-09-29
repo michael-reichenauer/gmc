@@ -166,7 +166,7 @@ func (r *Repo) addNamedBranch(c *Commit, branchName string) *Branch {
 }
 
 func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
-	b := newBranch(c.Id)
+	b := newUnnamedBranch(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
 }
