@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCurrentRepo_Manual(t *testing.T) {
+func TestCurrentAugmentedRepo_Manual(t *testing.T) {
 	//tests.ManualTest(t)
 	repoService := NewRepoService(nil, CurrentRoot())
 	repo, err := repoService.GetFreshRepo()
