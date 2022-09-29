@@ -11,7 +11,7 @@ import (
 	"github.com/imkira/go-observer"
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
-	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
+	gitrepo "github.com/michael-reichenauer/gmc/server/viewrepo/augmentedRepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"

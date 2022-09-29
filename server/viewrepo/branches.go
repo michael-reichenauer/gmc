@@ -3,7 +3,7 @@ package viewrepo
 import (
 	"sort"
 
-	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
+	gitrepo "github.com/michael-reichenauer/gmc/server/viewrepo/augmentedRepo"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 )

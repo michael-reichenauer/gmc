@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
+	gitrepo "github.com/michael-reichenauer/gmc/server/viewrepo/augmentedRepo"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
