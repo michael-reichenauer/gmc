@@ -10,7 +10,7 @@ import (
 
 const (
 	progressInterval = 500 * time.Millisecond
-	waitMark         = " ● ● ● ● \n ● ● ● ● "
+	waitMark         = " ● ● ● ● "
 	showIconTimeout  = 500 * time.Millisecond
 	showFullTimeout  = 8 * time.Second
 )
