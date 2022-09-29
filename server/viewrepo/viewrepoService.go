@@ -512,7 +512,7 @@ func (t *ViewRepoService) triggerSearchRepo(ctx context.Context, searchText stri
 func (t *ViewRepoService) triggerFreshViewRepo(ctx context.Context, repo augmented.Repo, branchNames []string) {
 	log.Infof("triggerFreshViewRepo")
 	go func() {
-		vRepo := t.getViewModel(repo, branchNames)
+		vRepo := t.GetViewModel(repo, branchNames)
 		t.storeViewRepo(vRepo)
 		vr := toApiRepo(vRepo)
 		repoChange := api.RepoChange{ViewRepo: vr}
@@ -563,34 +563,34 @@ func (t *ViewRepoService) getSearchModel(gRepo augmented.Repo, searchText string
 	return repo
 }
 
-func (t *ViewRepoService) getViewModel(gRepo augmented.Repo, branchNames []string) *repo {
+func (t *ViewRepoService) GetViewModel(augRepo augmented.Repo, branchNames []string) *repo {
 	log.Infof("getViewModel")
 	ti := timer.Start()
 	repo := newRepo()
-	repo.augmentedRepo = gRepo
-	repo.WorkingFolder = gRepo.RepoPath
-	repo.UncommittedChanges = gRepo.Status.AllChanges()
-	repo.Conflicts = gRepo.Status.Conflicted
-	repo.MergeMessage = gRepo.Status.MergeMessage
+	repo.augmentedRepo = augRepo
+	repo.WorkingFolder = augRepo.RepoPath
+	repo.UncommittedChanges = augRepo.Status.AllChanges()
+	repo.Conflicts = augRepo.Status.Conflicted
+	repo.MergeMessage = augRepo.Status.MergeMessage
 
-	branches := t.getAugmentedBranches(branchNames, gRepo)
+	branches := t.getAugmentedBranches(branchNames, augRepo)
 	for _, b := range branches {
 		repo.addBranch(b)
 	}
 
-	currentBranch, ok := gRepo.CurrentBranch()
+	currentBranch, ok := augRepo.CurrentBranch()
 	if ok {
 		repo.CurrentBranchName = currentBranch.Name
 	}
 
-	if !gRepo.Status.OK() {
-		repo.addVirtualStatusCommit(gRepo)
+	if !augRepo.Status.OK() {
+		repo.addVirtualStatusCommit(augRepo)
 	}
-	for _, c := range gRepo.Commits {
+	for _, c := range augRepo.Commits {
 		repo.addGitCommit(c)
 	}
 
-	t.addTags(repo, gRepo.Tags)
+	t.addTags(repo, augRepo.Tags)
 
 	t.adjustCurrentBranchIfStatus(repo)
 	t.setBranchParentChildRelations(repo)

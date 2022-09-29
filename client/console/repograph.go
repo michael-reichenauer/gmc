@@ -1,12 +1,14 @@
 package console
 
 import (
+	"strings"
+
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
-type repoGraph struct {
+type RepoGraph struct {
 }
 
 var (
@@ -16,11 +18,38 @@ var (
 	inOutMarker         = cui.Dark("<")
 )
 
-func newRepoGraph() *repoGraph {
-	return &repoGraph{}
+func NewRepoGraph() *RepoGraph {
+	return &RepoGraph{}
 }
 
-func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
+func (t *RepoGraph) WriteGraph(sb *strings.Builder, row api.GraphRow) {
+	for i := 0; i < len(row); i++ {
+		// Normal branch color
+		bColor := cui.Color(row[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
+
+		cColor := bColor
+		if row[i].Connect == api.BPass &&
+			row[i].PassColor != 0 &&
+			row[i].PassColor != api.Color(cui.CWhite) {
+			cColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+		} else if row[i].Connect.Has(api.BPass) {
+			cColor = cui.CWhite
+		}
+		sb.WriteString(cui.ColorRune(cColor, t.graphConnectRune(row[i].Connect)))
+
+		if row[i].Branch == api.BPass &&
+			row[i].PassColor != 0 &&
+			row[i].PassColor != api.Color(cui.CWhite) {
+			bColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+		} else if row[i].Branch == api.BPass {
+			bColor = cui.CWhite
+		}
+
+		sb.WriteString(cui.ColorRune(bColor, t.graphBranchRune(row[i].Branch)))
+	}
+}
+
+func (t *RepoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	switch {
 	// commit of a branch with only one commit (tip==bottom)
 	case bm.Has(api.BTip) && bm.Has(api.BBottom) && bm.Has(api.BActiveTip) && t.hasLeft(bm):
@@ -65,7 +94,7 @@ func (t *repoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	}
 }
 
-func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
+func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
 	case api.BMergeRight:
 		return '╮'
@@ -108,7 +137,7 @@ func (t *repoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	}
 }
 
-func (t *repoGraph) hasLeft(bm utils.Bitmask) bool {
+func (t *RepoGraph) hasLeft(bm utils.Bitmask) bool {
 	return bm.Has(api.BBranchLeft) ||
 		bm.Has(api.BMergeLeft) ||
 		bm.Has(api.BPass)
