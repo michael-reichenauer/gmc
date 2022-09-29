@@ -5,13 +5,13 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
-func ToCommitDiff(diff git.CommitDiff) api.CommitDiff {
+func ToApiCommitDiff(diff git.CommitDiff) api.CommitDiff {
 	return api.CommitDiff{
-		FileDiffs: toFileDiffs(diff.FileDiffs),
+		FileDiffs: toApiFileDiffs(diff.FileDiffs),
 	}
 }
 
-func toFileDiffs(gfd []git.FileDiff) []api.FileDiff {
+func toApiFileDiffs(gfd []git.FileDiff) []api.FileDiff {
 	diffs := make([]api.FileDiff, len(gfd))
 	for i, d := range gfd {
 		diffs[i] = api.FileDiff{
@@ -19,24 +19,24 @@ func toFileDiffs(gfd []git.FileDiff) []api.FileDiff {
 			PathAfter:    d.PathAfter,
 			IsRenamed:    d.IsRenamed,
 			DiffMode:     api.DiffMode(d.DiffMode),
-			SectionDiffs: toSectionDiffs(d.SectionDiffs),
+			SectionDiffs: toApiSectionDiffs(d.SectionDiffs),
 		}
 	}
 	return diffs
 }
 
-func toSectionDiffs(gsd []git.SectionDiff) []api.SectionDiff {
+func toApiSectionDiffs(gsd []git.SectionDiff) []api.SectionDiff {
 	diffs := make([]api.SectionDiff, len(gsd))
 	for i, d := range gsd {
 		diffs[i] = api.SectionDiff{
 			ChangedIndexes: d.ChangedIndexes,
-			LinesDiffs:     toLineDiffs(d.LinesDiffs),
+			LinesDiffs:     toApiLineDiffs(d.LinesDiffs),
 		}
 	}
 	return diffs
 }
 
-func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
+func toApiLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
 	diffs := make([]api.LinesDiff, len(gld))
 	for i, d := range gld {
 		diffs[i] = api.LinesDiff{
@@ -47,11 +47,11 @@ func toLineDiffs(gld []git.LinesDiff) []api.LinesDiff {
 	return diffs
 }
 
-func toViewRepo(repo *repo) api.Repo {
-	graph := toConsoleGraph(repo)
+func toApiRepo(repo *repo) api.Repo {
+	graph := toApiConsoleGraph(repo.Commits)
 	return api.Repo{
-		Commits:            toCommits(repo),
-		Branches:           toBranches(repo),
+		Commits:            toApiCommits(repo.Commits),
+		Branches:           toApiBranches(repo.Branches),
 		CurrentBranchName:  repo.CurrentBranchName,
 		RepoPath:           repo.WorkingFolder,
 		UncommittedChanges: repo.UncommittedChanges,
@@ -61,31 +61,31 @@ func toViewRepo(repo *repo) api.Repo {
 	}
 }
 
-func toBranches(repo *repo) []api.Branch {
-	branches := make([]api.Branch, len(repo.Branches))
-	for i, b := range repo.Branches {
-		branches[i] = toBranch(b)
+func toApiBranches(branches []*branch) []api.Branch {
+	apiBranches := make([]api.Branch, len(branches))
+	for i, b := range branches {
+		apiBranches[i] = toApiBranch(b)
 	}
-	return branches
+	return apiBranches
 }
 
-func toCommits(repo *repo) []api.Commit {
-	commits := make([]api.Commit, len(repo.Commits))
-	for i, c := range repo.Commits {
-		commits[i] = toCommit(c)
+func toApiCommits(commits []*commit) []api.Commit {
+	apiCommits := make([]api.Commit, len(commits))
+	for i, c := range commits {
+		apiCommits[i] = toApiCommit(c)
 	}
-	return commits
+	return apiCommits
 }
 
-func toConsoleGraph(repo *repo) api.Graph {
-	rows := make([]api.GraphRow, len(repo.Commits))
-	for i, c := range repo.Commits {
+func toApiConsoleGraph(commits []*commit) api.Graph {
+	rows := make([]api.GraphRow, len(commits))
+	for i, c := range commits {
 		rows[i] = c.graph
 	}
 	return rows
 }
 
-func toCommit(c *commit) api.Commit {
+func toApiCommit(c *commit) api.Commit {
 	return api.Commit{
 		ID:                 c.ID,
 		SID:                c.SID,
@@ -107,7 +107,7 @@ func toCommit(c *commit) api.Commit {
 	}
 }
 
-func toBranch(b *branch) api.Branch {
+func toApiBranch(b *branch) api.Branch {
 	return api.Branch{
 		Name:                 b.name,
 		DisplayName:          b.displayName,

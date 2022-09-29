@@ -16,7 +16,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
-const getChangesTimout = 1 * time.Minute
+const getChangesTimeout = 1 * time.Minute
 
 type repoInfo struct {
 	repo   *viewrepo.ViewRepo
@@ -114,7 +114,7 @@ func (t *apiServer) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
 		change := changesStream.Value()
 		log.Debugf("one event")
 		changes = append(changes, change.(api.RepoChange))
-	case <-time.After(getChangesTimout):
+	case <-time.After(getChangesTimeout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
 		log.Debugf("timeout")
 		return nil

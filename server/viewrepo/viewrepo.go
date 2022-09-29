@@ -98,7 +98,7 @@ func (t *ViewRepo) GetCommitDiff(id string) (api.CommitDiff, error) {
 	if err != nil {
 		return api.CommitDiff{}, err
 	}
-	return ToCommitDiff(diff), nil
+	return ToApiCommitDiff(diff), nil
 }
 
 func (t *ViewRepo) GetCommitDetails(id string) (api.CommitDetailsRsp, error) {
@@ -204,7 +204,7 @@ func (t *ViewRepo) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesRe
 		// 	continue
 		// }
 
-		branches = append(branches, toBranch(viewRepo.toBranch(branch, 0)))
+		branches = append(branches, toApiBranch(viewRepo.toBranch(branch, 0)))
 	}
 
 	return branches
@@ -238,11 +238,11 @@ func (t *ViewRepo) getCurrentBranch(includeOnlyNotShown bool) (api.Branch, bool)
 
 	for _, b := range viewRepo.Branches {
 		if current.Name == b.name {
-			return toBranch(b), true
+			return toApiBranch(b), true
 		}
 	}
 
-	return toBranch(viewRepo.toBranch(current, 0)), true
+	return toApiBranch(viewRepo.toBranch(current, 0)), true
 }
 
 func (t *ViewRepo) getCommitBranches(commitID string) []api.Branch {
@@ -277,7 +277,7 @@ func (t *ViewRepo) getCommitOpenInBranches(commitID string) []api.Branch {
 			// Skip branches already shown
 			continue
 		}
-		branch := toBranch(viewRepo.toBranch(b, 0))
+		branch := toApiBranch(viewRepo.toBranch(b, 0))
 		branch.IsIn = true
 		bs = append(bs, branch)
 	}
@@ -323,7 +323,7 @@ func (t *ViewRepo) getCommitOpenOutBranches(commitID string) []api.Branch {
 			// Skip branches already shown
 			continue
 		}
-		branch := toBranch(viewRepo.toBranch(b, 0))
+		branch := toApiBranch(viewRepo.toBranch(b, 0))
 		branch.IsOut = true
 		bs = append(bs, branch)
 	}
@@ -354,7 +354,7 @@ func (t *ViewRepo) getShownBranches(skipMaster bool) []api.Branch {
 			continue
 		}
 
-		bs = append(bs, toBranch(b))
+		bs = append(bs, toApiBranch(b))
 	}
 	return bs
 }
@@ -499,7 +499,7 @@ func (t *ViewRepo) triggerSearchRepo(ctx context.Context, searchText string, rep
 	log.Infof("triggerSearchRepo")
 	go func() {
 		vRepo := t.getSearchModel(repo, searchText)
-		repoChange := api.RepoChange{SearchText: searchText, ViewRepo: toViewRepo(vRepo)}
+		repoChange := api.RepoChange{SearchText: searchText, ViewRepo: toApiRepo(vRepo)}
 		log.Infof("Send new search repo event ...")
 		select {
 		case <-ctx.Done():
@@ -514,7 +514,7 @@ func (t *ViewRepo) triggerFreshViewRepo(ctx context.Context, repo gitrepo.Repo, 
 	go func() {
 		vRepo := t.getViewModel(repo, branchNames)
 		t.storeViewRepo(vRepo)
-		vr := toViewRepo(vRepo)
+		vr := toApiRepo(vRepo)
 		repoChange := api.RepoChange{ViewRepo: vr}
 		log.Infof("Send new view repo event ...")
 		select {
@@ -636,7 +636,7 @@ func (t *ViewRepo) getAllBranches(viewRepo *repo, skipShown bool) []api.Branch {
 		if skipShown && containsBranch(viewRepo.Branches, b.Name) {
 			continue
 		}
-		branches = append(branches, toBranch(viewRepo.toBranch(b, 0)))
+		branches = append(branches, toApiBranch(viewRepo.toBranch(b, 0)))
 	}
 
 	return branches

@@ -30,14 +30,12 @@ func (pool *wsPool) Start() {
 				// log.Infof("%s", client)
 				client.Conn.WriteJSON(Message{Type: 1, Body: "New User Joined..."})
 			}
-			break
 		case client := <-pool.Unregister:
 			delete(pool.Clients, client)
 			log.Infof("Size of Connection Pool: %d", len(pool.Clients))
 			for client, _ := range pool.Clients {
 				client.Conn.WriteJSON(Message{Type: 1, Body: "User Disconnected..."})
 			}
-			break
 		case message := <-pool.Broadcast:
 			log.Infof("Sending message to all clients in Pool")
 			for client, _ := range pool.Clients {
