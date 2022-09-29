@@ -19,7 +19,7 @@ import (
 const getChangesTimeout = 1 * time.Minute
 
 type repoInfo struct {
-	repo   *viewrepo.ViewRepo
+	repo   *viewrepo.ViewRepoService
 	stream observer.Stream
 }
 
@@ -68,7 +68,7 @@ func (t *apiServer) OpenRepo(path string, repoID *string) error {
 	}
 
 	// Got root working dir path, open repo
-	viewRepo := viewrepo.NewViewRepo(t.configService, workingDir)
+	viewRepo := viewrepo.NewViewRepoService(t.configService, workingDir)
 	stream := viewRepo.ObserveChanges()
 	id := t.storeRepo(viewRepo, stream)
 
@@ -330,7 +330,7 @@ func (t *apiServer) UnsetAsParentBranch(name api.BranchName, _ api.NoRsp) error 
 	return repo.UnsetAsParentBranch(name.BranchName)
 }
 
-func (t *apiServer) storeRepo(repo *viewrepo.ViewRepo, stream observer.Stream) string {
+func (t *apiServer) storeRepo(repo *viewrepo.ViewRepoService, stream observer.Stream) string {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	id := uuid.New().String()
@@ -344,7 +344,7 @@ func (t *apiServer) removeRepo(id string) {
 	delete(t.repos, id)
 }
 
-func (t *apiServer) repo(id string) (*viewrepo.ViewRepo, error) {
+func (t *apiServer) repo(id string) (*viewrepo.ViewRepoService, error) {
 	t.lock.Lock()
 	defer t.lock.Unlock()
 	r, ok := t.repos[id]
