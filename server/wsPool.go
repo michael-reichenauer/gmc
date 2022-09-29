@@ -4,23 +4,23 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
-type Pool struct {
-	Register   chan *Client
-	Unregister chan *Client
-	Clients    map[*Client]bool
+type wsPool struct {
+	Register   chan *wsClient
+	Unregister chan *wsClient
+	Clients    map[*wsClient]bool
 	Broadcast  chan Message
 }
 
-func NewPool() *Pool {
-	return &Pool{
-		Register:   make(chan *Client),
-		Unregister: make(chan *Client),
-		Clients:    make(map[*Client]bool),
+func NewWsPool() *wsPool {
+	return &wsPool{
+		Register:   make(chan *wsClient),
+		Unregister: make(chan *wsClient),
+		Clients:    make(map[*wsClient]bool),
 		Broadcast:  make(chan Message),
 	}
 }
 
-func (pool *Pool) Start() {
+func (pool *wsPool) Start() {
 	for {
 		select {
 		case client := <-pool.Register:

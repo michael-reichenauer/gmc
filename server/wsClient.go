@@ -6,10 +6,10 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type Client struct {
+type wsClient struct {
 	ID   string
 	Conn *websocket.Conn
-	Pool *Pool
+	Pool *wsPool
 }
 
 type Message struct {
@@ -17,7 +17,7 @@ type Message struct {
 	Body string `json:"body"`
 }
 
-func (c *Client) Read() {
+func (c *wsClient) Read() {
 	defer func() {
 		c.Pool.Unregister <- c
 		c.Conn.Close()
