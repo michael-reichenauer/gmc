@@ -34,7 +34,7 @@ func (h *branchesService) setGitBranchTips(repo *Repo) {
 		tip, ok := repo.TryGetCommitByID(b.TipID)
 		if !ok {
 			// A branch tip id, which commit id does not exist in the repo
-			// Store that branch name so it can be recmoved from the list below
+			// Store that branch name so it can be removed from the list below
 			missingBranches = append(missingBranches, b.Name)
 			continue
 		}
@@ -103,7 +103,8 @@ func (h *branchesService) setCommitBranchesAndChildren(repo *Repo) {
 // - Adjust the commit branch bottom id to know/forward last known commit of a branch
 func (h *branchesService) determineCommitBranches(
 	repo *Repo,
-	branchesChildren map[string][]string) {
+	branchesChildren map[string][]string,
+) {
 	for _, c := range repo.Commits {
 		h.determineCommitBranch(repo, c, branchesChildren)
 		h.setMasterBackbone(c)
@@ -180,15 +181,23 @@ func (h *branchesService) determineCommitBranch(
 		if branch != nil && branch.BottomID != "" {
 			current = repo.CommitByID(branch.BottomID)
 		}
+
 		if current == nil {
+			// branch has no known last (bottom) commit, lets iterate upp (first child) as long
+			// as commits are on an ambiguous branch
 			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsAmbiguousBranch; current = current.Children[0] {
 			}
 		}
 		if branch != nil {
-			for ; current != c.FirstParent; current = current.FirstParent {
+			for ; current != nil && current != c.FirstParent; current = current.FirstParent {
 				current.Branch = branch
-				current.isLikely = true
 				current.addBranch(branch)
+				current.isLikely = true
+			}
+			if c.Branch == nil {
+				c.Branch = branch
+				c.addBranch(c.Branch)
+				c.isLikely = true
 			}
 			c.Branch.BottomID = c.Id
 			return

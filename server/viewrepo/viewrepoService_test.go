@@ -20,7 +20,7 @@ func Test2(t *testing.T) {
 	// []int{2, 4, 6}
 }
 
-func Test(t *testing.T) {
+func TestCurrentRepo(t *testing.T) {
 	//tests.ManualTest(t)
 	repoService := augmented.NewRepoService(nil, CurrentRoot())
 	repo, err := repoService.GetFreshRepo()
@@ -40,15 +40,30 @@ func Test(t *testing.T) {
 		graph.WriteGraph(&sb, c.graph)
 		t.Logf("%s %s %s", sb.String(), c.SID, c.Subject)
 	}
+}
 
-	// model := NewService(`C:\Work Files\GitMind`)
-	// model.Load()
-	// vp, err := model.GetRepoViewPort(0, 18, 0)
-	// assert.NoError(t, err)
-	// assert.NotEqual(t, len(vp.Commits), 0)
-	// for _, c := range vp.Commits {
-	// 	t.Logf("%s", c.String())
-	// }
+func TestSpecial(t *testing.T) {
+	//tests.ManualTest(t)
+	repoPath := ""
+
+	repoService := augmented.NewRepoService(nil, repoPath)
+	repo, err := repoService.GetFreshRepo()
+	assert.NoError(t, err)
+	assert.Greater(t, len(repo.Commits), 0)
+
+	viewRepoService := NewViewRepoService(nil, repoPath)
+	cb, ok := repo.CurrentBranch()
+	assert.True(t, ok)
+	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name})
+	assert.Greater(t, len(viewRepo.Commits), 0)
+
+	graph := console.NewRepoGraph()
+
+	for _, c := range viewRepo.Commits {
+		var sb strings.Builder
+		graph.WriteGraph(&sb, c.graph)
+		t.Logf("%s %s %s", sb.String(), c.SID, c.Subject)
+	}
 }
 
 func CurrentRoot() string {

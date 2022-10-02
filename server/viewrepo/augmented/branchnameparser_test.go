@@ -65,9 +65,9 @@ func TestParseSubject(t *testing.T) {
 	assert.Equal(t, "branches/fetch", fi.into)
 
 	// Pull merge with target
-	fi = h.parseMergeBranchNames("Merge remote-tracking branch 'refs/remotes/origin/branches/acs' into branches/acs")
-	assert.Equal(t, "branches/acs", fi.from)
-	assert.Equal(t, "branches/acs", fi.into)
+	fi = h.parseMergeBranchNames("Merge remote-tracking branch 'refs/remotes/origin/branches/abb' into branches/abb")
+	assert.Equal(t, "branches/abb", fi.from)
+	assert.Equal(t, "branches/abb", fi.into)
 
 }
 

@@ -20,6 +20,14 @@ func TestCurrentAugmentedRepo_Manual(t *testing.T) {
 	assert.Greater(t, len(repo.Commits), 0)
 }
 
+func TestSpecialAugmentedRepo_Manual(t *testing.T) {
+	//tests.ManualTest(t)
+	// repoService := NewRepoService(nil, "")
+	// repo, err := repoService.GetFreshRepo()
+	// assert.NoError(t, err)
+	// assert.Greater(t, len(repo.Commits), 0)
+}
+
 func TestCurrentRepoTrigger_Manual(t *testing.T) {
 	tests.ManualTest(t)
 	repoService := NewRepoService(nil, CurrentRoot())
@@ -38,28 +46,6 @@ func TestCurrentRepoTrigger_Manual(t *testing.T) {
 		t.Logf("Commits: %d of %d %s", len(commits), len(r.Repo.Commits), st)
 		break
 	}
-}
-
-func TestAcsRepo_Manual(t *testing.T) {
-	tests.ManualTest(t)
-	gr := NewRepoService(nil, "C:\\Work Files\\AcmAcs")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	gr.StartMonitor(ctx)
-
-	gr.TriggerManualRefresh()
-	var repo Repo
-	for r := range gr.RepoChanges() {
-		if r.IsStarting {
-			continue
-		}
-		repo = r.Repo
-		break
-	}
-
-	st := timer.Start()
-	commits := repo.SearchCommits("1011")
-	t.Logf("Commits: %d of %d %s", len(commits), len(repo.Commits), st)
 }
 
 func CurrentRoot() string {
