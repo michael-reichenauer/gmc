@@ -140,7 +140,34 @@ func (t *ViewRepoService) Commit(Commit string) error {
 	return t.augmentedRepo.Commit(Commit)
 }
 
-func (t *ViewRepoService) BranchColor(name string) cui.Color {
+func (t *ViewRepoService) BranchColor(branch *branch) cui.Color {
+	log.Infof("Branch %q", branch.name)
+	if branch.parentBranch == nil {
+		// branch has no parent or parent is remote of this branch, lets use it
+		log.Infof("No parent branch %q", branch.name)
+		return t.branchNameColor(branch.displayName, 0)
+	}
+
+	if branch.remoteName == branch.parentBranch.name {
+		// Parent is remote of this branch, lets use parent color
+		log.Infof("Parent is remote branch %q", branch.name)
+		return t.BranchColor(branch.parentBranch)
+	}
+
+	color := t.branchNameColor(branch.displayName, 0)
+	parentColor := t.branchNameColor(branch.parentBranch.displayName, 0)
+
+	if color == parentColor {
+		// branch got same color as parent, lets change branch color
+		color = t.branchNameColor(branch.displayName, 1)
+	}
+
+	log.Infof("Branch %q %q %d %d", branch.name, branch.parentBranch.displayName, color, parentColor)
+
+	return color
+}
+
+func (t *ViewRepoService) branchNameColor(name string, addIndex int) cui.Color {
 	if strings.HasPrefix(name, "ambiguous@") {
 		return cui.CWhite
 	}
@@ -151,13 +178,10 @@ func (t *ViewRepoService) BranchColor(name string) cui.Color {
 	if name == masterName || name == mainName {
 		return cui.CMagenta
 	}
-	if name == "develop" {
-		return cui.CRedDk
-	}
 
 	h := fnv.New32a()
 	h.Write([]byte(name))
-	index := int(h.Sum32()) % len(branchColors)
+	index := int(h.Sum32()+uint32(addIndex)) % len(branchColors)
 	return branchColors[index]
 }
 

@@ -47,7 +47,7 @@ func (t *ViewRepoService) getAugmentedBranches(branchNames []string, augmentedRe
 
 func (t *ViewRepoService) setBranchColors(repo *repo) {
 	for _, b := range repo.Branches {
-		b.color = t.BranchColor(b.displayName)
+		b.color = t.BranchColor(b)
 	}
 }
 
