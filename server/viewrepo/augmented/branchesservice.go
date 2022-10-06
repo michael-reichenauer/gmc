@@ -415,7 +415,7 @@ func (h *branchesService) removeUnusedAmbiguousBranches(repo *Repo) {
 
 func (h *branchesService) determineBranchHierarchy(repo *Repo, branchesChildren map[string][]string) {
 	for _, b := range repo.Branches {
-		bs, _ := branchesChildren[b.Name]
+		bs := branchesChildren[b.Name]
 		b.IsSetAsParent = len(bs) > 0
 
 		if b.BottomID == "" {
