@@ -1,4 +1,4 @@
-package gitrepo
+package augmented
 
 import (
 	"fmt"
@@ -6,12 +6,8 @@ import (
 
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/samber/lo"
 )
-
-type Tag struct {
-	CommitID string
-	TagName  string
-}
 
 type Repo struct {
 	Commits    []*Commit
@@ -138,18 +134,19 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 }
 
 func (r *Repo) setGitBranches(gitBranches []git.Branch) {
-	for _, gb := range gitBranches {
-		r.Branches = append(r.Branches, newGitBranch(gb))
-	}
-	// Set local name of all remote branches, that have a local branch as well
+	r.Branches = lo.Map(gitBranches, func(v git.Branch, _ int) *Branch { return newGitBranch(v) })
+
+	// Set local name of all remote branches, that have a corresponding local branch as well
+	// Unset RemoteName of local branch if n corresponding remote branch (deleted on remote server)
 	for _, b := range r.Branches {
 		if b.RemoteName != "" {
-			// A local branch, try locate corresponding remote branch and set its local name property
-			for _, rb := range r.Branches {
-				if rb.Name == b.RemoteName {
-					rb.LocalName = b.Name
-					break
-				}
+			remoteBranch, ok := lo.Find(r.Branches, func(v *Branch) bool { return v.Name == b.RemoteName })
+			if ok {
+				// Corresponding remote branch, set local branch name property
+				remoteBranch.LocalName = b.Name
+			} else {
+				// No remote corresponding remote branch, unset property
+				b.RemoteName = ""
 			}
 		}
 	}
@@ -171,7 +168,7 @@ func (r *Repo) addNamedBranch(c *Commit, branchName string) *Branch {
 }
 
 func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
-	b := newBranch(c.Id)
+	b := newUnnamedBranch(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
 }

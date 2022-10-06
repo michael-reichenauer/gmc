@@ -2,14 +2,15 @@ package server
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"net/http"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
 
 	"github.com/gorilla/websocket"
 )
 
 // define our WebSocket endpoint
-func ServeWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
+func ServeWs(pool *wsPool, w http.ResponseWriter, r *http.Request) {
 	log.Infof("Connecting from %s", r.Host)
 
 	conn, err := upgrade(w, r)
@@ -17,7 +18,7 @@ func ServeWs(pool *Pool, w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "%+v\n", err)
 	}
 
-	client := &Client{
+	client := &wsClient{
 		Conn: conn,
 		Pool: pool,
 	}

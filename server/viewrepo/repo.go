@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/server/viewrepo/gitrepo"
+	"github.com/michael-reichenauer/gmc/server/viewrepo/augmented"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -18,7 +18,7 @@ type repo struct {
 	CurrentBranchName  string
 	WorkingFolder      string
 	UncommittedChanges int
-	gitRepo            gitrepo.Repo
+	augmentedRepo      augmented.Repo
 	Conflicts          int
 	MergeMessage       string
 }
@@ -51,12 +51,12 @@ func (t *repo) tryGetBranchByName(name string) *branch {
 	return nil
 }
 
-func (t *repo) addBranch(gb *gitrepo.Branch) {
+func (t *repo) addBranch(gb *augmented.Branch) {
 	b := t.toBranch(gb, len(t.Branches))
 	t.Branches = append(t.Branches, b)
 }
 
-func (t *repo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
+func (t *repo) addVirtualStatusCommit(gRepo augmented.Repo) {
 	cb, ok := gRepo.CurrentBranch()
 	if !ok || !t.containsBranch(cb) {
 		// No current branch, or view repo does not show the current branch
@@ -77,7 +77,7 @@ func (t *repo) addVirtualStatusCommit(gRepo gitrepo.Repo) {
 	t.commitById[c.ID] = c
 }
 
-func (t *repo) addSearchCommit(gc *gitrepo.Commit) {
+func (t *repo) addSearchCommit(gc *augmented.Commit) {
 	c := t.toCommit(gc, len(t.Commits), false)
 	t.Commits = append(t.Commits, c)
 	t.commitById[c.ID] = c
@@ -86,7 +86,7 @@ func (t *repo) addSearchCommit(gc *gitrepo.Commit) {
 	}
 }
 
-func (t *repo) addGitCommit(gc *gitrepo.Commit) {
+func (t *repo) addGitCommit(gc *augmented.Commit) {
 	if !t.containsBranch(gc.Branch) {
 		return
 	}
@@ -98,7 +98,7 @@ func (t *repo) addGitCommit(gc *gitrepo.Commit) {
 	}
 }
 
-func (t *repo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
+func (t *repo) containsOneOfBranches(branches []*augmented.Branch) bool {
 	for _, rb := range t.Branches {
 		for _, b := range branches {
 			if rb.name == b.Name {
@@ -109,7 +109,7 @@ func (t *repo) containsOneOfBranches(branches []*gitrepo.Branch) bool {
 	return false
 }
 
-func (t *repo) containsBranch(branch *gitrepo.Branch) bool {
+func (t *repo) containsBranch(branch *augmented.Branch) bool {
 	for _, b := range t.Branches {
 		if b.name == branch.Name {
 			return true
@@ -127,7 +127,7 @@ func (t *repo) containsBranchName(name string) bool {
 	return false
 }
 
-func (t *repo) toBranch(b *gitrepo.Branch, index int) *branch {
+func (t *repo) toBranch(b *augmented.Branch, index int) *branch {
 	parentBranchName := ""
 	if b.ParentBranch != nil {
 		parentBranchName = b.ParentBranch.Name
@@ -154,7 +154,7 @@ func (t *repo) toBranch(b *gitrepo.Branch, index int) *branch {
 	}
 }
 
-func (t *repo) toCommit(c *gitrepo.Commit, index int, includeGraph bool) *commit {
+func (t *repo) toCommit(c *augmented.Commit, index int, includeGraph bool) *commit {
 	var branch = t.BranchByName(c.Branch.Name)
 
 	var graph []api.GraphColumn
@@ -179,7 +179,7 @@ func (t *repo) toCommit(c *gitrepo.Commit, index int, includeGraph bool) *commit
 	}
 }
 
-func (t *repo) containsGitBranchName(branches []*gitrepo.Branch, name string) bool {
+func (t *repo) containsGitBranchName(branches []*augmented.Branch, name string) bool {
 	for _, b := range branches {
 		if name == b.Name {
 			return true

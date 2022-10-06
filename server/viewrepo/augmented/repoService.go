@@ -1,4 +1,4 @@
-package gitrepo
+package augmented
 
 import (
 	"context"
@@ -10,19 +10,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
-const (
-	fetchInterval = 10 * time.Minute
-	batchInterval = 1 * time.Second
-	partialMax    = 30000 // Max number of commits to handle
-)
-
-type RepoChange struct {
-	IsStarting bool
-	Repo       Repo
-	Error      error
-}
-
-type GitRepo interface {
+type RepoService interface {
 	RepoChanges() chan RepoChange
 	RepoPath() string
 	TriggerManualRefresh()
@@ -39,61 +27,102 @@ type GitRepo interface {
 	DeleteLocalBranch(name string) error
 	PullCurrentBranch() error
 	PullBranch(name string) error
+
+	GetFreshRepo() (Repo, error)
 }
 
-type gitRepo struct {
-	repoChanges chan RepoChange
+type RepoChange struct {
+	IsStarting bool
+	Repo       Repo
+	Error      error
+}
 
+type repoService struct {
 	branchesService *branchesService
 	configService   *config.Service
 	folderMonitor   *monitor
-	git             git.Git
-	rootPath        string
-	repo            chan Repo
-	manualRefresh   chan struct{}
+
+	repoChanges   chan RepoChange
+	git           git.Git
+	repo          chan Repo
+	manualRefresh chan struct{}
 }
 
-func NewGitRepo(configService *config.Service, workingFolder string) GitRepo {
-	g := git.New(workingFolder)
-	return &gitRepo{
-		rootPath:        workingFolder,
+const (
+	fetchInterval = 10 * time.Minute
+	batchInterval = 1 * time.Second
+	partialMax    = 30000 // Max number of commits to handle
+)
+
+func NewRepoService(configService *config.Service, rootPath string) RepoService {
+	g := git.New(rootPath)
+
+	return &repoService{
 		branchesService: newBranchesService(),
 		configService:   configService,
 		git:             g,
-		folderMonitor:   newMonitor(workingFolder, g),
+		folderMonitor:   newMonitor(rootPath, g),
 		repoChanges:     make(chan RepoChange, 1),
 		repo:            make(chan Repo, 1),
 		manualRefresh:   make(chan struct{}, 1),
 	}
 }
 
-func (s *gitRepo) RepoChanges() chan RepoChange {
+func (s *repoService) RepoChanges() chan RepoChange {
 	return s.repoChanges
 }
 
-func (s *gitRepo) RepoPath() string {
+func (s *repoService) RepoPath() string {
 	return s.git.RepoPath()
 }
 
-func (s *gitRepo) StartMonitor(ctx context.Context) {
+func (s *repoService) StartMonitor(ctx context.Context) {
 	go s.monitorRoutine(ctx)
 	go s.fetchRoutine(ctx)
 }
 
-func (s *gitRepo) GetCommitDiff(id string) (git.CommitDiff, error) {
+func (s *repoService) GetCommitDiff(id string) (git.CommitDiff, error) {
 	log.Infof("Get diff for %q", id)
 	return s.git.CommitDiff(id)
 }
 
-func (s *gitRepo) SwitchToBranch(name string) error {
+func (s *repoService) SwitchToBranch(name string) error {
 	return s.git.Checkout(name)
 }
 
-func (s *gitRepo) Commit(message string) error {
+func (s *repoService) Commit(message string) error {
 	return s.git.Commit(message)
 }
 
-func (s *gitRepo) TriggerManualRefresh() {
+func (s *repoService) PushBranch(name string) error {
+	return s.git.PushBranch(name)
+}
+
+func (s *repoService) PullCurrentBranch() error {
+	return s.git.PullCurrentBranch()
+}
+
+func (s *repoService) PullBranch(name string) error {
+	return s.git.PullBranch(name)
+}
+
+func (s *repoService) MergeBranch(name string) error {
+	return s.git.MergeBranch(name)
+}
+
+func (s *repoService) CreateBranch(name string) error {
+	return s.git.CreateBranch(name)
+}
+
+func (s *repoService) DeleteRemoteBranch(name string) error {
+	return s.git.DeleteRemoteBranch(name)
+}
+
+func (s *repoService) DeleteLocalBranch(name string) error {
+	return s.git.DeleteLocalBranch(name)
+}
+
+func (s *repoService) TriggerManualRefresh() {
 	select {
 	case s.manualRefresh <- struct{}{}:
 	default:
@@ -101,7 +130,7 @@ func (s *gitRepo) TriggerManualRefresh() {
 	}
 }
 
-func (s *gitRepo) monitorRoutine(ctx context.Context) {
+func (s *repoService) monitorRoutine(ctx context.Context) {
 	log.Infof("monitorRoutine start.")
 	defer close(s.repoChanges)
 	defer log.Infof("Closed monitor of %s", s.git.RepoPath())
@@ -185,7 +214,7 @@ func (s *gitRepo) monitorRoutine(ctx context.Context) {
 	}
 }
 
-func (s *gitRepo) triggerStatus(ctx context.Context, repo Repo) {
+func (s *repoService) triggerStatus(ctx context.Context, repo Repo) {
 	go func() {
 		repo, err := s.getFreshStatus(repo)
 		if err != nil {
@@ -201,10 +230,10 @@ func (s *gitRepo) triggerStatus(ctx context.Context, repo Repo) {
 	}()
 }
 
-func (s *gitRepo) triggerRepo(ctx context.Context, isTriggerFetch bool) {
+func (s *repoService) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 	log.Infof("TriggerRefreshRepo")
 	go func() {
-		repo, err := s.getFreshRepo()
+		repo, err := s.GetFreshRepo()
 		if err != nil {
 			select {
 			case s.repoChanges <- RepoChange{Error: err}:
@@ -225,7 +254,7 @@ func (s *gitRepo) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 	}()
 }
 
-func (s *gitRepo) internalPostRepo(repo Repo) {
+func (s *repoService) internalPostRepo(repo Repo) {
 	select {
 	case s.repo <- repo:
 		log.Infof("Post repo")
@@ -234,7 +263,7 @@ func (s *gitRepo) internalPostRepo(repo Repo) {
 	}
 }
 
-func (s *gitRepo) getFreshStatus(repo Repo) (Repo, error) {
+func (s *repoService) getFreshStatus(repo Repo) (Repo, error) {
 	t := time.Now()
 	gitStatus, err := s.git.GetStatus()
 	if err != nil {
@@ -245,7 +274,7 @@ func (s *gitRepo) getFreshStatus(repo Repo) (Repo, error) {
 	return repo, nil
 }
 
-func (s *gitRepo) getFreshRepo() (Repo, error) {
+func (s *repoService) GetFreshRepo() (Repo, error) {
 	log.Infof("Getting fresh repo for %s", s.git.RepoPath())
 	st := timer.Start()
 	repo := newRepo()
@@ -257,17 +286,17 @@ func (s *gitRepo) getFreshRepo() (Repo, error) {
 	}
 
 	repo.Status = newStatus(gitRepo.Status)
-	repo.Tags = s.toTags(gitRepo.Tags)
+	repo.Tags = toTags(gitRepo.Tags)
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
-	branchesChildren := s.configService.GetRepo(s.rootPath).BranchesChildren
+	branchesChildren := s.configService.GetRepo(s.git.RepoPath()).BranchesChildren
 	s.branchesService.setBranchForAllCommits(repo, branchesChildren)
 	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
 }
 
-func (s *gitRepo) fetchRoutine(ctx context.Context) {
+func (s *repoService) fetchRoutine(ctx context.Context) {
 	fetchTicker := time.NewTicker(fetchInterval)
 	go func() {
 		<-ctx.Done()
@@ -279,40 +308,4 @@ func (s *gitRepo) fetchRoutine(ctx context.Context) {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
-}
-
-func (s *gitRepo) PushBranch(name string) error {
-	return s.git.PushBranch(name)
-}
-
-func (s *gitRepo) PullCurrentBranch() error {
-	return s.git.PullCurrentBranch()
-}
-
-func (s *gitRepo) PullBranch(name string) error {
-	return s.git.PullBranch(name)
-}
-
-func (s *gitRepo) MergeBranch(name string) error {
-	return s.git.MergeBranch(name)
-}
-
-func (s *gitRepo) CreateBranch(name string) error {
-	return s.git.CreateBranch(name)
-}
-
-func (s *gitRepo) DeleteRemoteBranch(name string) error {
-	return s.git.DeleteRemoteBranch(name)
-}
-
-func (s *gitRepo) DeleteLocalBranch(name string) error {
-	return s.git.DeleteLocalBranch(name)
-}
-
-func (s *gitRepo) toTags(gitTags []git.Tag) []Tag {
-	tags := make([]Tag, len(gitTags))
-	for i, tag := range gitTags {
-		tags[i] = Tag{CommitID: tag.CommitID, TagName: tag.TagName}
-	}
-	return tags
 }

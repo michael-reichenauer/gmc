@@ -1,7 +1,8 @@
-package gitrepo
+package augmented
 
 import (
 	"fmt"
+
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
 

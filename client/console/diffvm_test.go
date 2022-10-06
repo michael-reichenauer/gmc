@@ -19,7 +19,7 @@ func (t getterMock) GetCommitDiff(id string, rsp *api.CommitDiff) error {
 	if err != nil {
 		return err
 	}
-	*rsp = viewrepo.ToCommitDiff(diff)
+	*rsp = viewrepo.ToApiCommitDiff(diff)
 	return nil
 }
 

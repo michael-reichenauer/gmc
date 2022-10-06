@@ -1,10 +1,11 @@
-package gitrepo
+package augmented
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"strings"
 	"time"
+
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
 type Commit struct {
