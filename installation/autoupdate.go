@@ -16,6 +16,7 @@ import (
 	"github.com/michael-reichenauer/gmc/program"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/samber/lo"
 )
 
 const (
@@ -54,6 +55,13 @@ func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
 }
 
 func (h *autoUpdate) Start() {
+	state := h.config.GetState()
+
+	stabUrls := lo.Map(state.StableRelease.Assets, func(v config.Asset, _ int) string { return v.Url })
+	preUrls := lo.Map(state.PreRelease.Assets, func(v config.Asset, _ int) string { return v.Url })
+	log.Infof("Stable release urls:\n%v", strings.Join(stabUrls, "\n"))
+	log.Infof("Pre release urls:\n%v", strings.Join(preUrls, "\n"))
+
 	if !program.IsRelease {
 		log.Infof("Auto update disabled, release=%v", program.IsRelease)
 		return
