@@ -2,10 +2,11 @@ package augmented
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/samber/lo"
 )
 
 // Default branch priority determines parent child branch relations.
-var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master", "origin/develop", "develop", "origin/dev", "dev"}
+var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master"}
 
 type branchesService struct {
 	branchNames *branchNameParser
@@ -21,6 +22,7 @@ func (h *branchesService) setBranchForAllCommits(
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo, branchesChildren)
+	h.removeUnusedAmbiguousBranches(repo)
 	h.determineBranchHierarchy(repo, branchesChildren)
 }
 
@@ -127,6 +129,13 @@ func (h *branchesService) determineCommitBranch(
 		return
 	}
 
+	if branch := h.hasOneChild(repo, c); branch != nil && !branch.IsAmbiguousBranch {
+		// Commit is middle commit in branch, use the only one child commit branch
+		c.Branch = branch
+		c.addBranch(c.Branch)
+		return
+	}
+
 	if branch := h.hasChildrenPriorityBranch(c, branchesChildren); branch != nil {
 		// The commit has several possible branches, but children
 		c.Branch = branch
@@ -153,13 +162,6 @@ func (h *branchesService) determineCommitBranch(
 		return
 	}
 
-	if branch := h.hasOneChild(repo, c); branch != nil {
-		// Commit is middle commit in branch, use the only one child commit branch
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
-	}
-
 	if len(c.Children) == 1 && c.Children[0].isLikely {
 		// Commit has one child, which has a likely known branch, use same branch
 		c.Branch = c.Children[0].Branch
@@ -175,10 +177,13 @@ func (h *branchesService) determineCommitBranch(
 
 	if name := h.branchNames.branchName(c.Id); name != "" {
 		// A branch name could be parsed form the commit subject or a child subject.
-		// Lets use that as a branch name and also let children use that branch if they only are ambiguous branch
-		branch := h.tryGetBranchFromName(c, name)
+		// Lets use that as a branch name and also let children (commits above)
+		// use that branch if they are an ambiguous branch
 		var current *Commit
+		branch := h.tryGetBranchFromName(c, name)
 		if branch != nil && branch.BottomID != "" {
+			// Found an existing branch with that name, set lowest known commit to the bottom
+			// of that known branchm
 			current = repo.CommitByID(branch.BottomID)
 		}
 
@@ -188,6 +193,7 @@ func (h *branchesService) determineCommitBranch(
 			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsAmbiguousBranch; current = current.Children[0] {
 			}
 		}
+
 		if branch != nil {
 			for ; current != nil && current != c.FirstParent; current = current.FirstParent {
 				current.Branch = branch
@@ -225,7 +231,7 @@ func (h *branchesService) hasChildrenPriorityBranch(commit *Commit, branchesChil
 	}
 
 	for _, c := range commit.Children {
-		childBranches := branchesChildren[c.Branch.Name]
+		childBranches := branchesChildren[c.Branch.BaseName()]
 		if len(childBranches) == 0 {
 			// This child branch has no children branches
 			continue
@@ -237,7 +243,7 @@ func (h *branchesService) hasChildrenPriorityBranch(commit *Commit, branchesChil
 			if c == cc {
 				continue
 			}
-			if !utils.StringsContains(childBranches, cc.Branch.Name) {
+			if !utils.StringsContains(childBranches, cc.Branch.BaseName()) {
 				// cc.Branch is not a child of c.Branch
 				assumeIsParent = false
 				break
@@ -350,8 +356,8 @@ func (h *branchesService) isMergedDeletedBranchTip(repo *Repo, c *Commit) *Branc
 }
 
 func (h *branchesService) hasOneChild(repo *Repo, c *Commit) *Branch {
-	if len(c.Branches) == 0 && len(c.Children) == 1 {
-		// Commit has no branch, but it has one child commit, use that child commit branch
+	if len(c.Children) == 1 && c.Children[0].Branch != nil {
+		// Commit has one child commit, use that child commit branch
 		return c.Children[0].Branch
 	}
 	return nil
@@ -385,9 +391,31 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 	}
 }
 
+func (h *branchesService) removeUnusedAmbiguousBranches(repo *Repo) {
+	ambiguousBranches := lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v.IsAmbiguousBranch })
+	for _, b := range ambiguousBranches {
+		tip := repo.CommitByID(b.TipID)
+
+		// Assume the ambiguous branch can be removed if all commits have been set to other branches
+		canBeRemoved := true
+		for c := tip; c != nil && c.Id != b.BottomID; c = c.FirstParent {
+			if c.Branch == b {
+				// The commit still belongs to the ambiguous branch, lets keep it
+				canBeRemoved = false
+				break
+			}
+			b.TipID = c.Id // Moving the tip down
+		}
+		if canBeRemoved {
+			// Removing the unused ambiguous branch
+			repo.Branches = lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v != b })
+		}
+	}
+}
+
 func (h *branchesService) determineBranchHierarchy(repo *Repo, branchesChildren map[string][]string) {
 	for _, b := range repo.Branches {
-		bs, _ := branchesChildren[b.Name]
+		bs := branchesChildren[b.Name]
 		b.IsSetAsParent = len(bs) > 0
 
 		if b.BottomID == "" {

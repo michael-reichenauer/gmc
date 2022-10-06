@@ -161,6 +161,15 @@ func MustJsonMarshal(v interface{}) []byte {
 	return bytes
 }
 
+func PrettyString(v interface{}) string {
+	js, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return fmt.Sprintf("Error %s", err)
+	}
+
+	return string(js)
+}
+
 func MustJsonUnmarshal(bytes []byte, v interface{}) {
 	err := json.Unmarshal(bytes, v)
 	if err != nil {

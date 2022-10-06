@@ -74,6 +74,18 @@ func (t *Branch) IsAncestorBranch(name string) bool {
 	return false
 }
 
+func (t *Branch) IsSame(branch *Branch) bool {
+	return t == branch || t.ParentBranch == branch || branch.ParentBranch == t
+}
+
+func (t *Branch) BaseName() string {
+	if t.IsRemote && t.LocalName != "" {
+		return t.LocalName
+	}
+
+	return t.Name
+}
+
 func (t *Branch) GetAncestorsAndSelf() []*Branch {
 	var branches []*Branch
 	for b := t; b != nil; b = b.ParentBranch {
