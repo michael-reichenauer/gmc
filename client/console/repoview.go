@@ -95,7 +95,7 @@ func (t *RepoView) NotifyChanged() {
 }
 
 func (t *RepoView) ShowLineAtTop(line int) {
-	t.view.ShowLineAtTop(line)
+	t.view.ShowLineAtTop(line, false)
 }
 
 func (t *RepoView) viewPageData(viewPort cui.ViewPage) cui.ViewText {
