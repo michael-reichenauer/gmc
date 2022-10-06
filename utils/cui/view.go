@@ -136,7 +136,7 @@ type View interface {
 	ScrollHorizontal(scroll int)
 	ScrollVertical(scroll int)
 	SetCurrentLine(line int)
-	ShowLineAtTop(line int)
+	ShowLineAtTop(line int, forceScroll bool)
 	ShowFrame(isShow bool)
 }
 
@@ -464,7 +464,12 @@ func (h *view) Size() (int, int) {
 	return h.guiView.Size()
 }
 
-func (h *view) ShowLineAtTop(line int) {
+func (h *view) ShowLineAtTop(line int, forceScroll bool) {
+	if !forceScroll && line >= h.firstIndex && line <= h.firstIndex+h.linesCount {
+		// No need to scroll
+		return
+	}
+
 	h.ScrollVertical(line - h.firstIndex)
 }
 

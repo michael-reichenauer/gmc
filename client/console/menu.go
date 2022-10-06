@@ -5,7 +5,6 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/thoas/go-funk"
 )
@@ -359,7 +358,7 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	branches := t.vm.GetAllBranches(false)
 	for _, b := range branches {
-		if !b.IsGitBranch || git.IsMainBranch(b.DisplayName) || b.IsCurrent {
+		if !b.IsGitBranch || b.IsMainBranch || b.IsCurrent {
 			// Do not delete main branch
 			continue
 		}

@@ -6,17 +6,17 @@ import (
 )
 
 var branchColors = []cui.Color{
+	cui.CMagenta,
 	cui.CRed,
 	cui.CBlue,
 	cui.CYellow,
 	cui.CGreen,
 	cui.CCyan,
+	cui.CMagentaDk,
 	cui.CRedDk,
 	cui.CGreenDk,
 	cui.CYellowDk,
 	//ui.CBlueDk,
-	cui.CMagenta,
-	cui.CMagentaDk,
 	cui.CCyanDk,
 }
 

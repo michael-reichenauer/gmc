@@ -159,6 +159,7 @@ type Branch struct {
 	IsGitBranch          bool
 	IsCurrent            bool
 	IsSetAsParent        bool
+	IsMainBranch         bool
 	TipID                string
 	HasLocalOnly         bool
 	HasRemoteOnly        bool

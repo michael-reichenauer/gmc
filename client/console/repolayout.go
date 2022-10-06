@@ -15,11 +15,11 @@ const (
 )
 
 type repoLayout struct {
-	repoGraph *repoGraph
+	repoGraph *RepoGraph
 }
 
 func newRepoLayout() *repoLayout {
-	return &repoLayout{repoGraph: newRepoGraph()}
+	return &repoLayout{repoGraph: NewRepoGraph()}
 }
 
 func (t *repoLayout) getPageLines(
@@ -92,30 +92,7 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, time
 }
 
 func (t *repoLayout) writeGraph(sb *strings.Builder, row api.GraphRow) {
-	for i := 0; i < len(row); i++ {
-		// Normal branch color
-		bColor := cui.Color(row[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
-
-		cColor := bColor
-		if row[i].Connect == api.BPass &&
-			row[i].PassColor != 0 &&
-			row[i].PassColor != api.Color(cui.CWhite) {
-			cColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if row[i].Connect.Has(api.BPass) {
-			cColor = cui.CWhite
-		}
-		sb.WriteString(cui.ColorRune(cColor, t.repoGraph.graphConnectRune(row[i].Connect)))
-
-		if row[i].Branch == api.BPass &&
-			row[i].PassColor != 0 &&
-			row[i].PassColor != api.Color(cui.CWhite) {
-			bColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if row[i].Branch == api.BPass {
-			bColor = cui.CWhite
-		}
-
-		sb.WriteString(cui.ColorRune(bColor, t.repoGraph.graphBranchRune(row[i].Branch)))
-	}
+	t.repoGraph.WriteGraph(sb, row)
 }
 
 func (t *repoLayout) writeCurrentMarker(sb *strings.Builder, c api.Commit) {

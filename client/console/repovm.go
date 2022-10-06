@@ -356,13 +356,13 @@ func (t *repoVM) ScrollToBranch(name string) {
 		if !ok {
 			return
 		}
-		log.Infof("Branch %v", branch)
-		tip, i, ok := lo.FindIndexOf(t.repo.Commits, func(v api.Commit) bool { return v.ID == branch.TipID })
+
+		_, i, ok := lo.FindIndexOf(t.repo.Commits, func(v api.Commit) bool { return v.ID == branch.TipID })
 		if !ok {
 			return
 		}
-		log.Infof("Tip index #%d, %v", i, tip)
-		t.repoViewer.ShowLineAtTop(i - 4)
+
+		t.repoViewer.ShowLineAtTop(i)
 	})
 }
 

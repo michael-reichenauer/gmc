@@ -2,10 +2,9 @@ package console
 
 import (
 	"fmt"
+
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/tests"
-	"testing"
 )
 
 type progressMock struct {
@@ -213,33 +212,3 @@ func (t uiMock) Quit() {
 // 	fmt.Printf("%s\n", strings.Join(vp.lines, "\n"))
 // }
 //
-// func TestViewAcs(t *testing.T) {
-// 	tests.ManualTest(t)
-// 	// wf:= tests.CreateTempFolder()
-// 	// defer tests.CleanTemp()
-//
-// 	uim := newUIMock()
-// 	viewer := newViewerMock(uim, func() { uim.Close() })
-// 	viewRepo := newViewRepoMock()
-// 	vm := newRepoVM(uim, viewer, viewRepo)
-// 	vm.startRepoMonitor()
-// 	defer vm.close()
-// 	vm.triggerRefresh()
-// 	uim.Run()
-// 	vp, _ := vm.GetRepoPage(cui.ViewPage{Height: 10050, Width: 80})
-// 	fmt.Printf("%s\n", strings.Join(vp.lines, "\n"))
-// }
-
-func TestViewAcst(t *testing.T) {
-	tests.ManualTest(t)
-	// cs := config.NewConfig("0.0", "c:/code/AcmAcs")
-	// m := &mock{uiWork: make(chan func())}
-	// vm := newRepoVM(m, nil, cs, "c:/code/AcmAcs")
-	// vm.startRepoMonitor()
-	// vm.triggerRefresh()
-	// for f := range m.uiWork {
-	// 	f()
-	// }
-	// vd, _ := vm.GetRepoPage(ui.ViewPage{Height: 20, Width: 120})
-	// fmt.Printf("%s\n", strings.Join(vd.lines, "\n"))
-}

@@ -1,13 +1,14 @@
-package gitrepo
+package augmented
 
 import (
 	"context"
-	"github.com/fsnotify/fsnotify"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/fsnotify/fsnotify"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type Ignorer interface {
