@@ -904,12 +904,12 @@ func (t *ViewRepoService) SetAsParentBranch(name string) error {
 		return fmt.Errorf("parent branch is not a ambiguous branch %q", b.ParentBranch.Name)
 	}
 
-	parentName := name
+	parentName := b.BaseName()
 	otherChildren := lo.Filter(b.ParentBranch.AmbiguousBranches, func(v *augmented.Branch, _ int) bool {
-		return v.Name != name
+		return v.BaseName() != parentName
 	})
 	childNames := lo.Map(otherChildren, func(v *augmented.Branch, _ int) string {
-		return v.Name
+		return v.BaseName()
 	})
 
 	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
