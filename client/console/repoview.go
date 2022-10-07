@@ -55,6 +55,7 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
+	view.SetKey('m', t.showContextMenu)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
 	view.SetKey(gocui.KeyCtrlD, t.vm.showSelectedCommitDiff)
 	view.SetKey(gocui.KeyEnter, t.vm.showCommitDetails)
@@ -72,7 +73,6 @@ func (t *RepoView) newView() cui.View {
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
-	view.SetKey('m', t.showContextMenu)
 	view.SetKey(gocui.KeyEsc, t.quit)
 	view.SetKey(gocui.KeyCtrlC, t.ui.Quit)
 
@@ -154,7 +154,7 @@ func (t *RepoView) showCommitBranchesMenu() {
 func (t *RepoView) showContextMenu() {
 	vp := t.view.ViewPage()
 	menu := t.menuService.getContextMenu(vp.CurrentLine)
-	menu.Show(11, vp.CurrentLine-vp.FirstLine)
+	menu.Show(40, 0)
 }
 
 func (t *RepoView) showContextMenuAt(x int, y int) {
