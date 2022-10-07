@@ -47,9 +47,20 @@ func (t *menuView) show(bounds Rect) {
 	t.SetKey(gocui.KeyEnter, t.onEnter)
 	t.SetKey(gocui.KeyArrowLeft, t.onArrowLeft)
 	t.SetKey(gocui.KeyArrowRight, t.onSubItem)
+
 	t.Show(Bounds(Rect{X: t.bounds.X, Y: t.bounds.Y, W: t.bounds.W, H: t.bounds.H}))
+	t.DeleteKey(gocui.KeyArrowUp)
+	t.DeleteKey(gocui.KeyArrowDown)
+	t.SetKey(gocui.KeyArrowUp, t.onArrowUp)
+	t.SetKey(gocui.KeyArrowDown, t.onArrowDown)
 	t.SetCurrentView()
 	t.NotifyChanged()
+
+	t.ui.Post(func() {
+		if t.items[0].isSeparator {
+			t.onArrowDown()
+		}
+	})
 }
 
 func (t *menuView) viewData(viewPort ViewPage) ViewText {
@@ -209,13 +220,37 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 	extraWidth := t.marginsWidth + t.keyWidth + t.moreWidth
 	text := utils.Text(item.Text, width-extraWidth)
 	if item.isSeparator {
-		text = strings.Repeat("─", width-extraWidth)
+		t := ""
+		if len(item.Text) > 0 {
+			t = fmt.Sprintf(" %s ", item.Text)
+		}
+		separator := fmt.Sprintf("──%s%s", t, strings.Repeat("─", width-extraWidth-2-len(t)))
+		text = Dark(separator)
 	}
 	return fmt.Sprintf("%s%s%s", text, key, more)
 }
 
+func (t *menuView) onArrowUp() {
+	t.OnKeyArrowUp()
+
+	// If current item is separator, step again
+	vp := t.ViewPage()
+	if t.items[vp.CurrentLine].isSeparator {
+		t.onArrowUp()
+	}
+}
+
+func (t *menuView) onArrowDown() {
+	t.OnKeyArrowDown()
+
+	// If current item is separator, step again
+	vp := t.ViewPage()
+	if t.items[vp.CurrentLine].isSeparator {
+		t.onArrowDown()
+	}
+}
+
 func (t *menuView) onArrowLeft() {
-	log.Infof("on arror left")
 	if t.parent == nil {
 		// No parent, do not close main menu on left (use esc)
 		return

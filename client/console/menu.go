@@ -22,6 +22,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	log.Infof(">")
 	defer log.Infof("<")
 	menu := t.ui.NewMenu("")
+	menu.Add(cui.MenuSeparator(""))
 	c := t.vm.repo.Commits[currentLineIndex]
 	b := t.vm.repo.Branches[c.BranchIndex]
 	hasBranchItems := false
@@ -39,7 +40,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		}})
 	}
 	if hasBranchItems {
-		menu.Add(cui.SeparatorMenuItem)
+		menu.Add(cui.MenuSeparator(""))
 	}
 
 	menu.Add(cui.MenuItem{Text: "Show Branch", SubItemsFunc: func() []cui.MenuItem {
@@ -50,7 +51,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getHideBranchMenuItems()
 	}})
 
-	menu.Add(cui.SeparatorMenuItem)
+	menu.Add(cui.MenuSeparator(""))
 
 	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "Ctrl-D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
@@ -75,7 +76,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getMergeMenuItems()
 	}})
 
-	menu.Add(cui.SeparatorMenuItem)
+	menu.Add(cui.MenuSeparator("Repos"))
 
 	menu.Add(cui.MenuItem{Text: "Open Repo", Title: "Open", SubItemsFunc: func() []cui.MenuItem {
 		return t.vm.repoViewer.OpenRepoMenuItems()
@@ -121,7 +122,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 	}
 
 	if len(items) > 0 {
-		items = append(items, cui.SeparatorMenuItem)
+		items = append(items, cui.MenuSeparator(""))
 	}
 
 	items = append(items, cui.MenuItem{Text: "Latest Branches", SubItemsFunc: func() []cui.MenuItem {
@@ -191,7 +192,7 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 		items = append(items, switchItem)
 	}
 
-	items = append(items, cui.SeparatorMenuItem)
+	items = append(items, cui.MenuSeparator(""))
 
 	items = append(items, cui.MenuItem{Text: "Latest Branches", SubItemsFunc: func() []cui.MenuItem {
 		var activeSubItems []cui.MenuItem
@@ -293,7 +294,7 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 
 	// Add separator between current and other branches
 	if len(items) > 0 && len(otherItems) > 0 {
-		items = append(items, cui.SeparatorMenuItem)
+		items = append(items, cui.MenuSeparator(""))
 	}
 
 	items = append(items, otherItems...)
@@ -327,7 +328,7 @@ func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 
 	// Add separator between current and other branches
 	if len(items) > 0 && len(otherItems) > 0 {
-		items = append(items, cui.SeparatorMenuItem)
+		items = append(items, cui.MenuSeparator(""))
 	}
 
 	items = append(items, otherItems...)

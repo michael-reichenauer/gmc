@@ -135,6 +135,8 @@ type View interface {
 	Close()
 	ScrollHorizontal(scroll int)
 	ScrollVertical(scroll int)
+	OnKeyArrowUp()
+	OnKeyArrowDown()
 	SetCurrentLine(line int)
 	ShowLineAtTop(line int, forceScroll bool)
 	ShowFrame(isShow bool)
@@ -229,8 +231,8 @@ func (h *view) Show(bf BoundFunc) {
 		h.guiView.Editor = gocui.EditorFunc(h.textEditor)
 	}
 	if !h.properties.IsEditable {
-		h.SetKey(gocui.KeyArrowUp, h.onKeyArrowUp)
-		h.SetKey(gocui.KeyArrowDown, h.onKeyArrowDown)
+		h.SetKey(gocui.KeyArrowUp, h.OnKeyArrowUp)
+		h.SetKey(gocui.KeyArrowDown, h.OnKeyArrowDown)
 		h.SetKey(gocui.KeySpace, h.onKeyPageDown)
 	}
 	h.guiView.Wrap = h.properties.IsWrap
@@ -473,7 +475,7 @@ func (h *view) ShowLineAtTop(line int, forceScroll bool) {
 	h.ScrollVertical(line - h.firstIndex)
 }
 
-func (h *view) onKeyArrowUp() {
+func (h *view) OnKeyArrowUp() {
 	if h.properties.HideCurrentLineMarker {
 		h.ScrollVertical(-1)
 		return
@@ -481,7 +483,7 @@ func (h *view) onKeyArrowUp() {
 	h.moveVertically(-1)
 }
 
-func (h *view) onKeyArrowDown() {
+func (h *view) OnKeyArrowDown() {
 	if h.properties.HideCurrentLineMarker {
 		h.ScrollVertical(1)
 		return
