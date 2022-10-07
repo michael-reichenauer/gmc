@@ -141,16 +141,13 @@ func (t *ViewRepoService) Commit(Commit string) error {
 }
 
 func (t *ViewRepoService) BranchColor(branch *branch) cui.Color {
-	log.Infof("Branch %q", branch.name)
 	if branch.parentBranch == nil {
 		// branch has no parent or parent is remote of this branch, lets use it
-		log.Infof("No parent branch %q", branch.name)
 		return t.branchNameColor(branch.displayName, 0)
 	}
 
 	if branch.remoteName == branch.parentBranch.name {
 		// Parent is remote of this branch, lets use parent color
-		log.Infof("Parent is remote branch %q", branch.name)
 		return t.BranchColor(branch.parentBranch)
 	}
 
@@ -161,8 +158,6 @@ func (t *ViewRepoService) BranchColor(branch *branch) cui.Color {
 		// branch got same color as parent, lets change branch color
 		color = t.branchNameColor(branch.displayName, 1)
 	}
-
-	log.Infof("Branch %q %q %d %d", branch.name, branch.parentBranch.displayName, color, parentColor)
 
 	return color
 }
