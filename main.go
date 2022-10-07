@@ -98,7 +98,7 @@ func main() {
 	// Start client cmd ui
 	ui := cui.NewCommandUI()
 	ui.Run(func() {
-		log.Infof("Show main window %s", st)
+		log.Debugf("Show main window %s", st)
 		mainWindow := console.NewMainWindow(ui)
 		mainWindow.Show(rpcServer.URL, *workingDirFlag)
 		//mainWindow.Show(rpcServer.URL, "/")

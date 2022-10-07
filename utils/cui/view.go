@@ -246,7 +246,7 @@ func (h *view) Show(bf BoundFunc) {
 	h.SetKey(gocui.MouseLeft, h.onMouseLeftClick)
 	h.SetKey(gocui.MouseRight, h.onMouseRightClick)
 
-	log.Eventf("ui-view-show", h.Properties().Name)
+	// log.Eventf("ui-view-show", h.Properties().Name)
 	if h.properties.OnLoad != nil {
 		// Let the actual view handle load to initialise view data
 		h.properties.OnLoad()
