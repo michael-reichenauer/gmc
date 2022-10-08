@@ -94,7 +94,7 @@ func (t *menuService) getSwitchMenu() cui.Menu {
 
 func (t *menuService) getMergeMenu(name string) cui.Menu {
 	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
-	menu.AddItems(t.getSwitchBranchMenuItems())
+	menu.AddItems(t.getMergeMenuItems())
 	return menu
 }
 
