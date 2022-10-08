@@ -1,8 +1,13 @@
-name: gmc build and release
+name: Build and release
 
 on:
+  push:
+    branches: [master, develop, branches/cidi]
+  pull_request:
+    branches: [master, develop, branches/cidi]
+
   # Allows you to run this workflow manually from the Actions tab
-  workflow_dispatch:
+  # workflow_dispatch:
 
 jobs:
   build_and_deploy_job:
@@ -22,3 +27,14 @@ jobs:
         run: |
           echo Building ...
           ./build
+
+      - name: Create Release
+          id: create_release
+          uses: actions/create-release@v1
+          env:
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          with:
+            tag_name: vxxx
+            release_name: Release XXName
+            draft: false
+            prerelease: true
