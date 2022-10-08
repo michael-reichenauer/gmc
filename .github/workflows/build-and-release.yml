@@ -28,8 +28,13 @@ jobs:
           echo Building ...
           ./build
           echo Version: $(./gmc_linux -version)
+
       - name: version
         run: echo "::set-output name=version::$(./gmc_linux -version -version)"
+        id: version
+
+      - name: testver
+        run: echo ${{ steps.version.outputs.version }}
 
       - name: Create Release
         id: create_release
@@ -38,6 +43,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: v${{ steps.version.outputs.version }}
-          release_name: Release ${{ steps.version.outputs.version }}
+          release_name: Version ${{ steps.version.outputs.version }}
           draft: false
           prerelease: true
