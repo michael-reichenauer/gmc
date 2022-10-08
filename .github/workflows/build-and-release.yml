@@ -28,7 +28,8 @@ jobs:
           echo Building ...
           ./build
           VERSION="$(./gmc_linux -version)"
-          echo Version: %VERSION
+          echo Version: $VERSION
+          echo Version2: $(./gmc_linux -version)
 
       # - name: Create Release
       #   id: create_release
