@@ -92,6 +92,12 @@ func (t *menuService) getSwitchMenu() cui.Menu {
 	return menu
 }
 
+func (t *menuService) getMergeMenu(name string) cui.Menu {
+	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
+	menu.AddItems(t.getSwitchBranchMenuItems())
+	return menu
+}
+
 func (t *menuService) getShowHideBranchesMenu() cui.Menu {
 	menu := t.ui.NewMenu("Hide Branch")
 	menu.AddItems(t.getHideBranchMenuItems())

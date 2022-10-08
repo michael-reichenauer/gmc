@@ -72,6 +72,8 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey('U', t.vm.PullCurrentBranch)
 	view.SetKey('s', t.showSwitchesMenu)
 	view.SetKey('S', t.showSwitchesMenu)
+	view.SetKey('m', t.showMergeMenu)
+	view.SetKey('M', t.showMergeMenu)
 
 	view.SetKey('f', t.vm.ShowSearchView)
 	view.SetKey('F', t.vm.ShowSearchView)
@@ -140,6 +142,13 @@ func (t *RepoView) showSwitchesMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 	menu := t.menuService.getSwitchMenu()
+	menu.Show(11, line-vp.FirstLine)
+}
+
+func (t *RepoView) showMergeMenu() {
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	menu := t.menuService.getMergeMenu(t.vm.repo.CurrentBranchName)
 	menu.Show(11, line-vp.FirstLine)
 }
 
