@@ -57,7 +57,7 @@ func (t *menuView) show(bounds Rect) {
 	t.NotifyChanged()
 
 	t.ui.Post(func() {
-		if t.items[0].isSeparator {
+		if len(t.items) > 0 && t.items[0].isSeparator {
 			t.onArrowDown()
 		}
 	})
@@ -224,7 +224,7 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 		if len(item.Text) > 0 {
 			t = fmt.Sprintf(" %s ", item.Text)
 		}
-		separator := fmt.Sprintf("──%s%s", t, strings.Repeat("─", width-extraWidth-2-len(t)))
+		separator := fmt.Sprintf("──%s%s", t, strings.Repeat("─", utils.Max(0, width-extraWidth-2-len(t))))
 		text = Dark(separator)
 	}
 	return fmt.Sprintf("%s%s%s", text, key, more)

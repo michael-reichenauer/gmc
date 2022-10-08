@@ -55,11 +55,11 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
+	view.SetKey(gocui.KeyEnter, t.showContextMenu)
 	view.SetKey('m', t.showContextMenu)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
 	view.SetKey(gocui.KeyCtrlD, t.vm.showSelectedCommitDiff)
 	view.SetKey('d', t.vm.showSelectedCommitDiff)
-	view.SetKey(gocui.KeyEnter, t.vm.showCommitDetails)
 	view.SetKey(gocui.KeyCtrlS, t.vm.showCommitDialog)
 	view.SetKey('c', t.vm.showCommitDialog)
 
