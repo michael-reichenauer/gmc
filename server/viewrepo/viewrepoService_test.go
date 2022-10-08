@@ -44,6 +44,7 @@ func TestCurrentRepo(t *testing.T) {
 
 func TestSpecial(t *testing.T) {
 	//tests.ManualTest(t)
+	// /workspaces/Dependitor
 	repoPath := ""
 
 	repoService := augmented.NewRepoService(nil, repoPath)
@@ -62,7 +63,9 @@ func TestSpecial(t *testing.T) {
 	for _, c := range viewRepo.Commits {
 		var sb strings.Builder
 		graph.WriteGraph(&sb, c.graph)
-		t.Logf("%s %s %s", sb.String(), c.SID, c.Subject)
+		tt := c.AuthorTime.Format("2006-01-02 15:04")
+		tt = tt[2:]
+		t.Logf("%s %s %s %s %s", sb.String(), c.SID, utils.Text(c.Subject, 30), utils.Text(c.Author, 10), utils.Text(tt, 14))
 	}
 }
 

@@ -2,11 +2,12 @@ package git
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/timer"
 	"io/ioutil"
 	"os/exec"
 	"strings"
+
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
 type gitCommander interface {
@@ -34,7 +35,7 @@ func (t *gitCmd) ReadFile(path string) (string, error) {
 
 func (t *gitCmd) Git(args ...string) (string, error) {
 	argsText := strings.Join(args, " ")
-	log.Infof("Cmd: git %s (%s) ...", argsText, t.workingDir)
+	log.Debugf("Cmd: git %s (%s) ...", argsText, t.workingDir)
 	// Get the git cmd output
 	st := timer.Start()
 	c := exec.Command("git", args...)

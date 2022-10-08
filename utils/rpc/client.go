@@ -39,7 +39,7 @@ func NewClient() *Client {
 }
 
 func (t *Client) Connect(uri string) error {
-	log.Infof("Connect to %q ...", uri)
+	log.Debugf("Connect to %q ...", uri)
 	// if t.Latency != 0 {
 	// 	time.Sleep(3 * t.Latency)
 	// }

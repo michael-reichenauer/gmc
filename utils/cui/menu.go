@@ -1,6 +1,11 @@
 package cui
 
-var SeparatorMenuItem = MenuItem{isSeparator: true}
+var menuSeparator = MenuItem{isSeparator: true}
+
+func MenuSeparator(text string) MenuItem {
+	return MenuItem{isSeparator: true, Text: text}
+
+}
 
 type MenuItem struct {
 	Text         string
