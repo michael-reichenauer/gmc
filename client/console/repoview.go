@@ -56,21 +56,25 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().HasFrame = false
 
 	view.SetKey(gocui.KeyEnter, t.showContextMenu)
-	view.SetKey('m', t.showContextMenu)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
-	view.SetKey(gocui.KeyCtrlD, t.vm.showSelectedCommitDiff)
-	view.SetKey('d', t.vm.showSelectedCommitDiff)
-	view.SetKey(gocui.KeyCtrlS, t.vm.showCommitDialog)
-	view.SetKey('c', t.vm.showCommitDialog)
 
-	view.SetKey(gocui.KeyCtrlB, t.vm.showCreateBranchDialog)
-	view.SetKey(gocui.KeyCtrlP, t.vm.PushCurrentBranch)
+	view.SetKey('d', t.vm.showSelectedCommitDiff)
+	view.SetKey('D', t.vm.showSelectedCommitDiff)
+	view.SetKey(gocui.KeyCtrlD, t.vm.showSelectedCommitDiff)
+	view.SetKey('c', t.vm.showCommitDialog)
+	view.SetKey('C', t.vm.showCommitDialog)
+
+	view.SetKey('b', t.vm.showCreateBranchDialog)
+	view.SetKey('B', t.vm.showCreateBranchDialog)
 	view.SetKey('p', t.vm.PushCurrentBranch)
-	view.SetKey(gocui.KeyCtrlU, t.vm.PullCurrentBranch)
+	view.SetKey('P', t.vm.PushCurrentBranch)
 	view.SetKey('u', t.vm.PullCurrentBranch)
-	view.SetKey(gocui.KeyTab, t.nextView)
-	view.SetKey(gocui.KeyCtrlF, t.showSearchView)
-	view.SetKey('f', t.showSearchView)
+	view.SetKey('U', t.vm.PullCurrentBranch)
+	view.SetKey('s', t.showSwitchesMenu)
+	view.SetKey('S', t.showSwitchesMenu)
+
+	view.SetKey('f', t.vm.ShowSearchView)
+	view.SetKey('F', t.vm.ShowSearchView)
 
 	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
 	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)
@@ -132,6 +136,13 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
+func (t *RepoView) showSwitchesMenu() {
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	menu := t.menuService.getSwitchMenu()
+	menu.Show(11, line-vp.FirstLine)
+}
+
 // Called by left-arrow, to show a hide branches menu
 func (t *RepoView) showHideBranchesMenu() {
 	vp := t.view.ViewPage()
@@ -182,7 +193,7 @@ func (t *RepoView) mouseLeft(x int, y int) {
 	menu.Show(x+3, y+2)
 }
 
-func (t *RepoView) showSearchView() {
+func (t *RepoView) ShowSearchView() {
 	if t.searchView != nil {
 		return
 	}

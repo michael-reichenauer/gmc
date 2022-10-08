@@ -27,10 +27,10 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 
 	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
 	menu.Add(cui.MenuItem{Text: "Show Details ...", Action: func() { t.vm.showCommitDetails() }})
-	menu.Add(cui.MenuItem{Text: "Show Diff ...", Key: "d", Action: func() {
+	menu.Add(cui.MenuItem{Text: "Show Diff ...", Key: "D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
-	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "c", Action: t.vm.showCommitDialog})
+	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
 	menu.Add(cui.MenuSeparator("Branches"))
 	hasBranchItems := false
 	if b.IsSetAsParent {
@@ -58,9 +58,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getHideBranchMenuItems()
 	}})
 
-	menu.Add(cui.MenuSeparator(""))
-
-	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "b", Action: t.vm.showCreateBranchDialog})
+	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
 	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getDeleteBranchMenuItems()
 	}})
@@ -70,14 +68,13 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.MenuItem{Text: "Pull/Update", Title: "Update", SubItemsFunc: func() []cui.MenuItem {
 		return t.getPullBranchMenuItems()
 	}})
-
-	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", Key: "s", SubItemsFunc: func() []cui.MenuItem {
+	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", Key: "S", SubItemsFunc: func() []cui.MenuItem {
 		return t.getSwitchBranchMenuItems()
 	}})
-
 	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "", SubItemsFunc: func() []cui.MenuItem {
 		return t.getMergeMenuItems()
 	}})
+	menu.Add(cui.MenuItem{Text: "Search ...", Key: "F", Action: t.vm.ShowSearchView})
 
 	menu.Add(cui.MenuSeparator("Repos"))
 
@@ -86,6 +83,12 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	}})
 
 	// menu.Add(t.vm.mainService.MainMenuItem())
+	return menu
+}
+
+func (t *menuService) getSwitchMenu() cui.Menu {
+	menu := t.ui.NewMenu("Switch/Checkout")
+	menu.AddItems(t.getSwitchBranchMenuItems())
 	return menu
 }
 
@@ -277,7 +280,7 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasLocalOnly {
-		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-P", Action: func() {
+		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "P", Action: func() {
 			t.vm.PushBranch(current.Name)
 		}}
 		items = append(items, pushItem)
@@ -311,7 +314,7 @@ func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 
 	// Add current branch if it has commits that can be pulled
 	if ok && current.HasRemoteOnly {
-		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "Ctrl-U", Action: func() {
+		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "U", Action: func() {
 			t.vm.PullCurrentBranch()
 		}}
 		items = append(items, pushItem)

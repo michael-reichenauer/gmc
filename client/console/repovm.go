@@ -26,6 +26,7 @@ type RepoViewer interface {
 	NotifyChanged()
 	ShowLineAtTop(line int)
 	OpenRepoMenuItems() []cui.MenuItem
+	ShowSearchView()
 }
 
 type repoVM struct {
@@ -257,6 +258,10 @@ func (t *repoVM) showCreateBranchDialog() {
 func (t *repoVM) showCommitDiff(commitID string) {
 	diffView := NewDiffView(t.ui, t.api, t.repoID, commitID)
 	diffView.Show()
+}
+
+func (t *repoVM) ShowSearchView() {
+	t.repoViewer.ShowSearchView()
 }
 
 func (t *repoVM) showSelectedCommitDiff() {
