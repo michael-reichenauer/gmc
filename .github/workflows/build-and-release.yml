@@ -28,13 +28,13 @@ jobs:
           echo Building ...
           ./build
 
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: vxxx
-          release_name: Release XXName
-          draft: false
-          prerelease: true
+      # - name: Create Release
+      #   id: create_release
+      #   uses: actions/create-release@v1
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #   with:
+      #     tag_name: vxxx
+      #     release_name: Release XXName
+      #     draft: false
+      #     prerelease: true
