@@ -16,6 +16,6 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v3
 
-    - name: Build & Test
-      run: |
-        echo Building ...
+      - name: Build & Test
+        run: |
+          echo Building ...
