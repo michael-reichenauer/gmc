@@ -27,17 +27,15 @@ jobs:
         run: |
           echo Building ...
           ./build
-          VERSION="$(./gmc_linux -version)"
-          echo Version: $VERSION
           echo Version2: $(./gmc_linux -version)
 
-      # - name: Create Release
-      #   id: create_release
-      #   uses: actions/create-release@v1
-      #   env:
-      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      #   with:
-      #     tag_name: vxxx
-      #     release_name: Release XXName
-      #     draft: false
-      #     prerelease: true
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v$(./gmc_linux -version)
+          release_name: Release $(./gmc_linux -version)
+          draft: false
+          prerelease: true
