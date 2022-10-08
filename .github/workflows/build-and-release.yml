@@ -15,7 +15,6 @@ jobs:
       - name: Checkout branch
         uses: actions/checkout@v3
 
-      # Setup Go
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
@@ -24,3 +23,4 @@ jobs:
       - name: Build & Test
         run: |
           echo Building ...
+          ./build
