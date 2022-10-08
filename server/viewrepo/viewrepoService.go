@@ -141,16 +141,13 @@ func (t *ViewRepoService) Commit(Commit string) error {
 }
 
 func (t *ViewRepoService) BranchColor(branch *branch) cui.Color {
-	log.Infof("Branch %q", branch.name)
 	if branch.parentBranch == nil {
 		// branch has no parent or parent is remote of this branch, lets use it
-		log.Infof("No parent branch %q", branch.name)
 		return t.branchNameColor(branch.displayName, 0)
 	}
 
 	if branch.remoteName == branch.parentBranch.name {
 		// Parent is remote of this branch, lets use parent color
-		log.Infof("Parent is remote branch %q", branch.name)
 		return t.BranchColor(branch.parentBranch)
 	}
 
@@ -161,8 +158,6 @@ func (t *ViewRepoService) BranchColor(branch *branch) cui.Color {
 		// branch got same color as parent, lets change branch color
 		color = t.branchNameColor(branch.displayName, 1)
 	}
-
-	log.Infof("Branch %q %q %d %d", branch.name, branch.parentBranch.displayName, color, parentColor)
 
 	return color
 }
@@ -469,7 +464,7 @@ func (t *ViewRepoService) monitorViewModelRoutine(ctx context.Context) {
 				return
 			}
 			if change.IsStarting {
-				log.Infof("Send repo start change ...")
+				log.Debugf("Send repo start change ...")
 				select {
 				case <-ctx.Done():
 					return
@@ -493,7 +488,7 @@ func (t *ViewRepoService) monitorViewModelRoutine(ctx context.Context) {
 
 				break
 			}
-			log.Event("vms-changed-repo")
+			// log.Event("vms-changed-repo")
 			repo = change.Repo
 			t.triggerFreshViewRepo(ctx, repo, branchNames)
 		case request := <-t.showRequests:
@@ -540,7 +535,7 @@ func (t *ViewRepoService) triggerFreshViewRepo(ctx context.Context, repo augment
 		t.storeViewRepo(vRepo)
 		vr := toApiRepo(vRepo)
 		repoChange := api.RepoChange{ViewRepo: vr}
-		log.Infof("Send new view repo event ...")
+		log.Debugf("Send new view repo event ...")
 		select {
 		case <-ctx.Done():
 		default:
@@ -588,7 +583,7 @@ func (t *ViewRepoService) getSearchModel(gRepo augmented.Repo, searchText string
 }
 
 func (t *ViewRepoService) GetViewModel(augRepo augmented.Repo, branchNames []string) *repo {
-	log.Infof("getViewModel")
+	log.Debugf("GetViewModel >")
 	ti := timer.Start()
 	repo := newRepo()
 	repo.augmentedRepo = augRepo

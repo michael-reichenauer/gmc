@@ -109,7 +109,7 @@ func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
 	}
 	if len(recentDirs) > 0 {
 		items = append(items, t.getRecentRepoMenuItems(recentDirs)...)
-		items = append(items, cui.SeparatorMenuItem)
+		items = append(items, cui.MenuSeparator(""))
 	}
 
 	var paths []string

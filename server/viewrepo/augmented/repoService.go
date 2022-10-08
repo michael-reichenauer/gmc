@@ -147,7 +147,7 @@ func (s *repoService) monitorRoutine(ctx context.Context) {
 			// Some time has passed, check if there is a repo or status change event to act on
 			// This is to avoid that several change events in a short interval is batched
 			if change != noChange {
-				log.Infof("waited for %v", change)
+				log.Debugf("waited for %v", change)
 				if change == statusChange && hasRepo {
 					s.triggerStatus(ctx, repo)
 				} else {
@@ -186,11 +186,11 @@ func (s *repoService) monitorRoutine(ctx context.Context) {
 
 		case repo = <-s.repo:
 			// Received new repo, notify listeners
-			log.Infof("Received repo")
+			log.Debugf("Received repo")
 			hasRepo = true
 			select {
 			case s.repoChanges <- RepoChange{Repo: repo}:
-				log.Infof("posted repo")
+				log.Debugf("posted repo")
 			case <-ctx.Done():
 				return
 			}
@@ -257,9 +257,9 @@ func (s *repoService) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 func (s *repoService) internalPostRepo(repo Repo) {
 	select {
 	case s.repo <- repo:
-		log.Infof("Post repo")
+		log.Debugf("Post repo")
 	default:
-		log.Infof("repo channel done")
+		log.Debugf("repo channel done")
 	}
 }
 

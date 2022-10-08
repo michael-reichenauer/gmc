@@ -144,6 +144,7 @@ func (t *logService) parseMessage(lineParts []string) (string, string) {
 		// The subject contains one or more "|", so rejoin these parts into original subject
 		message = strings.Join(lineParts[5:], "|")
 	}
+	message = strings.ReplaceAll(message, "\r", "")
 	lines := strings.Split(message, "\n")
 	return lines[0], message
 }

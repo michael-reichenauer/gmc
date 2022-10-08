@@ -97,15 +97,15 @@ func (t *apiServer) CloseRepo(repoID string, _ api.NoRsp) error {
 }
 
 func (t *apiServer) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
-	log.Infof(">")
-	defer log.Infof("<")
+	log.Debugf(">")
+	defer log.Debugf("<")
 	changesStream, err := t.getStream(repoID)
 	if err != nil {
 		return err
 	}
 
 	var changes []api.RepoChange
-	defer func() { log.Infof("GetRepoChanges: < (%d events)", len(changes)) }()
+	defer func() { log.Debugf("GetRepoChanges: < (%d events)", len(changes)) }()
 
 	// Wait for event or timeout
 	select {

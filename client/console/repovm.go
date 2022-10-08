@@ -12,6 +12,7 @@ import (
 	"github.com/samber/lo"
 )
 
+// repoPage
 type repoPage struct {
 	lines              []string
 	total              int
@@ -25,6 +26,7 @@ type RepoViewer interface {
 	NotifyChanged()
 	ShowLineAtTop(line int)
 	OpenRepoMenuItems() []cui.MenuItem
+	ShowSearchView()
 }
 
 type repoVM struct {
@@ -121,7 +123,7 @@ func (t *repoVM) monitorModelRoutine() {
 		log.Infof("repo event")
 		rc := r
 		t.ui.Post(func() {
-			log.Infof("Repo change event:")
+			log.Debugf("Repo change event:")
 			if progress != nil {
 				log.Debugf("Repo change event: closing previous progress")
 				progress.Close()
@@ -132,7 +134,7 @@ func (t *repoVM) monitorModelRoutine() {
 				progress = t.ui.ShowProgress("Loading repo")
 				return
 			}
-			log.Infof("Repo change event (not starting event)")
+			log.Debugf("Repo change event (not starting event)")
 
 			if rc.Error != nil {
 				log.Warnf("Repo change event: repo error event")
@@ -256,6 +258,10 @@ func (t *repoVM) showCreateBranchDialog() {
 func (t *repoVM) showCommitDiff(commitID string) {
 	diffView := NewDiffView(t.ui, t.api, t.repoID, commitID)
 	diffView.Show()
+}
+
+func (t *repoVM) ShowSearchView() {
+	t.repoViewer.ShowSearchView()
 }
 
 func (t *repoVM) showSelectedCommitDiff() {

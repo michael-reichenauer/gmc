@@ -62,6 +62,11 @@ func (h *autoUpdate) Start() {
 	log.Infof("Stable release urls:\n%v", strings.Join(stabUrls, "\n"))
 	log.Infof("Pre release urls:\n%v", strings.Join(preUrls, "\n"))
 
+	lu, ok := lo.Find(preUrls, func(v string) bool { return strings.Contains(v, "_linux") })
+	if ok {
+		log.Infof("Linux pre release install command:\nsudo wget -q -O /usr/local/bin/gmc %q && sudo chmod +x /usr/local/bin/gmc", lu)
+	}
+
 	if !program.IsRelease {
 		log.Infof("Auto update disabled, release=%v", program.IsRelease)
 		return

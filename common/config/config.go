@@ -111,8 +111,7 @@ func (s *Service) GetConfig() Config {
 
 func (s *Service) GetRepo(path string) Repo {
 	config := s.GetState()
-	log.Infof("Config %#v", config)
-	log.Infof("get repo for %q", path)
+	log.Debugf("Config %#v", config)
 	for _, repo := range config.Repos {
 		if path == repo.Path {
 			if repo.BranchesChildren == nil {

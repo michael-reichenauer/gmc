@@ -55,24 +55,34 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
+	view.SetKey(gocui.KeyEnter, t.showContextMenu)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
+
+	view.SetKey('d', t.vm.showSelectedCommitDiff)
+	view.SetKey('D', t.vm.showSelectedCommitDiff)
 	view.SetKey(gocui.KeyCtrlD, t.vm.showSelectedCommitDiff)
-	view.SetKey(gocui.KeyEnter, t.vm.showCommitDetails)
-	view.SetKey(gocui.KeyCtrlS, t.vm.showCommitDialog)
-	view.SetKey(gocui.KeyCtrlB, t.vm.showCreateBranchDialog)
-	view.SetKey(gocui.KeyCtrlP, t.vm.PushCurrentBranch)
+	view.SetKey('c', t.vm.showCommitDialog)
+	view.SetKey('C', t.vm.showCommitDialog)
+
+	view.SetKey('b', t.vm.showCreateBranchDialog)
+	view.SetKey('B', t.vm.showCreateBranchDialog)
 	view.SetKey('p', t.vm.PushCurrentBranch)
-	view.SetKey(gocui.KeyCtrlU, t.vm.PullCurrentBranch)
-	view.SetKey(gocui.KeyCtrlF, t.showSearchView)
-	view.SetKey(gocui.KeyTab, t.nextView)
-	view.SetKey('f', t.showSearchView)
+	view.SetKey('P', t.vm.PushCurrentBranch)
+	view.SetKey('u', t.vm.PullCurrentBranch)
+	view.SetKey('U', t.vm.PullCurrentBranch)
+	view.SetKey('s', t.showSwitchesMenu)
+	view.SetKey('S', t.showSwitchesMenu)
+	view.SetKey('m', t.showMergeMenu)
+	view.SetKey('M', t.showMergeMenu)
+
+	view.SetKey('f', t.vm.ShowSearchView)
+	view.SetKey('F', t.vm.ShowSearchView)
 
 	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
 	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)
 	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
 	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
-	view.SetKey('m', t.showContextMenu)
 	view.SetKey(gocui.KeyEsc, t.quit)
 	view.SetKey(gocui.KeyCtrlC, t.ui.Quit)
 
@@ -128,6 +138,20 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
+func (t *RepoView) showSwitchesMenu() {
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	menu := t.menuService.getSwitchMenu()
+	menu.Show(11, line-vp.FirstLine)
+}
+
+func (t *RepoView) showMergeMenu() {
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	menu := t.menuService.getMergeMenu(t.vm.repo.CurrentBranchName)
+	menu.Show(11, line-vp.FirstLine)
+}
+
 // Called by left-arrow, to show a hide branches menu
 func (t *RepoView) showHideBranchesMenu() {
 	vp := t.view.ViewPage()
@@ -154,7 +178,7 @@ func (t *RepoView) showCommitBranchesMenu() {
 func (t *RepoView) showContextMenu() {
 	vp := t.view.ViewPage()
 	menu := t.menuService.getContextMenu(vp.CurrentLine)
-	menu.Show(11, vp.CurrentLine-vp.FirstLine)
+	menu.Show(40, 0)
 }
 
 func (t *RepoView) showContextMenuAt(x int, y int) {
@@ -178,7 +202,7 @@ func (t *RepoView) mouseLeft(x int, y int) {
 	menu.Show(x+3, y+2)
 }
 
-func (t *RepoView) showSearchView() {
+func (t *RepoView) ShowSearchView() {
 	if t.searchView != nil {
 		return
 	}
