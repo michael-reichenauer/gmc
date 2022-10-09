@@ -41,11 +41,6 @@ func main() {
 	Echo("Built version:")
 	echoBuiltVersion()
 	EchoLn()
-
-	Echo("Publish url: https://github.com/michael-reichenauer/gmc/releases/new")
-	_ = OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new")
-
-	EchoLn()
 	EchoLn()
 }
 

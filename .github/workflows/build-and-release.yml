@@ -30,7 +30,6 @@ jobs:
           ./build
           echo "::set-output name=version::$(./gmc_linux -version -version)"
           echo Version: $(./gmc_linux -version)
-          echo Version: ${{ steps.build.outputs.version }}
 
       - name: Create Release
         id: create_release
