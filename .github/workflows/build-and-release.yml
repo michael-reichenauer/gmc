@@ -33,6 +33,7 @@ jobs:
 
       - name: Create Release
         id: create_release
+        if: github.ref == 'refs/heads/master'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -44,6 +45,7 @@ jobs:
           body: ${{ github.event.head_commit.message }}
 
       - name: Upload Linux artifact
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -54,6 +56,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload Windows artifact
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
