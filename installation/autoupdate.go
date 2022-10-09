@@ -22,7 +22,7 @@ import (
 const (
 	checkUpdateInterval = 1 * time.Hour
 	releasesUri         = "https://api.github.com/repos/michael-reichenauer/gmc/releases"
-	binNameWindows      = "gmc.exe"
+	binNameWindows      = "gmc_windows"
 	binNameLinux        = "gmc_linux"
 	binNameMac          = "gmc_mac"
 	tmpSuffix           = ".tmp"
