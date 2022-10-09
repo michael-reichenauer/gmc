@@ -12,6 +12,7 @@ func main() {
 	os.Chdir(Root)
 
 	Echo("Cleaning ...")
+	Must(RemoveFile("gmc_windows"))
 	Must(RemoveFile("gmc.exe"))
 	Must(RemoveFile("gmc_linux"))
 	Must(RemoveFile("gmc"))
@@ -26,7 +27,8 @@ func main() {
 	// ("-H=windowsgui" would disable console on windows)
 	Echo("Building Windows gmc.exe ...")
 	env := []string{"GOOS=windows", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
+	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_windows", "main.go"))
+	Must(CopyFile("gmc_windows", "gmc.exe"))
 
 	Echo("Building Linux gmc ...")
 	env = []string{"GOOS=linux", "GOARCH=amd64"}
@@ -40,11 +42,6 @@ func main() {
 
 	Echo("Built version:")
 	echoBuiltVersion()
-	EchoLn()
-
-	Echo("Publish url: https://github.com/michael-reichenauer/gmc/releases/new")
-	_ = OpenBrowser("https://github.com/michael-reichenauer/gmc/releases/new")
-
 	EchoLn()
 	EchoLn()
 }

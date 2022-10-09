@@ -73,6 +73,7 @@ func (h *monitor) addWatchFoldersRecursively(ctx context.Context, path string) {
 
 func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 	gitPath := filepath.Join(h.rootFolderPath, ".git")
+	gitFolderPath := gitPath + "/"
 	refsPath := filepath.Join(gitPath, "refs")
 	headPath := filepath.Join(gitPath, "HEAD")
 	objectPath := filepath.Join(gitPath, "objects")
@@ -80,6 +81,7 @@ func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 	defer close(h.Changes)
 
 	for event := range h.watcher.Events {
+		// log.Infof("event %v", event)
 		select {
 		case <-ctx.Done():
 			return
@@ -99,8 +101,7 @@ func (h *monitor) monitorFolderRoutine(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			}
-
-		} else if h.isStatusChange(event.Name, gitPath) {
+		} else if h.isStatusChange(event.Name, gitFolderPath) {
 			// log.Infof("Status change: %s", event.Name)
 			select {
 			case h.Changes <- statusChange:
@@ -123,11 +124,8 @@ func (h *monitor) isIgnored(path string) bool {
 	return false
 }
 
-func (h *monitor) isStatusChange(path, gitPath string) bool {
-	if strings.HasPrefix(path, gitPath) {
-		return false
-	}
-	return true
+func (h *monitor) isStatusChange(path, gitFolderPath string) bool {
+	return !strings.HasPrefix(path, gitFolderPath)
 }
 
 func (h *monitor) isRepoChange(path, fetchHeadPath, headPath, refsPath string) bool {

@@ -22,7 +22,7 @@ import (
 const (
 	checkUpdateInterval = 1 * time.Hour
 	releasesUri         = "https://api.github.com/repos/michael-reichenauer/gmc/releases"
-	binNameWindows      = "gmc.exe"
+	binNameWindows      = "gmc_windows"
 	binNameLinux        = "gmc_linux"
 	binNameMac          = "gmc_mac"
 	tmpSuffix           = ".tmp"
@@ -222,12 +222,8 @@ func (h *autoUpdate) toConfigRelease(release Release) config.Release {
 }
 
 func (h *autoUpdate) isNewer(v1 string, v2 string) bool {
-	if strings.HasPrefix(v1, "v") {
-		v1 = v1[1:]
-	}
-	if strings.HasPrefix(v2, "v") {
-		v2 = v2[1:]
-	}
+	v1 = strings.TrimPrefix(v1, "v")
+	v2 = strings.TrimPrefix(v2, "v")
 	if v1 != "" && v2 == "" {
 		return false
 	}

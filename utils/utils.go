@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -47,23 +46,41 @@ func ReadLine() string {
 }
 
 func BinPath() string {
-	name := os.Args[0]
-	var err error
-	if name[0] == '.' {
-		name, err = filepath.Abs(name)
-		if err == nil {
-			name = filepath.Clean(name)
-		}
-	} else {
-		name, err = exec.LookPath(filepath.Clean(name))
-	}
+	exPath, err := os.Executable()
 	if err != nil {
 		log.Fatal(err)
-		return ""
+		// 		return ""
 		//panic(log.Fatal(err))
 	}
-	return name
+
+	return exPath
 }
+
+// func BinPath-Legacy() string {
+// 	name := os.Args[0]
+// 	log.Infof("Bin path %q", name)
+// 	var err error
+// 	if name[0] == '.' {
+// 		name, err = filepath.Abs(name)
+// 		if err == nil {
+// 			log.Warnf("failed abs %v", err)
+// 			name = filepath.Clean(name)
+// 		}
+// 		log.Infof("abs Bin path %q, %q", name, err)
+// 	} else {
+// 		log.Infof("No . in first char")
+// 		fn := filepath.Clean(name)
+// 		log.Infof("cleaneed name %q", fn)
+// 		name, err = exec.LookPath(fn)
+// 		log.Infof("exec name %q with err: %v", name, err)
+// 	}
+// 	if err != nil {
+// 		log.Fatal(err)
+// 		return ""
+// 		//panic(log.Fatal(err))
+// 	}
+// 	return name
+// }
 
 func GetVolumes() []string {
 	var volumes []string

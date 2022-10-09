@@ -116,7 +116,8 @@ func (h *branchesService) determineCommitBranches(
 
 // determineCommitBranch determines the branch of a commit by analyzing the most likely candidate branch
 func (h *branchesService) determineCommitBranch(
-	repo *Repo, c *Commit, branchesChildren map[string][]string) {
+	repo *Repo, c *Commit, branchesChildren map[string][]string,
+) {
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, it must have been an actual branch tip originally, use that
 		c.Branch = c.Branches[0]
@@ -126,13 +127,6 @@ func (h *branchesService) determineCommitBranch(
 	if branch := h.isLocalRemoteBranch(c); branch != nil {
 		// Commit has only local and its remote branch, prefer remote remote branch
 		c.Branch = branch
-		return
-	}
-
-	if branch := h.hasOneChild(repo, c); branch != nil && !branch.IsAmbiguousBranch {
-		// Commit is middle commit in branch, use the only one child commit branch
-		c.Branch = branch
-		c.addBranch(c.Branch)
 		return
 	}
 
@@ -157,6 +151,13 @@ func (h *branchesService) determineCommitBranch(
 
 	if branch := h.isMergedDeletedBranchTip(repo, c); branch != nil {
 		// Commit is a tip of a deleted branch, which was merged into a parent branch
+		c.Branch = branch
+		c.addBranch(c.Branch)
+		return
+	}
+
+	if branch := h.hasOneChild(repo, c); branch != nil {
+		// Commit is middle commit in branch, use the only one child commit branch
 		c.Branch = branch
 		c.addBranch(c.Branch)
 		return
@@ -356,8 +357,8 @@ func (h *branchesService) isMergedDeletedBranchTip(repo *Repo, c *Commit) *Branc
 }
 
 func (h *branchesService) hasOneChild(repo *Repo, c *Commit) *Branch {
-	if len(c.Children) == 1 && c.Children[0].Branch != nil {
-		// Commit has one child commit, use that child commit branch
+	if len(c.Branches) == 0 && len(c.Children) == 1 {
+		// Commit has no branch, but it has one child commit, use that child commit branch
 		return c.Children[0].Branch
 	}
 	return nil

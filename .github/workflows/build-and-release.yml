@@ -1,0 +1,85 @@
+name: Build and release
+
+on:
+  push:
+    branches: [master, develop, branches/cidi]
+  pull_request:
+    branches: [master, develop, branches/cidi]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build_test_release_job:
+    runs-on: ubuntu-latest
+    name: Build, Test and Release Job
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: "1.19.2"
+
+      - name: Build & Test
+        id: build
+        run: |
+          echo Build on branch: ${{ github.ref }}
+          ./build
+          echo "::set-output name=version::$(./gmc_linux -version -version)"
+          echo Version: $(./gmc_linux -version)
+
+      - name: Check if release branch
+        id: check-branch
+        if: github.ref == 'refs/heads/master'
+        run: |
+          echo Branch ${{ github.ref }}
+          echo "::set-output name=isRelease::true"
+
+      - name: Create Release
+        id: create_release
+        if: steps.check-branch.outputs.isRelease == 'true'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: v${{ steps.build.outputs.version }}
+          release_name: Version ${{ steps.build.outputs.version }}
+          draft: false
+          prerelease: true
+          body: ${{ github.event.head_commit.message }}
+
+      - name: Upload Linux artifact
+        if: steps.check-branch.outputs.isRelease == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gmc_linux
+          asset_name: gmc_linux
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows artifact
+        if: steps.check-branch.outputs.isRelease == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gmc_windows
+          asset_name: gmc_windows
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows artifact (old name)
+        if: steps.check-branch.outputs.isRelease == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gmc_windows
+          asset_name: gmc.exe
+          asset_content_type: application/octet-stream
