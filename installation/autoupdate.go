@@ -222,8 +222,8 @@ func (h *autoUpdate) toConfigRelease(release Release) config.Release {
 }
 
 func (h *autoUpdate) isNewer(v1 string, v2 string) bool {
-	strings.TrimPrefix(v1, "v")
-	strings.TrimPrefix(v2, "v")
+	v1 = strings.TrimPrefix(v1, "v")
+	v2 = strings.TrimPrefix(v2, "v")
 	if v1 != "" && v2 == "" {
 		return false
 	}
