@@ -26,7 +26,8 @@ func main() {
 	// ("-H=windowsgui" would disable console on windows)
 	Echo("Building Windows gmc.exe ...")
 	env := []string{"GOOS=windows", "GOARCH=amd64"}
-	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc.exe", "main.go"))
+	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_windows", "main.go"))
+	Must(CopyFile("gmc_windows", "gmc.exe"))
 
 	Echo("Building Linux gmc ...")
 	env = []string{"GOOS=linux", "GOARCH=amd64"}

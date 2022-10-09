@@ -6,6 +6,7 @@
 *.dylib
 *.tmp
 gmc.exe
+gmc_windows
 gmc_linux
 gmc_mac
 main

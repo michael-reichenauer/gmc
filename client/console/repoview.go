@@ -57,6 +57,9 @@ func (t *RepoView) newView() cui.View {
 
 	view.SetKey(gocui.KeyEnter, t.showContextMenu)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
+	view.SetKey('r', t.vm.triggerRefresh)
+	view.SetKey('R', t.vm.triggerRefresh)
+	view.SetKey(gocui.KeyCtrlR, t.vm.triggerRefresh)
 
 	view.SetKey('d', t.vm.showSelectedCommitDiff)
 	view.SetKey('D', t.vm.showSelectedCommitDiff)
