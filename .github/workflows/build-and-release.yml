@@ -26,11 +26,12 @@ jobs:
       - name: Build & Test
         id: build
         run: |
+          echo Build on branch: ${{ github.ref }}
           ./build
           echo "::set-output name=version::$(./gmc_linux -version -version)"
           echo Version: $(./gmc_linux -version)
 
-      - name: Check branch
+      - name: Check if release branch
         id: check-branch
         if: github.ref == 'refs/heads/master'
         run: |
