@@ -12,6 +12,7 @@ func main() {
 	os.Chdir(Root)
 
 	Echo("Cleaning ...")
+	Must(RemoveFile("gmc_windows"))
 	Must(RemoveFile("gmc.exe"))
 	Must(RemoveFile("gmc_linux"))
 	Must(RemoveFile("gmc"))

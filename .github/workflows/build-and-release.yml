@@ -26,14 +26,20 @@ jobs:
       - name: Build & Test
         id: build
         run: |
-          echo Building ...
           ./build
           echo "::set-output name=version::$(./gmc_linux -version -version)"
           echo Version: $(./gmc_linux -version)
 
+      - name: Check branch
+        id: check-branch
+        #if: github.ref == 'refs/heads/master'
+        run: |
+          echo Branch ${{ github.ref }}
+          echo "::set-output name=isRelease::true"
+
       - name: Create Release
         id: create_release
-        #if: github.ref == 'refs/heads/master'
+        if: steps.check-branch.outputs.isRelease == 'true'
         uses: actions/create-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -45,7 +51,7 @@ jobs:
           body: ${{ github.event.head_commit.message }}
 
       - name: Upload Linux artifact
-        #if: github.ref == 'refs/heads/master'
+        if: steps.check-branch.outputs.isRelease == 'true'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -56,7 +62,7 @@ jobs:
           asset_content_type: application/octet-stream
 
       - name: Upload Windows artifact
-        #if: github.ref == 'refs/heads/master'
+        if: steps.check-branch.outputs.isRelease == 'true'
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -64,4 +70,15 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./gmc_windows
           asset_name: gmc_windows
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows artifact (old name)
+        if: steps.check-branch.outputs.isRelease == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gmc_windows
+          asset_name: gmc.exe
           asset_content_type: application/octet-stream
