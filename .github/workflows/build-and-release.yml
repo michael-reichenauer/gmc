@@ -7,15 +7,15 @@ on:
     branches: [master, develop, branches/cidi]
 
   # Allows you to run this workflow manually from the Actions tab
-  # workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
-  build_and_deploy_job:
+  build_test_release_job:
     runs-on: ubuntu-latest
-    name: Build and Deploy Job
+    name: Build, Test and Release Job
 
     steps:
-      - name: Checkout branch
+      - name: Checkout
         uses: actions/checkout@v3
 
       - name: Setup Go
@@ -24,14 +24,13 @@ jobs:
           go-version: "1.19.2"
 
       - name: Build & Test
+        id: build
         run: |
           echo Building ...
           ./build
+          echo "::set-output name=version::$(./gmc_linux -version -version)"
           echo Version: $(./gmc_linux -version)
-
-      - name: version
-        run: echo "::set-output name=version::$(./gmc_linux -version -version)"
-        id: version
+          echo Version: ${{ steps.build.outputs.version }}
 
       - name: Create Release
         id: create_release
@@ -39,14 +38,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: v${{ steps.version.outputs.version }}
-          release_name: Version ${{ steps.version.outputs.version }}
+          tag_name: v${{ steps.build.outputs.version }}
+          release_name: Version ${{ steps.build.outputs.version }}
           draft: false
           prerelease: true
           body: ${{ github.event.head_commit.message }}
 
-      # application/octet-stream
-      - name: Upload linux artifact
+      - name: Upload Linux artifact
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -54,4 +52,14 @@ jobs:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
           asset_path: ./gmc_linux
           asset_name: gmc_linux
+          asset_content_type: application/octet-stream
+
+      - name: Upload Windows artifact
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./gmc.bin
+          asset_name: gmc.bin
           asset_content_type: application/octet-stream
