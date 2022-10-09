@@ -32,7 +32,7 @@ jobs:
 
       - name: Check branch
         id: check-branch
-        #if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/master'
         run: |
           echo Branch ${{ github.ref }}
           echo "::set-output name=isRelease::true"
