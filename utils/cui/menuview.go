@@ -7,6 +7,7 @@ import (
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/samber/lo"
 )
 
 const margin = 8
@@ -231,6 +232,12 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 }
 
 func (t *menuView) onArrowUp() {
+	_, ok := lo.Find(t.items, func(v MenuItem) bool { return !v.isSeparator })
+	if !ok {
+		// empty menu
+		return
+	}
+
 	t.OnKeyArrowUp()
 
 	// If current item is separator, step again
@@ -241,6 +248,11 @@ func (t *menuView) onArrowUp() {
 }
 
 func (t *menuView) onArrowDown() {
+	_, ok := lo.Find(t.items, func(v MenuItem) bool { return !v.isSeparator })
+	if !ok {
+		// empty menu
+		return
+	}
 	t.OnKeyArrowDown()
 
 	// If current item is separator, step again
