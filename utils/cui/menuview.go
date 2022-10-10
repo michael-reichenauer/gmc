@@ -58,7 +58,7 @@ func (t *menuView) show(bounds Rect) {
 	t.NotifyChanged()
 
 	t.ui.Post(func() {
-		if len(t.items) > 0 && t.items[0].isSeparator {
+		if len(t.items) > 1 && t.items[0].isSeparator {
 			t.onArrowDown()
 		}
 	})
@@ -240,11 +240,13 @@ func (t *menuView) onArrowUp() {
 
 	t.OnKeyArrowUp()
 
-	// If current item is separator, step again
-	vp := t.ViewPage()
-	if t.items[vp.CurrentLine].isSeparator {
-		t.onArrowUp()
-	}
+	t.ui.Post(func() {
+		// If current item is separator, step again
+		vp := t.ViewPage()
+		if t.items[vp.CurrentLine].isSeparator {
+			t.onArrowUp()
+		}
+	})
 }
 
 func (t *menuView) onArrowDown() {
@@ -255,11 +257,13 @@ func (t *menuView) onArrowDown() {
 	}
 	t.OnKeyArrowDown()
 
-	// If current item is separator, step again
-	vp := t.ViewPage()
-	if t.items[vp.CurrentLine].isSeparator {
-		t.onArrowDown()
-	}
+	t.ui.Post(func() {
+		// If current item is separator, step again
+		vp := t.ViewPage()
+		if t.items[vp.CurrentLine].isSeparator {
+			t.onArrowDown()
+		}
+	})
 }
 
 func (t *menuView) onArrowLeft() {

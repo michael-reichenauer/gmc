@@ -32,23 +32,6 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	}})
 	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
 	menu.Add(cui.MenuSeparator("Branches"))
-	hasBranchItems := false
-	if b.IsSetAsParent {
-		hasBranchItems = true
-		menu.Add(cui.MenuItem{Text: "Unset Branch as Parent", Action: func() {
-			t.vm.UnsetAsParentBranch(b.Name)
-		}})
-	}
-
-	if b.IsAmbiguousBranch {
-		hasBranchItems = true
-		menu.Add(cui.MenuItem{Text: "Set Ambiguous Branch Parent", SubItemsFunc: func() []cui.MenuItem {
-			return t.getAmbiguousBranchBranchesMenuItems()
-		}})
-	}
-	if hasBranchItems {
-		menu.Add(cui.MenuSeparator(""))
-	}
 
 	menu.Add(cui.MenuItem{Text: "Show Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesMenuItems(currentLineIndex)
@@ -57,16 +40,15 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getHideBranchMenuItems()
 	}})
-
-	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
-	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItemsFunc: func() []cui.MenuItem {
-		return t.getDeleteBranchMenuItems()
-	}})
 	menu.Add(cui.MenuItem{Text: "Push", Title: "Push", SubItemsFunc: func() []cui.MenuItem {
 		return t.getPushBranchMenuItems()
 	}})
 	menu.Add(cui.MenuItem{Text: "Pull/Update", Title: "Update", SubItemsFunc: func() []cui.MenuItem {
 		return t.getPullBranchMenuItems()
+	}})
+	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
+	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItemsFunc: func() []cui.MenuItem {
+		return t.getDeleteBranchMenuItems()
 	}})
 	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", Key: "S", SubItemsFunc: func() []cui.MenuItem {
 		return t.getSwitchBranchMenuItems()
@@ -75,6 +57,23 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		return t.getMergeMenuItems()
 	}})
 	menu.Add(cui.MenuItem{Text: "Search ...", Key: "F", Action: t.vm.ShowSearchView})
+
+	// hierarchy
+	if b.IsAmbiguousBranch || b.IsSetAsParent {
+		mi := []cui.MenuItem{}
+		if b.IsSetAsParent {
+			mi = append(mi, cui.MenuItem{Text: "Unset Branch as Parent", Action: func() {
+				t.vm.UnsetAsParentBranch(b.Name)
+			}})
+		}
+		if b.IsAmbiguousBranch {
+			mi = append(mi, cui.MenuItem{Text: "Set Ambiguous Branch Parent", SubItemsFunc: func() []cui.MenuItem {
+				return t.getAmbiguousBranchBranchesMenuItems()
+			}})
+		}
+
+		menu.Add(cui.MenuItem{Text: "Branch Hierarchy", SubItems: mi})
+	}
 
 	menu.Add(cui.MenuSeparator("Repos"))
 
