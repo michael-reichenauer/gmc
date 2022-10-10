@@ -25,6 +25,10 @@ const (
 )
 
 type CommitDiff struct {
+	Id        string
+	Author    string
+	Date      string
+	Message   string
 	FileDiffs []FileDiff
 }
 
@@ -68,11 +72,23 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	diffs, err := t.parse(diffText)
+	commitDiffs, err := t.parse(diffText, false)
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	return CommitDiff{FileDiffs: diffs}, nil
+	return commitDiffs[0], nil
+}
+
+func (t *diffService) fileDiff(path string) ([]CommitDiff, error) {
+	diffText, err := t.cmd.Git("log", "-p", "--", path)
+	if err != nil {
+		return []CommitDiff{}, err
+	}
+	commitDiffs, err := t.parse(diffText, false)
+	if err != nil {
+		return []CommitDiff{}, err
+	}
+	return commitDiffs, nil
 }
 
 func (t *diffService) unCommittedDiff() (CommitDiff, error) {
@@ -84,11 +100,12 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 		return CommitDiff{}, err
 	}
 
-	fileDiffs, err := t.parse(diffText)
+	commitDiffs, err := t.parse(diffText, true)
 	if err != nil {
 		return CommitDiff{}, err
 	}
 
+	fileDiffs := commitDiffs[0].FileDiffs
 	status, err := t.statusHandler.getStatus()
 	if err != nil {
 		return CommitDiff{}, err
@@ -99,25 +116,38 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 		return CommitDiff{}, err
 	}
 	sort.SliceStable(fileDiffs, func(i, j int) bool {
-		return -1 == strings.Compare(strings.ToLower(fileDiffs[i].PathAfter), strings.ToLower(fileDiffs[j].PathAfter))
+		return strings.Compare(strings.ToLower(fileDiffs[i].PathAfter), strings.ToLower(fileDiffs[j].PathAfter)) == -1
 	})
 	return CommitDiff{FileDiffs: fileDiffs}, err
 }
 
-func (t *diffService) parse(text string) ([]FileDiff, error) {
+func (t *diffService) parse(text string, isUncommitted bool) ([]CommitDiff, error) {
 	lines := strings.Split(text, "\n")
 
-	var fileDiffs []FileDiff
+	var currentCommitDiff *CommitDiff
 	var currentFileDiff *FileDiff
 	var currentSectionDiff *SectionDiff
-	for _, line := range lines {
+	var commitDiffs []CommitDiff
+
+	if isUncommitted {
+		// Uncommitted diffs do not have a commit header
+		commitDiffs = append(commitDiffs, CommitDiff{Id: UncommittedID, FileDiffs: []FileDiff{}})
+		currentCommitDiff = &commitDiffs[len(commitDiffs)-1]
+	}
+
+	for i, line := range lines {
 		if len(line) == 0 {
 			continue
 		}
-
+		if cd, ok := tryParseCommitDiffHead(i, lines); ok {
+			commitDiffs = append(commitDiffs, cd)
+			currentCommitDiff = &commitDiffs[len(commitDiffs)-1]
+			currentFileDiff = nil
+			continue
+		}
 		if fd, ok := tryParseFileDiffHead(line); ok {
-			fileDiffs = append(fileDiffs, fd)
-			currentFileDiff = &fileDiffs[len(fileDiffs)-1]
+			currentCommitDiff.FileDiffs = append(currentCommitDiff.FileDiffs, fd)
+			currentFileDiff = &currentCommitDiff.FileDiffs[len(currentCommitDiff.FileDiffs)-1]
 			currentSectionDiff = nil
 			continue
 		}
@@ -135,7 +165,8 @@ func (t *diffService) parse(text string) ([]FileDiff, error) {
 			continue
 		}
 	}
-	return fileDiffs, nil
+
+	return commitDiffs, nil
 }
 
 func (t *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath string) ([]FileDiff, error) {
@@ -201,6 +232,27 @@ func tryParseFileMode(line string) (DiffMode, bool) {
 		return DiffRemoved, true
 	}
 	return DiffModified, false
+}
+
+func tryParseCommitDiffHead(index int, lines []string) (CommitDiff, bool) {
+	line := lines[index]
+
+	author := ""
+	date := ""
+	if !strings.HasPrefix(line, "commit ") {
+		return CommitDiff{}, false
+	}
+	if len(lines) > index+2 && strings.HasPrefix(lines[index+1], "Author: ") {
+		author = lines[index+1][len("Author: "):]
+	}
+	if len(lines) > index+3 && strings.HasPrefix(lines[index+2], "Date:   ") {
+		date = lines[index+2][len("Date:   "):]
+	}
+	message := lines[index+4]
+	message = strings.TrimSpace(message)
+
+	commitId := line[len("commit "):]
+	return CommitDiff{Id: commitId, Author: author, Date: date, Message: message, FileDiffs: []FileDiff{}}, true
 }
 
 func tryParseFileDiffHead(line string) (FileDiff, bool) {

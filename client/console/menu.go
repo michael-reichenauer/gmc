@@ -5,6 +5,7 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/thoas/go-funk"
 )
@@ -31,8 +32,11 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 		t.vm.showCommitDiff(c.ID)
 	}})
 	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
-	menu.Add(cui.MenuSeparator("Branches"))
+	menu.Add(cui.MenuItem{Text: "Files Diffs", Title: "All Files", SubItemsFunc: func() []cui.MenuItem {
+		return t.getDiffsMenuItems()
+	}})
 
+	menu.Add(cui.MenuSeparator("Branches"))
 	menu.Add(cui.MenuItem{Text: "Show Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesMenuItems(currentLineIndex)
 	}})
@@ -56,6 +60,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "", SubItemsFunc: func() []cui.MenuItem {
 		return t.getMergeMenuItems()
 	}})
+
 	menu.Add(cui.MenuItem{Text: "Search ...", Key: "F", Action: t.vm.ShowSearchView})
 
 	// hierarchy
@@ -363,6 +368,26 @@ func (t *menuService) getMergeMenuItems() []cui.MenuItem {
 		}}
 		items = append(items, item)
 	}
+	return items
+}
+
+func (t *menuService) getDiffsMenuItems() []cui.MenuItem {
+	c := t.vm.repo.Commits[t.vm.currentIndex]
+	ref := c.ID
+	if c.ID == git.UncommittedID {
+		cb, ok := t.vm.CurrentBranch()
+		if !ok {
+			return []cui.MenuItem{}
+		}
+		ref = cb.Name
+	}
+
+	var items []cui.MenuItem
+	filePath := "main.go"
+	fileItem := cui.MenuItem{Text: filePath, Action: func() {
+		t.vm.showFileDiff(ref, filePath)
+	}}
+	items = append(items, fileItem)
 	return items
 }
 

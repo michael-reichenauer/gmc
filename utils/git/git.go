@@ -38,6 +38,7 @@ type Git interface {
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
+	FileDiff(path string) ([]CommitDiff, error)
 	Checkout(name string) error
 	Commit(message string) error
 	Fetch() error
@@ -151,6 +152,10 @@ func (t *git) Fetch() error {
 
 func (t *git) CommitDiff(id string) (CommitDiff, error) {
 	return t.diffService.commitDiff(id)
+}
+
+func (t *git) FileDiff(path string) ([]CommitDiff, error) {
+	return t.diffService.fileDiff(path)
 }
 
 func (t *git) IsIgnored(path string) bool {

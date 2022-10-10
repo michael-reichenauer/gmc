@@ -72,6 +72,11 @@ type CommitDiffInfoReq struct {
 	CommitID string
 }
 
+type FileDiffInfoReq struct {
+	RepoID string
+	Path   string
+}
+
 type AmbiguousBranchBranchesReq struct {
 	RepoID   string
 	CommitID string
@@ -190,6 +195,10 @@ type RepoChange struct {
 }
 
 type CommitDiff struct {
+	Id        string
+	Author    string
+	Date      string
+	Message   string
 	FileDiffs []FileDiff
 }
 

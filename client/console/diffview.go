@@ -18,7 +18,7 @@ type diffView struct {
 	vm        *diffVM
 	leftSide  cui.View
 	rightSide cui.View
-	commitID  string
+	path      string
 	isUnified bool
 }
 
@@ -26,12 +26,23 @@ func (t *diffView) PostOnUIThread(f func()) {
 	t.leftSide.PostOnUIThread(f)
 }
 
-func NewDiffView(ui cui.UI, diffGetter DiffGetter, repoID string, commitID string) DiffView {
+func NewCommitDiffView(ui cui.UI, diffGetter DiffGetter, repoID string, commitID string) DiffView {
 	t := &diffView{
-		ui:       ui,
-		commitID: commitID,
+		ui: ui,
 	}
-	t.vm = newDiffVM(t.ui, t, diffGetter, repoID, commitID)
+	t.vm = newCommitDiffVM(t.ui, t, diffGetter, repoID, commitID)
+	t.vm.setUnified(t.isUnified)
+	t.leftSide = t.newLeftSide()
+	t.rightSide = t.newRightSide()
+	return t
+}
+
+func NewFileDiffView(ui cui.UI, diffGetter DiffGetter, repoID string, path string) DiffView {
+	t := &diffView{
+		ui:   ui,
+		path: path,
+	}
+	t.vm = newFileDiffVM(t.ui, t, diffGetter, repoID, path)
 	t.vm.setUnified(t.isUnified)
 	t.leftSide = t.newLeftSide()
 	t.rightSide = t.newRightSide()
@@ -47,7 +58,7 @@ func (t *diffView) newLeftSide() cui.View {
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().OnMouseRight = t.showContextMenu
-	view.Properties().Title = "Before " + t.commitID[:6]
+	view.Properties().Title = "Before"
 
 	// Only need to set key on left side since left side is always current
 	view.SetKey(gocui.KeyEsc, t.Close)
@@ -67,7 +78,7 @@ func (t *diffView) newRightSide() cui.View {
 	view.Properties().OnMoved = t.onMovedRight
 	view.Properties().Name = "DiffViewRight"
 	view.Properties().HasFrame = true
-	view.Properties().Title = "After " + t.commitID[:6]
+	view.Properties().Title = "After"
 	view.Properties().OnMouseRight = t.showContextMenu
 
 	// No need to set key on right side since left side is always current
@@ -156,7 +167,7 @@ func (t *diffView) ToUnified() {
 	}
 	t.isUnified = true
 	t.leftSide.Properties().HideVerticalScrollbar = false
-	t.leftSide.Properties().Title = "Unified diff " + t.commitID[:6]
+	t.leftSide.Properties().Title = "Unified diff"
 	t.vm.setUnified(t.isUnified)
 	t.SetTop()
 	t.ui.ResizeAllViews()
@@ -168,8 +179,8 @@ func (t *diffView) ToSideBySide() {
 	}
 	t.isUnified = false
 	t.leftSide.Properties().HideVerticalScrollbar = true
-	t.leftSide.Properties().Title = "Before " + t.commitID[:6]
-	t.rightSide.Properties().Title = "After " + t.commitID[:6]
+	t.leftSide.Properties().Title = "Before"
+	t.rightSide.Properties().Title = "After"
 	t.vm.setUnified(t.isUnified)
 	t.SetTop()
 	t.ui.ResizeAllViews()

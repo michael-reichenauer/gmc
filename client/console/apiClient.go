@@ -57,6 +57,10 @@ func (t client) GetCommitDiff(args api.CommitDiffInfoReq, rsp *api.CommitDiff) e
 	return t.client.Call(args, rsp)
 }
 
+func (t client) GetFileDiff(args api.FileDiffInfoReq, rsp *[]api.CommitDiff) error {
+	return t.client.Call(args, rsp)
+}
+
 func (t client) GetCommitDetails(args api.CommitDetailsReq, rsp *api.CommitDetailsRsp) error {
 	return t.client.Call(args, rsp)
 }

@@ -1,9 +1,11 @@
 package git
 
 import (
+	"testing"
+
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCommitDiff(t *testing.T) {
@@ -66,6 +68,7 @@ func TestCommitDiff(t *testing.T) {
 	assert.NoError(t, g.Checkout("develop"))
 	wf.File(file1).Write("5")
 	diff, err = g.CommitDiff(UncommittedID)
+	assert.NoError(t, err)
 
 	assert.NoError(t, g.Commit("commitondevelop"))
 	assert.NoError(t, g.Checkout("master"))
@@ -74,4 +77,26 @@ func TestCommitDiff(t *testing.T) {
 
 	diff, err = g.CommitDiff(UncommittedID)
 	assert.NoError(t, err)
+}
+
+func TestFileDiff(t *testing.T) {
+	wf := tests.CreateTempFolder()
+	file1 := "a.txt"
+
+	g := New(wf.Path())
+	assert.NoError(t, g.InitRepo())
+	assert.NoError(t, g.ConfigRepoUser("test", "test@test.com"))
+
+	wf.File(file1).Write("1")
+	assert.NoError(t, g.Commit("initial"))
+
+	wf.File(file1).Write("2")
+	assert.NoError(t, g.Commit("second"))
+
+	wf.File(file1).Write("3")
+	assert.NoError(t, g.Commit("third"))
+
+	diff, err := g.FileDiff(file1)
+	assert.NoError(t, err)
+	t.Logf("diff:\n%s", utils.PrettyString(diff))
 }

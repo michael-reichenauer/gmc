@@ -256,7 +256,12 @@ func (t *repoVM) showCreateBranchDialog() {
 }
 
 func (t *repoVM) showCommitDiff(commitID string) {
-	diffView := NewDiffView(t.ui, t.api, t.repoID, commitID)
+	diffView := NewCommitDiffView(t.ui, t.api, t.repoID, commitID)
+	diffView.Show()
+}
+
+func (t *repoVM) showFileDiff(ref string, path string) {
+	diffView := NewFileDiffView(t.ui, t.api, t.repoID, path)
 	diffView.Show()
 }
 
