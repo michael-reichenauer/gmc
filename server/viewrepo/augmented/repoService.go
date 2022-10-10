@@ -19,6 +19,8 @@ type RepoService interface {
 
 	GetCommitDiff(id string) (git.CommitDiff, error)
 	GetFileDiff(path string) ([]git.CommitDiff, error)
+	GetFiles(ref string) ([]string, error)
+
 	SwitchToBranch(name string) error
 	Commit(commit string) error
 	PushBranch(name string) error
@@ -116,6 +118,10 @@ func (s *repoService) MergeBranch(name string) error {
 
 func (s *repoService) CreateBranch(name string) error {
 	return s.git.CreateBranch(name)
+}
+
+func (s *repoService) GetFiles(ref string) ([]string, error) {
+	return s.git.GetFiles(ref)
 }
 
 func (s *repoService) DeleteRemoteBranch(name string) error {

@@ -260,7 +260,7 @@ func (t *repoVM) showCommitDiff(commitID string) {
 	diffView.Show()
 }
 
-func (t *repoVM) showFileDiff(ref string, path string) {
+func (t *repoVM) showFileDiff(path string) {
 	diffView := NewFileDiffView(t.ui, t.api, t.repoID, path)
 	diffView.Show()
 }
@@ -284,6 +284,13 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID}, &branches)
 
 	return branches
+}
+
+func (t *repoVM) GetFiles(ref string) []string {
+	var files []string
+	_ = t.api.GetFiles(api.FilesReq{RepoID: t.repoID, Ref: ref}, &files)
+
+	return files
 }
 
 func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {

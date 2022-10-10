@@ -54,6 +54,17 @@ func (t *logService) getLog(maxCount int) (Commits, error) {
 	return t.parseCommits(logText)
 }
 
+func (t *logService) getFiles(ref string) ([]string, error) {
+	args := []string{"ls-tree", "-r", ref, "--name-only"}
+
+	filesText, err := t.cmd.Git(args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to files, %v", err)
+	}
+
+	return strings.Split(filesText, "\n"), nil
+}
+
 func (cs Commits) MustBySubject(subject string) Commit {
 	for _, c := range cs {
 		if subject == c.Subject {

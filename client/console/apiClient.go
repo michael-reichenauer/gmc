@@ -45,6 +45,10 @@ func (t client) GetBranches(args api.GetBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
+func (t client) GetFiles(args api.FilesReq, rsp *[]string) error {
+	return t.client.Call(args, rsp)
+}
+
 func (t *client) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }

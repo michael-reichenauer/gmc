@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/samber/lo"
 	"github.com/thoas/go-funk"
 )
 
@@ -33,7 +34,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	}})
 	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
 	menu.Add(cui.MenuItem{Text: "Files Diffs", Title: "All Files", SubItemsFunc: func() []cui.MenuItem {
-		return t.getDiffsMenuItems()
+		return t.getFileDiffsMenuItems()
 	}})
 
 	menu.Add(cui.MenuSeparator("Branches"))
@@ -371,7 +372,7 @@ func (t *menuService) getMergeMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) getDiffsMenuItems() []cui.MenuItem {
+func (t *menuService) getFileDiffsMenuItems() []cui.MenuItem {
 	c := t.vm.repo.Commits[t.vm.currentIndex]
 	ref := c.ID
 	if c.ID == git.UncommittedID {
@@ -382,13 +383,12 @@ func (t *menuService) getDiffsMenuItems() []cui.MenuItem {
 		ref = cb.Name
 	}
 
-	var items []cui.MenuItem
-	filePath := "main.go"
-	fileItem := cui.MenuItem{Text: filePath, Action: func() {
-		t.vm.showFileDiff(ref, filePath)
-	}}
-	items = append(items, fileItem)
-	return items
+	files := t.vm.GetFiles(ref)
+	return lo.Map(files, func(v string, _ int) cui.MenuItem {
+		return cui.MenuItem{Text: v, Action: func() {
+			t.vm.showFileDiff(v)
+		}}
+	})
 }
 
 func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {

@@ -170,6 +170,20 @@ func (t *apiServer) GetBranches(args api.GetBranchesReq, branches *[]api.Branch)
 	return nil
 }
 
+func (t *apiServer) GetFiles(args api.FilesReq, files *[]string) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(args.RepoID)
+	if err != nil {
+		return err
+	}
+	*files, err = repo.GetFiles(args.Ref)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *apiServer) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, branches *[]api.Branch) error {
 	log.Infof(">")
 	defer log.Infof("<")

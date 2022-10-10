@@ -204,6 +204,10 @@ func (t *ViewRepoService) GetBranches(args api.GetBranchesReq) []api.Branch {
 	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
 }
 
+func (t *ViewRepoService) GetFiles(ref string) ([]string, error) {
+	return t.augmentedRepo.GetFiles(ref)
+}
+
 func (t *ViewRepoService) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq) []api.Branch {
 	branches := []api.Branch{}
 

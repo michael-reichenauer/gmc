@@ -32,6 +32,7 @@ type Git interface {
 	GetLog() (Commits, error)
 	GetStatus() (Status, error)
 	GetBranches() (Branches, error)
+	GetFiles(ref string) ([]string, error)
 
 	InitRepo() error
 	ConfigRepoUser(name, email string) error
@@ -140,6 +141,10 @@ func (t *git) GetLog() (Commits, error) {
 
 func (t *git) GetBranches() (Branches, error) {
 	return t.branchService.getBranches()
+}
+
+func (t *git) GetFiles(ref string) ([]string, error) {
+	return t.logService.getFiles(ref)
 }
 
 func (t *git) GetStatus() (Status, error) {

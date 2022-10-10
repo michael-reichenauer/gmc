@@ -55,6 +55,11 @@ type Search struct {
 	Text   string
 }
 
+type FilesReq struct {
+	RepoID string
+	Ref    string
+}
+
 type CommitDetailsReq struct {
 	RepoID   string
 	CommitID string
