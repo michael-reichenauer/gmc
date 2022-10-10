@@ -11,14 +11,16 @@ import (
 
 type DiffGetter interface {
 	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
+	GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) error
 }
 
 type diffVM struct {
 	ui             cui.UI
 	viewer         cui.Viewer
 	diffGetter     DiffGetter
-	commitDiff     api.CommitDiff
+	commitDiffs    []api.CommitDiff
 	commitID       string
+	path           string
 	isDiffReady    bool
 	isDiff         bool
 	leftLines      []string
@@ -31,11 +33,24 @@ type diffVM struct {
 
 const viewWidth = 200
 
-func newDiffVM(ui cui.UI, viewer cui.Viewer, diffGetter DiffGetter, repoID string, commitID string) *diffVM {
+func newCommitDiffVM(ui cui.UI, viewer cui.Viewer, diffGetter DiffGetter, repoID string, commitID string) *diffVM {
 	return &diffVM{ui: ui, viewer: viewer, diffGetter: diffGetter, repoID: repoID, commitID: commitID}
 }
 
+func newFileDiffVM(ui cui.UI, viewer cui.Viewer, diffGetter DiffGetter, repoID string, path string) *diffVM {
+	return &diffVM{ui: ui, viewer: viewer, diffGetter: diffGetter, repoID: repoID, path: path}
+}
+
 func (t *diffVM) load() {
+	if t.commitID != "" {
+		t.loadCommitDiff()
+		return
+	}
+
+	t.loadFileDiff()
+}
+
+func (t *diffVM) loadCommitDiff() {
 	progress := t.ui.ShowProgress("Getting diff ...")
 
 	go func() {
@@ -47,7 +62,26 @@ func (t *diffVM) load() {
 				t.ui.ShowErrorMessageBox("Failed to get diff:\n%v", err)
 				return
 			}
-			t.commitDiff = diff
+			t.commitDiffs = []api.CommitDiff{diff}
+			t.isDiffReady = true
+			t.viewer.NotifyChanged()
+		})
+	}()
+}
+
+func (t *diffVM) loadFileDiff() {
+	progress := t.ui.ShowProgress("Getting diff ...")
+
+	go func() {
+		var diff []api.CommitDiff
+		err := t.diffGetter.GetFileDiff(api.FileDiffInfoReq{RepoID: t.repoID, Path: t.path}, &diff)
+		t.viewer.PostOnUIThread(func() {
+			progress.Close()
+			if err != nil {
+				t.ui.ShowErrorMessageBox("Failed to get diff:\n%v", err)
+				return
+			}
+			t.commitDiffs = diff
 			t.isDiffReady = true
 			t.viewer.NotifyChanged()
 		})
@@ -111,7 +145,7 @@ func (t *diffVM) getLines(isLeft bool, firstIndex, height int) ([]string, int, i
 }
 
 func (t *diffVM) loadingText(isLeft bool) cui.ViewText {
-	text := "Loading diff for " + t.commitID[:6]
+	text := "Loading diff"
 	if !isLeft {
 		text = ""
 	}
@@ -124,30 +158,46 @@ func (t *diffVM) setDiffSides(firstCharIndex int) {
 	t.maxWidth = 0
 	// Adding diff summery with changed files list, count, ...
 	t.firstCharIndex = firstCharIndex
-	t.addDiffSummery()
 
-	// Add file diffs
-	for _, df := range t.commitDiff.FileDiffs {
-		t.addFileHeader(df)
+	for _, commitDiff := range t.commitDiffs {
+		t.addDiffSummery(commitDiff)
 
-		// Add all diff sections in a file
-		for _, ds := range df.SectionDiffs {
-			t.addDiffSectionHeader(df, ds)
-			t.addDiffSectionLines(ds)
-			t.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
+		// Add file diffs
+		for _, df := range commitDiff.FileDiffs {
+			t.addFileHeader(df)
+
+			// Add all diff sections in a file
+			for _, ds := range df.SectionDiffs {
+				t.addDiffSectionHeader(df, ds)
+				t.addDiffSectionLines(ds)
+				t.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
+			}
 		}
+		t.addLeftAndRight("")
 	}
-	t.addLeftAndRight("")
 }
 
-func (t *diffVM) addDiffSummery() {
-	t.addLeft(fmt.Sprintf("%d Files:", len(t.commitDiff.FileDiffs)))
-	for _, df := range t.commitDiff.FileDiffs {
-		diffType := t.toDiffType(df)
-		if df.DiffMode == api.DiffConflicts {
-			t.addLeft(cui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
-		} else {
-			t.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+func (t *diffVM) addDiffSummery(commitDiff api.CommitDiff) {
+	t.addLeftAndRight(cui.YellowDk(strings.Repeat("═", viewWidth)))
+	if commitDiff.Id == "" {
+		t.addLeft("Commit: uncommitted changes")
+	} else {
+		t.addLeft(fmt.Sprintf("Commit:  %s", commitDiff.Id[:6]))
+		t.addLeft(fmt.Sprintf("Author:  %s", commitDiff.Author))
+		t.addLeft(fmt.Sprintf("Date:    %s", commitDiff.Date))
+		t.addLeft(fmt.Sprintf("Message: %s", commitDiff.Message))
+	}
+
+	if t.commitID != "" {
+		t.addLeft("")
+		t.addLeft(fmt.Sprintf("%d Files:", len(commitDiff.FileDiffs)))
+		for _, df := range commitDiff.FileDiffs {
+			diffType := t.toDiffType(df)
+			if df.DiffMode == api.DiffConflicts {
+				t.addLeft(cui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
+			} else {
+				t.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+			}
 		}
 	}
 }
@@ -165,7 +215,7 @@ func (t *diffVM) line(text string) string {
 func (t *diffVM) addFileHeader(df api.FileDiff) {
 	t.addLeftAndRight("")
 	t.addLeftAndRight("")
-	t.addLeftAndRight(cui.Blue(strings.Repeat("═", viewWidth)))
+	t.addLeftAndRight(cui.Blue(strings.Repeat("─", viewWidth)))
 	fileText := cui.Cyan(fmt.Sprintf("%s %s", t.toDiffType(df), df.PathAfter))
 	t.addLeftAndRight(fileText)
 	if df.IsRenamed {

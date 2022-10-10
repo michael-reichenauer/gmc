@@ -45,6 +45,10 @@ func (t client) GetBranches(args api.GetBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
 
+func (t client) GetFiles(args api.FilesReq, rsp *[]string) error {
+	return t.client.Call(args, rsp)
+}
+
 func (t *client) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, rsp *[]api.Branch) error {
 	return t.client.Call(args, rsp)
 }
@@ -54,6 +58,10 @@ func (t client) Commit(args api.CommitInfoReq, rsp api.NoRsp) error {
 }
 
 func (t client) GetCommitDiff(args api.CommitDiffInfoReq, rsp *api.CommitDiff) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t client) GetFileDiff(args api.FileDiffInfoReq, rsp *[]api.CommitDiff) error {
 	return t.client.Call(args, rsp)
 }
 

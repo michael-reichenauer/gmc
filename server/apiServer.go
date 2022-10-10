@@ -170,6 +170,20 @@ func (t *apiServer) GetBranches(args api.GetBranchesReq, branches *[]api.Branch)
 	return nil
 }
 
+func (t *apiServer) GetFiles(args api.FilesReq, files *[]string) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(args.RepoID)
+	if err != nil {
+		return err
+	}
+	*files, err = repo.GetFiles(args.Ref)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *apiServer) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, branches *[]api.Branch) error {
 	log.Infof(">")
 	defer log.Infof("<")
@@ -281,6 +295,17 @@ func (t *apiServer) GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDi
 		return err
 	}
 	*diff, err = repo.GetCommitDiff(info.CommitID)
+	return
+}
+
+func (t *apiServer) GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) (err error) {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(info.RepoID)
+	if err != nil {
+		return err
+	}
+	*diff, err = repo.GetFileDiff(info.Path)
 	return
 }
 

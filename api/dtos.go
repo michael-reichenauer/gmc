@@ -55,6 +55,11 @@ type Search struct {
 	Text   string
 }
 
+type FilesReq struct {
+	RepoID string
+	Ref    string
+}
+
 type CommitDetailsReq struct {
 	RepoID   string
 	CommitID string
@@ -70,6 +75,11 @@ type CommitDetailsRsp struct {
 type CommitDiffInfoReq struct {
 	RepoID   string
 	CommitID string
+}
+
+type FileDiffInfoReq struct {
+	RepoID string
+	Path   string
 }
 
 type AmbiguousBranchBranchesReq struct {
@@ -190,6 +200,10 @@ type RepoChange struct {
 }
 
 type CommitDiff struct {
+	Id        string
+	Author    string
+	Date      string
+	Message   string
 	FileDiffs []FileDiff
 }
 
