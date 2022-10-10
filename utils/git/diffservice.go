@@ -80,7 +80,7 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 }
 
 func (t *diffService) fileDiff(path string) ([]CommitDiff, error) {
-	diffText, err := t.cmd.Git("log", "--patch", "--", path)
+	diffText, err := t.cmd.Git("log", "--patch", "--follow", "--", path)
 	if err != nil {
 		return []CommitDiff{}, err
 	}
