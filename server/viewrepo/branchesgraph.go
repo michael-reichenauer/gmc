@@ -7,17 +7,17 @@ import (
 
 var branchColors = []cui.Color{
 	cui.CMagenta,
+	// cui.CMagentaDk,
 	cui.CRed,
+	// cui.CRedDk,
 	cui.CBlue,
-	cui.CYellow,
-	cui.CGreen,
-	cui.CCyan,
-	cui.CMagentaDk,
-	cui.CRedDk,
-	cui.CGreenDk,
+	// cui.CBlueDk,
+	// cui.CYellow,
 	cui.CYellowDk,
-	//ui.CBlueDk,
-	cui.CCyanDk,
+	cui.CGreen,
+	// cui.CGreenDk,
+	cui.CCyan,
+	// cui.CCyanDk,
 }
 
 type branchesGraph struct {

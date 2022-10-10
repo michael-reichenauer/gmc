@@ -7,17 +7,16 @@ import (
 	"github.com/michael-reichenauer/gmc/client/console"
 	"github.com/michael-reichenauer/gmc/server/viewrepo/augmented"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/stretchr/testify/assert"
 )
 
 func Test2(t *testing.T) {
-	// even := lo.Filter([]int{1, 2, 3, 4, 6}, func(x int, _ int) bool {
-	// 	return x%2 == 0
-	// })
-	// t.Logf("array %v", even)
-	// []int{2, 4, 6}
+	for i := 0; i < len(branchColors); i++ {
+		t.Log(cui.ColorText(branchColors[i], strings.Repeat("━", 20)))
+	}
 }
 
 func TestCurrentRepo(t *testing.T) {
