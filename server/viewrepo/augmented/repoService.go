@@ -18,6 +18,9 @@ type RepoService interface {
 	StartMonitor(ctx context.Context)
 
 	GetCommitDiff(id string) (git.CommitDiff, error)
+	GetFileDiff(path string) ([]git.CommitDiff, error)
+	GetFiles(ref string) ([]string, error)
+
 	SwitchToBranch(name string) error
 	Commit(commit string) error
 	PushBranch(name string) error
@@ -82,8 +85,11 @@ func (s *repoService) StartMonitor(ctx context.Context) {
 }
 
 func (s *repoService) GetCommitDiff(id string) (git.CommitDiff, error) {
-	log.Infof("Get diff for %q", id)
 	return s.git.CommitDiff(id)
+}
+
+func (s *repoService) GetFileDiff(path string) ([]git.CommitDiff, error) {
+	return s.git.FileDiff(path)
 }
 
 func (s *repoService) SwitchToBranch(name string) error {
@@ -112,6 +118,10 @@ func (s *repoService) MergeBranch(name string) error {
 
 func (s *repoService) CreateBranch(name string) error {
 	return s.git.CreateBranch(name)
+}
+
+func (s *repoService) GetFiles(ref string) ([]string, error) {
+	return s.git.GetFiles(ref)
 }
 
 func (s *repoService) DeleteRemoteBranch(name string) error {

@@ -32,12 +32,14 @@ type Git interface {
 	GetLog() (Commits, error)
 	GetStatus() (Status, error)
 	GetBranches() (Branches, error)
+	GetFiles(ref string) ([]string, error)
 
 	InitRepo() error
 	ConfigRepoUser(name, email string) error
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
+	FileDiff(path string) ([]CommitDiff, error)
 	Checkout(name string) error
 	Commit(message string) error
 	Fetch() error
@@ -141,6 +143,10 @@ func (t *git) GetBranches() (Branches, error) {
 	return t.branchService.getBranches()
 }
 
+func (t *git) GetFiles(ref string) ([]string, error) {
+	return t.logService.getFiles(ref)
+}
+
 func (t *git) GetStatus() (Status, error) {
 	return t.statusService.getStatus()
 }
@@ -151,6 +157,10 @@ func (t *git) Fetch() error {
 
 func (t *git) CommitDiff(id string) (CommitDiff, error) {
 	return t.diffService.commitDiff(id)
+}
+
+func (t *git) FileDiff(path string) ([]CommitDiff, error) {
+	return t.diffService.fileDiff(path)
 }
 
 func (t *git) IsIgnored(path string) bool {

@@ -101,6 +101,14 @@ func (t *ViewRepoService) GetCommitDiff(id string) (api.CommitDiff, error) {
 	return ToApiCommitDiff(diff), nil
 }
 
+func (t *ViewRepoService) GetFileDiff(path string) ([]api.CommitDiff, error) {
+	diff, err := t.augmentedRepo.GetFileDiff(path)
+	if err != nil {
+		return []api.CommitDiff{}, err
+	}
+	return ToApiCommitDiffs(diff), nil
+}
+
 func (t *ViewRepoService) GetCommitDetails(id string) (api.CommitDetailsRsp, error) {
 	c, ok := t.viewRepo.CommitById(id)
 	if !ok {
@@ -194,6 +202,10 @@ func (t *ViewRepoService) GetBranches(args api.GetBranchesReq) []api.Branch {
 	}
 
 	return t.getAllBranchesC(args.IncludeOnlyNotShown, args.SortOnLatest)
+}
+
+func (t *ViewRepoService) GetFiles(ref string) ([]string, error) {
+	return t.augmentedRepo.GetFiles(ref)
 }
 
 func (t *ViewRepoService) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq) []api.Branch {

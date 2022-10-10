@@ -3,10 +3,19 @@ package viewrepo
 import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/samber/lo"
 )
+
+func ToApiCommitDiffs(diff []git.CommitDiff) []api.CommitDiff {
+	return lo.Map(diff, func(v git.CommitDiff, _ int) api.CommitDiff { return ToApiCommitDiff(v) })
+}
 
 func ToApiCommitDiff(diff git.CommitDiff) api.CommitDiff {
 	return api.CommitDiff{
+		Id:        diff.Id,
+		Author:    diff.Author,
+		Date:      diff.Date,
+		Message:   diff.Message,
 		FileDiffs: toApiFileDiffs(diff.FileDiffs),
 	}
 }

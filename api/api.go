@@ -12,7 +12,9 @@ type Api interface {
 	TriggerSearch(search Search, _ NoRsp) error
 
 	GetBranches(args GetBranchesReq, branches *[]Branch) error
+	GetFiles(args FilesReq, files *[]string) error
 	GetCommitDiff(info CommitDiffInfoReq, diff *CommitDiff) error
+	GetFileDiff(info FileDiffInfoReq, diff *[]CommitDiff) error
 	GetCommitDetails(req CommitDetailsReq, rsp *CommitDetailsRsp) error
 	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq, branches *[]Branch) error
 

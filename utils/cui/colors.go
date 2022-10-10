@@ -45,6 +45,7 @@ var colors = map[Color]string{
 func ColorRune(color Color, r rune) string {
 	return colors[color] + string(r) + colorEnd
 }
+
 func ColorText(color Color, text string) string {
 	return colors[color] + text + colorEnd
 }

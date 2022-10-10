@@ -12,6 +12,7 @@ import (
 
 type Committer interface {
 	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
+	GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) error
 	Commit(info api.CommitInfoReq, rsp api.NoRsp) error
 }
 
@@ -132,6 +133,6 @@ func (h *CommitView) onOk() {
 
 func (h *CommitView) showDiff() {
 	log.Event("commit-show-diff")
-	diffView := NewDiffView(h.ui, h.committer, h.repoID, git.UncommittedID)
+	diffView := NewCommitDiffView(h.ui, h.committer, h.repoID, git.UncommittedID)
 	diffView.Show()
 }
