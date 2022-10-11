@@ -108,126 +108,68 @@ func (h *branchesService) determineCommitBranches(
 	branchesChildren map[string][]string,
 ) {
 	for _, c := range repo.Commits {
-		h.determineCommitBranch(repo, c, branchesChildren)
+		branch := h.determineCommitBranch(repo, c, branchesChildren)
+		c.Branch = branch
+		c.addBranch(c.Branch)
+
 		h.setMasterBackbone(c)
 		c.Branch.BottomID = c.Id
 	}
 }
 
-// determineCommitBranch determines the branch of a commit by analyzing the most likely candidate branch
+// determineCommitBranch determines the branch of a commit by analyzing the most likely
+// candidate branch for a commit.
 func (h *branchesService) determineCommitBranch(
 	repo *Repo, c *Commit, branchesChildren map[string][]string,
-) {
-	if len(c.Branches) == 1 {
+) *Branch {
+	if branch := h.hasOnlyOneBranch(c); branch != nil {
 		// Commit only has one branch, it must have been an actual branch tip originally, use that
-		c.Branch = c.Branches[0]
-		return
-	}
-
-	if branch := h.isLocalRemoteBranch(c); branch != nil {
+		return branch
+	} else if branch := h.isLocalRemoteBranch(c); branch != nil {
 		// Commit has only local and its remote branch, prefer remote remote branch
-		c.Branch = branch
-		return
-	}
-
-	if branch := h.hasChildrenPriorityBranch(c, branchesChildren); branch != nil {
+		return branch
+	} else if branch := h.hasChildrenPriorityBranch(c, branchesChildren); branch != nil {
 		// The commit has several possible branches, but children
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
-	}
-
-	if branch := h.isSameChildrenBranches(repo, c); branch != nil {
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
-	}
-
-	if branch := h.isMergedDeletedRemoteBranchTip(repo, c); branch != nil {
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
-	}
-
-	if branch := h.isMergedDeletedBranchTip(repo, c); branch != nil {
+		return branch
+	} else if branch := h.isSameChildrenBranches(c); branch != nil {
+		// Commit has no branch but has 2 children with same branch
+		return branch
+	} else if branch := h.isMergedDeletedRemoteBranchTip(repo, c); branch != nil {
+		// Commit has no branch and no children, but has a merge child, lets check if pull merger
+		return branch
+	} else if branch := h.isMergedDeletedBranchTip(repo, c); branch != nil {
 		// Commit is a tip of a deleted branch, which was merged into a parent branch
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
-	}
-
-	if branch := h.hasOneChild(repo, c); branch != nil {
+		return branch
+	} else if branch := h.hasOneChild(c); branch != nil {
 		// Commit is middle commit in branch, use the only one child commit branch
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
-	}
-
-	if len(c.Children) == 1 && c.Children[0].isLikely {
+		return branch
+	} else if branch := h.hasOneChildWithLikelyBranch(c); branch != nil {
 		// Commit has one child, which has a likely known branch, use same branch
-		c.Branch = c.Children[0].Branch
-		c.isLikely = true
-		return
-	}
-
-	if branch := h.hasPriorityBranch(c); branch != nil {
+		return branch
+	} else if branch := h.hasPriorityBranch(c); branch != nil {
 		// Commit, has several possible branches, and one is in the priority list, e.g. main, develop, ...
-		c.Branch = branch
-		return
-	}
-
-	if name := h.branchNames.branchName(c.Id); name != "" {
+		return branch
+	} else if branch := h.hasBranchNameInSubject(repo, c); branch != nil {
 		// A branch name could be parsed form the commit subject or a child subject.
-		// Lets use that as a branch name and also let children (commits above)
-		// use that branch if they are an ambiguous branch
-		var current *Commit
-		branch := h.tryGetBranchFromName(c, name)
-		if branch != nil && branch.BottomID != "" {
-			// Found an existing branch with that name, set lowest known commit to the bottom
-			// of that known branchm
-			current = repo.CommitByID(branch.BottomID)
-		}
-
-		if current == nil {
-			// branch has no known last (bottom) commit, lets iterate upp (first child) as long
-			// as commits are on an ambiguous branch
-			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsAmbiguousBranch; current = current.Children[0] {
-			}
-		}
-
-		if branch != nil {
-			for ; current != nil && current != c.FirstParent; current = current.FirstParent {
-				current.Branch = branch
-				current.addBranch(branch)
-				current.isLikely = true
-			}
-			if c.Branch == nil {
-				c.Branch = branch
-				c.addBranch(c.Branch)
-				c.isLikely = true
-			}
-			c.Branch.BottomID = c.Id
-			return
-		}
-	}
-
-	if len(c.Children) == 1 && len(c.MergeChildren) == 0 {
+		return branch
+	} else if branch := h.hasOnlyOneChild(c); branch != nil {
 		// Commit has one child commit, use that child commit branch
-		c.Branch = c.Children[0].Branch
-		c.addBranch(c.Branch)
-		return
-	}
-
-	if branch := h.isChildAmbiguousBranch(c); branch != nil {
+		return branch
+	} else if branch := h.isChildAmbiguousBranch(c); branch != nil {
 		// one of the commit children is a ambiguous branch, reuse same ambiguous branch
-		c.Branch = branch
-		c.addBranch(c.Branch)
-		return
+		return branch
 	}
 
 	// Commit, has several possible branches, create a new ambiguous branch
-	c.Branch = repo.addAmbiguousBranch(c)
-	c.addBranch(c.Branch)
+	return repo.addAmbiguousBranch(c)
+}
+
+func (h *branchesService) hasOnlyOneBranch(c *Commit) *Branch {
+	if len(c.Branches) == 1 {
+		// Commit only has one branch, it must have been an actual branch tip originally, use that
+		return c.Branches[0]
+	}
+	return nil
 }
 
 // hasChildrenPriorityBranch iterates all children of commit and for each child
@@ -281,6 +223,14 @@ func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 	return nil
 }
 
+func (h *branchesService) hasOnlyOneChild(c *Commit) *Branch {
+	if len(c.Children) == 1 && len(c.MergeChildren) == 0 {
+		// Commit has one child commit, use that child commit branch
+		return c.Children[0].Branch
+	}
+	return nil
+}
+
 func (h *branchesService) isChildAmbiguousBranch(c *Commit) *Branch {
 	for _, cc := range c.Children {
 		if cc.Branch != nil && cc.Branch.IsAmbiguousBranch {
@@ -317,10 +267,10 @@ func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
 	return nil
 }
 
-func (h *branchesService) isSameChildrenBranches(repo *Repo, c *Commit) *Branch {
+func (h *branchesService) isSameChildrenBranches(c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 2 &&
 		c.Children[0].Branch == c.Children[1].Branch {
-		// Commit has no branch and no children, but has 2 children with same branch use that
+		// Commit has no branch but has 2 children with same branch use that
 		return c.Children[0].Branch
 	}
 	return nil
@@ -363,9 +313,17 @@ func (h *branchesService) isMergedDeletedBranchTip(repo *Repo, c *Commit) *Branc
 	return nil
 }
 
-func (h *branchesService) hasOneChild(repo *Repo, c *Commit) *Branch {
+func (h *branchesService) hasOneChild(c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 1 {
 		// Commit has no branch, but it has one child commit, use that child commit branch
+		return c.Children[0].Branch
+	}
+	return nil
+}
+
+func (h *branchesService) hasOneChildWithLikelyBranch(c *Commit) *Branch {
+	if len(c.Children) == 1 && c.Children[0].isLikely {
+		// Commit has one child, which has a likely known branch, use same branch
 		return c.Children[0].Branch
 	}
 	return nil
@@ -382,6 +340,40 @@ func (h *branchesService) isLocalRemoteBranch(c *Commit) *Branch {
 			return c.Branches[1]
 		}
 	}
+	return nil
+}
+
+func (h *branchesService) hasBranchNameInSubject(repo *Repo, c *Commit) *Branch {
+	if name := h.branchNames.branchName(c.Id); name != "" {
+		// A branch name could be parsed form the commit subject or a child subject.
+		// Lets use that as a branch name and also let children (commits above)
+		// use that branch if they are an ambiguous branch
+		var current *Commit
+		branch := h.tryGetBranchFromName(c, name)
+		if branch != nil && branch.BottomID != "" {
+			// Found an existing branch with that name, set lowest known commit to the bottom
+			// of that known branch
+			current = repo.CommitByID(branch.BottomID)
+		}
+
+		if current == nil {
+			// branch has no known last (bottom) commit, lets iterate upp (first child) as long
+			// as commits are on an ambiguous branch
+			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsAmbiguousBranch; current = current.Children[0] {
+			}
+		}
+
+		if branch != nil {
+			for ; current != nil && current != c.FirstParent; current = current.FirstParent {
+				current.Branch = branch
+				current.addBranch(branch)
+				current.isLikely = true
+			}
+
+			return branch
+		}
+	}
+
 	return nil
 }
 
