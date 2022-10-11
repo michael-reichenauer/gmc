@@ -211,6 +211,13 @@ func (h *branchesService) determineCommitBranch(
 		}
 	}
 
+	if len(c.Children) == 1 && len(c.MergeChildren) == 0 {
+		// Commit has one child commit, use that child commit branch
+		c.Branch = c.Children[0].Branch
+		c.addBranch(c.Branch)
+		return
+	}
+
 	if branch := h.isChildAmbiguousBranch(c); branch != nil {
 		// one of the commit children is a ambiguous branch, reuse same ambiguous branch
 		c.Branch = branch
