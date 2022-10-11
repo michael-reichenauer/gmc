@@ -152,9 +152,9 @@ func (h *branchesService) determineCommitBranch(
 	} else if branch := h.hasBranchNameInSubject(repo, c); branch != nil {
 		// A branch name could be parsed form the commit subject or a child subject.
 		return branch
-	} else if branch := h.hasOnlyOneChild(c); branch != nil {
-		// Commit has one child commit, use that child commit branch
-		return branch
+		//} else if branch := h.hasOnlyOneChild(c); branch != nil {
+		// 	// Commit has one child commit, use that child commit branch
+		// 	return branch
 	} else if branch := h.isChildAmbiguousBranch(c); branch != nil {
 		// one of the commit children is a ambiguous branch, reuse same ambiguous branch
 		return branch
