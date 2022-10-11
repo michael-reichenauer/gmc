@@ -9,6 +9,7 @@ import (
 
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/samber/lo"
 )
 
 type DiffMode int
@@ -72,7 +73,7 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 	if err != nil {
 		return CommitDiff{}, err
 	}
-	commitDiffs, err := t.parse(diffText, false)
+	commitDiffs, err := t.parse(diffText, "", false)
 	if err != nil {
 		return CommitDiff{}, err
 	}
@@ -84,7 +85,7 @@ func (t *diffService) fileDiff(path string) ([]CommitDiff, error) {
 	if err != nil {
 		return []CommitDiff{}, err
 	}
-	commitDiffs, err := t.parse(diffText, false)
+	commitDiffs, err := t.parse(diffText, path, false)
 	if err != nil {
 		return []CommitDiff{}, err
 	}
@@ -100,7 +101,7 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 		return CommitDiff{}, err
 	}
 
-	commitDiffs, err := t.parse(diffText, true)
+	commitDiffs, err := t.parse(diffText, "", true)
 	if err != nil {
 		return CommitDiff{}, err
 	}
@@ -121,7 +122,7 @@ func (t *diffService) unCommittedDiff() (CommitDiff, error) {
 	return CommitDiff{FileDiffs: fileDiffs}, err
 }
 
-func (t *diffService) parse(text string, isUncommitted bool) ([]CommitDiff, error) {
+func (t *diffService) parse(text, path string, isUncommitted bool) ([]CommitDiff, error) {
 	lines := strings.Split(text, "\n")
 
 	var currentCommitDiff *CommitDiff
@@ -146,6 +147,13 @@ func (t *diffService) parse(text string, isUncommitted bool) ([]CommitDiff, erro
 			continue
 		}
 		if fd, ok := tryParseFileDiffHead(line); ok {
+			if path != "" && fd.PathBefore != path && fd.PathAfter != path {
+				// File history includes all paths where path is within the file paths,
+				// Lets filter away those that do not match
+				currentFileDiff = &fd
+				currentSectionDiff = nil
+				continue
+			}
 			currentCommitDiff.FileDiffs = append(currentCommitDiff.FileDiffs, fd)
 			currentFileDiff = &currentCommitDiff.FileDiffs[len(currentCommitDiff.FileDiffs)-1]
 			currentSectionDiff = nil
@@ -165,6 +173,11 @@ func (t *diffService) parse(text string, isUncommitted bool) ([]CommitDiff, erro
 			continue
 		}
 	}
+
+	// For file history with other similar file paths, the file diff can be empty, lets filter them
+	commitDiffs = lo.Filter(commitDiffs, func(v CommitDiff, _ int) bool {
+		return len(v.FileDiffs) > 0
+	})
 
 	return commitDiffs, nil
 }
@@ -263,12 +276,15 @@ func tryParseFileDiffHead(line string) (FileDiff, bool) {
 	if !strings.HasPrefix(line, "diff --git ") {
 		return fileDiff, false
 	}
-	fileDiff.DiffMode = DiffModified
 	files := line[11:]
 	parts := strings.Split(files, " ")
-	fileDiff.PathBefore = parts[0][2:]
-	fileDiff.PathAfter = parts[1][2:]
+	before := parts[0][2:]
+	after := parts[1][2:]
+	fileDiff.DiffMode = DiffModified
+	fileDiff.PathBefore = before
+	fileDiff.PathAfter = after
 	fileDiff.IsRenamed = fileDiff.PathBefore != fileDiff.PathAfter
+
 	return fileDiff, true
 }
 

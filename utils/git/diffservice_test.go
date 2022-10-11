@@ -3,7 +3,6 @@ package git
 import (
 	"testing"
 
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
 )
@@ -96,7 +95,7 @@ func TestFileDiff(t *testing.T) {
 	wf.File(file1).Write("3")
 	assert.NoError(t, g.Commit("third"))
 
-	diff, err := g.FileDiff(file1)
+	_, err := g.FileDiff(file1)
 	assert.NoError(t, err)
-	t.Logf("diff:\n%s", utils.PrettyString(diff))
+	//t.Logf("diff:\n%s", utils.PrettyString(diff))
 }
