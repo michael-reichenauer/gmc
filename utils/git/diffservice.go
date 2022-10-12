@@ -66,7 +66,7 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 		return t.unCommittedDiff()
 	}
 
-	diffText, err := t.cmd.Git("show",
+	diffText, err := t.cmd.Git("show", "--date=iso",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		//"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6", id)
@@ -81,7 +81,7 @@ func (t *diffService) commitDiff(id string) (CommitDiff, error) {
 }
 
 func (t *diffService) fileDiff(path string) ([]CommitDiff, error) {
-	diffText, err := t.cmd.Git("log", "--patch", "--follow", "--", path)
+	diffText, err := t.cmd.Git("log", "--date=iso", "--patch", "--follow", "--", path)
 	if err != nil {
 		return []CommitDiff{}, err
 	}
@@ -93,7 +93,7 @@ func (t *diffService) fileDiff(path string) ([]CommitDiff, error) {
 }
 
 func (t *diffService) unCommittedDiff() (CommitDiff, error) {
-	diffText, err := t.cmd.Git("diff",
+	diffText, err := t.cmd.Git("diff", "--date=iso",
 		"--first-parent", "--root", "--patch", "--ignore-space-change", "--no-color",
 		//	"--output-indicator-context==", "--output-indicator-new=>", "--output-indicator-old=<",
 		"--find-renames", "--unified=6", "HEAD")

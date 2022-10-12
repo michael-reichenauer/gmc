@@ -152,9 +152,9 @@ func (h *branchesService) determineCommitBranch(
 	} else if branch := h.hasBranchNameInSubject(repo, c); branch != nil {
 		// A branch name could be parsed form the commit subject or a child subject.
 		return branch
-		//} else if branch := h.hasOnlyOneChild(c); branch != nil {
-		// 	// Commit has one child commit, use that child commit branch
-		// 	return branch
+	} else if branch := h.hasOnlyOneChild(c); branch != nil {
+		// Commit has one child commit, use that child commit branch
+		return branch
 	} else if branch := h.isChildAmbiguousBranch(c); branch != nil {
 		// one of the commit children is a ambiguous branch, reuse same ambiguous branch
 		return branch
@@ -168,6 +168,20 @@ func (h *branchesService) hasOnlyOneBranch(c *Commit) *Branch {
 	if len(c.Branches) == 1 {
 		// Commit only has one branch, it must have been an actual branch tip originally, use that
 		return c.Branches[0]
+	}
+	return nil
+}
+
+func (h *branchesService) isLocalRemoteBranch(c *Commit) *Branch {
+	if len(c.Branches) == 2 {
+		if c.Branches[0].IsRemote && c.Branches[0].Name == c.Branches[1].RemoteName {
+			// remote and local branch, prefer remote
+			return c.Branches[0]
+		}
+		if !c.Branches[0].IsRemote && c.Branches[0].RemoteName == c.Branches[1].Name {
+			// local and remote branch, prefer remote
+			return c.Branches[1]
+		}
 	}
 	return nil
 }
@@ -206,64 +220,6 @@ func (h *branchesService) hasChildrenPriorityBranch(commit *Commit, branchesChil
 		}
 	}
 
-	return nil
-}
-
-func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
-	if len(c.Branches) < 1 {
-		return nil
-	}
-	for _, bp := range DefaultBranchPriority {
-		for _, cb := range c.Branches {
-			if bp == cb.Name {
-				return cb
-			}
-		}
-	}
-	return nil
-}
-
-func (h *branchesService) hasOnlyOneChild(c *Commit) *Branch {
-	if len(c.Children) == 1 && len(c.MergeChildren) == 0 {
-		// Commit has one child commit, use that child commit branch
-		return c.Children[0].Branch
-	}
-	return nil
-}
-
-func (h *branchesService) isChildAmbiguousBranch(c *Commit) *Branch {
-	for _, cc := range c.Children {
-		if cc.Branch != nil && cc.Branch.IsAmbiguousBranch {
-			// one of the commit children is a ambiguous branch
-			return cc.Branch
-		}
-	}
-	return nil
-}
-
-func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
-	// Try find a branch with the name
-	for _, b := range c.Branches {
-		if name == b.Name {
-			// Found a branch, if the branch has a remote branch, try find that
-			if b.RemoteName != "" {
-				for _, b2 := range c.Branches {
-					if b.RemoteName == b2.Name {
-						// Found the remote branch, prefer that
-						return b2
-					}
-				}
-			}
-			// branch b had no remote branch, use local
-			return b
-		}
-	}
-	// Try find a branch with the display name
-	for _, b := range c.Branches {
-		if name == b.DisplayName {
-			return b
-		}
-	}
 	return nil
 }
 
@@ -329,15 +285,15 @@ func (h *branchesService) hasOneChildWithLikelyBranch(c *Commit) *Branch {
 	return nil
 }
 
-func (h *branchesService) isLocalRemoteBranch(c *Commit) *Branch {
-	if len(c.Branches) == 2 {
-		if c.Branches[0].IsRemote && c.Branches[0].Name == c.Branches[1].RemoteName {
-			// remote and local branch, prefer remote
-			return c.Branches[0]
-		}
-		if !c.Branches[0].IsRemote && c.Branches[0].RemoteName == c.Branches[1].Name {
-			// local and remote branch, prefer remote
-			return c.Branches[1]
+func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
+	if len(c.Branches) < 1 {
+		return nil
+	}
+	for _, bp := range DefaultBranchPriority {
+		for _, cb := range c.Branches {
+			if bp == cb.Name {
+				return cb
+			}
 		}
 	}
 	return nil
@@ -377,6 +333,50 @@ func (h *branchesService) hasBranchNameInSubject(repo *Repo, c *Commit) *Branch 
 	return nil
 }
 
+func (h *branchesService) hasOnlyOneChild(c *Commit) *Branch {
+	if len(c.Children) == 1 && len(c.MergeChildren) == 0 {
+		// Commit has one child commit, use that child commit branch
+		return c.Children[0].Branch
+	}
+	return nil
+}
+
+func (h *branchesService) isChildAmbiguousBranch(c *Commit) *Branch {
+	for _, cc := range c.Children {
+		if cc.Branch != nil && cc.Branch.IsAmbiguousBranch {
+			// one of the commit children is a ambiguous branch
+			return cc.Branch
+		}
+	}
+	return nil
+}
+
+func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
+	// Try find a branch with the name
+	for _, b := range c.Branches {
+		if name == b.Name {
+			// Found a branch, if the branch has a remote branch, try find that
+			if b.RemoteName != "" {
+				for _, b2 := range c.Branches {
+					if b.RemoteName == b2.Name {
+						// Found the remote branch, prefer that
+						return b2
+					}
+				}
+			}
+			// branch b had no remote branch, use local
+			return b
+		}
+	}
+	// Try find a branch with the display name
+	for _, b := range c.Branches {
+		if name == b.DisplayName {
+			return b
+		}
+	}
+	return nil
+}
+
 // setMasterBackbone, if the commit branch is one of the prioritized branches,
 // that branch is added to the parent commit branches as well (inherited)
 func (h *branchesService) setMasterBackbone(c *Commit) {
@@ -385,7 +385,7 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 		return
 	}
 
-	if utils.StringsContains(DefaultBranchPriority, c.Branch.Name) {
+	if lo.Contains(DefaultBranchPriority, c.Branch.Name) {
 		// main and develop are special and will make a "backbone" for other branches to depend on
 		c.FirstParent.addBranch(c.Branch)
 	}
