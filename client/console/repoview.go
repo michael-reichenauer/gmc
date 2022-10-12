@@ -179,6 +179,12 @@ func (t *RepoView) showCommitBranchesMenu() {
 }
 
 func (t *RepoView) showContextMenu() {
+	log.Infof("Show context %v", t.searchView != nil)
+	if t.searchView != nil {
+		t.vm.showSelectedSearchCommit()
+		return
+	}
+
 	vp := t.view.ViewPage()
 	menu := t.menuService.getContextMenu(vp.CurrentLine)
 	menu.Show(40, 0)

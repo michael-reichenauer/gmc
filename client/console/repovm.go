@@ -269,6 +269,11 @@ func (t *repoVM) ShowSearchView() {
 	t.repoViewer.ShowSearchView()
 }
 
+func (t *repoVM) showSelectedSearchCommit() {
+	c := t.repo.Commits[t.currentIndex]
+	t.showCommitDiff(c.ID)
+}
+
 func (t *repoVM) showSelectedCommitDiff() {
 	c := t.repo.Commits[t.currentIndex]
 	t.showCommitDiff(c.ID)
