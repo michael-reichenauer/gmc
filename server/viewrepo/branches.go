@@ -41,6 +41,7 @@ func (t *ViewRepoService) getAugmentedBranches(branchNames []string, augmentedRe
 
 	branches = t.addLocalBranches(branches, augmentedRepo)
 	branches = t.addRemoteBranches(branches, augmentedRepo)
+
 	t.sortBranches(branches)
 	return branches
 }

@@ -7,6 +7,10 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
+type BranchesGraph interface {
+	SetGraph(repo *repo)
+}
+
 var branchColors = []cui.Color{
 	cui.CMagenta,
 	// cui.CMagentaDk,
@@ -25,42 +29,55 @@ var branchColors = []cui.Color{
 type branchesGraph struct {
 }
 
-func newBranchesGraph() *branchesGraph {
+func newBranchesGraph() BranchesGraph {
 	return &branchesGraph{}
 }
 
-func (s *branchesGraph) drawBranchLines(repo *repo) {
-	for _, branch := range repo.Branches {
-		branch.tip = repo.commitById[branch.tipId]
-		s.drawBranchLine(branch)
-	}
+func (t *branchesGraph) SetGraph(repo *repo) {
+	t.drawBranchLines(repo)
+	t.drawConnectorLines(repo)
 }
 
-func (s *branchesGraph) drawBranchLine(branch *branch) {
-	c := branch.tip
-	for {
-		if c.Branch != branch {
-			// this commit is not part of the branch (several branches on the same commit)
-			break
-		}
-		if c == c.Branch.tip {
-			c.graph[branch.index].Branch.Set(api.BTip) //       ┏   (branch tip)
-		}
-		if c == c.Branch.tip && c.Branch.isGitBranch {
-			c.graph[branch.index].Branch.Set(api.BActiveTip) // ┣   (indicate possible more commits in the future)
-		}
-		if c == c.Branch.bottom {
-			c.graph[branch.index].Branch.Set(api.BBottom) //    ┗   (bottom commit (e.g. initial commit on main)
-		}
-		if c != c.Branch.tip && c != c.Branch.bottom { //       ┣   (normal commit, in the middle)
-			c.graph[branch.index].Branch.Set(api.BCommit)
-		}
+func (s *branchesGraph) drawBranchLines(repo *repo) {
+	for _, b := range repo.Branches {
+		c := b.tip
 
-		if c.Parent == nil || c.Branch != c.Parent.Branch {
-			// Reached bottom of branch
-			break
+		// graphIndex := 0
+		// for _, bb := range repo.Branches[:i] {
+		// 	if bb.tip.Index <= b.tip.Index && bb.bottom.Index >= b.bottom.Index ||
+		// 		bb.tip.Index <= b.tip.Index && bb.bottom.Index >= b.tip.Index ||
+		// 		bb.tip.Index >= b.tip.Index && bb.tip.Index <= b.bottom.Index ||
+		// 		bb.tip.Index >= b.tip.Index && bb.bottom.Index <= b.bottom.Index {
+		// 		graphIndex++
+		// 	}
+		// }
+
+		// b.graphIndex = graphIndex
+
+		for {
+			if c.Branch != b {
+				// this commit is not part of the branch (several branches on the same commit)
+				break
+			}
+			if c == c.Branch.tip {
+				c.graph[b.index].Branch.Set(api.BTip) //       ┏   (branch tip)
+			}
+			if c == c.Branch.tip && c.Branch.isGitBranch {
+				c.graph[b.index].Branch.Set(api.BActiveTip) // ┣   (indicate possible more commits in the future)
+			}
+			if c == c.Branch.bottom {
+				c.graph[b.index].Branch.Set(api.BBottom) //    ┗   (bottom commit (e.g. initial commit on main)
+			}
+			if c != c.Branch.tip && c != c.Branch.bottom { //       ┣   (normal commit, in the middle)
+				c.graph[b.index].Branch.Set(api.BCommit)
+			}
+
+			if c.Parent == nil || c.Branch != c.Parent.Branch {
+				// Reached bottom of branch
+				break
+			}
+			c = c.Parent
 		}
-		c = c.Parent
 	}
 }
 
