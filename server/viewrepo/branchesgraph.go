@@ -2,6 +2,8 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
+
+	//"github.com/michael-reichenauer/gmc/client/console"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 )
 
@@ -186,4 +188,63 @@ func (s *branchesGraph) drawConnectorLines(repo *repo) {
 			}
 		}
 	}
+
+	// for bi, b := range repo.Branches {
+	// 	if bi == 0 {
+	// 		continue
+	// 	}
+	// 	log.Infof("Branch %q", b.name)
+	// 	ct := repo.commitById[b.tipId]
+	// 	cb := repo.commitById[b.bottomId]
+	// 	firstIndex := ct.Index
+	// 	lastIndex := cb.Index
+	// 	childId, ok := lo.Find(ct.ChildIDs, func(v string) bool { return repo.commitById[v].MergeParent == ct })
+	// 	if ok {
+	// 		firstIndex = repo.commitById[childId].Index
+	// 	}
+	// 	if cb.Parent != nil {
+	// 		lastIndex = cb.Parent.Index
+	// 	}
+
+	// 	_, ok = lo.Find(repo.Commits[firstIndex:lastIndex], func(v *commit) bool {
+	// 		g := v.graph[bi-1]
+	// 		return !(g.Connect == 8 && g.Branch == 8 || g.Connect == 0 && g.Branch == 0)
+	// 	})
+	// 	if ok {
+	// 		continue
+	// 	}
+
+	// 	log.Infof("Branch %q can be moved", b.name)
+	// 	for i := firstIndex; i <= lastIndex; i++ {
+	// 		c := repo.Commits[i]
+	// 		graph := console.NewRepoGraph()
+	// 		var sb strings.Builder
+	// 		graph.WriteGraph(&sb, c.graph)
+	// 		cg := sb.String()
+	// 		g := c.graph
+
+	// 		log.Infof("%s %s %v, %s", cg, c.SID, g[bi-1], c.Subject)
+	// 	}
+
+	// 	for i := firstIndex; i <= lastIndex; i++ {
+	// 		c := repo.Commits[i]
+	// 		c.graph = append(c.graph[:bi-1], c.graph[bi:]...)
+	// 		c.graph = append(c.graph, api.GraphColumn{})
+	// 	}
+	// 	for i := 0; i < len(repo.Commits); i++ {
+	// 		c := repo.Commits[i]
+	// 		c.graph = append(c.graph[:bi], c.graph[bi:]...)
+	// 		c.graph = append(c.graph, api.GraphColumn{})
+	// 	}
+	// }
+
+	// for _, c := range repo.Commits {
+	// 	graph := console.NewRepoGraph()
+	// 	var sb strings.Builder
+	// 	graph.WriteGraph(&sb, c.graph)
+	// 	cg := sb.String()
+	// 	g := c.graph
+
+	// 	log.Infof("%s %s %v, %s", cg, c.SID, g, c.Subject)
+	// }
 }
