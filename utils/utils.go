@@ -10,6 +10,7 @@ import (
 	"regexp"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -54,6 +55,14 @@ func BinPath() string {
 	}
 
 	return exPath
+}
+
+func ParseInt(text string, def int) int {
+	i, err := strconv.Atoi(text)
+	if err != nil {
+		return def
+	}
+	return i
 }
 
 // func BinPath-Legacy() string {

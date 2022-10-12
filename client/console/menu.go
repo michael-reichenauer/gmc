@@ -261,7 +261,7 @@ func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 	}
 
 	return cui.MenuItem{Text: text, Action: func() {
-		t.vm.ShowBranch(branch.Name)
+		t.vm.ShowBranch(branch.Name, "")
 	}}
 }
 
