@@ -138,6 +138,9 @@ func (t *ViewRepoService) sortBranches(branches []*augmented.Branch) {
 		if right.IsAncestorBranch(left.Name) {
 			return true
 		}
+		if left.RemoteName != "" && right.IsAncestorBranch(left.RemoteName) {
+			return true
+		}
 
 		// no known order for the pair
 		return false
