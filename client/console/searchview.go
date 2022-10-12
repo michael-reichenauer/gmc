@@ -1,10 +1,11 @@
 package console
 
 import (
+	"strings"
+
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"strings"
 )
 
 type Searcher interface {
@@ -99,6 +100,7 @@ func (t *SearchView) onCancel() {
 }
 
 func (t *SearchView) onOk() {
+	t.searcher.SetCurrentView()
 }
 
 func (t *SearchView) scrollUpp() {

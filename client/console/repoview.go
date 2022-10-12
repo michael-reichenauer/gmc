@@ -55,7 +55,7 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
-	view.SetKey(gocui.KeyEnter, t.showContextMenu)
+	view.SetKey(gocui.KeyEnter, t.onEnterClick)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
 	view.SetKey('r', t.vm.triggerRefresh)
 	view.SetKey('R', t.vm.triggerRefresh)
@@ -178,13 +178,21 @@ func (t *RepoView) showCommitBranchesMenu() {
 	menu.Show(11, line-vp.FirstLine)
 }
 
-func (t *RepoView) showContextMenu() {
-	log.Infof("Show context %v", t.searchView != nil)
+func (t *RepoView) onEnterClick() {
+	log.Infof("onEnterClick %v", t.searchView != nil)
+
 	if t.searchView != nil {
-		t.vm.showSelectedSearchCommit()
+		c := t.vm.repo.Commits[t.vm.currentIndex]
+		b := t.vm.repo.Branches[c.BranchIndex]
+		t.searchView.onCancel()
+		t.ui.Post(func() {
+			t.vm.ShowBranch(b.Name, c.ID)
+		})
+
 		return
 	}
 
+	// Show context menu
 	vp := t.view.ViewPage()
 	menu := t.menuService.getContextMenu(vp.CurrentLine)
 	menu.Show(40, 0)

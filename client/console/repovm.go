@@ -164,7 +164,7 @@ func (t *repoVM) monitorModelRoutine() {
 
 func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 	var sbn string
-	if viewPage.CurrentLine < len(t.repo.Commits) {
+	if viewPage.CurrentLine > 0 && viewPage.CurrentLine < len(t.repo.Commits) {
 		sc := t.repo.Commits[viewPage.CurrentLine]
 		sbn = t.repo.Branches[sc.BranchIndex].DisplayName
 	}
@@ -364,17 +364,30 @@ func (t *repoVM) GetNotShownAmbiguousBranches() []api.Branch {
 	return bs
 }
 
-func (t *repoVM) ShowBranch(name string) {
+func (t *repoVM) ShowBranch(name string, commitId string) {
 	t.startCommand(
 		fmt.Sprintf("Show Branch:\n%s", name), func() error {
 			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
 		},
 		func(err error) string { return fmt.Sprintf("Failed to show branch:\n%s\n%s", name, err) },
-		func() { t.ScrollToBranch(name) })
+		func() { t.ScrollToBranch(name, commitId) })
 }
 
-func (t *repoVM) ScrollToBranch(name string) {
+func (t *repoVM) ScrollToBranch(name string, commitId string) {
 	t.ui.Post(func() {
+
+		if commitId != "" {
+			// Show specified commit at top
+			_, i, ok := lo.FindIndexOf(t.repo.Commits, func(v api.Commit) bool { return v.ID == commitId })
+			if !ok {
+				return
+			}
+
+			t.repoViewer.ShowLineAtTop(i)
+			return
+		}
+
+		// Show branch tip
 		branch, ok := lo.Find(t.repo.Branches, func(v api.Branch) bool { return v.Name == name })
 		if !ok {
 			return
@@ -497,7 +510,7 @@ func (t *repoVM) CreateBranch(name string) {
 			return err
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
-		func() { t.ShowBranch(name) })
+		func() { t.ShowBranch(name, "") })
 }
 
 func (t *repoVM) DeleteBranch(name string) {
