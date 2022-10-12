@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
@@ -237,8 +238,14 @@ func (t *diffVM) parseLinesTexts(df api.FileDiff, ds api.SectionDiff) (string, s
 	}
 
 	parts := strings.Split(ds.ChangedIndexes, "+")
-	leftLines := strings.Replace(strings.TrimSpace(parts[0][1:]), ",", " to ", 1)
-	rightLines := strings.Replace(strings.TrimSpace(parts[1]), ",", " to ", 1)
+	leftIndexes := strings.Split(strings.TrimSpace(parts[0][1:]), ",")
+	rightIndexes := strings.Split(strings.TrimSpace(parts[1]), ",")
+	leftFirst := utils.ParseInt(leftIndexes[0], 0)
+	leftLast := utils.ParseInt(leftIndexes[1], 0)
+	rightFirst := utils.ParseInt(rightIndexes[0], 0)
+	rightLast := utils.ParseInt(rightIndexes[1], 0)
+	leftLines := fmt.Sprintf("%d to %d", leftFirst, leftFirst+leftLast)
+	rightLines := fmt.Sprintf("%d to %d", rightFirst, rightFirst+rightLast)
 	leftText := fmt.Sprintf("%s:%s:", df.PathBefore, leftLines)
 	rightText := fmt.Sprintf("%s:%s:", df.PathAfter, rightLines)
 	return leftText, rightText
