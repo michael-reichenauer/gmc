@@ -38,7 +38,7 @@ type ViewRepoService struct {
 
 	augmentedRepo augmented.RepoService
 	configService *config.Service
-	branchesGraph *branchesGraph
+	branchesGraph BranchesGraph
 
 	showRequests       chan showRequest
 	currentBranches    chan []string
@@ -63,6 +63,7 @@ func NewViewRepoService(configService *config.Service, rootPath string) *ViewRep
 		cancel:          cancel,
 	}
 }
+
 func (t *ViewRepoService) ObserveChanges() observer.Stream {
 	return t.changes.Observe()
 }
@@ -620,6 +621,9 @@ func (t *ViewRepoService) GetViewModel(augRepo augmented.Repo, branchNames []str
 	for _, c := range augRepo.Commits {
 		repo.addGitCommit(c)
 	}
+	for _, b := range repo.Branches {
+		b.tip = repo.commitById[b.tipId]
+	}
 
 	t.addTags(repo, augRepo.Tags)
 
@@ -628,12 +632,8 @@ func (t *ViewRepoService) GetViewModel(augRepo augmented.Repo, branchNames []str
 	t.setParentChildRelations(repo)
 	t.setAheadBehind(repo)
 	t.setBranchColors(repo)
+	t.branchesGraph.SetGraph(repo)
 
-	// Draw branch lines
-	t.branchesGraph.drawBranchLines(repo)
-
-	// Draw branch connector lines
-	t.branchesGraph.drawConnectorLines(repo)
 	log.Infof("getViewModel done, %s", ti)
 	return repo
 }

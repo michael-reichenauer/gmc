@@ -6,6 +6,8 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/server/viewrepo/augmented"
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -203,6 +205,47 @@ func (t *repo) toVirtualStatusCommit(branchName string, statusText string, index
 		Branch:     branch,
 		Index:      index,
 		graph:      make([]api.GraphColumn, len(t.Branches)),
+	}
+}
+
+func (t *repo) drawHorizontalLine(x, x2, y int, color cui.Color) {
+	for i := x; i < x2; i++ {
+		t.SetGraphBranchPass(i, y, api.Pass, color)
+		t.SetGraphPass(i, y, api.Pass, color)
+	}
+}
+
+func (t *repo) drawVerticalLine(x, y, y2 int, color cui.Color) {
+	for j := y; j < y2; j++ {
+		t.SetGraphConnect(x, j, api.ConnectLine, color)
+	}
+}
+
+func (t *repo) SetGraphBranch(x, y int, mark utils.Bitmask, color cui.Color) {
+	t.Commits[y].graph[x].Branch.Set(mark)
+	t.Commits[y].graph[x].BranchColor = api.Color(color)
+}
+
+func (t *repo) SetGraphBranchPass(x, y int, mark utils.Bitmask, color cui.Color) {
+	t.Commits[y].graph[x].Branch.Set(mark)
+
+	if t.Commits[y].graph[x].BranchColor == 0 {
+		t.Commits[y].graph[x].BranchColor = api.Color(color)
+	}
+}
+
+func (t *repo) SetGraphConnect(x, y int, mark utils.Bitmask, color cui.Color) {
+	t.Commits[y].graph[x].Connect.Set(mark)
+	t.Commits[y].graph[x].BranchColor = api.Color(color)
+}
+
+func (t *repo) SetGraphPass(x, y int, mark utils.Bitmask, color cui.Color) {
+	t.Commits[y].graph[x].Connect.Set(mark)
+
+	if t.Commits[y].graph[x].PassColor == 0 {
+		t.Commits[y].graph[x].PassColor = api.Color(color)
+	} else if t.Commits[y].graph[x].PassColor != api.Color(color) {
+		t.Commits[y].graph[x].PassColor = api.Color(cui.CWhite)
 	}
 }
 
