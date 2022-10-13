@@ -13,9 +13,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func Test2(t *testing.T) {
+func TestShowBranchColors(t *testing.T) {
 	for i := 0; i < len(branchColors); i++ {
 		t.Log(cui.ColorText(branchColors[i], strings.Repeat("━", 20)))
+	}
+}
+
+func TestShowAllColors(t *testing.T) {
+	for i := 0; i < len(cui.AllColors); i++ {
+		t.Log(cui.ColorText(cui.AllColors[i], strings.Repeat("━", 20)))
 	}
 }
 

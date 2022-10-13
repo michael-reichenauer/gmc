@@ -334,9 +334,22 @@ func (h *branchesService) hasBranchNameInSubject(repo *Repo, c *Commit) *Branch 
 }
 
 func (h *branchesService) hasOnlyOneChild(c *Commit) *Branch {
+	// This does not work, since a commit could have multiple branch tips
 	if len(c.Children) == 1 && len(c.MergeChildren) == 0 {
+		// Commit has only one child, ensure commit has same branches
+		child := c.Children[0]
+		if len(c.Branches) != len(child.Branches) {
+			// Number of branches have changed
+			return nil
+		}
+		for i := 0; i < len(c.Branches); i++ {
+			if c.Branches[i].Name != child.Branches[i].Name {
+				return nil
+			}
+		}
+
 		// Commit has one child commit, use that child commit branch
-		return c.Children[0].Branch
+		return child.Branch
 	}
 	return nil
 }
