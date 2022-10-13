@@ -25,7 +25,7 @@ type branch struct {
 	HasRemoteOnly        bool
 	color                cui.Color
 	ambiguousBranchNames []string
-	graphIndex           int
+	x                    int
 }
 
 func (t *branch) String() string {
