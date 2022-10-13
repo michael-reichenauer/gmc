@@ -43,6 +43,10 @@ type FileDiff struct {
 
 type SectionDiff struct {
 	ChangedIndexes string
+	LeftLine       int
+	LeftCount      int
+	RightLine      int
+	RightCount     int
 	LinesDiffs     []LinesDiff
 }
 
@@ -204,6 +208,10 @@ func (t *diffService) addAddedFiles(diffs []FileDiff, status Status, dirPath str
 			lds = append(lds, LinesDiff{DiffMode: DiffAdded, Line: line})
 		}
 		sd := SectionDiff{ChangedIndexes: fmt.Sprintf("-0,0 +1,%d", len(lines)), LinesDiffs: lds}
+		sd.LeftLine = 0
+		sd.LeftCount = 0
+		sd.RightLine = 1
+		sd.RightCount = len(lines)
 		diffs = append(diffs, FileDiff{
 			PathBefore:   name,
 			PathAfter:    name,
@@ -234,6 +242,17 @@ func tryParseSectionHead(line string) (SectionDiff, bool) {
 		return sectionDiff, false
 	}
 	sectionDiff.ChangedIndexes = line[3 : endIndex+1]
+
+	parts := strings.Split(sectionDiff.ChangedIndexes, "+")
+	leftIndexes := strings.Split(strings.TrimSpace(parts[0][1:]), ",")
+	rightIndexes := strings.Split(strings.TrimSpace(parts[1]), ",")
+	sectionDiff.LeftLine = utils.ParseInt(leftIndexes[0], 0)
+	sectionDiff.LeftCount = utils.ParseInt(leftIndexes[1], 0)
+	sectionDiff.RightLine = utils.ParseInt(rightIndexes[0], 0)
+	if len(rightIndexes) > 1 {
+		sectionDiff.RightCount = utils.ParseInt(rightIndexes[1], 0)
+	}
+
 	return sectionDiff, true
 }
 

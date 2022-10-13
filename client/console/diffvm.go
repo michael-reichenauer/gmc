@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
@@ -203,6 +202,17 @@ func (t *diffVM) addDiffSummery(commitDiff api.CommitDiff) {
 	}
 }
 
+// func (t *diffVM) lineC(lineNr int, text string, color cui.Color) string {
+// 	lnr:= fmt.Sprintf("%5d ", lineNr)
+// 	if t.firstCharIndex > len(text)+5 {
+// 		return ""
+// 	}
+// 	if t.firstCharIndex <= 0 {
+// 		return cui.Dark(lnr) + text
+// 	}
+// 	return text[t.firstCharIndex:]
+// }
+
 func (t *diffVM) line(text string) string {
 	if t.firstCharIndex > len(text) {
 		return ""
@@ -227,34 +237,27 @@ func (t *diffVM) addFileHeader(df api.FileDiff) {
 
 func (t *diffVM) addDiffSectionHeader(df api.FileDiff, ds api.SectionDiff) {
 	t.addLeftAndRight("")
-	leftLines, rightLines := t.parseLinesTexts(df, ds)
-	t.add(cui.Dark(leftLines), cui.Dark(rightLines))
 	t.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 }
 
-func (t *diffVM) parseLinesTexts(df api.FileDiff, ds api.SectionDiff) (string, string) {
-	if t.isUnified {
-		return fmt.Sprintf("%s:%s:", df.PathAfter, ds.ChangedIndexes), ""
-	}
+// func (t *diffVM) parseLinesTexts(df api.FileDiff, ds api.SectionDiff) (string, string) {
+// 	if t.isUnified {
+// 		return fmt.Sprintf("%s:%s:", df.PathAfter, ds.ChangedIndexes), ""
+// 	}
 
-	parts := strings.Split(ds.ChangedIndexes, "+")
-	leftIndexes := strings.Split(strings.TrimSpace(parts[0][1:]), ",")
-	rightIndexes := strings.Split(strings.TrimSpace(parts[1]), ",")
-	leftFirst := utils.ParseInt(leftIndexes[0], 0)
-	leftLast := utils.ParseInt(leftIndexes[1], 0)
-	rightFirst := utils.ParseInt(rightIndexes[0], 0)
-	rightLast := utils.ParseInt(rightIndexes[1], 0)
-	leftLines := fmt.Sprintf("%d to %d", leftFirst, leftFirst+leftLast)
-	rightLines := fmt.Sprintf("%d to %d", rightFirst, rightFirst+rightLast)
-	leftText := fmt.Sprintf("%s:%s:", df.PathBefore, leftLines)
-	rightText := fmt.Sprintf("%s:%s:", df.PathAfter, rightLines)
-	return leftText, rightText
-}
+// 	leftLines := fmt.Sprintf("%d to %d", ds.LeftLine, ds.LeftCount)
+// 	rightLines := fmt.Sprintf("%d to %d", ds.RightLine, ds.RightCount)
+// 	leftText := fmt.Sprintf("%s:%s:%s:", df.PathBefore, leftLines, ds.ChangedIndexes)
+// 	rightText := fmt.Sprintf("%s:%s:%s:", df.PathAfter, rightLines, ds.ChangedIndexes)
+// 	return leftText, rightText
+// }
 
 func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 	var leftBlock []string
 	var rightBlock []string
 	diffMode := git.DiffConflictEnd
+	leftNr := ds.LeftLine
+	rightNr := ds.RightLine
 	for _, dl := range ds.LinesDiffs {
 		if len(dl.Line) > t.maxWidth {
 			t.maxWidth = len(dl.Line)
@@ -276,22 +279,29 @@ func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 			leftBlock = nil
 			rightBlock = nil
 			t.addLeftAndRight(cui.Dark("=== End of conflict "))
+
 		case api.DiffRemoved:
 			if diffMode == git.DiffConflictStart {
 				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
 				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
-				leftBlock = append(leftBlock, cui.Red(l))
+				lnr := cui.Dark(fmt.Sprintf("%4d ", leftNr))
+				leftNr++
+				leftBlock = append(leftBlock, lnr+cui.Red(l))
 			}
+
 		case api.DiffAdded:
 			if diffMode == git.DiffConflictStart {
 				leftBlock = append(leftBlock, cui.Yellow(l))
 			} else if diffMode == git.DiffConflictSplit {
 				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
-				rightBlock = append(rightBlock, cui.Green(l))
+				rnr := cui.Dark(fmt.Sprintf("%4d ", rightNr))
+				rightNr++
+				rightBlock = append(rightBlock, rnr+cui.Green(l))
 			}
+
 		case api.DiffSame:
 			if diffMode == git.DiffConflictStart {
 				leftBlock = append(leftBlock, cui.Yellow(l))
@@ -301,7 +311,12 @@ func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 				t.addBlocks(leftBlock, rightBlock)
 				leftBlock = nil
 				rightBlock = nil
-				t.addLeftAndRight(l)
+
+				lnr := cui.Dark(fmt.Sprintf("%4d ", leftNr))
+				leftNr++
+				rnr := cui.Dark(fmt.Sprintf("%4d ", rightNr))
+				rightNr++
+				t.add(lnr+l, rnr+l)
 			}
 		}
 	}

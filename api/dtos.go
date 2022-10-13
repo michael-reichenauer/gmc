@@ -217,6 +217,10 @@ type FileDiff struct {
 
 type SectionDiff struct {
 	ChangedIndexes string
+	LeftLine       int
+	LeftCount      int
+	RightLine      int
+	RightCount     int
 	LinesDiffs     []LinesDiff
 }
 

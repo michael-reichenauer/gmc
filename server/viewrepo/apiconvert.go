@@ -39,6 +39,10 @@ func toApiSectionDiffs(gsd []git.SectionDiff) []api.SectionDiff {
 	for i, d := range gsd {
 		diffs[i] = api.SectionDiff{
 			ChangedIndexes: d.ChangedIndexes,
+			LeftLine:       d.LeftLine,
+			LeftCount:      d.LeftCount,
+			RightLine:      d.RightLine,
+			RightCount:     d.RightCount,
 			LinesDiffs:     toApiLineDiffs(d.LinesDiffs),
 		}
 	}
