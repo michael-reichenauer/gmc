@@ -30,11 +30,11 @@ const (
 
 var branchColors = []cui.Color{
 	cui.CMagenta,
+	cui.CGreen,
 	cui.CRed,
 	cui.CBlueDk,
-	cui.CCyan,
 	cui.CYellowDk,
-	cui.CGreen,
+	cui.CCyan,
 }
 
 type showRequest struct {
