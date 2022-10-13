@@ -3,6 +3,7 @@ package viewrepo
 import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/samber/lo"
 )
 
 type BranchesGraph interface {
@@ -56,6 +57,18 @@ func (t *branchesGraph) SetGraph(repo *repo) {
 			}
 		}
 	}
+
+	t.trimUnusedGraphColumns(repo)
+}
+
+func (t *branchesGraph) trimUnusedGraphColumns(repo *repo) {
+	// trim unused graph columns
+	maxBranchX := lo.MaxBy(repo.Branches, func(v1 *branch, max *branch) bool {
+		return v1.x > max.x
+	})
+	for _, c := range repo.Commits {
+		c.graph = c.graph[:maxBranchX.x+1]
+	}
 }
 
 func (t *branchesGraph) drawOtherBranchTip(repo *repo, b *branch, c *commit) {
@@ -63,8 +76,8 @@ func (t *branchesGraph) drawOtherBranchTip(repo *repo, b *branch, c *commit) {
 	y := c.Index
 	color := b.color
 	// this tip commit is not part of the branch (multiple branch tips on the same commit)
-	repo.drawHorizontalLine(c.Branch.x+1, x+1, y, color)   //              ─
-	repo.SetGraphBranch(x, y, api.BBottom|api.Pass, color) //               ┺
+	repo.drawHorizontalLine(c.Branch.x+1, x+1, y, color)       //              ─
+	repo.SetGraphBranchPass(x, y, api.BBottom|api.Pass, color) //           ┺
 
 }
 
@@ -98,19 +111,40 @@ func (t *branchesGraph) drawBranch(repo *repo, b *branch, c *commit) {
 }
 
 func (t *branchesGraph) setBranchesXLocation(repo *repo) {
+
 	for i, b := range repo.Branches {
-		b.x = i
-		// graphIndex := 0
-		// for _, bb := range repo.Branches[:i] {
-		// 	if bb.tip.Index <= b.tip.Index && bb.bottom.Index >= b.bottom.Index ||
-		// 		bb.tip.Index <= b.tip.Index && bb.bottom.Index >= b.tip.Index ||
-		// 		bb.tip.Index >= b.tip.Index && bb.tip.Index <= b.bottom.Index ||
-		// 		bb.tip.Index >= b.tip.Index && bb.bottom.Index <= b.bottom.Index {
-		// 		graphIndex++
-		// 	}
-		// }
-		// b.graphIndex = graphIndex
+		b.x = 0
+		if i == 0 {
+			continue
+		}
+
+		// Ensure parent branches are to the left of child branches
+		if b.parentBranch != nil {
+			if b.parentBranch.localName != "" && b.parentBranch.localName != b.name {
+				b.x = b.parentBranch.x + 2
+			} else {
+				b.x = b.parentBranch.x + 1
+			}
+		}
+
+		// Ensure that siblings do not overlap (with a little margin)
+		for {
+			_, ok := lo.Find(repo.Branches, func(v *branch) bool {
+				return v.name != b.name && v.x == b.x &&
+					isOverlapping(v.tip.Index, v.bottom.Index, b.tip.Index-1, b.bottom.Index+1)
+			})
+			if !ok {
+				break
+			}
+			b.x++
+		}
 	}
+}
+
+func isOverlapping(top1, bottom1, top2, bottom2 int) bool {
+	return (top2 >= top1 && top2 <= bottom1) ||
+		(bottom2 >= top1 && bottom2 <= bottom1) ||
+		(top2 <= top1 && bottom2 >= bottom1)
 }
 
 func (s *branchesGraph) drawMerge(repo *repo, commit *commit) {

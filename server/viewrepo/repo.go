@@ -210,7 +210,7 @@ func (t *repo) toVirtualStatusCommit(branchName string, statusText string, index
 
 func (t *repo) drawHorizontalLine(x, x2, y int, color cui.Color) {
 	for i := x; i < x2; i++ {
-		t.SetGraphBranch(i, y, api.Pass, color)
+		t.SetGraphBranchPass(i, y, api.Pass, color)
 		t.SetGraphPass(i, y, api.Pass, color)
 	}
 }
@@ -224,6 +224,14 @@ func (t *repo) drawVerticalLine(x, y, y2 int, color cui.Color) {
 func (t *repo) SetGraphBranch(x, y int, mark utils.Bitmask, color cui.Color) {
 	t.Commits[y].graph[x].Branch.Set(mark)
 	t.Commits[y].graph[x].BranchColor = api.Color(color)
+}
+
+func (t *repo) SetGraphBranchPass(x, y int, mark utils.Bitmask, color cui.Color) {
+	t.Commits[y].graph[x].Branch.Set(mark)
+
+	if t.Commits[y].graph[x].BranchColor == 0 {
+		t.Commits[y].graph[x].BranchColor = api.Color(color)
+	}
 }
 
 func (t *repo) SetGraphConnect(x, y int, mark utils.Bitmask, color cui.Color) {
