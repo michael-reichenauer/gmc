@@ -111,7 +111,6 @@ func (t *branchesGraph) drawBranch(repo *repo, b *branch, c *commit) {
 }
 
 func (t *branchesGraph) setBranchesXLocation(repo *repo) {
-
 	for i, b := range repo.Branches {
 		b.x = 0
 		if i == 0 {
