@@ -112,20 +112,20 @@ const (
 )
 
 const (
-	BBlank                = 0         //
-	BCommit utils.Bitmask = 1 << iota // ┣
-	BLine                             // ┃
-	BPass                             // ╂
+	BBlank                   = 0         //
+	BCommit    utils.Bitmask = 1 << iota // ┣
+	BLine                                // ┃
+	BTip                                 // ┏
+	BBottom                              // ┗
+	BActiveTip                           // ┣
 
-	BTip        // ┏
-	BBottom     // ┗
-	BMergeLeft  // ╭
-	BMergeRight // ╮
-
-	BBranchLeft  //  ╰
-	BBranchRight // ╯
-	BMLine       // │
-	BActiveTip   // ┣
+	// Connections
+	Pass           // ─ or ╂ for branch positions
+	MergeFromLeft  // ╭
+	MergeFromRight // ╮
+	BranchToLeft   // ╰
+	BranchToRight  // ╯
+	ConnectLine    // │
 )
 
 type Commit struct {

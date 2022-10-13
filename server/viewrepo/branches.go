@@ -41,6 +41,7 @@ func (t *ViewRepoService) getAugmentedBranches(branchNames []string, augmentedRe
 
 	branches = t.addLocalBranches(branches, augmentedRepo)
 	branches = t.addRemoteBranches(branches, augmentedRepo)
+
 	t.sortBranches(branches)
 	return branches
 }
@@ -136,6 +137,9 @@ func (t *ViewRepoService) sortBranches(branches []*augmented.Branch) {
 		}
 
 		if right.IsAncestorBranch(left.Name) {
+			return true
+		}
+		if left.RemoteName != "" && right.IsAncestorBranch(left.RemoteName) {
 			return true
 		}
 

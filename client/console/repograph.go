@@ -28,20 +28,20 @@ func (t *RepoGraph) WriteGraph(sb *strings.Builder, row api.GraphRow) {
 		bColor := cui.Color(row[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
 
 		cColor := bColor
-		if row[i].Connect == api.BPass &&
+		if row[i].Connect == api.Pass &&
 			row[i].PassColor != 0 &&
 			row[i].PassColor != api.Color(cui.CWhite) {
 			cColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if row[i].Connect.Has(api.BPass) {
+		} else if row[i].Connect.Has(api.Pass) {
 			cColor = cui.CWhite
 		}
 		sb.WriteString(cui.ColorRune(cColor, t.graphConnectRune(row[i].Connect)))
 
-		if row[i].Branch == api.BPass &&
+		if row[i].Branch == api.Pass &&
 			row[i].PassColor != 0 &&
 			row[i].PassColor != api.Color(cui.CWhite) {
 			bColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
-		} else if row[i].Branch == api.BPass {
+		} else if row[i].Branch == api.Pass {
 			bColor = cui.CWhite
 		}
 
@@ -85,7 +85,7 @@ func (t *RepoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	case bm.Has(api.BLine):
 		return '┃'
 
-	case bm == api.BPass:
+	case bm == api.Pass:
 		return '─'
 	case bm == api.BBlank:
 		return ' '
@@ -96,39 +96,39 @@ func (t *RepoGraph) graphBranchRune(bm utils.Bitmask) rune {
 
 func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	switch bm {
-	case api.BMergeRight:
+	case api.MergeFromRight:
 		return '╮'
-	case api.BMergeRight | api.BPass:
+	case api.MergeFromRight | api.Pass:
 		return '┬'
-	case api.BMergeRight | api.BMLine:
+	case api.MergeFromRight | api.ConnectLine:
 		return '┤'
-	case api.BMergeRight | api.BBranchRight:
+	case api.MergeFromRight | api.BranchToRight:
 		return '┤'
-	case api.BMergeRight | api.BBranchRight | api.BPass:
+	case api.MergeFromRight | api.BranchToRight | api.Pass:
 		return '┴'
-	case api.BBranchRight:
+	case api.BranchToRight:
 		return '╯'
-	case api.BBranchRight | api.BMLine | api.BPass:
+	case api.BranchToRight | api.ConnectLine | api.Pass:
 		return '┼'
-	case api.BBranchRight | api.BPass:
+	case api.BranchToRight | api.Pass:
 		return '┴'
-	case api.BBranchRight | api.BMLine:
+	case api.BranchToRight | api.ConnectLine:
 		return '┤'
-	case api.BMergeLeft:
+	case api.MergeFromLeft:
 		return '╭'
-	case api.BMergeLeft | api.BBranchLeft:
+	case api.MergeFromLeft | api.BranchToLeft:
 		return '├'
-	case api.BMergeLeft | api.BMLine:
+	case api.MergeFromLeft | api.ConnectLine:
 		return '├'
-	case api.BBranchLeft:
+	case api.BranchToLeft:
 		return '╰'
-	case api.BBranchLeft | api.BMLine:
+	case api.BranchToLeft | api.ConnectLine:
 		return '├'
-	case api.BMLine | api.BPass:
+	case api.ConnectLine | api.Pass:
 		return '┼'
-	case api.BMLine:
+	case api.ConnectLine:
 		return '│'
-	case api.BPass:
+	case api.Pass:
 		return '─'
 	case api.BBlank:
 		return ' '
@@ -138,7 +138,7 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 }
 
 func (t *RepoGraph) hasLeft(bm utils.Bitmask) bool {
-	return bm.Has(api.BBranchLeft) ||
-		bm.Has(api.BMergeLeft) ||
-		bm.Has(api.BPass)
+	return bm.Has(api.BranchToLeft) ||
+		bm.Has(api.MergeFromLeft) ||
+		bm.Has(api.Pass)
 }

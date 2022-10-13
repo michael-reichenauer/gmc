@@ -19,6 +19,10 @@ func main() {
 	Must(RemoveFile("gmc_mac"))
 	EchoLn()
 
+	Echo("Running vet ...")
+	Must(Cmd("go", "vet", "main.go"))
+	EchoLn()
+
 	Echo("Running tests ...")
 	Must(Cmd("go", "test", "-count=1", "./..."))
 	EchoLn()
