@@ -76,8 +76,8 @@ func (t *branchesGraph) drawOtherBranchTip(repo *repo, b *branch, c *commit) {
 	y := c.Index
 	color := b.color
 	// this tip commit is not part of the branch (multiple branch tips on the same commit)
-	repo.drawHorizontalLine(c.Branch.x+1, x+1, y, color)       //              ─
-	repo.SetGraphBranchPass(x, y, api.BBottom|api.Pass, color) //           ┺
+	repo.drawHorizontalLine(c.Branch.x+1, x+1, y, color)   //              ─
+	repo.SetGraphBranch(x, y, api.BBottom|api.Pass, color) //           ┺
 
 }
 
