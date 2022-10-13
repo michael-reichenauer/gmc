@@ -28,8 +28,8 @@ var colors = map[Color]string{
 	CBlue:    "\033[34;1m",
 	CMagenta: "\033[35;1m",
 	CCyan:    "\033[36;1m",
-	CWhite:   "\033[37;2m",
-	CGray:    "\033[37;3m",
+	CWhite:   "\033[37;3m",
+	CGray:    "\033[37;2m",
 	CDark:    "\033[30;1m",
 	CGreen:   "\033[32;1m",
 	CYellow:  "\033[33;1m",
@@ -40,6 +40,25 @@ var colors = map[Color]string{
 	CCyanDk:    "\033[36;3m",
 	CGreenDk:   "\033[32;3m",
 	CYellowDk:  "\033[33;3m",
+}
+
+var AllColors = []Color{
+	CBlack,
+	CRed,
+	CRedDk,
+	CGreen,
+	CGreenDk,
+	CYellow,
+	CYellowDk,
+	CBlue,
+	CBlueDk,
+	CCyan,
+	CCyanDk,
+	CMagenta,
+	CMagentaDk,
+	CWhite,
+	CDark,
+	CGray,
 }
 
 func ColorRune(color Color, r rune) string {

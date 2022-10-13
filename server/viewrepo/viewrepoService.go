@@ -28,6 +28,15 @@ const (
 	remoteMainName   = "origin/main"
 )
 
+var branchColors = []cui.Color{
+	cui.CMagenta,
+	cui.CRed,
+	cui.CBlueDk,
+	cui.CCyan,
+	cui.CYellowDk,
+	cui.CGreen,
+}
+
 type showRequest struct {
 	branches   []string
 	searchText string

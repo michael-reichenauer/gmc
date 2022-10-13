@@ -2,27 +2,11 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/samber/lo"
 )
 
 type BranchesGraph interface {
 	SetGraph(repo *repo)
-}
-
-var branchColors = []cui.Color{
-	cui.CMagenta,
-	// cui.CMagentaDk,
-	cui.CRed,
-	// cui.CRedDk,
-	cui.CBlue,
-	// cui.CBlueDk,
-	// cui.CYellow,
-	cui.CYellowDk,
-	cui.CGreen,
-	// cui.CGreenDk,
-	cui.CCyan,
-	// cui.CCyanDk,
 }
 
 type branchesGraph struct {
