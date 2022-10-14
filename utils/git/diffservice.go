@@ -247,7 +247,9 @@ func tryParseSectionHead(line string) (SectionDiff, bool) {
 	leftIndexes := strings.Split(strings.TrimSpace(parts[0][1:]), ",")
 	rightIndexes := strings.Split(strings.TrimSpace(parts[1]), ",")
 	sectionDiff.LeftLine = utils.ParseInt(leftIndexes[0], 0)
-	sectionDiff.LeftCount = utils.ParseInt(leftIndexes[1], 0)
+	if len(leftIndexes) > 1 {
+		sectionDiff.LeftCount = utils.ParseInt(leftIndexes[1], 0)
+	}
 	sectionDiff.RightLine = utils.ParseInt(rightIndexes[0], 0)
 	if len(rightIndexes) > 1 {
 		sectionDiff.RightCount = utils.ParseInt(rightIndexes[1], 0)
