@@ -249,12 +249,6 @@ func (t *repoVM) showCommitDetails() {
 		}
 	}
 
-	// branchNames := lo.Map(t.repo.Branches, func(v api.Branch, _ int) string {
-	// 	prefix := strings.Repeat(" ", v.X*2)
-	// 	suffix := strings.Repeat(" ", (width-v.X)*2)
-	// 	return fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(v.Color), "┃"), suffix, v.Name)
-	// })
-
 	branchesText := fmt.Sprintf(
 		cui.Dark("Branches:\n%s"),
 		strings.Join(bn, "\n")+
