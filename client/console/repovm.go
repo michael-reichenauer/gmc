@@ -230,15 +230,34 @@ func (t *repoVM) showCommitDetails() {
 
 	width := len(t.repo.ConsoleGraph[0])
 
-	branchNames := lo.Map(t.repo.Branches, func(v api.Branch, _ int) string {
-		prefix := strings.Repeat(" ", v.X*2)
-		suffix := strings.Repeat(" ", (width-v.X)*2)
-		return fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(v.Color), "┃"), suffix, v.Name)
-	})
+	var bn []string
+	for _, b := range t.repo.Branches {
+
+		if b.LocalName != "" {
+			prefix := strings.Repeat(" ", b.X)
+			suffix := strings.Repeat(" ", (width-b.X)-1)
+			// include local branch in same row
+			tx := fmt.Sprintf("%s%s%s%s, %s", prefix, cui.ColorText(cui.Color(b.Color), "┃┃"), suffix, b.Name, b.LocalName)
+			bn = append(bn, tx)
+		} else if b.RemoteName != "" {
+			// Skip local name (was included in the remote row)
+		} else {
+			prefix := strings.Repeat(" ", b.X)
+			suffix := strings.Repeat(" ", (width - b.X))
+			tx := fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(b.Color), "┃"), suffix, b.Name)
+			bn = append(bn, tx)
+		}
+	}
+
+	// branchNames := lo.Map(t.repo.Branches, func(v api.Branch, _ int) string {
+	// 	prefix := strings.Repeat(" ", v.X*2)
+	// 	suffix := strings.Repeat(" ", (width-v.X)*2)
+	// 	return fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(v.Color), "┃"), suffix, v.Name)
+	// })
 
 	branchesText := fmt.Sprintf(
 		cui.Dark("Branches:\n%s"),
-		strings.Join(branchNames, "\n")+
+		strings.Join(bn, "\n")+
 			"\n")
 
 	commitText := fmt.Sprintf(
