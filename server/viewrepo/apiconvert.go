@@ -39,6 +39,10 @@ func toApiSectionDiffs(gsd []git.SectionDiff) []api.SectionDiff {
 	for i, d := range gsd {
 		diffs[i] = api.SectionDiff{
 			ChangedIndexes: d.ChangedIndexes,
+			LeftLine:       d.LeftLine,
+			LeftCount:      d.LeftCount,
+			RightLine:      d.RightLine,
+			RightCount:     d.RightCount,
 			LinesDiffs:     toApiLineDiffs(d.LinesDiffs),
 		}
 	}
@@ -133,6 +137,7 @@ func toApiBranch(b *branch) api.Branch {
 		HasRemoteOnly:        b.HasRemoteOnly,
 		HasLocalOnly:         b.HasLocalOnly,
 		Color:                api.Color(b.color),
+		X:                    b.x,
 		AmbiguousBranchNames: b.ambiguousBranchNames,
 	}
 }

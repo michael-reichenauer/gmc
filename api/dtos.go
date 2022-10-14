@@ -159,21 +159,23 @@ type GraphRow []GraphColumn
 type Graph []GraphRow
 
 type Branch struct {
-	Name                 string
-	DisplayName          string
-	Index                int
-	IsAmbiguousBranch    bool
-	RemoteName           string
-	LocalName            string
-	IsRemote             bool
-	IsGitBranch          bool
-	IsCurrent            bool
-	IsSetAsParent        bool
-	IsMainBranch         bool
-	TipID                string
-	HasLocalOnly         bool
-	HasRemoteOnly        bool
-	Color                Color
+	Name              string
+	DisplayName       string
+	Index             int
+	IsAmbiguousBranch bool
+	RemoteName        string
+	LocalName         string
+	IsRemote          bool
+	IsGitBranch       bool
+	IsCurrent         bool
+	IsSetAsParent     bool
+	IsMainBranch      bool
+	TipID             string
+	HasLocalOnly      bool
+	HasRemoteOnly     bool
+	Color             Color
+	X                 int
+
 	AmbiguousBranchNames []string
 
 	IsShown bool
@@ -217,6 +219,10 @@ type FileDiff struct {
 
 type SectionDiff struct {
 	ChangedIndexes string
+	LeftLine       int
+	LeftCount      int
+	RightLine      int
+	RightCount     int
 	LinesDiffs     []LinesDiff
 }
 
