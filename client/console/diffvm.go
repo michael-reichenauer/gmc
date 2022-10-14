@@ -202,17 +202,6 @@ func (t *diffVM) addDiffSummery(commitDiff api.CommitDiff) {
 	}
 }
 
-// func (t *diffVM) lineC(lineNr int, text string, color cui.Color) string {
-// 	lnr:= fmt.Sprintf("%5d ", lineNr)
-// 	if t.firstCharIndex > len(text)+5 {
-// 		return ""
-// 	}
-// 	if t.firstCharIndex <= 0 {
-// 		return cui.Dark(lnr) + text
-// 	}
-// 	return text[t.firstCharIndex:]
-// }
-
 func (t *diffVM) line(text string) string {
 	if t.firstCharIndex > len(text) {
 		return ""
@@ -221,6 +210,24 @@ func (t *diffVM) line(text string) string {
 		return text
 	}
 	return text[t.firstCharIndex:]
+}
+
+func (t *diffVM) lineWithNr(lineNr int, text string, color cui.Color) string {
+	lineNrText := fmt.Sprintf("%4d ", lineNr)
+
+	if t.firstCharIndex > len(text)+len(lineNrText) {
+		return ""
+	}
+	if t.firstCharIndex <= 0 {
+		// Return whole row with line nr and line text
+		return cui.Dark(lineNrText) + cui.ColorText(color, text)
+	}
+	if t.firstCharIndex <= len(lineNrText) {
+		// Return partial line nr and whole text line
+		return cui.Dark(lineNrText[t.firstCharIndex:]) + cui.ColorText(color, text)
+	}
+	// Return no line nr and partial text line
+	return cui.ColorText(color, text[t.firstCharIndex-len(lineNrText):])
 }
 
 func (t *diffVM) addFileHeader(df api.FileDiff) {
@@ -239,18 +246,6 @@ func (t *diffVM) addDiffSectionHeader(df api.FileDiff, ds api.SectionDiff) {
 	t.addLeftAndRight("")
 	t.addLeftAndRight(cui.Dark(strings.Repeat("─", viewWidth)))
 }
-
-// func (t *diffVM) parseLinesTexts(df api.FileDiff, ds api.SectionDiff) (string, string) {
-// 	if t.isUnified {
-// 		return fmt.Sprintf("%s:%s:", df.PathAfter, ds.ChangedIndexes), ""
-// 	}
-
-// 	leftLines := fmt.Sprintf("%d to %d", ds.LeftLine, ds.LeftCount)
-// 	rightLines := fmt.Sprintf("%d to %d", ds.RightLine, ds.RightCount)
-// 	leftText := fmt.Sprintf("%s:%s:%s:", df.PathBefore, leftLines, ds.ChangedIndexes)
-// 	rightText := fmt.Sprintf("%s:%s:%s:", df.PathAfter, rightLines, ds.ChangedIndexes)
-// 	return leftText, rightText
-// }
 
 func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 	var leftBlock []string
@@ -286,9 +281,9 @@ func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 			} else if diffMode == git.DiffConflictSplit {
 				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
-				lnr := cui.Dark(fmt.Sprintf("%4d ", leftNr))
+				lnr := t.lineWithNr(leftNr, dl.Line, cui.CRed)
 				leftNr++
-				leftBlock = append(leftBlock, lnr+cui.Red(l))
+				leftBlock = append(leftBlock, lnr)
 			}
 
 		case api.DiffAdded:
@@ -297,9 +292,9 @@ func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 			} else if diffMode == git.DiffConflictSplit {
 				rightBlock = append(rightBlock, cui.Yellow(l))
 			} else {
-				rnr := cui.Dark(fmt.Sprintf("%4d ", rightNr))
+				lnr := t.lineWithNr(rightNr, dl.Line, cui.CGreen)
 				rightNr++
-				rightBlock = append(rightBlock, rnr+cui.Green(l))
+				rightBlock = append(rightBlock, lnr)
 			}
 
 		case api.DiffSame:
@@ -312,11 +307,11 @@ func (t *diffVM) addDiffSectionLines(ds api.SectionDiff) {
 				leftBlock = nil
 				rightBlock = nil
 
-				lnr := cui.Dark(fmt.Sprintf("%4d ", leftNr))
+				lnr := t.lineWithNr(leftNr, dl.Line, cui.CWhite)
 				leftNr++
-				rnr := cui.Dark(fmt.Sprintf("%4d ", rightNr))
+				rnr := t.lineWithNr(rightNr, dl.Line, cui.CWhite)
 				rightNr++
-				t.add(lnr+l, rnr+l)
+				t.add(lnr, rnr)
 			}
 		}
 	}
