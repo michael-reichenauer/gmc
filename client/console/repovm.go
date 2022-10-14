@@ -212,6 +212,7 @@ func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphR
 
 func (t *repoVM) showCommitDetails() {
 	c := t.repo.Commits[t.currentIndex]
+	cb := t.repo.Branches[c.BranchIndex]
 
 	var cd api.CommitDetailsRsp
 	err := t.api.GetCommitDetails(api.CommitDetailsReq{RepoID: t.repoID, CommitID: c.ID}, &cd)
@@ -220,23 +221,39 @@ func (t *repoVM) showCommitDetails() {
 		return
 	}
 	files := strings.Join(cd.Files, "\n")
-	title := fmt.Sprintf("Commit %s", c.SID)
+	title := "Details"
 	id := c.ID
 
 	if c.ID == git.UncommittedID {
-		title = "Uncommitted"
 		id = ""
 	}
 
-	text := fmt.Sprintf(cui.Blue("Id:")+"       %s\n"+
-		cui.Blue("Branches:")+" %s\n"+
-		"%s\n\n"+
-		cui.Blue(strings.Repeat("_", 50))+
-		cui.Blue("\n%d Files:\n")+
-		"%s",
-		id, cd.BranchName, cd.Message, len(cd.Files), files)
+	width := len(t.repo.ConsoleGraph[0])
 
-	t.ui.ShowMessageBox(title, text)
+	branchNames := lo.Map(t.repo.Branches, func(v api.Branch, _ int) string {
+		prefix := strings.Repeat(" ", v.X*2)
+		suffix := strings.Repeat(" ", (width-v.X)*2)
+		return fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(v.Color), "┃"), suffix, v.Name)
+	})
+
+	branchesText := fmt.Sprintf(
+		cui.Dark("Branches:\n%s"),
+		strings.Join(branchNames, "\n")+
+			"\n")
+
+	commitText := fmt.Sprintf(
+		cui.Blue(strings.Repeat("_", 50))+
+			cui.Dark("\nSelected Commit\n")+
+			cui.Dark("Id:")+"     %s\n"+
+			cui.Dark("Branch:")+" %s\n"+
+			"%s\n\n"+
+			cui.Blue(strings.Repeat("_", 50))+
+			cui.Blue("\n%d Files:\n")+
+			"%s",
+		id, cui.ColorText(cui.Color(cb.Color), cb.Name), cd.Message, len(cd.Files), files)
+
+	message := branchesText + commitText
+	t.ui.ShowMessageBox(title, message)
 }
 
 func (t *repoVM) showCommitDialog() {

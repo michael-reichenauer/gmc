@@ -137,6 +137,7 @@ func toApiBranch(b *branch) api.Branch {
 		HasRemoteOnly:        b.HasRemoteOnly,
 		HasLocalOnly:         b.HasLocalOnly,
 		Color:                api.Color(b.color),
+		X:                    b.x,
 		AmbiguousBranchNames: b.ambiguousBranchNames,
 	}
 }
