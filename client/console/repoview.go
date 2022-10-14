@@ -223,6 +223,7 @@ func (t *RepoView) ShowSearchView() {
 	if t.searchView != nil {
 		return
 	}
+	t.vm.firstIndex = 0
 
 	mb := cui.Relative(cui.FullScreen(), func(b cui.Rect) cui.Rect {
 		return cui.Rect{X: b.X, Y: b.Y + 2, W: b.W, H: b.H - 2}
