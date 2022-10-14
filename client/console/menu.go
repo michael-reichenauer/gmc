@@ -64,6 +64,11 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 
 	menu.Add(cui.MenuItem{Text: "Search ...", Key: "F", Action: t.vm.ShowSearchView})
 
+	menu.Add(cui.MenuItem{Text: "About ...", Action: func() {
+		t.ui.ShowMessageBox("About gmc",
+			fmt.Sprintf("Version: %s", t.ui.Version()))
+	}})
+
 	// hierarchy
 	if b.IsAmbiguousBranch || b.IsSetAsParent {
 		mi := []cui.MenuItem{}
