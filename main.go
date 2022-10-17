@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	version = "0.47"
+	version = "0.48"
 )
 
 var (
@@ -96,7 +96,7 @@ func main() {
 	}()
 
 	// Start client cmd ui
-	ui := cui.NewCommandUI()
+	ui := cui.NewCommandUI(version)
 	ui.Run(func() {
 		log.Debugf("Show main window %s", st)
 		mainWindow := console.NewMainWindow(ui)

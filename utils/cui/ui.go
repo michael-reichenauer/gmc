@@ -32,6 +32,7 @@ type UI interface {
 	MessageBox(title, text string) *MessageBox
 	ResizeAllViews()
 	NewMenu(title string) Menu
+	Version() string
 	Quit()
 }
 
@@ -43,10 +44,15 @@ type ui struct {
 	windowHeight      int
 	currentViewsStack []*view
 	shownViews        []*view
+	version           string
 }
 
-func NewCommandUI() *ui {
-	return &ui{}
+func NewCommandUI(version string) *ui {
+	return &ui{version: version}
+}
+
+func (t *ui) Version() string {
+	return t.version
 }
 
 func (t *ui) MessageBox(title, text string) *MessageBox {
