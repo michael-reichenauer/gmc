@@ -56,7 +56,7 @@ func (t *keyValueService) setValue(key, value string) error {
 }
 
 func (t *keyValueService) getKeyPath(key string) string {
-	return fmt.Sprintf("refs/gmc-key-value-metadata/%s", key)
+	return fmt.Sprintf("refs/gmc-metadata-key-value/%s", key)
 }
 
 func (t *keyValueService) createTmpFile() (f *os.File, err error) {
