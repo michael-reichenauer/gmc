@@ -237,14 +237,14 @@ func (t *repoVM) showCommitDetails() {
 			prefix := strings.Repeat(" ", b.X)
 			suffix := strings.Repeat(" ", (width-b.X)-1)
 			// include local branch in same row
-			tx := fmt.Sprintf("%s%s%s%s, %s", prefix, cui.ColorText(cui.Color(b.Color), "┃┃"), suffix, b.Name, b.LocalName)
+			tx := fmt.Sprintf("%s%s%s%s, %s", prefix, cui.ColorText(cui.Color(b.Color), "┏┏"), suffix, b.Name, b.LocalName)
 			bn = append(bn, tx)
 		} else if b.RemoteName != "" {
 			// Skip local name (was included in the remote row)
 		} else {
 			prefix := strings.Repeat(" ", b.X)
 			suffix := strings.Repeat(" ", (width - b.X))
-			tx := fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(b.Color), "┃"), suffix, b.Name)
+			tx := fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(b.Color), "┏"), suffix, b.Name)
 			bn = append(bn, tx)
 		}
 	}

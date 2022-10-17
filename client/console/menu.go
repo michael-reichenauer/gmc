@@ -27,8 +27,10 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	c := t.vm.repo.Commits[currentLineIndex]
 	b := t.vm.repo.Branches[c.BranchIndex]
 
-	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
 	menu.Add(cui.MenuItem{Text: "Show Details ...", Action: func() { t.vm.showCommitDetails() }})
+	menu.Add(cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
+
+	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
 	menu.Add(cui.MenuItem{Text: "Show Diff ...", Key: "D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
@@ -45,24 +47,27 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getHideBranchMenuItems()
 	}})
+	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", Key: "S", SubItemsFunc: func() []cui.MenuItem {
+		return t.getSwitchBranchMenuItems()
+	}})
 	menu.Add(cui.MenuItem{Text: "Push", Title: "Push", SubItemsFunc: func() []cui.MenuItem {
 		return t.getPushBranchMenuItems()
 	}})
 	menu.Add(cui.MenuItem{Text: "Pull/Update", Title: "Update", SubItemsFunc: func() []cui.MenuItem {
 		return t.getPullBranchMenuItems()
 	}})
+	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "M", SubItemsFunc: func() []cui.MenuItem {
+		return t.getMergeMenuItems()
+	}})
 	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
 	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItemsFunc: func() []cui.MenuItem {
 		return t.getDeleteBranchMenuItems()
 	}})
-	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", Key: "S", SubItemsFunc: func() []cui.MenuItem {
-		return t.getSwitchBranchMenuItems()
-	}})
-	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "", SubItemsFunc: func() []cui.MenuItem {
-		return t.getMergeMenuItems()
-	}})
 
-	menu.Add(cui.MenuItem{Text: "Search ...", Key: "F", Action: t.vm.ShowSearchView})
+	menu.Add(cui.MenuItem{Text: "About ...", Action: func() {
+		t.ui.ShowMessageBox("About gmc",
+			fmt.Sprintf("Version: %s", t.ui.Version()))
+	}})
 
 	// hierarchy
 	if b.IsAmbiguousBranch || b.IsSetAsParent {
