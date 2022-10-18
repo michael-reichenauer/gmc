@@ -40,6 +40,14 @@ type RepoChange struct {
 	Error      error
 }
 
+type gitRepo struct {
+	RootPath string
+	Commits  []git.Commit
+	Branches []git.Branch
+	Status   git.Status
+	Tags     []git.Tag
+}
+
 type repoService struct {
 	branchesService *branchesService
 	configService   *config.Service
@@ -290,7 +298,7 @@ func (s *repoService) GetFreshRepo() (Repo, error) {
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
-	gitRepo, err := s.git.GetRepo(partialMax)
+	gitRepo, err := s.getGitRepo(partialMax)
 	if err != nil {
 		return Repo{}, err
 	}
@@ -318,4 +326,31 @@ func (s *repoService) fetchRoutine(ctx context.Context) {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
+}
+
+func (t *repoService) getGitRepo(maxCommitCount int) (gitRepo, error) {
+	commits, err := t.git.GetLogMax(maxCommitCount)
+	if err != nil {
+		return gitRepo{}, err
+	}
+	branches, err := t.git.GetBranches()
+	if err != nil {
+		return gitRepo{}, err
+	}
+	status, err := t.git.GetStatus()
+	if err != nil {
+		return gitRepo{}, err
+	}
+	tags, err := t.git.GetTags()
+	if err != nil {
+		return gitRepo{}, err
+	}
+
+	return gitRepo{
+		RootPath: t.git.RepoPath(),
+		Commits:  commits,
+		Branches: branches,
+		Status:   status,
+		Tags:     tags,
+	}, nil
 }

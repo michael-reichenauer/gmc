@@ -18,18 +18,10 @@ const (
 
 var ErrConflicts = errors.New("merge resulted in conflict(s)")
 
-type Repo struct {
-	RootPath string
-	Commits  []Commit
-	Branches []Branch
-	Status   Status
-	Tags     []Tag
-}
-
 type Git interface {
-	GetRepo(maxCommitCount int) (Repo, error)
 	RepoPath() string
 	GetLog() (Commits, error)
+	GetLogMax(maxCommitCount int) (Commits, error)
 	GetStatus() (Status, error)
 	GetBranches() (Branches, error)
 	GetFiles(ref string) ([]string, error)
@@ -115,35 +107,12 @@ func (t *git) ConfigUser(name, email string) error {
 	return t.configService.ConfigUser(name, email)
 }
 
-func (t *git) GetRepo(maxCommitCount int) (Repo, error) {
-	commits, err := t.logService.getLog(maxCommitCount)
-	if err != nil {
-		return Repo{}, err
-	}
-	branches, err := t.branchService.getBranches()
-	if err != nil {
-		return Repo{}, err
-	}
-	status, err := t.statusService.getStatus()
-	if err != nil {
-		return Repo{}, err
-	}
-	tags, err := t.tagService.getTags()
-	if err != nil {
-		return Repo{}, err
-	}
-
-	return Repo{
-		RootPath: t.cmd.WorkingDir(),
-		Commits:  commits,
-		Branches: branches,
-		Status:   status,
-		Tags:     tags,
-	}, nil
-}
-
 func (t *git) RepoPath() string {
 	return t.cmd.WorkingDir()
+}
+
+func (t *git) GetLogMax(maxCommitCount int) (Commits, error) {
+	return t.logService.getLog(maxCommitCount)
 }
 
 func (t *git) GetLog() (Commits, error) {
