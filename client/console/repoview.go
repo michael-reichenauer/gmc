@@ -73,8 +73,6 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey('P', t.vm.PushCurrentBranch)
 	view.SetKey('u', t.vm.PullCurrentBranch)
 	view.SetKey('U', t.vm.PullCurrentBranch)
-	view.SetKey('s', t.showSwitchesMenu)
-	view.SetKey('S', t.showSwitchesMenu)
 	view.SetKey('m', t.showMergeMenu)
 	view.SetKey('M', t.showMergeMenu)
 
@@ -141,13 +139,6 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
-func (t *RepoView) showSwitchesMenu() {
-	vp := t.view.ViewPage()
-	line := vp.CurrentLine
-	menu := t.menuService.getSwitchMenu()
-	menu.Show(11, line-vp.FirstLine)
-}
-
 func (t *RepoView) showMergeMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
@@ -169,12 +160,7 @@ func (t *RepoView) showCommitBranchesMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
-	if len(t.vm.GetCommitBranches(line)) == 0 {
-		// Commit has no branches
-		return
-	}
-
-	menu := t.menuService.getShowCommitBranchesMenu(line)
+	menu := t.menuService.getShowBranchesMenu(line)
 	menu.Show(11, line-vp.FirstLine)
 }
 
@@ -215,7 +201,7 @@ func (t *RepoView) mouseLeft(x int, y int) {
 		return
 	}
 
-	menu := t.menuService.getShowCommitBranchesMenu(selectedLine)
+	menu := t.menuService.getShowBranchesMenu(selectedLine)
 	menu.Show(x+3, y+2)
 }
 
