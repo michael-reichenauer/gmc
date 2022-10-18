@@ -2,14 +2,15 @@ package tests
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type TempFolder string
@@ -23,12 +24,31 @@ func CreateTempFolder() TempFolder {
 		panic(log.Fatal(err))
 	}
 
-	dir, err := ioutil.TempDir(basePath, "folder")
+	dir, err := os.MkdirTemp(basePath, "folder")
 	if err != nil {
 		panic(log.Fatal(err))
 	}
 	dir = strings.ReplaceAll(dir, "\\", "/")
 	return TempFolder(dir)
+}
+
+func GetTempPath() string {
+	basePath := TempBasePath()
+
+	err := os.Mkdir(basePath, 0700)
+	if err != nil && !os.IsExist(err) {
+		panic(log.Fatal(err))
+	}
+
+	dir, err := ioutil.TempDir(basePath, "folder")
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	dir = strings.ReplaceAll(dir, "\\", "/")
+
+	_ = os.RemoveAll(dir)
+
+	return dir
 }
 
 func (t TempFolder) Path(elem ...string) string {
@@ -83,16 +103,15 @@ func ManualTest(t *testing.T) {
 		return
 	}
 	name := function[i+1:]
-	path := function[:i]
 
-	p := strings.ReplaceAll(path, "/", "_")
-	p = strings.ReplaceAll(p, ".", "_")
-	p = strings.ReplaceAll(p, "-", "_")
-	if strings.Contains(os.Args[0], p) &&
-		stringsContains(os.Args, fmt.Sprintf("^%s$", name)) {
-		// The test runner is specified to run test for that function name
-		return
+	sName := fmt.Sprintf("^%s$", name)
+	for _, n := range os.Args {
+		if strings.Contains(n, sName) {
+			// name is specified,
+			return
+		}
 	}
+
 	t.SkipNow()
 }
 

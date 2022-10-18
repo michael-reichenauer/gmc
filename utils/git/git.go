@@ -18,24 +18,18 @@ const (
 
 var ErrConflicts = errors.New("merge resulted in conflict(s)")
 
-type Repo struct {
-	RootPath string
-	Commits  []Commit
-	Branches []Branch
-	Status   Status
-	Tags     []Tag
-}
-
 type Git interface {
-	GetRepo(maxCommitCount int) (Repo, error)
 	RepoPath() string
 	GetLog() (Commits, error)
+	GetLogMax(maxCommitCount int) (Commits, error)
 	GetStatus() (Status, error)
 	GetBranches() (Branches, error)
 	GetFiles(ref string) ([]string, error)
 
 	InitRepo() error
-	ConfigRepoUser(name, email string) error
+	InitRepoBare() error
+	Clone(uri, path string) error
+	ConfigUser(name, email string) error
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
@@ -52,18 +46,25 @@ type Git interface {
 	GetTags() ([]Tag, error)
 	PullCurrentBranch() error
 	PullBranch(name string) error
+	GetKeyValue(key string) (string, error)
+	SetKeyValue(key, value string) error
+	PushKeyValue(key string) error
+	PullKeyValue(key string) error
 }
 
 type git struct {
-	cmd           gitCommander
-	statusService *statusService
-	logService    *logService
-	branchService *branchesService
-	ignoreService *ignoreService
-	diffService   *diffService
-	commitService *commitService
-	remoteService *remoteService
-	tagService    *tagService
+	cmd             gitCommander
+	statusService   *statusService
+	logService      *logService
+	branchService   *branchesService
+	ignoreService   *ignoreService
+	diffService     *diffService
+	commitService   *commitService
+	remoteService   *remoteService
+	tagService      *tagService
+	keyValueService *keyValueService
+	repoService     *repoService
+	configService   *configService
 }
 
 func New(path string) Git {
@@ -73,66 +74,45 @@ func New(path string) Git {
 
 func NewWithCmd(cmd gitCommander) Git {
 	status := newStatus(cmd)
+	remoteService := newRemoteService(cmd)
 	return &git{
-		cmd:           cmd,
-		statusService: status,
-		logService:    newLog(cmd),
-		branchService: newBranchService(cmd),
-		remoteService: newRemoteService(cmd),
-		ignoreService: newIgnoreHandler(cmd.WorkingDir()),
-		diffService:   newDiff(cmd, status),
-		commitService: newCommit(cmd),
-		tagService:    newTagService(cmd),
+		cmd:             cmd,
+		statusService:   status,
+		logService:      newLog(cmd),
+		branchService:   newBranchService(cmd),
+		remoteService:   remoteService,
+		ignoreService:   newIgnoreHandler(cmd.WorkingDir()),
+		diffService:     newDiff(cmd, status),
+		commitService:   newCommit(cmd),
+		tagService:      newTagService(cmd),
+		keyValueService: newKeyValue(cmd, remoteService),
+		repoService:     newRepoService(cmd),
+		configService:   newConfigService(cmd),
 	}
 }
 
 func (t *git) InitRepo() error {
-	_, err := t.cmd.Git("init", t.cmd.WorkingDir())
-	return err
+	return t.repoService.InitRepo()
 }
 
-func (t *git) ConfigRepoUser(name, email string) error {
-	_, err := t.cmd.Git("config", "user.name", name)
-	if err != nil {
-		return err
-	}
-	_, err = t.cmd.Git("config", "user.email", email)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (t *git) InitRepoBare() error {
+	return t.repoService.InitRepoBare()
 }
 
-func (t *git) GetRepo(maxCommitCount int) (Repo, error) {
-	commits, err := t.logService.getLog(maxCommitCount)
-	if err != nil {
-		return Repo{}, err
-	}
-	branches, err := t.branchService.getBranches()
-	if err != nil {
-		return Repo{}, err
-	}
-	status, err := t.statusService.getStatus()
-	if err != nil {
-		return Repo{}, err
-	}
-	tags, err := t.tagService.getTags()
-	if err != nil {
-		return Repo{}, err
-	}
+func (t *git) Clone(uri, path string) error {
+	return t.remoteService.clone(uri, path)
+}
 
-	return Repo{
-		RootPath: t.cmd.WorkingDir(),
-		Commits:  commits,
-		Branches: branches,
-		Status:   status,
-		Tags:     tags,
-	}, nil
+func (t *git) ConfigUser(name, email string) error {
+	return t.configService.ConfigUser(name, email)
 }
 
 func (t *git) RepoPath() string {
 	return t.cmd.WorkingDir()
+}
+
+func (t *git) GetLogMax(maxCommitCount int) (Commits, error) {
+	return t.logService.getLog(maxCommitCount)
 }
 
 func (t *git) GetLog() (Commits, error) {
@@ -215,6 +195,22 @@ func (t *git) GetTags() ([]Tag, error) {
 func Version() string {
 	out, _ := exec.Command("git", "version").Output()
 	return strings.TrimSpace(string(out))
+}
+
+func (t *git) GetKeyValue(key string) (string, error) {
+	return t.keyValueService.getValue(key)
+}
+
+func (t *git) SetKeyValue(key, value string) error {
+	return t.keyValueService.setValue(key, value)
+}
+
+func (t *git) PushKeyValue(key string) error {
+	return t.keyValueService.pushValue(key)
+}
+
+func (t *git) PullKeyValue(key string) error {
+	return t.keyValueService.pullValue(key)
 }
 
 func StripRemotePrefix(name string) string {

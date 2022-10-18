@@ -26,6 +26,20 @@ func (t *remoteService) pushBranch(name string) error {
 	return err
 }
 
+func (t *remoteService) pushRefForce(ref string) error {
+	// push set upstream
+	refs := fmt.Sprintf("%s:%s", ref, ref)
+	_, err := t.cmd.Git("push", "--porcelain", "origin", "--set-upstream", "--force", refs)
+	return err
+}
+
+func (t *remoteService) pullRef(ref string) error {
+	// fetch origin
+	refs := fmt.Sprintf("%s:%s", ref, ref)
+	_, err := t.cmd.Git("fetch", "origin", refs)
+	return err
+}
+
 func (t *remoteService) deleteRemoteBranch(name string) error {
 	name = StripRemotePrefix(name)
 	_, err := t.cmd.Git("push", "--porcelain", "origin", "--delete", name)
@@ -42,5 +56,11 @@ func (t *remoteService) pullBranch(name string) error {
 	// fetch origin
 	branchRefs := fmt.Sprintf("%s:%s", name, name)
 	_, err := t.cmd.Git("fetch", "origin", branchRefs)
+	return err
+}
+
+func (t *remoteService) clone(uri, path string) error {
+	// fetch origin
+	_, err := t.cmd.Git("clone", uri, path)
 	return err
 }
