@@ -8,7 +8,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
-	"github.com/thoas/go-funk"
 )
 
 type menuService struct {
@@ -40,15 +39,15 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	}})
 
 	menu.Add(cui.MenuSeparator("Branches"))
-	menu.Add(cui.MenuItem{Text: "Show Branch", SubItemsFunc: func() []cui.MenuItem {
+	menu.Add(cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", SubItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesMenuItems(currentLineIndex)
 	}})
 
-	menu.Add(cui.MenuItem{Text: "Hide Branch", SubItemsFunc: func() []cui.MenuItem {
+	menu.Add(cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", SubItemsFunc: func() []cui.MenuItem {
 		return t.getHideBranchMenuItems()
 	}})
-	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", Key: "S", SubItemsFunc: func() []cui.MenuItem {
-		return t.getSwitchBranchMenuItems()
+	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", SubItemsFunc: func() []cui.MenuItem {
+		return t.getSwitchBranchMenuItems(false)
 	}})
 	menu.Add(cui.MenuItem{Text: "Push", Title: "Push", SubItemsFunc: func() []cui.MenuItem {
 		return t.getPushBranchMenuItems()
@@ -96,12 +95,6 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	return menu
 }
 
-func (t *menuService) getSwitchMenu() cui.Menu {
-	menu := t.ui.NewMenu("Switch/Checkout")
-	menu.AddItems(t.getSwitchBranchMenuItems())
-	return menu
-}
-
 func (t *menuService) getMergeMenu(name string) cui.Menu {
 	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
 	menu.AddItems(t.getMergeMenuItems())
@@ -114,10 +107,12 @@ func (t *menuService) getShowHideBranchesMenu() cui.Menu {
 	return menu
 }
 
-func (t *menuService) getShowCommitBranchesMenu(selectedIndex int) cui.Menu {
-	menu := t.ui.NewMenu("Show branch")
-	menu.AddItems(t.getShowCommitBranchesMenuItems(selectedIndex))
-	// menu.Add(cui.MenuItem{Text: "Hide Branch", SubItems: t.getHideBranchMenuItems()})
+func (t *menuService) getShowBranchesMenu(selectedIndex int) cui.Menu {
+	menu := t.ui.NewMenu("Branches")
+	menu.Add(cui.MenuSeparator("Show"))
+	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
+	menu.Add(cui.MenuSeparator("Switch to"))
+	menu.AddItems(t.getSwitchBranchMenuItems(true))
 	return menu
 }
 
@@ -136,20 +131,24 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
-		if nil == funk.Find(branches, func(b api.Branch) bool {
+		// Current branch is not already shown
+		_, ok = lo.Find(branches, func(b api.Branch) bool {
 			return current.DisplayName == b.DisplayName
-		}) {
+		})
+		if !ok {
+			// Current branch is not amongst the commit branches
 			items = append(items, t.toOpenBranchMenuItem(current))
 		}
 	}
 
-	if len(items) > 0 {
-		items = append(items, cui.MenuSeparator(""))
-	}
+	items = append(items, t.getShowCommitBranchesMenuItems(selectedIndex)...)
 
-	items = append(items, cui.MenuItem{Text: "Latest Branches", SubItemsFunc: func() []cui.MenuItem {
+	if len(items) > 0 {
+		items = append(items, cui.MenuSeparator("Show"))
+	}
+	items = append(items, cui.MenuItem{Text: "Recent Branches", SubItemsFunc: func() []cui.MenuItem {
 		var latestSubItems []cui.MenuItem
-		for _, b := range t.vm.GetLatestBranches(true) {
+		for _, b := range t.vm.GetRecentBranches(true) {
 			latestSubItems = append(latestSubItems, t.toOpenBranchMenuItem(b))
 		}
 		return latestSubItems
@@ -199,7 +198,7 @@ func (t *menuService) getHideBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
+func (t *menuService) getSwitchBranchMenuItems(onlyShown bool) []cui.MenuItem {
 	var items []cui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
@@ -214,11 +213,15 @@ func (t *menuService) getSwitchBranchMenuItems() []cui.MenuItem {
 		items = append(items, switchItem)
 	}
 
+	if onlyShown {
+		return items
+	}
+
 	items = append(items, cui.MenuSeparator(""))
 
 	items = append(items, cui.MenuItem{Text: "Latest Branches", SubItemsFunc: func() []cui.MenuItem {
 		var activeSubItems []cui.MenuItem
-		for _, b := range t.vm.GetLatestBranches(true) {
+		for _, b := range t.vm.GetRecentBranches(true) {
 			bb := b // closure save
 			switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)

@@ -354,7 +354,7 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetRecentBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
 	_ = t.api.GetBranches(api.GetBranchesReq{
@@ -362,6 +362,9 @@ func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 		IncludeOnlyNotShown: skipShown,
 		SortOnLatest:        true,
 	}, &branches)
+	if len(branches) > 15 {
+		branches = branches[:15]
+	}
 	return branches
 }
 
