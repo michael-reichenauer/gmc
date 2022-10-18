@@ -19,8 +19,8 @@ func TestClonePushPull(t *testing.T) {
 	// Prepare for cloned repo 2
 	wf2 := tests.CreateTempFolder()
 	git2 := New(wf2.Path())
-	assert.NoError(t, git2.ConfigUser("test", "test@test.com"))
 	assert.NoError(t, git2.Clone(git1.RepoPath(), wf2.Path()))
+	assert.NoError(t, git2.ConfigUser("test", "test@test.com"))
 	l2, err := git2.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(l2))
@@ -28,8 +28,8 @@ func TestClonePushPull(t *testing.T) {
 	// Prepare for cloned repo 3
 	wf3 := tests.CreateTempFolder()
 	git3 := New(wf3.Path())
-	assert.NoError(t, git3.ConfigUser("test", "test@test.com"))
 	assert.NoError(t, git3.Clone(git1.RepoPath(), wf3.Path()))
+	assert.NoError(t, git3.ConfigUser("test", "test@test.com"))
 	l3, err := git3.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(l3))
