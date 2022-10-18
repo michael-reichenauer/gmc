@@ -2,12 +2,15 @@ package augmented
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
-	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
+	"github.com/samber/lo"
 )
 
 type RepoService interface {
@@ -32,6 +35,8 @@ type RepoService interface {
 	PullBranch(name string) error
 
 	GetFreshRepo() (Repo, error)
+	SetAsParentBranch(b *Branch, name string) error
+	UnsetAsParentBranch(name string) error
 }
 
 type RepoChange struct {
@@ -40,9 +45,19 @@ type RepoChange struct {
 	Error      error
 }
 
+var metaDataKey = "data"
+
+type gitRepo struct {
+	RootPath string
+	Commits  []git.Commit
+	Branches []git.Branch
+	Status   git.Status
+	Tags     []git.Tag
+	MetaData MetaData
+}
+
 type repoService struct {
 	branchesService *branchesService
-	configService   *config.Service
 	folderMonitor   *monitor
 
 	repoChanges   chan RepoChange
@@ -57,12 +72,11 @@ const (
 	partialMax    = 30000 // Max number of commits to handle
 )
 
-func NewRepoService(configService *config.Service, rootPath string) RepoService {
+func NewRepoService(rootPath string) RepoService {
 	g := git.New(rootPath)
 
 	return &repoService{
 		branchesService: newBranchesService(),
-		configService:   configService,
 		git:             g,
 		folderMonitor:   newMonitor(rootPath, g),
 		repoChanges:     make(chan RepoChange, 1),
@@ -256,12 +270,20 @@ func (s *repoService) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 		s.internalPostRepo(repo)
 		if isTriggerFetch {
 			go func() {
-				if err := s.git.Fetch(); err != nil {
+				if err := s.gitFetch(); err != nil {
 					log.Warnf("Failed to fetch %v", err)
 				}
 			}()
 		}
 	}()
+}
+
+func (s *repoService) gitFetch() error {
+	// pull meta data, but ignore error, if error is key not exist, it can be ignored,
+	// if error is remote error, the fetch will handle that
+	_ = s.pullMetaData()
+
+	return s.git.Fetch()
 }
 
 func (s *repoService) internalPostRepo(repo Repo) {
@@ -290,17 +312,18 @@ func (s *repoService) GetFreshRepo() (Repo, error) {
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
 
-	gitRepo, err := s.git.GetRepo(partialMax)
+	gitRepo, err := s.getGitRepo(partialMax)
 	if err != nil {
 		return Repo{}, err
 	}
+	repo.MetaData = gitRepo.MetaData
 
 	repo.Status = newStatus(gitRepo.Status)
 	repo.Tags = toTags(gitRepo.Tags)
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
-	branchesChildren := s.configService.GetRepo(s.git.RepoPath()).BranchesChildren
+	branchesChildren := repo.MetaData.BranchesChildren
 	s.branchesService.setBranchForAllCommits(repo, branchesChildren)
 	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
@@ -314,8 +337,138 @@ func (s *repoService) fetchRoutine(ctx context.Context) {
 	}()
 
 	for range fetchTicker.C {
-		if err := s.git.Fetch(); err != nil {
+		if err := s.gitFetch(); err != nil {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
+}
+
+func (t *repoService) getGitRepo(maxCommitCount int) (gitRepo, error) {
+	commits, err := t.git.GetLogMax(maxCommitCount)
+	if err != nil {
+		return gitRepo{}, err
+	}
+	branches, err := t.git.GetBranches()
+	if err != nil {
+		return gitRepo{}, err
+	}
+	status, err := t.git.GetStatus()
+	if err != nil {
+		return gitRepo{}, err
+	}
+	tags, err := t.git.GetTags()
+	if err != nil {
+		return gitRepo{}, err
+	}
+	metaData := t.getMetaData()
+
+	return gitRepo{
+		RootPath: t.git.RepoPath(),
+		Commits:  commits,
+		Branches: branches,
+		Status:   status,
+		Tags:     tags,
+		MetaData: metaData,
+	}, nil
+}
+
+func (t *repoService) getMetaData() MetaData {
+	metaDataText, err := t.git.GetKeyValue(metaDataKey)
+	if err != nil {
+		// metaData might not exit yet, use empty string and set local value
+		_ = t.git.SetKeyValue(metaDataKey, "")
+		metaDataText = ""
+	}
+
+	return toMetaData(metaDataText)
+}
+
+func (t *repoService) setMetaData(metaData MetaData) error {
+	metaDataJson := string(utils.MustJsonMarshal(metaData))
+	err := t.git.SetKeyValue(metaDataKey, metaDataJson)
+	if err != nil {
+		return err
+	}
+
+	return t.pushMetaData()
+}
+
+func (t *repoService) pullMetaData() error {
+	err := t.git.PullKeyValue(metaDataKey)
+
+	if err != nil {
+		// Could not pull value, if the reason is key does not exist, then lets set it
+		if strings.Contains(err.Error(), "couldn't find remote ref") {
+			_, err = t.git.GetKeyValue(metaDataKey)
+			if err != nil {
+				// Key not set locally, set default first to have something to push
+				_ = t.git.SetKeyValue(metaDataKey, "")
+			}
+
+			return t.pushMetaData()
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (t *repoService) pushMetaData() error {
+	return t.git.PushKeyValue(metaDataKey)
+}
+
+func (t *repoService) SetAsParentBranch(b *Branch, name string) error {
+	if b.ParentBranch == nil {
+		return fmt.Errorf("branch has no parent branch %q", name)
+	}
+	if !b.ParentBranch.IsAmbiguousBranch {
+		return fmt.Errorf("parent branch is not a ambiguous branch %q", b.ParentBranch.Name)
+	}
+
+	parentName := b.BaseName()
+	otherChildren := lo.Filter(b.ParentBranch.AmbiguousBranches, func(v *Branch, _ int) bool {
+		return v.BaseName() != parentName
+	})
+	otherChildrenNames := lo.Map(otherChildren, func(v *Branch, _ int) string {
+		return v.BaseName()
+	})
+
+	metaData := t.getMetaData()
+
+	parentChildrenNames, ok := metaData.BranchesChildren[parentName]
+	if !ok {
+		parentChildrenNames = []string{}
+		metaData.BranchesChildren[parentName] = parentChildrenNames
+	}
+
+	for _, childName := range otherChildrenNames {
+		// Ensure parent branch is not a child of any of the children
+		childChildrenNames, ok := metaData.BranchesChildren[childName]
+		if ok {
+			childChildrenNames = lo.Filter(childChildrenNames, func(v string, _ int) bool {
+				return v != parentName
+			})
+			metaData.BranchesChildren[childName] = childChildrenNames
+		}
+
+		// Add child name as child to parent
+		if !lo.Contains(parentChildrenNames, childName) {
+			parentChildrenNames = append(parentChildrenNames, childName)
+			metaData.BranchesChildren[parentName] = parentChildrenNames
+		}
+	}
+
+	return t.setMetaData(metaData)
+}
+
+func (t *repoService) UnsetAsParentBranch(name string) error {
+	metaData := t.getMetaData()
+
+	_, ok := metaData.BranchesChildren[name]
+	if !ok {
+		return nil
+	}
+	delete(metaData.BranchesChildren, name)
+
+	return t.setMetaData(metaData)
 }

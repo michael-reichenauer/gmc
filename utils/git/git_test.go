@@ -3,12 +3,12 @@ package git
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
+	"os"
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -22,25 +22,11 @@ func TestInit(t *testing.T) {
 	defer tests.CleanTemp()
 	git := New(wf.Path())
 	assert.NoError(t, git.InitRepo())
-	assert.NoError(t, git.ConfigRepoUser("test", "test@test.com"))
+	assert.NoError(t, git.ConfigUser("test", "test@test.com"))
 	assert.Equal(t, wf.Path(), git.RepoPath())
 	l, err := git.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(l))
-}
-
-func TestGit_GetRepo(t *testing.T) {
-	tests.ManualTest(t)
-
-	cmd := newRecorderCmd(newGitCmd(utils.CurrentDir()))
-	gitService := NewWithCmd(cmd)
-	_, err := gitService.GetRepo(0)
-	assert.NoError(t, err)
-
-	gs := NewWithCmd(newMockCmd(cmd.String()))
-	repo, err := gs.GetRepo(0)
-	assert.NoError(t, err)
-	t.Logf("%+v", repo)
 }
 
 type mockCmd struct {

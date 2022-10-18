@@ -10,24 +10,27 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestShowBranchColors(t *testing.T) {
+	tests.ManualTest(t)
 	for i := 0; i < len(branchColors); i++ {
 		t.Log(cui.ColorText(branchColors[i], strings.Repeat("━", 20)))
 	}
 }
 
 func TestShowAllColors(t *testing.T) {
+	tests.ManualTest(t)
 	for i := 0; i < len(cui.AllColors); i++ {
 		t.Log(cui.ColorText(cui.AllColors[i], strings.Repeat("━", 20)))
 	}
 }
 
 func TestCurrentRepo(t *testing.T) {
-	//tests.ManualTest(t)
-	repoService := augmented.NewRepoService(nil, CurrentRoot())
+	tests.ManualTest(t)
+	repoService := augmented.NewRepoService(CurrentRoot())
 	repo, err := repoService.GetFreshRepo()
 	assert.NoError(t, err)
 	assert.Greater(t, len(repo.Commits), 0)
@@ -48,11 +51,13 @@ func TestCurrentRepo(t *testing.T) {
 }
 
 func TestSpecial(t *testing.T) {
-	//tests.ManualTest(t)
+	tests.ManualTest(t)
 	// /workspaces/Dependitor
+	// /workspaces/gg
+	//repoPath := "/workspaces/gg"
 	repoPath := ""
 
-	repoService := augmented.NewRepoService(nil, repoPath)
+	repoService := augmented.NewRepoService(repoPath)
 	repo, err := repoService.GetFreshRepo()
 	assert.NoError(t, err)
 	assert.Greater(t, len(repo.Commits), 0)
@@ -60,7 +65,7 @@ func TestSpecial(t *testing.T) {
 	viewRepoService := NewViewRepoService(nil, repoPath)
 	cb, ok := repo.CurrentBranch()
 	assert.True(t, ok)
-	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name})
+	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name, "origin/develop"})
 	assert.Greater(t, len(viewRepo.Commits), 0)
 
 	graph := console.NewRepoGraph()

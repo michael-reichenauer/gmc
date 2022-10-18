@@ -1,6 +1,7 @@
 package augmented
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -9,6 +10,10 @@ import (
 	"github.com/samber/lo"
 )
 
+type MetaData struct {
+	BranchesChildren map[string][]string
+}
+
 type Repo struct {
 	Commits    []*Commit
 	commitById map[string]*Commit
@@ -16,6 +21,7 @@ type Repo struct {
 	Status     Status
 	Tags       []Tag
 	RepoPath   string
+	MetaData   MetaData
 }
 
 // augmented
@@ -171,4 +177,26 @@ func (r *Repo) addIdNamedBranch(c *Commit) *Branch {
 	b := newUnnamedBranch(c.Id)
 	r.Branches = append(r.Branches, b)
 	return b
+}
+
+func toMetaData(metaDataText string) MetaData {
+	if metaDataText == "" {
+		return defaultMetaData()
+	}
+
+	var metaData MetaData
+	err := json.Unmarshal([]byte(metaDataText), &metaData)
+	if err != nil {
+		log.Warnf("Failed to parse %q, %v", metaDataText, err)
+		return defaultMetaData()
+	}
+
+	if metaData.BranchesChildren == nil {
+		metaData.BranchesChildren = make(map[string][]string)
+	}
+	return metaData
+}
+
+func defaultMetaData() MetaData {
+	return MetaData{BranchesChildren: make(map[string][]string)}
 }
