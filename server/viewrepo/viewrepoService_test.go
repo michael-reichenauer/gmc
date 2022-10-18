@@ -53,7 +53,8 @@ func TestCurrentRepo(t *testing.T) {
 func TestSpecial(t *testing.T) {
 	tests.ManualTest(t)
 	// /workspaces/Dependitor
-	repoPath := ""
+	// /workspaces/gg
+	repoPath := "/workspaces/gg"
 
 	repoService := augmented.NewRepoService(repoPath)
 	repo, err := repoService.GetFreshRepo()
@@ -63,7 +64,7 @@ func TestSpecial(t *testing.T) {
 	viewRepoService := NewViewRepoService(nil, repoPath)
 	cb, ok := repo.CurrentBranch()
 	assert.True(t, ok)
-	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name})
+	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name, "origin/develop"})
 	assert.Greater(t, len(viewRepo.Commits), 0)
 
 	graph := console.NewRepoGraph()

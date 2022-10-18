@@ -2,6 +2,7 @@ package augmented
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/michael-reichenauer/gmc/utils/git"
 )
@@ -79,11 +80,7 @@ func (t *Branch) IsSame(branch *Branch) bool {
 }
 
 func (t *Branch) BaseName() string {
-	if t.IsRemote && t.LocalName != "" {
-		return t.LocalName
-	}
-
-	return t.Name
+	return strings.TrimPrefix(t.Name, "origin/")
 }
 
 func (t *Branch) GetAncestorsAndSelf() []*Branch {

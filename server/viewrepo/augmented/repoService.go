@@ -3,6 +3,7 @@ package augmented
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/michael-reichenauer/gmc/utils"
@@ -44,13 +45,15 @@ type RepoChange struct {
 	Error      error
 }
 
+var metaDataKey = "data"
+
 type gitRepo struct {
 	RootPath string
 	Commits  []git.Commit
 	Branches []git.Branch
 	Status   git.Status
 	Tags     []git.Tag
-	MetaData string
+	MetaData MetaData
 }
 
 type repoService struct {
@@ -267,12 +270,20 @@ func (s *repoService) triggerRepo(ctx context.Context, isTriggerFetch bool) {
 		s.internalPostRepo(repo)
 		if isTriggerFetch {
 			go func() {
-				if err := s.git.Fetch(); err != nil {
+				if err := s.gitFetch(); err != nil {
 					log.Warnf("Failed to fetch %v", err)
 				}
 			}()
 		}
 	}()
+}
+
+func (s *repoService) gitFetch() error {
+	// pull meta data, but ignore error, if error is key not exist, it can be ignored,
+	// if error is remote error, the fetch will handle that
+	_ = s.pullMetaData()
+
+	return s.git.Fetch()
 }
 
 func (s *repoService) internalPostRepo(repo Repo) {
@@ -305,7 +316,7 @@ func (s *repoService) GetFreshRepo() (Repo, error) {
 	if err != nil {
 		return Repo{}, err
 	}
-	repo.MetaData = toMetaData(gitRepo.MetaData)
+	repo.MetaData = gitRepo.MetaData
 
 	repo.Status = newStatus(gitRepo.Status)
 	repo.Tags = toTags(gitRepo.Tags)
@@ -326,7 +337,7 @@ func (s *repoService) fetchRoutine(ctx context.Context) {
 	}()
 
 	for range fetchTicker.C {
-		if err := s.git.Fetch(); err != nil {
+		if err := s.gitFetch(); err != nil {
 			log.Warnf("Failed to fetch %v", err)
 		}
 	}
@@ -349,7 +360,7 @@ func (t *repoService) getGitRepo(maxCommitCount int) (gitRepo, error) {
 	if err != nil {
 		return gitRepo{}, err
 	}
-	metaData := t.getMetaDataText()
+	metaData := t.getMetaData()
 
 	return gitRepo{
 		RootPath: t.git.RepoPath(),
@@ -361,17 +372,49 @@ func (t *repoService) getGitRepo(maxCommitCount int) (gitRepo, error) {
 	}, nil
 }
 
-func (t *repoService) getMetaDataText() string {
-	metaData, err := t.git.GetKeyValue("data")
+func (t *repoService) getMetaData() MetaData {
+	metaDataText, err := t.git.GetKeyValue(metaDataKey)
 	if err != nil {
-		// metaData might not exit yet, use empty string
-		return ""
+		// metaData might not exit yet, use empty string and set local value
+		_ = t.git.SetKeyValue(metaDataKey, "")
+		metaDataText = ""
 	}
-	return metaData
+
+	return toMetaData(metaDataText)
 }
 
-func (t *repoService) setMetaDataText(text string) error {
-	return t.git.SetKeyValue("data", text)
+func (t *repoService) setMetaData(metaData MetaData) error {
+	metaDataJson := string(utils.MustJsonMarshal(metaData))
+	err := t.git.SetKeyValue(metaDataKey, metaDataJson)
+	if err != nil {
+		return err
+	}
+
+	return t.pushMetaData()
+}
+
+func (t *repoService) pullMetaData() error {
+	err := t.git.PullKeyValue(metaDataKey)
+
+	if err != nil {
+		// Could not pull value, if the reason is key does not exist, then lets set it
+		if strings.Contains(err.Error(), "couldn't find remote ref") {
+			_, err = t.git.GetKeyValue(metaDataKey)
+			if err != nil {
+				// Key not set locally, set default first to have something to push
+				_ = t.git.SetKeyValue(metaDataKey, "")
+			}
+
+			return t.pushMetaData()
+		}
+		return err
+	}
+
+	return nil
+}
+
+func (t *repoService) pushMetaData() error {
+	return t.git.PushKeyValue(metaDataKey)
 }
 
 func (t *repoService) SetAsParentBranch(b *Branch, name string) error {
@@ -390,8 +433,7 @@ func (t *repoService) SetAsParentBranch(b *Branch, name string) error {
 		return v.BaseName()
 	})
 
-	metaDataText := t.getMetaDataText()
-	metaData := toMetaData(metaDataText)
+	metaData := t.getMetaData()
 
 	parentChildrenNames, ok := metaData.BranchesChildren[parentName]
 	if !ok {
@@ -416,12 +458,11 @@ func (t *repoService) SetAsParentBranch(b *Branch, name string) error {
 		}
 	}
 
-	return t.setMetaDataText(string(utils.MustJsonMarshal(metaData)))
+	return t.setMetaData(metaData)
 }
 
 func (t *repoService) UnsetAsParentBranch(name string) error {
-	metaDataText := t.getMetaDataText()
-	metaData := toMetaData(metaDataText)
+	metaData := t.getMetaData()
 
 	_, ok := metaData.BranchesChildren[name]
 	if !ok {
@@ -429,5 +470,5 @@ func (t *repoService) UnsetAsParentBranch(name string) error {
 	}
 	delete(metaData.BranchesChildren, name)
 
-	return t.setMetaDataText(string(utils.MustJsonMarshal(metaData)))
+	return t.setMetaData(metaData)
 }
