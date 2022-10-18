@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestClone(t *testing.T) {
+func TestClonePushPull(t *testing.T) {
 	defer tests.CleanTemp()
 
 	// Prepare server repo 1

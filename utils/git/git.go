@@ -69,6 +69,8 @@ type git struct {
 	remoteService   *remoteService
 	tagService      *tagService
 	keyValueService *keyValueService
+	repoService     *repoService
+	configService   *configService
 }
 
 func New(path string) Git {
@@ -89,17 +91,17 @@ func NewWithCmd(cmd gitCommander) Git {
 		commitService:   newCommit(cmd),
 		tagService:      newTagService(cmd),
 		keyValueService: newKeyValue(cmd),
+		repoService:     newRepoService(cmd),
+		configService:   newConfigService(cmd),
 	}
 }
 
 func (t *git) InitRepo() error {
-	_, err := t.cmd.Git("init", t.cmd.WorkingDir())
-	return err
+	return t.repoService.InitRepo()
 }
 
 func (t *git) InitRepoBare() error {
-	_, err := t.cmd.Git("init", "--bare", t.cmd.WorkingDir())
-	return err
+	return t.repoService.InitRepoBare()
 }
 
 func (t *git) Clone(uri, path string) error {
@@ -107,16 +109,7 @@ func (t *git) Clone(uri, path string) error {
 }
 
 func (t *git) ConfigUser(name, email string) error {
-	_, err := t.cmd.Git("config", "user.name", name)
-	if err != nil {
-		return err
-	}
-	_, err = t.cmd.Git("config", "user.email", email)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return t.configService.ConfigUser(name, email)
 }
 
 func (t *git) GetRepo(maxCommitCount int) (Repo, error) {
