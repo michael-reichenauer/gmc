@@ -144,7 +144,7 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 	items = append(items, t.getShowCommitBranchesMenuItems(selectedIndex)...)
 
 	if len(items) > 0 {
-		items = append(items, cui.MenuSeparator("Show"))
+		items = append(items, cui.MenuSeparator(""))
 	}
 	items = append(items, cui.MenuItem{Text: "Recent Branches", SubItemsFunc: func() []cui.MenuItem {
 		var latestSubItems []cui.MenuItem
