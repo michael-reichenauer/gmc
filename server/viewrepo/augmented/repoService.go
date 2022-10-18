@@ -2,12 +2,14 @@ package augmented
 
 import (
 	"context"
+	"fmt"
 	"time"
 
-	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
+	"github.com/samber/lo"
 )
 
 type RepoService interface {
@@ -32,6 +34,8 @@ type RepoService interface {
 	PullBranch(name string) error
 
 	GetFreshRepo() (Repo, error)
+	SetAsParentBranch(b *Branch, name string) error
+	UnsetAsParentBranch(name string) error
 }
 
 type RepoChange struct {
@@ -46,11 +50,11 @@ type gitRepo struct {
 	Branches []git.Branch
 	Status   git.Status
 	Tags     []git.Tag
+	MetaData string
 }
 
 type repoService struct {
 	branchesService *branchesService
-	configService   *config.Service
 	folderMonitor   *monitor
 
 	repoChanges   chan RepoChange
@@ -65,12 +69,11 @@ const (
 	partialMax    = 30000 // Max number of commits to handle
 )
 
-func NewRepoService(configService *config.Service, rootPath string) RepoService {
+func NewRepoService(rootPath string) RepoService {
 	g := git.New(rootPath)
 
 	return &repoService{
 		branchesService: newBranchesService(),
-		configService:   configService,
 		git:             g,
 		folderMonitor:   newMonitor(rootPath, g),
 		repoChanges:     make(chan RepoChange, 1),
@@ -302,13 +305,14 @@ func (s *repoService) GetFreshRepo() (Repo, error) {
 	if err != nil {
 		return Repo{}, err
 	}
+	repo.MetaData = toMetaData(gitRepo.MetaData)
 
 	repo.Status = newStatus(gitRepo.Status)
 	repo.Tags = toTags(gitRepo.Tags)
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
-	branchesChildren := s.configService.GetRepo(s.git.RepoPath()).BranchesChildren
+	branchesChildren := repo.MetaData.BranchesChildren
 	s.branchesService.setBranchForAllCommits(repo, branchesChildren)
 	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
@@ -345,6 +349,7 @@ func (t *repoService) getGitRepo(maxCommitCount int) (gitRepo, error) {
 	if err != nil {
 		return gitRepo{}, err
 	}
+	metaData := t.getMetaDataText()
 
 	return gitRepo{
 		RootPath: t.git.RepoPath(),
@@ -352,5 +357,77 @@ func (t *repoService) getGitRepo(maxCommitCount int) (gitRepo, error) {
 		Branches: branches,
 		Status:   status,
 		Tags:     tags,
+		MetaData: metaData,
 	}, nil
+}
+
+func (t *repoService) getMetaDataText() string {
+	metaData, err := t.git.GetKeyValue("data")
+	if err != nil {
+		// metaData might not exit yet, use empty string
+		return ""
+	}
+	return metaData
+}
+
+func (t *repoService) setMetaDataText(text string) error {
+	return t.git.SetKeyValue("data", text)
+}
+
+func (t *repoService) SetAsParentBranch(b *Branch, name string) error {
+	if b.ParentBranch == nil {
+		return fmt.Errorf("branch has no parent branch %q", name)
+	}
+	if !b.ParentBranch.IsAmbiguousBranch {
+		return fmt.Errorf("parent branch is not a ambiguous branch %q", b.ParentBranch.Name)
+	}
+
+	parentName := b.BaseName()
+	otherChildren := lo.Filter(b.ParentBranch.AmbiguousBranches, func(v *Branch, _ int) bool {
+		return v.BaseName() != parentName
+	})
+	otherChildrenNames := lo.Map(otherChildren, func(v *Branch, _ int) string {
+		return v.BaseName()
+	})
+
+	metaDataText := t.getMetaDataText()
+	metaData := toMetaData(metaDataText)
+
+	parentChildrenNames, ok := metaData.BranchesChildren[parentName]
+	if !ok {
+		parentChildrenNames = []string{}
+		metaData.BranchesChildren[parentName] = parentChildrenNames
+	}
+
+	for _, childName := range otherChildrenNames {
+		// Ensure parent branch is not a child of any of the children
+		childChildrenNames, ok := metaData.BranchesChildren[childName]
+		if ok {
+			childChildrenNames = lo.Filter(childChildrenNames, func(v string, _ int) bool {
+				return v != parentName
+			})
+			metaData.BranchesChildren[childName] = childChildrenNames
+		}
+
+		// Add child name as child to parent
+		if !lo.Contains(parentChildrenNames, childName) {
+			parentChildrenNames = append(parentChildrenNames, childName)
+			metaData.BranchesChildren[parentName] = parentChildrenNames
+		}
+	}
+
+	return t.setMetaDataText(string(utils.MustJsonMarshal(metaData)))
+}
+
+func (t *repoService) UnsetAsParentBranch(name string) error {
+	metaDataText := t.getMetaDataText()
+	metaData := toMetaData(metaDataText)
+
+	_, ok := metaData.BranchesChildren[name]
+	if !ok {
+		return nil
+	}
+	delete(metaData.BranchesChildren, name)
+
+	return t.setMetaDataText(string(utils.MustJsonMarshal(metaData)))
 }

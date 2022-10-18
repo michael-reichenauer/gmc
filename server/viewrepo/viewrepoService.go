@@ -66,7 +66,7 @@ func NewViewRepoService(configService *config.Service, rootPath string) *ViewRep
 		showRequests:    make(chan showRequest),
 		currentBranches: make(chan []string),
 		branchesGraph:   newBranchesGraph(),
-		augmentedRepo:   augmented.NewRepoService(configService, rootPath),
+		augmentedRepo:   augmented.NewRepoService(rootPath),
 		configService:   configService,
 		ctx:             ctx,
 		cancel:          cancel,
@@ -139,18 +139,6 @@ func (t *ViewRepoService) GetCommitDetails(id string) (api.CommitDetailsRsp, err
 func (t *ViewRepoService) SwitchToBranch(name string, displayName string) error {
 	name = strings.TrimPrefix(name, "origin/")
 	t.ShowBranch(name)
-	// exist := false
-	// for _, b := range repo.viewRepo.augmentedRepo.Branches {
-	// 	if b.IsGitBranch && b.DisplayName == displayName {
-	// 		exist = true
-	// 		break
-	// 	}
-	// }
-	// if !exist {
-	// 	if err := t.augmentedRepo.CreateBranch(displayName); err != nil {
-	// 		return err
-	// 	}
-	// }
 	return t.augmentedRepo.SwitchToBranch(displayName)
 }
 
@@ -233,18 +221,6 @@ func (t *ViewRepoService) GetAmbiguousBranchBranches(args api.AmbiguousBranchBra
 		if !ok {
 			continue
 		}
-
-		// found := false
-		// for _, bbb := range viewRepo.Branches {
-		// 	if name == bbb.name {
-		// 		found = true
-		// 		break
-		// 	}
-		// }
-		// if found {
-		// 	continue
-		// }
-
 		branches = append(branches, toApiBranch(viewRepo.toBranch(branch, 0)))
 	}
 
@@ -912,64 +888,17 @@ func (t *ViewRepoService) SetAsParentBranch(name string) error {
 		return fmt.Errorf("unknown branch %q", name)
 	}
 
-	if b.ParentBranch == nil {
-		return fmt.Errorf("branch has no parent branch %q", name)
-	}
-
-	if !b.ParentBranch.IsAmbiguousBranch {
-		return fmt.Errorf("parent branch is not a ambiguous branch %q", b.ParentBranch.Name)
-	}
-
-	parentName := b.BaseName()
-	otherChildren := lo.Filter(b.ParentBranch.AmbiguousBranches, func(v *augmented.Branch, _ int) bool {
-		return v.BaseName() != parentName
-	})
-	childNames := lo.Map(otherChildren, func(v *augmented.Branch, _ int) string {
-		return v.BaseName()
-	})
-
-	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
-		parentChildrenNames, ok := r.BranchesChildren[parentName]
-		if !ok {
-			parentChildrenNames = []string{}
-			r.BranchesChildren[parentName] = parentChildrenNames
-		}
-
-		for _, childName := range childNames {
-			// Ensure parent branch is not a child of any of the children
-			childChildrenNames, ok := r.BranchesChildren[childName]
-			if ok {
-				childChildrenNames = lo.Filter(childChildrenNames, func(v string, _ int) bool {
-					return v != parentName
-				})
-				r.BranchesChildren[childName] = childChildrenNames
-			}
-
-			// Add child name as child to parent
-			if !lo.Contains(parentChildrenNames, childName) {
-				parentChildrenNames = append(parentChildrenNames, childName)
-				r.BranchesChildren[parentName] = parentChildrenNames
-			}
-		}
-	})
-
-	t.TriggerRefreshModel()
-	return nil
+	return t.augmentedRepo.SetAsParentBranch(b, name)
 }
 
 func (t *ViewRepoService) UnsetAsParentBranch(name string) error {
 	viewRepo := t.getViewRepo()
+	b, ok := viewRepo.augmentedRepo.BranchByName(name)
+	if !ok {
+		return fmt.Errorf("unknown branch %q", name)
+	}
 
-	t.configService.SetRepo(viewRepo.WorkingFolder, func(r *config.Repo) {
-		_, ok := r.BranchesChildren[name]
-		if !ok {
-			return
-		}
-		delete(r.BranchesChildren, name)
-	})
-
-	t.TriggerRefreshModel()
-	return nil
+	return t.augmentedRepo.UnsetAsParentBranch(b.BaseName())
 }
 
 func (t *ViewRepoService) addTags(repo *repo, tags []augmented.Tag) {

@@ -6,7 +6,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
@@ -28,20 +27,6 @@ func TestInit(t *testing.T) {
 	l, err := git.GetLog()
 	assert.NoError(t, err)
 	assert.Equal(t, 0, len(l))
-}
-
-func TestGit_GetRepo(t *testing.T) {
-	tests.ManualTest(t)
-
-	cmd := newRecorderCmd(newGitCmd(utils.CurrentDir()))
-	gitService := NewWithCmd(cmd)
-	_, err := gitService.GetRepo(0)
-	assert.NoError(t, err)
-
-	gs := NewWithCmd(newMockCmd(cmd.String()))
-	repo, err := gs.GetRepo(0)
-	assert.NoError(t, err)
-	t.Logf("%+v", repo)
 }
 
 type mockCmd struct {

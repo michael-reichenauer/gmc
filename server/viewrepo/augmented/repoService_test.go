@@ -14,7 +14,7 @@ import (
 
 func TestCurrentAugmentedRepo_Manual(t *testing.T) {
 	//tests.ManualTest(t)
-	repoService := NewRepoService(nil, CurrentRoot())
+	repoService := NewRepoService(CurrentRoot())
 	repo, err := repoService.GetFreshRepo()
 	assert.NoError(t, err)
 	assert.Greater(t, len(repo.Commits), 0)
@@ -30,7 +30,7 @@ func TestSpecialAugmentedRepo_Manual(t *testing.T) {
 
 func TestCurrentRepoTrigger_Manual(t *testing.T) {
 	tests.ManualTest(t)
-	repoService := NewRepoService(nil, CurrentRoot())
+	repoService := NewRepoService(CurrentRoot())
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	repoService.StartMonitor(ctx)

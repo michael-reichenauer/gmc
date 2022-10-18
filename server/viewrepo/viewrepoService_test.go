@@ -30,7 +30,7 @@ func TestShowAllColors(t *testing.T) {
 
 func TestCurrentRepo(t *testing.T) {
 	tests.ManualTest(t)
-	repoService := augmented.NewRepoService(nil, CurrentRoot())
+	repoService := augmented.NewRepoService(CurrentRoot())
 	repo, err := repoService.GetFreshRepo()
 	assert.NoError(t, err)
 	assert.Greater(t, len(repo.Commits), 0)
@@ -55,7 +55,7 @@ func TestSpecial(t *testing.T) {
 	// /workspaces/Dependitor
 	repoPath := ""
 
-	repoService := augmented.NewRepoService(nil, repoPath)
+	repoService := augmented.NewRepoService(repoPath)
 	repo, err := repoService.GetFreshRepo()
 	assert.NoError(t, err)
 	assert.Greater(t, len(repo.Commits), 0)
