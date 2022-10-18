@@ -1,10 +1,11 @@
 package git
 
 import (
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestStatusFromCurrentDir(t *testing.T) {

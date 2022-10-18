@@ -10,23 +10,26 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestShowBranchColors(t *testing.T) {
+	tests.ManualTest(t)
 	for i := 0; i < len(branchColors); i++ {
 		t.Log(cui.ColorText(branchColors[i], strings.Repeat("━", 20)))
 	}
 }
 
 func TestShowAllColors(t *testing.T) {
+	tests.ManualTest(t)
 	for i := 0; i < len(cui.AllColors); i++ {
 		t.Log(cui.ColorText(cui.AllColors[i], strings.Repeat("━", 20)))
 	}
 }
 
 func TestCurrentRepo(t *testing.T) {
-	//tests.ManualTest(t)
+	tests.ManualTest(t)
 	repoService := augmented.NewRepoService(nil, CurrentRoot())
 	repo, err := repoService.GetFreshRepo()
 	assert.NoError(t, err)
@@ -48,7 +51,7 @@ func TestCurrentRepo(t *testing.T) {
 }
 
 func TestSpecial(t *testing.T) {
-	//tests.ManualTest(t)
+	tests.ManualTest(t)
 	// /workspaces/Dependitor
 	repoPath := ""
 
