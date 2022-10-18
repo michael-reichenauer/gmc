@@ -9,11 +9,12 @@ import (
 )
 
 type keyValueService struct {
-	cmd gitCommander
+	cmd           gitCommander
+	remoteService *remoteService
 }
 
-func newKeyValue(cmd gitCommander) *keyValueService {
-	return &keyValueService{cmd: cmd}
+func newKeyValue(cmd gitCommander, remoteService *remoteService) *keyValueService {
+	return &keyValueService{cmd: cmd, remoteService: remoteService}
 }
 
 func (t *keyValueService) getValue(key string) (string, error) {
@@ -23,6 +24,14 @@ func (t *keyValueService) getValue(key string) (string, error) {
 		return "", err
 	}
 	return value, nil
+}
+
+func (t *keyValueService) pushValue(key string) error {
+	return t.remoteService.pushRefForce(t.getKeyPath(key))
+}
+
+func (t *keyValueService) pullValue(key string) error {
+	return t.remoteService.pullRef(t.getKeyPath(key))
 }
 
 func (t *keyValueService) setValue(key, value string) error {

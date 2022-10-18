@@ -54,8 +54,10 @@ type Git interface {
 	GetTags() ([]Tag, error)
 	PullCurrentBranch() error
 	PullBranch(name string) error
-	GetValue(key string) (string, error)
-	SetValue(key, value string) error
+	GetKeyValue(key string) (string, error)
+	SetKeyValue(key, value string) error
+	PushKeyValue(key string) error
+	PullKeyValue(key string) error
 }
 
 type git struct {
@@ -80,17 +82,18 @@ func New(path string) Git {
 
 func NewWithCmd(cmd gitCommander) Git {
 	status := newStatus(cmd)
+	remoteService := newRemoteService(cmd)
 	return &git{
 		cmd:             cmd,
 		statusService:   status,
 		logService:      newLog(cmd),
 		branchService:   newBranchService(cmd),
-		remoteService:   newRemoteService(cmd),
+		remoteService:   remoteService,
 		ignoreService:   newIgnoreHandler(cmd.WorkingDir()),
 		diffService:     newDiff(cmd, status),
 		commitService:   newCommit(cmd),
 		tagService:      newTagService(cmd),
-		keyValueService: newKeyValue(cmd),
+		keyValueService: newKeyValue(cmd, remoteService),
 		repoService:     newRepoService(cmd),
 		configService:   newConfigService(cmd),
 	}
@@ -225,12 +228,20 @@ func Version() string {
 	return strings.TrimSpace(string(out))
 }
 
-func (t *git) GetValue(key string) (string, error) {
+func (t *git) GetKeyValue(key string) (string, error) {
 	return t.keyValueService.getValue(key)
 }
 
-func (t *git) SetValue(key, value string) error {
+func (t *git) SetKeyValue(key, value string) error {
 	return t.keyValueService.setValue(key, value)
+}
+
+func (t *git) PushKeyValue(key string) error {
+	return t.keyValueService.pushValue(key)
+}
+
+func (t *git) PullKeyValue(key string) error {
+	return t.keyValueService.pullValue(key)
 }
 
 func StripRemotePrefix(name string) string {

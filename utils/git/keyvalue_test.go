@@ -16,14 +16,14 @@ func TestKeyValue(t *testing.T) {
 	assert.NoError(t, git.ConfigUser("test", "test@test.com"))
 
 	// Test set/get value
-	err := git.SetValue("keyname", "value1")
+	err := git.SetKeyValue("keyname", "value1")
 	assert.NoError(t, err)
 
-	v, err := git.GetValue("keyname")
+	v, err := git.GetKeyValue("keyname")
 	assert.NoError(t, err)
 	assert.Equal(t, "value1", v)
 
-	err = git.SetValue("keyname", "value1")
+	err = git.SetKeyValue("keyname", "value1")
 	assert.NoError(t, err)
 }
 
@@ -47,30 +47,31 @@ func TestSyncViaServer(t *testing.T) {
 	assert.NoError(t, git3.Clone(git1.RepoPath(), wf3.Path()))
 
 	// Set key in repo 2
-	assert.NoError(t, git2.SetValue("keyname", "value1"))
-	v2, err := git2.GetValue("keyname")
+	assert.NoError(t, git2.SetKeyValue("keyname", "value1"))
+	v2, err := git2.GetKeyValue("keyname")
 	assert.NoError(t, err)
 	assert.Equal(t, "value1", v2)
 
-	// // Pull in repo 3 and verify
-	// assert.NoError(t, git3.Fetch())
-	// assert.NoError(t, git3.PullCurrentBranch())
-	// l3, err = git3.GetLog()
-	// assert.NoError(t, err)
-	// assert.Equal(t, 1, len(l3))
-	// assert.Equal(t, "initial", l3[0].Subject)
-	// assert.Equal(t, "1", wf3.File("a.txt").Read())
+	// Push key from repo 2 to server repo 1
+	assert.NoError(t, git2.PushKeyValue("keyname"))
 
-	// // Chang file and push repo 3 to server repo 1
-	// wf3.File("a.txt").Write("2")
-	// assert.NoError(t, git3.Commit("second"))
-	// assert.NoError(t, git3.PushBranch("master"))
+	// Verify that repo 3 does not have the key yet
+	_, err = git3.GetKeyValue("keyname")
+	assert.True(t, err != nil)
 
-	// // Update repo 2 from server and verify that commit from repo 3 reached repo 2 via server
-	// assert.NoError(t, git2.PullCurrentBranch())
-	// l2, err = git2.GetLog()
-	// assert.NoError(t, err)
-	// assert.Equal(t, 2, len(l2))
-	// assert.Equal(t, "second", l2[0].Subject)
-	// assert.Equal(t, "initial", l2[1].Subject)
+	// Pull the key from server repo into repo 3 and verify value
+	assert.NoError(t, git3.PullKeyValue("keyname"))
+	v3, err := git3.GetKeyValue("keyname")
+	assert.NoError(t, err)
+	assert.Equal(t, "value1", v3)
+
+	// Update value in repo 3 and push to server repo
+	assert.NoError(t, git3.SetKeyValue("keyname", "value2"))
+	assert.NoError(t, git3.PushKeyValue("keyname"))
+
+	// Pull the key to repo 3 and verify new value
+	assert.NoError(t, git2.PullKeyValue("keyname"))
+	v2, err = git2.GetKeyValue("keyname")
+	assert.NoError(t, err)
+	assert.Equal(t, "value2", v2)
 }
