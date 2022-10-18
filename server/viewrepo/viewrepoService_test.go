@@ -54,7 +54,8 @@ func TestSpecial(t *testing.T) {
 	tests.ManualTest(t)
 	// /workspaces/Dependitor
 	// /workspaces/gg
-	repoPath := "/workspaces/gg"
+	//repoPath := "/workspaces/gg"
+	repoPath := ""
 
 	repoService := augmented.NewRepoService(repoPath)
 	repo, err := repoService.GetFreshRepo()
