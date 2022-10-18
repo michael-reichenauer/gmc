@@ -3,12 +3,13 @@ package git
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"os"
-	"testing"
 )
 
 func TestMain(m *testing.M) {
@@ -22,7 +23,7 @@ func TestInit(t *testing.T) {
 	defer tests.CleanTemp()
 	git := New(wf.Path())
 	assert.NoError(t, git.InitRepo())
-	assert.NoError(t, git.ConfigRepoUser("test", "test@test.com"))
+	assert.NoError(t, git.ConfigUser("test", "test@test.com"))
 	assert.Equal(t, wf.Path(), git.RepoPath())
 	l, err := git.GetLog()
 	assert.NoError(t, err)

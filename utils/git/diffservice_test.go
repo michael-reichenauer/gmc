@@ -13,7 +13,7 @@ func TestCommitDiff(t *testing.T) {
 
 	g := New(wf.Path())
 	assert.NoError(t, g.InitRepo())
-	assert.NoError(t, g.ConfigRepoUser("test", "test@test.com"))
+	assert.NoError(t, g.ConfigUser("test", "test@test.com"))
 
 	wf.File(file1).Write("1")
 	assert.NoError(t, g.Commit("initial"))
@@ -84,7 +84,7 @@ func TestFileDiff(t *testing.T) {
 
 	g := New(wf.Path())
 	assert.NoError(t, g.InitRepo())
-	assert.NoError(t, g.ConfigRepoUser("test", "test@test.com"))
+	assert.NoError(t, g.ConfigUser("test", "test@test.com"))
 
 	wf.File(file1).Write("1")
 	assert.NoError(t, g.Commit("initial"))

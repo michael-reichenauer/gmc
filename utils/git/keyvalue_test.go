@@ -13,7 +13,7 @@ func TestKeyValue(t *testing.T) {
 	defer tests.CleanTemp()
 	git := New(wf.Path())
 	assert.NoError(t, git.InitRepo())
-	assert.NoError(t, git.ConfigRepoUser("test", "test@test.com"))
+	assert.NoError(t, git.ConfigUser("test", "test@test.com"))
 
 	// Test set/get value
 	err := git.SetValue("keyname", "value1")

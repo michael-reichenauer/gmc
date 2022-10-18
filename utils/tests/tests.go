@@ -2,14 +2,15 @@ package tests
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"io/ioutil"
 	"os"
 	"path"
 	"runtime"
 	"strings"
 	"testing"
+
+	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type TempFolder string
@@ -23,12 +24,31 @@ func CreateTempFolder() TempFolder {
 		panic(log.Fatal(err))
 	}
 
-	dir, err := ioutil.TempDir(basePath, "folder")
+	dir, err := os.MkdirTemp(basePath, "folder")
 	if err != nil {
 		panic(log.Fatal(err))
 	}
 	dir = strings.ReplaceAll(dir, "\\", "/")
 	return TempFolder(dir)
+}
+
+func GetTempPath() string {
+	basePath := TempBasePath()
+
+	err := os.Mkdir(basePath, 0700)
+	if err != nil && !os.IsExist(err) {
+		panic(log.Fatal(err))
+	}
+
+	dir, err := ioutil.TempDir(basePath, "folder")
+	if err != nil {
+		panic(log.Fatal(err))
+	}
+	dir = strings.ReplaceAll(dir, "\\", "/")
+
+	_ = os.RemoveAll(dir)
+
+	return dir
 }
 
 func (t TempFolder) Path(elem ...string) string {

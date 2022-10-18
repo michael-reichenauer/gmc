@@ -44,3 +44,9 @@ func (t *remoteService) pullBranch(name string) error {
 	_, err := t.cmd.Git("fetch", "origin", branchRefs)
 	return err
 }
+
+func (t *remoteService) clone(uri, path string) error {
+	// fetch origin
+	_, err := t.cmd.Git("clone", uri, path)
+	return err
+}

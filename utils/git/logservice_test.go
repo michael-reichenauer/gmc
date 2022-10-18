@@ -1,11 +1,12 @@
 package git
 
 import (
+	"strings"
+	"testing"
+
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 )
 
 var logText = strings.Join(strings.Split(`
@@ -20,7 +21,7 @@ func TestSomeCommits(t *testing.T) {
 
 	git := New(wf.Path())
 	assert.NoError(t, git.InitRepo())
-	assert.NoError(t, git.ConfigRepoUser("test", "test@test.com"))
+	assert.NoError(t, git.ConfigUser("test", "test@test.com"))
 
 	wf.File("a.txt").Write("1")
 	assert.NoError(t, git.Commit("initial"))

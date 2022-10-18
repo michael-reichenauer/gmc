@@ -35,7 +35,9 @@ type Git interface {
 	GetFiles(ref string) ([]string, error)
 
 	InitRepo() error
-	ConfigRepoUser(name, email string) error
+	InitRepoBare() error
+	Clone(uri, path string) error
+	ConfigUser(name, email string) error
 
 	IsIgnored(path string) bool
 	CommitDiff(id string) (CommitDiff, error)
@@ -95,7 +97,16 @@ func (t *git) InitRepo() error {
 	return err
 }
 
-func (t *git) ConfigRepoUser(name, email string) error {
+func (t *git) InitRepoBare() error {
+	_, err := t.cmd.Git("init", "--bare", t.cmd.WorkingDir())
+	return err
+}
+
+func (t *git) Clone(uri, path string) error {
+	return t.remoteService.clone(uri, path)
+}
+
+func (t *git) ConfigUser(name, email string) error {
 	_, err := t.cmd.Git("config", "user.name", name)
 	if err != nil {
 		return err
