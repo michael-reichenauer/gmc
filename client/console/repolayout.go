@@ -80,14 +80,16 @@ func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 			continue
 		}
 		txt := b.DisplayName
-		if b.IsRemote {
-			txt = "^/" + txt
-		}
 		if len(txt) > 15 {
 			txt = "..." + txt[len(txt)-15:]
 		}
+		if b.IsRemote {
+			txt = "^/" + txt
+		}
+
 		t.len = t.len + len(txt) + 2
-		t.text = t.text + cui.ColorText(cui.Color(b.Color), "("+txt+")")
+		tagTxt := cui.ColorText(cui.Color(b.Color), "("+txt+")")
+		t.text = t.text + tagTxt
 		tm[b.TipID] = t
 	}
 
