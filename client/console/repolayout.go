@@ -22,16 +22,23 @@ func newRepoLayout() *repoLayout {
 	return &repoLayout{repoGraph: NewRepoGraph()}
 }
 
+type tip struct {
+	len  int
+	text string
+}
+
 func (t *repoLayout) getPageLines(
 	commits []api.Commit,
 	graphRows []api.GraphRow,
 	viewWidth int,
-	currentBranchDisplayName string,
+	selectedBranchName string,
 	repo api.Repo,
 ) []string {
 	if len(commits) < 1 {
 		return nil
 	}
+
+	tips := t.getBranchTips(repo)
 
 	graphWidth := t.getGraphWidth(graphRows)
 	commitWidth := viewWidth - graphWidth
@@ -45,7 +52,7 @@ func (t *repoLayout) getPageLines(
 		t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
 		t.writeAheadBehindMarker(&sb, c)
-		t.writeSubject(&sb, c, currentBranchDisplayName, messageWidth, repo)
+		t.writeSubject(&sb, c, selectedBranchName, messageWidth, repo, tips)
 		sb.WriteString(" ")
 		t.writeAuthor(&sb, c, authorWidth)
 		sb.WriteString(" ")
@@ -54,6 +61,25 @@ func (t *repoLayout) getPageLines(
 		lines = append(lines, sb.String())
 	}
 	return lines
+}
+
+func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
+	tm := make(map[string]tip)
+	for _, b := range repo.Branches {
+		t, ok := tm[b.TipID]
+		if !ok {
+			t = tip{}
+		}
+		txt := b.DisplayName
+		if b.IsRemote {
+			txt = "^/" + txt
+		}
+		t.len = t.len + len(txt) + 2
+		t.text = t.text + cui.ColorText(cui.Color(b.Color), "("+txt+")")
+		tm[b.TipID] = t
+	}
+
+	return tm
 }
 
 func (t *repoLayout) getMoreIndex(repo api.Repo) int {
@@ -148,10 +174,18 @@ func (t *repoLayout) writeSubject(
 	currentBranchDisplayName string,
 	length int,
 	repo api.Repo,
+	tips map[string]tip,
 ) {
 	tagsText := t.toTagsText(c, length)
+	tipsText := ""
+	tipsLen := 0
+	tip, ok := tips[c.ID]
+	if ok {
+		tipsText = tip.text + " "
+		tipsLen = tip.len + 1
+	}
 
-	subject := utils.Text(c.Subject, length-len(tagsText))
+	subject := utils.Text(c.Subject, length-len(tagsText)-tipsLen)
 	if c.IsPartialLogCommit {
 		sb.WriteString(cui.Dark(subject))
 		return
@@ -162,6 +196,7 @@ func (t *repoLayout) writeSubject(
 			return
 		}
 
+		sb.WriteString(tipsText)
 		sb.WriteString(cui.YellowDk(subject))
 		return
 	}
@@ -177,6 +212,7 @@ func (t *repoLayout) writeSubject(
 		color = cui.CDark
 	}
 	sb.WriteString(cui.Green(tagsText))
+	sb.WriteString(tipsText)
 	sb.WriteString(cui.ColorText(color, subject))
 }
 

@@ -164,7 +164,7 @@ func (t *repoVM) monitorModelRoutine() {
 
 func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 	var sbn string
-	if viewPage.CurrentLine > 0 && viewPage.CurrentLine < len(t.repo.Commits) {
+	if viewPage.CurrentLine >= 0 && viewPage.CurrentLine < len(t.repo.Commits) {
 		sc := t.repo.Commits[viewPage.CurrentLine]
 		sbn = t.repo.Branches[sc.BranchIndex].DisplayName
 	}
@@ -221,43 +221,17 @@ func (t *repoVM) showCommitDetails() {
 		return
 	}
 	files := strings.Join(cd.Files, "\n")
-	title := "Details"
 	id := c.ID
+	sid := c.SID
 
 	if c.ID == git.UncommittedID {
 		id = ""
+		sid = "Uncommitted"
 	}
-
-	width := len(t.repo.ConsoleGraph[0])
-
-	var bn []string
-	for _, b := range t.repo.Branches {
-
-		if b.LocalName != "" {
-			prefix := strings.Repeat(" ", b.X)
-			suffix := strings.Repeat(" ", (width-b.X)-1)
-			// include local branch in same row
-			tx := fmt.Sprintf("%s%s%s%s, %s", prefix, cui.ColorText(cui.Color(b.Color), "┏┏"), suffix, b.Name, b.LocalName)
-			bn = append(bn, tx)
-		} else if b.RemoteName != "" {
-			// Skip local name (was included in the remote row)
-		} else {
-			prefix := strings.Repeat(" ", b.X)
-			suffix := strings.Repeat(" ", (width - b.X))
-			tx := fmt.Sprintf("%s%s%s%s", prefix, cui.ColorText(cui.Color(b.Color), "┏"), suffix, b.Name)
-			bn = append(bn, tx)
-		}
-	}
-
-	branchesText := fmt.Sprintf(
-		cui.Dark("Branches:\n%s"),
-		strings.Join(bn, "\n")+
-			"\n")
+	title := "Commit: " + sid
 
 	commitText := fmt.Sprintf(
-		cui.Blue(strings.Repeat("_", 50))+
-			cui.Dark("\nSelected Commit\n")+
-			cui.Dark("Id:")+"     %s\n"+
+		cui.Dark("Id:")+"     %s\n"+
 			cui.Dark("Branch:")+" %s\n"+
 			"%s\n\n"+
 			cui.Blue(strings.Repeat("_", 50))+
@@ -265,7 +239,7 @@ func (t *repoVM) showCommitDetails() {
 			"%s",
 		id, cui.ColorText(cui.Color(cb.Color), cb.Name), cd.Message, len(cd.Files), files)
 
-	message := branchesText + commitText
+	message := commitText
 	t.ui.ShowMessageBox(title, message)
 }
 
@@ -354,7 +328,7 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetRecentBranches(skipShown bool) []api.Branch {
 	var branches []api.Branch
 
 	_ = t.api.GetBranches(api.GetBranchesReq{
@@ -362,6 +336,9 @@ func (t *repoVM) GetLatestBranches(skipShown bool) []api.Branch {
 		IncludeOnlyNotShown: skipShown,
 		SortOnLatest:        true,
 	}, &branches)
+	if len(branches) > 15 {
+		branches = branches[:15]
+	}
 	return branches
 }
 
