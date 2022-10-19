@@ -72,7 +72,7 @@ func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 		}
 		txt := b.DisplayName
 		if b.IsRemote {
-			txt = "*/" + txt
+			txt = "^/" + txt
 		}
 		t.len = t.len + len(txt) + 2
 		t.text = t.text + cui.ColorText(cui.Color(b.Color), "("+txt+")")
