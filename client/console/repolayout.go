@@ -70,9 +70,21 @@ func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 		if !ok {
 			t = tip{}
 		}
+		if t.len > 40 {
+			// To many tips
+			if !strings.HasSuffix(t.text, "(...") {
+				t.text = t.text + cui.Dark("(...")
+				t.len = t.len + 3
+				tm[b.TipID] = t
+			}
+			continue
+		}
 		txt := b.DisplayName
 		if b.IsRemote {
 			txt = "^/" + txt
+		}
+		if len(txt) > 15 {
+			txt = "..." + txt[len(txt)-15:]
 		}
 		t.len = t.len + len(txt) + 2
 		t.text = t.text + cui.ColorText(cui.Color(b.Color), "("+txt+")")
