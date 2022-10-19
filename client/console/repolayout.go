@@ -90,10 +90,11 @@ func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 		t.len = t.len + len(txt) + 2
 		color := cui.Color(b.Color)
 
-		if !b.IsGitBranch {
-			color = cui.CDark
-		}
 		tagTxt := cui.ColorText(color, "("+txt+")")
+		if !b.IsGitBranch {
+			tagTxt = cui.ColorText(color, "(") + cui.Dark(txt) + cui.ColorText(color, ")")
+		}
+
 		t.text = t.text + tagTxt
 		tm[b.TipID] = t
 	}
