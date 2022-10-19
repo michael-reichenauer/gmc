@@ -188,9 +188,14 @@ func (t *repoVM) getLines(viewPage cui.ViewPage, selectedBranchName string) (int
 	return firstIndex, t.repoLayout.getPageLines(commits, graph, viewPage.Width, selectedBranchName, t.repo)
 }
 
-func (t *repoVM) isMoreClick(x int, y int) bool {
-	moreX := t.repoLayout.getMoreIndex(t.repo)
-	return x == moreX
+func (t *repoVM) isGraphClick(x int, y int) bool {
+	sx := t.repoLayout.getSubjectXCoordinate(t.repo)
+	return x < sx
+}
+
+func (t *repoVM) isSubjectClick(x int, y int) bool {
+	sx := t.repoLayout.getSubjectXCoordinate(t.repo)
+	return x > sx
 }
 
 func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphRow) {

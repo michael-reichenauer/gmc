@@ -102,9 +102,9 @@ func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 	return tm
 }
 
-func (t *repoLayout) getMoreIndex(repo api.Repo) int {
+func (t *repoLayout) getSubjectXCoordinate(repo api.Repo) int {
 	graphWidth := t.getGraphWidth(repo.ConsoleGraph)
-	return graphWidth - 2
+	return graphWidth
 }
 
 func (t *repoLayout) getGraphWidth(graph api.Graph) int {

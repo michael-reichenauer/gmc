@@ -194,15 +194,12 @@ func (t *RepoView) mouseLeft(x int, y int) {
 	vp := t.view.ViewPage()
 	selectedLine := vp.FirstLine + y
 	t.view.SetCurrentLine(selectedLine)
-	if !t.vm.isMoreClick(x, y) {
-		return
-	}
-	if len(t.vm.GetCommitBranches(selectedLine)) == 0 {
-		return
-	}
-
-	menu := t.menuService.getShowBranchesMenu(selectedLine)
-	menu.Show(x+3, y+2)
+	t.ui.Post(func() {
+		if t.vm.isGraphClick(x, y) {
+			menu := t.menuService.getShowBranchesMenu(selectedLine)
+			menu.Show(x+3, y+2)
+		}
+	})
 }
 
 func (t *RepoView) ShowSearchView() {

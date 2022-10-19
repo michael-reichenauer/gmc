@@ -6,7 +6,6 @@ import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -20,79 +19,64 @@ func newMenuService(ui cui.UI, vm *repoVM) *menuService {
 }
 
 func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
-	log.Infof(">")
-	defer log.Infof("<")
-	menu := t.ui.NewMenu("")
 	c := t.vm.repo.Commits[currentLineIndex]
-	b := t.vm.repo.Branches[c.BranchIndex]
+	menu := t.ui.NewMenu("")
 
+	// Commit items
 	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
-	menu.Add(cui.MenuItem{Text: "Show Details ...", Action: func() { t.vm.showCommitDetails() }})
-
-	menu.Add(cui.MenuItem{Text: "Show Diff ...", Key: "D", Action: func() {
-		t.vm.showCommitDiff(c.ID)
-	}})
+	menu.Add(cui.MenuItem{Text: "Show Commit Details ...", Action: t.vm.showCommitDetails})
 	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
-	menu.Add(cui.MenuItem{Text: "Files Diffs", Title: "All Files", SubItemsFunc: func() []cui.MenuItem {
-		return t.getFileDiffsMenuItems()
-	}})
+	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
 
+	// Branches items
 	menu.Add(cui.MenuSeparator("Branches"))
 	menu.Add(cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", SubItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesMenuItems(currentLineIndex)
 	}})
-
-	menu.Add(cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", SubItemsFunc: func() []cui.MenuItem {
-		return t.getHideBranchMenuItems()
-	}})
-	menu.Add(cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
+	menu.Add(cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", SubItemsFunc: t.getHideBranchMenuItems})
 	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", SubItemsFunc: func() []cui.MenuItem {
 		return t.getSwitchBranchMenuItems(false)
 	}})
-	menu.Add(cui.MenuItem{Text: "Push", Title: "Push", SubItemsFunc: func() []cui.MenuItem {
-		return t.getPushBranchMenuItems()
-	}})
-	menu.Add(cui.MenuItem{Text: "Pull/Update", Title: "Update", SubItemsFunc: func() []cui.MenuItem {
-		return t.getPullBranchMenuItems()
-	}})
-	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "M", SubItemsFunc: func() []cui.MenuItem {
-		return t.getMergeMenuItems()
-	}})
+	menu.Add(cui.MenuItem{Text: "Push", Title: "Push", SubItemsFunc: t.getPushBranchMenuItems})
+	menu.Add(cui.MenuItem{Text: "Pull/Update", Title: "Update", SubItemsFunc: t.getPullBranchMenuItems})
+	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "M",
+		SubItemsFunc: t.getMergeMenuItems})
 	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
-	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItemsFunc: func() []cui.MenuItem {
-		return t.getDeleteBranchMenuItems()
-	}})
+	menu.Add(cui.MenuItem{Text: "Delete Branch", SubItemsFunc: t.getDeleteBranchMenuItems})
 
-	menu.Add(cui.MenuItem{Text: "About ...", Action: func() {
-		t.ui.ShowMessageBox("About gmc",
-			fmt.Sprintf("Version: %s", t.ui.Version()))
-	}})
-
-	// hierarchy
-	if b.IsAmbiguousBranch || b.IsSetAsParent {
-		mi := []cui.MenuItem{}
-		if b.IsSetAsParent {
-			mi = append(mi, cui.MenuItem{Text: "Unset Branch as Parent", Action: func() {
-				t.vm.UnsetAsParentBranch(b.Name)
-			}})
-		}
-		if b.IsAmbiguousBranch {
-			mi = append(mi, cui.MenuItem{Text: "Set Ambiguous Branch Parent", SubItemsFunc: func() []cui.MenuItem {
-				return t.getAmbiguousBranchBranchesMenuItems()
-			}})
-		}
-
-		menu.Add(cui.MenuItem{Text: "Branch Hierarchy", SubItems: mi})
+	items := t.getBranchHierarchyMenuItems(c)
+	if len(items) > 0 {
+		menu.Add(cui.MenuItem{Text: "Branch Hierarchy", SubItems: items})
 	}
 
-	menu.Add(cui.MenuSeparator("Repos"))
+	// Other items
+	menu.Add(cui.MenuSeparator("More"))
+	menu.Add(cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
+	menu.Add(cui.MenuItem{Text: "File History", Title: "All Files", SubItemsFunc: t.getFileDiffsMenuItems})
+	menu.Add(cui.MenuItem{Text: "Open Repo", Title: "Open", SubItemsFunc: t.vm.repoViewer.OpenRepoMenuItems})
+	menu.Add(cui.MenuItem{Text: "About ...", Action: t.showAbout})
 
-	menu.Add(cui.MenuItem{Text: "Open Repo", Title: "Open", SubItemsFunc: func() []cui.MenuItem {
-		return t.vm.repoViewer.OpenRepoMenuItems()
-	}})
-
-	// menu.Add(t.vm.mainService.MainMenuItem())
 	return menu
+}
+
+func (t *menuService) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuItem {
+	b := t.vm.repo.Branches[commit.BranchIndex]
+	items := []cui.MenuItem{}
+
+	if b.IsSetAsParent {
+		txt := fmt.Sprintf("Unset %s as Parent", b.DisplayName)
+		items = append(items, cui.MenuItem{Text: txt, Action: func() {
+			t.vm.UnsetAsParentBranch(b.Name)
+		}})
+	} else if b.IsAmbiguousBranch {
+		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent", SubItemsFunc: t.getAmbiguousBranchBranchesMenuItems})
+	}
+
+	return items
+}
+
+func (t *menuService) showAbout() {
+	t.ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", t.ui.Version()))
 }
 
 func (t *menuService) getMergeMenu(name string) cui.Menu {
