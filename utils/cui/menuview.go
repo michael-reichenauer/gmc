@@ -203,7 +203,7 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 	key := ""
 	if t.keyWidth > 0 {
 		if item.Key != "" {
-			key = "   " + utils.Text(item.Key, t.keyWidth)
+			key = "   " + BlueDk(utils.Text(item.Key, t.keyWidth))
 		} else {
 			key = "  " + strings.Repeat(" ", t.keyWidth+1)
 		}

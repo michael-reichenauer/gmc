@@ -26,10 +26,9 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	c := t.vm.repo.Commits[currentLineIndex]
 	b := t.vm.repo.Branches[c.BranchIndex]
 
-	menu.Add(cui.MenuItem{Text: "Show Details ...", Action: func() { t.vm.showCommitDetails() }})
-	menu.Add(cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
-
 	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
+	menu.Add(cui.MenuItem{Text: "Show Details ...", Action: func() { t.vm.showCommitDetails() }})
+
 	menu.Add(cui.MenuItem{Text: "Show Diff ...", Key: "D", Action: func() {
 		t.vm.showCommitDiff(c.ID)
 	}})
@@ -46,6 +45,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	menu.Add(cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", SubItemsFunc: func() []cui.MenuItem {
 		return t.getHideBranchMenuItems()
 	}})
+	menu.Add(cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
 	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", SubItemsFunc: func() []cui.MenuItem {
 		return t.getSwitchBranchMenuItems(false)
 	}})
