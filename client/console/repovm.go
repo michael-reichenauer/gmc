@@ -164,7 +164,7 @@ func (t *repoVM) monitorModelRoutine() {
 
 func (t *repoVM) GetRepoPage(viewPage cui.ViewPage) (repoPage, error) {
 	var sbn string
-	if viewPage.CurrentLine > 0 && viewPage.CurrentLine < len(t.repo.Commits) {
+	if viewPage.CurrentLine >= 0 && viewPage.CurrentLine < len(t.repo.Commits) {
 		sc := t.repo.Commits[viewPage.CurrentLine]
 		sbn = t.repo.Branches[sc.BranchIndex].DisplayName
 	}

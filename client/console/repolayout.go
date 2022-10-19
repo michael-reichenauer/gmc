@@ -31,12 +31,13 @@ func (t *repoLayout) getPageLines(
 	commits []api.Commit,
 	graphRows []api.GraphRow,
 	viewWidth int,
-	currentBranchDisplayName string,
+	selectedBranchName string,
 	repo api.Repo,
 ) []string {
 	if len(commits) < 1 {
 		return nil
 	}
+
 	tips := t.getBranchTips(repo)
 
 	graphWidth := t.getGraphWidth(graphRows)
@@ -51,7 +52,7 @@ func (t *repoLayout) getPageLines(
 		t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
 		t.writeAheadBehindMarker(&sb, c)
-		t.writeSubject(&sb, c, currentBranchDisplayName, messageWidth, repo, tips)
+		t.writeSubject(&sb, c, selectedBranchName, messageWidth, repo, tips)
 		sb.WriteString(" ")
 		t.writeAuthor(&sb, c, authorWidth)
 		sb.WriteString(" ")
