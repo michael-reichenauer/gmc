@@ -25,6 +25,7 @@ type RepoViewer interface {
 	ShowLineAtTop(line int)
 	OpenRepoMenuItems() []cui.MenuItem
 	ShowSearchView()
+	ShowCommitDetails()
 }
 
 type repoVM struct {
@@ -211,22 +212,6 @@ func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphR
 	commits := t.repo.Commits[firstIndex : firstIndex+count]
 	graphRows := t.repo.ConsoleGraph[firstIndex : firstIndex+count]
 	return firstIndex, commits, graphRows
-}
-
-func (t *repoVM) showCommitDetails() {
-	c := t.repo.Commits[t.currentIndex]
-	cb := t.repo.Branches[c.BranchIndex]
-
-	var cd api.CommitDetailsRsp
-	err := t.api.GetCommitDetails(api.CommitDetailsReq{RepoID: t.repoID, CommitID: c.ID}, &cd)
-	if err != nil {
-		log.Warnf("Failed: %v", err)
-		return
-	}
-
-	title, message := getCommitDetails(c, cb, cd)
-
-	t.ui.ShowMessageBox(title, message)
 }
 
 func (t *repoVM) showCommitDialog() {

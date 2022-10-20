@@ -20,6 +20,7 @@ type RepoView struct {
 	vm          *repoVM
 	menuService Menus
 	searchView  *SearchView
+	detailsView *DetailsView
 }
 
 func NewRepoView(ui cui.UI, api api.Api, mainService mainService, repoID string) *RepoView {
@@ -52,6 +53,7 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().Name = "RepoView"
 	view.Properties().OnMouseLeft = t.mouseLeft
 	view.Properties().OnMouseRight = t.showContextMenuAt
+	view.Properties().OnMoved = t.onMoved
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
@@ -73,8 +75,8 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey('P', t.vm.PushCurrentBranch)
 	view.SetKey('u', t.vm.PullCurrentBranch)
 	view.SetKey('U', t.vm.PullCurrentBranch)
-	view.SetKey('m', t.showMergeMenu)
-	view.SetKey('M', t.showMergeMenu)
+	view.SetKey('m', t.showContextMenu)
+	view.SetKey('M', t.showContextMenu)
 
 	view.SetKey('f', t.vm.ShowSearchView)
 	view.SetKey('F', t.vm.ShowSearchView)
@@ -168,8 +170,6 @@ func (t *RepoView) showCommitBranchesMenu() {
 }
 
 func (t *RepoView) onEnterClick() {
-	log.Infof("onEnterClick %v", t.searchView != nil)
-
 	if t.isInSearchMode() {
 		c := t.vm.repo.Commits[t.vm.currentIndex]
 		b := t.vm.repo.Branches[c.BranchIndex]
@@ -181,6 +181,15 @@ func (t *RepoView) onEnterClick() {
 		return
 	}
 
+	if t.isDetailsMode() {
+		t.hideCommitDetails()
+		return
+	}
+
+	t.ShowCommitDetails()
+}
+
+func (t *RepoView) showContextMenu() {
 	// Show context menu
 	vp := t.view.ViewPage()
 	menu := t.menuService.GetContextMenu(vp.CurrentLine)
@@ -225,6 +234,49 @@ func (t *RepoView) ShowSearchView() {
 	t.searchView.Show()
 }
 
+func (t *RepoView) onMoved() {
+	if !t.isDetailsMode() {
+		return
+	}
+
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	t.detailsView.SetCurrent(line, t.vm.repo, t.vm.repoID, t.vm.api)
+}
+
+func (t *RepoView) ShowCommitDetails() {
+	if t.isDetailsMode() {
+		t.hideCommitDetails()
+		return
+	}
+
+	hight := 15
+	mb := cui.Relative(cui.FullScreen(), func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - hight}
+	})
+	t.view.SetBound(mb)
+
+	t.detailsView = NewDetailsView(t.ui)
+	detailsBounds := cui.Relative(mb, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y + b.H + 1, W: b.W - 1, H: hight - 1}
+	})
+
+	t.detailsView.Show(detailsBounds)
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	t.detailsView.SetCurrent(line, t.vm.repo, t.vm.repoID, t.vm.api)
+}
+
+func (t *RepoView) hideCommitDetails() {
+	if !t.isDetailsMode() {
+		return
+	}
+
+	t.detailsView.Close()
+	t.detailsView = nil
+	t.view.SetBound(cui.FullScreen())
+}
+
 func (t *RepoView) Search(text string) {
 	log.Infof("Search in search %q", text)
 	t.vm.SetSearch(text)
@@ -248,4 +300,8 @@ func (t *RepoView) onEscKey() {
 
 func (t *RepoView) isInSearchMode() bool {
 	return t.searchView != nil
+}
+
+func (t *RepoView) isDetailsMode() bool {
+	return t.detailsView != nil
 }

@@ -31,7 +31,7 @@ func (t *menus) GetContextMenu(currentLineIndex int) cui.Menu {
 
 	// Commit items
 	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
-	menu.Add(cui.MenuItem{Text: "Show Commit Details ...", Action: t.vm.showCommitDetails})
+	menu.Add(cui.MenuItem{Text: "Toggle Details ...", Key: "Enter", Action: t.vm.repoViewer.ShowCommitDetails})
 	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
 	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
 
