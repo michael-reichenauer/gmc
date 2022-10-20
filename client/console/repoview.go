@@ -81,10 +81,8 @@ func (t *RepoView) newView() cui.View {
 
 	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
 	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)
-	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
-	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
-	view.SetKey(gocui.KeyEsc, t.quit)
+	view.SetKey(gocui.KeyEsc, t.onEscKey)
 	view.SetKey(gocui.KeyCtrlC, t.ui.Quit)
 
 	return view
@@ -117,10 +115,6 @@ func (t *RepoView) viewPageData(viewPort cui.ViewPage) cui.ViewText {
 
 	t.setWindowTitle(repoPage)
 
-	// if len(repoPage.lines) > 0 {
-	// 	//h.detailsView.SetCurrent(repoPage.currentIndex)
-	// }
-
 	return cui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
 }
 
@@ -140,6 +134,9 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 }
 
 func (t *RepoView) showMergeMenu() {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 	menu := t.menuService.getMergeMenu(t.vm.repo.CurrentBranchName)
@@ -148,6 +145,9 @@ func (t *RepoView) showMergeMenu() {
 
 // Called by left-arrow, to show a hide branches menu
 func (t *RepoView) showHideBranchesMenu() {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
@@ -157,6 +157,9 @@ func (t *RepoView) showHideBranchesMenu() {
 
 // Called by right-arrow to show commit branches to show/expand
 func (t *RepoView) showCommitBranchesMenu() {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
@@ -167,7 +170,7 @@ func (t *RepoView) showCommitBranchesMenu() {
 func (t *RepoView) onEnterClick() {
 	log.Infof("onEnterClick %v", t.searchView != nil)
 
-	if t.searchView != nil {
+	if t.isInSearchMode() {
 		c := t.vm.repo.Commits[t.vm.currentIndex]
 		b := t.vm.repo.Branches[c.BranchIndex]
 		t.searchView.onCancel()
@@ -185,12 +188,18 @@ func (t *RepoView) onEnterClick() {
 }
 
 func (t *RepoView) showContextMenuAt(x int, y int) {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	menu := t.menuService.getContextMenu(vp.FirstLine + y)
 	menu.Show(x+1, vp.CurrentLine-vp.FirstLine)
 }
 
 func (t *RepoView) mouseLeft(x int, y int) {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	selectedLine := vp.FirstLine + y
 	t.view.SetCurrentLine(selectedLine)
@@ -203,7 +212,7 @@ func (t *RepoView) mouseLeft(x int, y int) {
 }
 
 func (t *RepoView) ShowSearchView() {
-	if t.searchView != nil {
+	if t.isInSearchMode() {
 		return
 	}
 
@@ -222,23 +231,21 @@ func (t *RepoView) Search(text string) {
 }
 
 func (t *RepoView) CloseSearch() {
-	if t.searchView != nil {
+	if t.isInSearchMode() {
 		t.searchView = nil
 	}
 	t.vm.SetSearch("")
 	t.view.SetBound(cui.FullScreen())
 }
 
-func (t *RepoView) nextView() {
-	if t.searchView != nil {
-		t.searchView.SetCurrentView()
-	}
-}
-
-func (t *RepoView) quit() {
-	if t.searchView != nil {
+func (t *RepoView) onEscKey() {
+	if t.isInSearchMode() {
 		t.searchView.SetCurrentView()
 		return
 	}
 	t.ui.Quit()
+}
+
+func (t *RepoView) isInSearchMode() bool {
+	return t.searchView != nil
 }
