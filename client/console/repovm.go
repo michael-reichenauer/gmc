@@ -414,8 +414,9 @@ func (t *repoVM) ScrollToBranch(name string, commitId string) {
 	})
 }
 
-func (t *repoVM) SetAsParentBranch(name string) {
-	_ = t.api.SetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+func (t *repoVM) SetAsParentBranch(branchName, parentName string) {
+	_ = t.api.SetAsParentBranch(api.SetParentReq{RepoID: t.repoID,
+		BranchName: branchName, ParentName: parentName}, api.NilRsp)
 }
 
 func (t *repoVM) UnsetAsParentBranch(name string) {

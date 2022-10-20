@@ -2,7 +2,6 @@ package augmented
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -23,7 +22,7 @@ func (h *branchesService) setBranchForAllCommits(
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo, branchesChildren)
-	h.removeAmbiguousBranches(repo)
+	h.mergeAmbiguousBranches(repo)
 	h.determineBranchHierarchy(repo, branchesChildren)
 }
 
@@ -405,49 +404,58 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 	}
 }
 
-func (h *branchesService) removeAmbiguousBranches(repo *Repo) {
+// mergeAmbiguousBranches will merge commits of ambiguous branches into one of the child branches
+func (h *branchesService) mergeAmbiguousBranches(repo *Repo) {
 	ambiguousBranches := lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v.IsAmbiguousBranch })
 	for _, b := range ambiguousBranches {
 		tip := repo.CommitByID(b.TipID)
+
+		// Determine the parent commit this branch was created from
 		otherId := b.BottomID
 		parentBranchCommit := repo.CommitByID(b.BottomID).FirstParent
 		if parentBranchCommit != nil {
 			otherId = parentBranchCommit.Id
 		}
 
+		// Find the tip of the ambiguous commits (and the next commit)
 		var ambiguousTip *Commit
 		var ambiguousSecond *Commit
 		for c := tip; c != nil && c.Id != otherId; c = c.FirstParent {
 			if c.Branch != b {
+				// Still a normal branch commit (no longer part of the ambiguous branch)
 				continue
 			}
 
-			log.Infof("Still belongs %s %q", c.Sid, c.Message)
+			// tip of the ambiguous commits
 			ambiguousTip = c
 			ambiguousSecond = c.FirstParent
 			c.IsAmbiguousTip = true
 			c.IsAmbiguous = true
 
-			cc := c.Children[0]
+			// Determine the most likely branch (branch of the oldest child)
+			oldestChild := c.Children[0]
+			childBranches := []*Branch{}
 			for _, c := range c.Children {
-				if c.AuthorTime.After(cc.AuthorTime) {
-					cc = c
+				if c.AuthorTime.After(oldestChild.AuthorTime) {
+					oldestChild = c
 				}
+				childBranches = append(childBranches, c.Branch)
 			}
-			c.Branch = cc.Branch
+			c.Branch = oldestChild.Branch
 			c.Branch.AmbiguousTipId = c.Id
-			cc.Branch.BottomID = c.Id
-			log.Infof("Setting %s to %s", c.Sid, c.Branch.Name)
+			c.Branch.AmbiguousBranches = childBranches
+			c.Branch.BottomID = c.Id
 			break
 		}
 
+		// Set the branch of the rest of the ambiguous commits to same as the tip
 		for c := ambiguousSecond; c != nil && c.Id != otherId; c = c.FirstParent {
 			c.Branch = ambiguousTip.Branch
 			c.Branch.BottomID = c.Id
 			c.IsAmbiguous = true
 		}
 
-		// Removing the ambiguous branch
+		// Removing the ambiguous branch (no longer needed)
 		repo.Branches = lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v != b })
 	}
 }

@@ -30,6 +30,6 @@ type Api interface {
 	MergeBranch(name BranchName, _ NoRsp) error
 	CreateBranch(name BranchName, _ NoRsp) error
 	DeleteBranch(name BranchName, _ NoRsp) error
-	SetAsParentBranch(name BranchName, _ NoRsp) error
+	SetAsParentBranch(req SetParentReq, _ NoRsp) error
 	UnsetAsParentBranch(name BranchName, _ NoRsp) error
 }

@@ -881,14 +881,18 @@ func (t *ViewRepoService) DeleteBranch(name string) error {
 	return nil
 }
 
-func (t *ViewRepoService) SetAsParentBranch(name string) error {
+func (t *ViewRepoService) SetAsParentBranch(branchName, parentName string) error {
 	viewRepo := t.getViewRepo()
-	b, ok := viewRepo.augmentedRepo.BranchByName(name)
+	b, ok := viewRepo.augmentedRepo.BranchByName(branchName)
 	if !ok {
-		return fmt.Errorf("unknown branch %q", name)
+		return fmt.Errorf("unknown branch %q", branchName)
 	}
 
-	return t.augmentedRepo.SetAsParentBranch(b, name)
+	pb, ok := viewRepo.augmentedRepo.BranchByName(parentName)
+	if !ok {
+		return fmt.Errorf("unknown branch %q", parentName)
+	}
+	return t.augmentedRepo.SetAsParentBranch(b, pb)
 }
 
 func (t *ViewRepoService) UnsetAsParentBranch(name string) error {

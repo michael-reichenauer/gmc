@@ -68,8 +68,14 @@ func (t *menuService) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuI
 		items = append(items, cui.MenuItem{Text: txt, Action: func() {
 			t.vm.UnsetAsParentBranch(b.Name)
 		}})
-	} else if b.IsAmbiguousBranch {
-		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent", SubItemsFunc: t.getAmbiguousBranchBranchesMenuItems})
+	} else if commit.IsAmbiguous && len(b.AmbiguousBranchNames) > 0 {
+		subItems := lo.Map(b.AmbiguousBranchNames, func(v string, _ int) cui.MenuItem {
+			vv := v
+			return cui.MenuItem{Text: vv, Action: func() { t.vm.SetAsParentBranch(b.Name, vv) }}
+		})
+
+		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent",
+			SubItems: subItems})
 	}
 
 	return items
@@ -257,13 +263,13 @@ func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 	}}
 }
 
-func (t *menuService) toSetAsParentBranchMenuItem(branch api.Branch) cui.MenuItem {
-	text := t.branchItemText(branch)
+// func (t *menuService) toSetAsParentBranchMenuItem(branch api.Branch) cui.MenuItem {
+// 	text := t.branchItemText(branch)
 
-	return cui.MenuItem{Text: text, Action: func() {
-		t.vm.SetAsParentBranch(branch.Name)
-	}}
-}
+// 	return cui.MenuItem{Text: text, Action: func() {
+// 		t.vm.SetAsParentBranch(branch.Name)
+// 	}}
+// }
 
 func (t *menuService) branchItemText(branch api.Branch) string {
 	prefix := " "
@@ -399,14 +405,4 @@ func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
 	}
 	return items
 
-}
-
-func (t *menuService) getAmbiguousBranchBranchesMenuItems() []cui.MenuItem {
-	var items []cui.MenuItem
-
-	for _, b := range t.vm.GetAmbiguousBranchBranchesMenuItems() {
-		items = append(items, t.toSetAsParentBranchMenuItem(b))
-	}
-
-	return items
 }
