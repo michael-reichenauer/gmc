@@ -2,6 +2,7 @@ package augmented
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -22,7 +23,7 @@ func (h *branchesService) setBranchForAllCommits(
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo, branchesChildren)
-	h.removeUnusedAmbiguousBranches(repo)
+	h.removeAmbiguousBranches(repo)
 	h.determineBranchHierarchy(repo, branchesChildren)
 }
 
@@ -404,25 +405,50 @@ func (h *branchesService) setMasterBackbone(c *Commit) {
 	}
 }
 
-func (h *branchesService) removeUnusedAmbiguousBranches(repo *Repo) {
+func (h *branchesService) removeAmbiguousBranches(repo *Repo) {
 	ambiguousBranches := lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v.IsAmbiguousBranch })
 	for _, b := range ambiguousBranches {
 		tip := repo.CommitByID(b.TipID)
+		otherId := b.BottomID
+		parentBranchCommit := repo.CommitByID(b.BottomID).FirstParent
+		if parentBranchCommit != nil {
+			otherId = parentBranchCommit.Id
+		}
 
-		// Assume the ambiguous branch can be removed if all commits have been set to other branches
-		canBeRemoved := true
-		for c := tip; c != nil && c.Id != b.BottomID; c = c.FirstParent {
-			if c.Branch == b {
-				// The commit still belongs to the ambiguous branch, lets keep it
-				canBeRemoved = false
-				break
+		var ambiguousTip *Commit
+		var ambiguousSecond *Commit
+		for c := tip; c != nil && c.Id != otherId; c = c.FirstParent {
+			if c.Branch != b {
+				continue
 			}
-			b.TipID = c.Id // Moving the tip down
+
+			log.Infof("Still belongs %s %q", c.Sid, c.Message)
+			ambiguousTip = c
+			ambiguousSecond = c.FirstParent
+			c.IsAmbiguousTip = true
+			c.IsAmbiguous = true
+
+			cc := c.Children[0]
+			for _, c := range c.Children {
+				if c.AuthorTime.After(cc.AuthorTime) {
+					cc = c
+				}
+			}
+			c.Branch = cc.Branch
+			c.Branch.AmbiguousTipId = c.Id
+			cc.Branch.BottomID = c.Id
+			log.Infof("Setting %s to %s", c.Sid, c.Branch.Name)
+			break
 		}
-		if canBeRemoved {
-			// Removing the unused ambiguous branch
-			repo.Branches = lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v != b })
+
+		for c := ambiguousSecond; c != nil && c.Id != otherId; c = c.FirstParent {
+			c.Branch = ambiguousTip.Branch
+			c.Branch.BottomID = c.Id
+			c.IsAmbiguous = true
 		}
+
+		// Removing the ambiguous branch
+		repo.Branches = lo.Filter(repo.Branches, func(v *Branch, _ int) bool { return v != b })
 	}
 }
 

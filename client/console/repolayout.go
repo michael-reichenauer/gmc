@@ -66,10 +66,24 @@ func (t *repoLayout) getPageLines(
 func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 	tm := make(map[string]tip)
 	for _, b := range repo.Branches {
+
 		t, ok := tm[b.TipID]
 		if !ok {
 			t = tip{}
 		}
+
+		if b.AmbiguousTipId != "" {
+			at, ok := tm[b.AmbiguousTipId]
+			if !ok {
+				at = tip{}
+			}
+
+			atx := "ambiguous"
+			at.text = at.text + cui.White("(╸") + cui.Dark(atx) + cui.White(")")
+			at.len = at.len + len(atx) + 3
+			tm[b.AmbiguousTipId] = at
+		}
+
 		if t.len > 40 {
 			// To many tips
 			if !strings.HasSuffix(t.text, "(...") {

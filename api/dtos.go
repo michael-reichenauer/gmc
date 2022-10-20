@@ -146,6 +146,8 @@ type Commit struct {
 	IsRemoteOnly       bool
 	IsUncommitted      bool
 	IsPartialLogCommit bool
+	IsAmbiguous        bool
+	IsAmbiguousTip     bool
 }
 
 type GraphColumn struct {
@@ -159,23 +161,23 @@ type GraphRow []GraphColumn
 type Graph []GraphRow
 
 type Branch struct {
-	Name              string
-	DisplayName       string
-	Index             int
-	IsAmbiguousBranch bool
-	RemoteName        string
-	LocalName         string
-	IsRemote          bool
-	IsGitBranch       bool
-	IsCurrent         bool
-	IsSetAsParent     bool
-	IsMainBranch      bool
-	TipID             string
-	HasLocalOnly      bool
-	HasRemoteOnly     bool
-	Color             Color
-	X                 int
-
+	Name                 string
+	DisplayName          string
+	Index                int
+	IsAmbiguousBranch    bool
+	RemoteName           string
+	LocalName            string
+	IsRemote             bool
+	IsGitBranch          bool
+	IsCurrent            bool
+	IsSetAsParent        bool
+	IsMainBranch         bool
+	TipID                string
+	HasLocalOnly         bool
+	HasRemoteOnly        bool
+	Color                Color
+	X                    int
+	AmbiguousTipId       string
 	AmbiguousBranchNames []string
 
 	IsShown bool

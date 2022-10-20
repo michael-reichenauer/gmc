@@ -117,6 +117,8 @@ func toApiCommit(c *commit) api.Commit {
 		IsUncommitted:      c.ID == git.UncommittedID,
 		IsPartialLogCommit: c.ID == git.PartialLogCommitID,
 		Tags:               c.Tags,
+		IsAmbiguous:        c.IsAmbiguous,
+		IsAmbiguousTip:     c.IsAmbiguousTip,
 	}
 }
 
@@ -138,6 +140,7 @@ func toApiBranch(b *branch) api.Branch {
 		HasLocalOnly:         b.HasLocalOnly,
 		Color:                api.Color(b.color),
 		X:                    b.x,
+		AmbiguousTipId:       b.AmbiguousTipId,
 		AmbiguousBranchNames: b.ambiguousBranchNames,
 	}
 }

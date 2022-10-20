@@ -24,6 +24,7 @@ type branch struct {
 	HasLocalOnly         bool
 	HasRemoteOnly        bool
 	color                cui.Color
+	AmbiguousTipId       string
 	ambiguousBranchNames []string
 	x                    int
 }
