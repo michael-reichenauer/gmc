@@ -80,8 +80,8 @@ func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 			continue
 		}
 		txt := b.DisplayName
-		if len(txt) > 15 {
-			txt = "..." + txt[len(txt)-15:]
+		if len(txt) > 16 {
+			txt = "..." + txt[len(txt)-16:]
 		}
 		if b.IsRemote {
 			txt = "^/" + txt
