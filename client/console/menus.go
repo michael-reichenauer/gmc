@@ -95,6 +95,7 @@ func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
 	ambiguousBranches := t.vm.GetNotShownAmbiguousBranches()
 	branches := t.vm.GetCommitBranches(selectedIndex)
 	items := []cui.MenuItem{}
+
 	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
 		// Current branch is not already shown
