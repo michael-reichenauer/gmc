@@ -228,6 +228,14 @@ func (t *repoVM) showCommitDetails() {
 	files := strings.Join(cd.Files, "\n")
 	id := c.ID
 	sid := c.SID
+	parents := lo.Map(c.ParentIDs, func(v string, _ int) string { return v[:6] })
+	children := lo.Map(c.ChildIDs, func(v string, _ int) string {
+		if v == git.UncommittedID {
+			return "uncommitted"
+		} else {
+			return v[:6]
+		}
+	})
 
 	if c.ID == git.UncommittedID {
 		id = ""
@@ -236,13 +244,17 @@ func (t *repoVM) showCommitDetails() {
 	title := "Commit: " + sid
 
 	commitText := fmt.Sprintf(
-		cui.Dark("Id:")+"     %s\n"+
-			cui.Dark("Branch:")+" %s\n"+
+		cui.Dark("Id:")+"       %s\n"+
+			cui.Dark("Branch:  ")+" %s\n"+
+			cui.Dark("Children:")+" %s\n"+
+			cui.Dark("Parents: ")+" %s\n"+
 			"%s\n\n"+
 			cui.Blue(strings.Repeat("_", 50))+
 			cui.Blue("\n%d Files:\n")+
 			"%s",
-		id, cui.ColorText(cui.Color(cb.Color), cb.Name), cd.Message, len(cd.Files), files)
+		id, cui.ColorText(cui.Color(cb.Color), cb.Name),
+		strings.Join(children, ", "), strings.Join(parents, ", "),
+		cd.Message, len(cd.Files), files)
 
 	message := commitText
 	t.ui.ShowMessageBox(title, message)
