@@ -9,16 +9,23 @@ import (
 	"github.com/samber/lo"
 )
 
-type menuService struct {
+type Menus interface {
+	GetContextMenu(currentLineIndex int) cui.Menu
+	GetShowBranchesMenu(selectedIndex int) cui.Menu
+	GetHideBranchesMenu() cui.Menu
+	GetMergeMenu(name string) cui.Menu
+}
+
+type menus struct {
 	ui cui.UI
 	vm *repoVM
 }
 
-func newMenuService(ui cui.UI, vm *repoVM) *menuService {
-	return &menuService{ui: ui, vm: vm}
+func newMenus(ui cui.UI, vm *repoVM) Menus {
+	return &menus{ui: ui, vm: vm}
 }
 
-func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
+func (t *menus) GetContextMenu(currentLineIndex int) cui.Menu {
 	c := t.vm.repo.Commits[currentLineIndex]
 	menu := t.ui.NewMenu("")
 
@@ -59,45 +66,7 @@ func (t *menuService) getContextMenu(currentLineIndex int) cui.Menu {
 	return menu
 }
 
-func (t *menuService) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuItem {
-	b := t.vm.repo.Branches[commit.BranchIndex]
-	items := []cui.MenuItem{}
-
-	if b.IsSetAsParent {
-		txt := fmt.Sprintf("Unset %s as Parent", b.DisplayName)
-		items = append(items, cui.MenuItem{Text: txt, Action: func() {
-			t.vm.UnsetAsParentBranch(b.Name)
-		}})
-	} else if commit.IsAmbiguous && len(b.AmbiguousBranchNames) > 0 {
-		subItems := lo.Map(b.AmbiguousBranchNames, func(v string, _ int) cui.MenuItem {
-			vv := v
-			return cui.MenuItem{Text: vv, Action: func() { t.vm.SetAsParentBranch(b.Name, vv) }}
-		})
-
-		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent",
-			SubItems: subItems})
-	}
-
-	return items
-}
-
-func (t *menuService) showAbout() {
-	t.ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", t.ui.Version()))
-}
-
-func (t *menuService) getMergeMenu(name string) cui.Menu {
-	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
-	menu.AddItems(t.getMergeMenuItems())
-	return menu
-}
-
-func (t *menuService) getShowHideBranchesMenu() cui.Menu {
-	menu := t.ui.NewMenu("Hide Branch")
-	menu.AddItems(t.getHideBranchMenuItems())
-	return menu
-}
-
-func (t *menuService) getShowBranchesMenu(selectedIndex int) cui.Menu {
+func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Branches")
 	menu.Add(cui.MenuSeparator("Show"))
 	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
@@ -106,19 +75,26 @@ func (t *menuService) getShowBranchesMenu(selectedIndex int) cui.Menu {
 	return menu
 }
 
-func (t *menuService) getShowCommitBranchesMenuItems(selectedIndex int) []cui.MenuItem {
-	var items []cui.MenuItem
-	branches := t.vm.GetCommitBranches(selectedIndex)
-	for _, b := range branches {
-		items = append(items, t.toOpenBranchMenuItem(b))
-	}
-	return items
+func (t *menus) GetHideBranchesMenu() cui.Menu {
+	menu := t.ui.NewMenu("Hide Branch")
+	menu.AddItems(t.getHideBranchMenuItems())
+	return menu
 }
 
-func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
+func (t *menus) GetMergeMenu(name string) cui.Menu {
+	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
+	menu.AddItems(t.getMergeMenuItems())
+	return menu
+}
+
+func (t *menus) showAbout() {
+	t.ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", t.ui.Version()))
+}
+
+func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
 	ambiguousBranches := t.vm.GetNotShownAmbiguousBranches()
 	branches := t.vm.GetCommitBranches(selectedIndex)
-	var items []cui.MenuItem
+	items := []cui.MenuItem{}
 	current, ok := t.vm.CurrentNotShownBranch()
 	if ok {
 		// Current branch is not already shown
@@ -175,7 +151,16 @@ func (t *menuService) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem
 	return items
 }
 
-func (t *menuService) getHideBranchMenuItems() []cui.MenuItem {
+func (t *menus) getShowCommitBranchesMenuItems(selectedIndex int) []cui.MenuItem {
+	var items []cui.MenuItem
+	branches := t.vm.GetCommitBranches(selectedIndex)
+	for _, b := range branches {
+		items = append(items, t.toOpenBranchMenuItem(b))
+	}
+	return items
+}
+
+func (t *menus) getHideBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	commitBranches := t.vm.GetShownBranches(true)
 	for _, b := range commitBranches {
@@ -188,7 +173,29 @@ func (t *menuService) getHideBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) getSwitchBranchMenuItems(onlyShown bool) []cui.MenuItem {
+func (t *menus) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuItem {
+	b := t.vm.repo.Branches[commit.BranchIndex]
+	items := []cui.MenuItem{}
+
+	if b.IsSetAsParent {
+		txt := fmt.Sprintf("Unset %s as Parent", b.DisplayName)
+		items = append(items, cui.MenuItem{Text: txt, Action: func() {
+			t.vm.UnsetAsParentBranch(b.Name)
+		}})
+	} else if commit.IsAmbiguous && len(b.AmbiguousBranchNames) > 0 {
+		subItems := lo.Map(b.AmbiguousBranchNames, func(v string, _ int) cui.MenuItem {
+			vv := v
+			return cui.MenuItem{Text: vv, Action: func() { t.vm.SetAsParentBranch(b.Name, vv) }}
+		})
+
+		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent",
+			SubItems: subItems})
+	}
+
+	return items
+}
+
+func (t *menus) getSwitchBranchMenuItems(onlyShown bool) []cui.MenuItem {
 	var items []cui.MenuItem
 	commitBranches := t.vm.GetShownBranches(false)
 	for _, b := range commitBranches {
@@ -251,7 +258,7 @@ func (t *menuService) getSwitchBranchMenuItems(onlyShown bool) []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
+func (t *menus) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 	text := t.branchItemText(branch)
 	if !branch.IsGitBranch {
 		// Not a git branch, mark the branch a bit darker
@@ -271,7 +278,7 @@ func (t *menuService) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 // 	}}
 // }
 
-func (t *menuService) branchItemText(branch api.Branch) string {
+func (t *menus) branchItemText(branch api.Branch) string {
 	prefix := " "
 	if branch.IsIn {
 		prefix = "╮"
@@ -285,7 +292,7 @@ func (t *menuService) branchItemText(branch api.Branch) string {
 	}
 }
 
-func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
+func (t *menus) getPushBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasLocalOnly {
@@ -317,7 +324,7 @@ func (t *menuService) getPushBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
+func (t *menus) getPullBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	current, ok := t.vm.CurrentBranch()
 
@@ -350,7 +357,7 @@ func (t *menuService) getPullBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) getMergeMenuItems() []cui.MenuItem {
+func (t *menus) getMergeMenuItems() []cui.MenuItem {
 	current, ok := t.vm.CurrentBranch()
 	if !ok {
 		return nil
@@ -370,7 +377,7 @@ func (t *menuService) getMergeMenuItems() []cui.MenuItem {
 	return items
 }
 
-func (t *menuService) getFileDiffsMenuItems() []cui.MenuItem {
+func (t *menus) getFileDiffsMenuItems() []cui.MenuItem {
 	c := t.vm.repo.Commits[t.vm.currentIndex]
 	ref := c.ID
 	if c.ID == git.UncommittedID {
@@ -389,7 +396,7 @@ func (t *menuService) getFileDiffsMenuItems() []cui.MenuItem {
 	})
 }
 
-func (t *menuService) getDeleteBranchMenuItems() []cui.MenuItem {
+func (t *menus) getDeleteBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 	branches := t.vm.GetAllBranches(false)
 	for _, b := range branches {

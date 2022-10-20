@@ -18,7 +18,7 @@ type RepoView struct {
 	ui          cui.UI
 	mainService mainService
 	vm          *repoVM
-	menuService *menuService
+	menuService Menus
 	searchView  *SearchView
 }
 
@@ -28,7 +28,7 @@ func NewRepoView(ui cui.UI, api api.Api, mainService mainService, repoID string)
 		mainService: mainService,
 	}
 	h.vm = newRepoVM(ui, h, api, repoID)
-	h.menuService = newMenuService(ui, h.vm)
+	h.menuService = newMenus(ui, h.vm)
 	h.view = h.newView()
 	return h
 }
@@ -139,7 +139,7 @@ func (t *RepoView) showMergeMenu() {
 	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
-	menu := t.menuService.getMergeMenu(t.vm.repo.CurrentBranchName)
+	menu := t.menuService.GetMergeMenu(t.vm.repo.CurrentBranchName)
 	menu.Show(11, line-vp.FirstLine)
 }
 
@@ -151,7 +151,7 @@ func (t *RepoView) showHideBranchesMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
-	menu := t.menuService.getShowHideBranchesMenu()
+	menu := t.menuService.GetHideBranchesMenu()
 	menu.Show(11, line-vp.FirstLine)
 }
 
@@ -163,7 +163,7 @@ func (t *RepoView) showCommitBranchesMenu() {
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
-	menu := t.menuService.getShowBranchesMenu(line)
+	menu := t.menuService.GetShowBranchesMenu(line)
 	menu.Show(11, line-vp.FirstLine)
 }
 
@@ -183,7 +183,7 @@ func (t *RepoView) onEnterClick() {
 
 	// Show context menu
 	vp := t.view.ViewPage()
-	menu := t.menuService.getContextMenu(vp.CurrentLine)
+	menu := t.menuService.GetContextMenu(vp.CurrentLine)
 	menu.Show(40, 0)
 }
 
@@ -192,7 +192,7 @@ func (t *RepoView) showContextMenuAt(x int, y int) {
 		return
 	}
 	vp := t.view.ViewPage()
-	menu := t.menuService.getContextMenu(vp.FirstLine + y)
+	menu := t.menuService.GetContextMenu(vp.FirstLine + y)
 	menu.Show(x+1, vp.CurrentLine-vp.FirstLine)
 }
 
@@ -205,7 +205,7 @@ func (t *RepoView) mouseLeft(x int, y int) {
 	t.view.SetCurrentLine(selectedLine)
 	t.ui.Post(func() {
 		if t.vm.isGraphClick(x, y) {
-			menu := t.menuService.getShowBranchesMenu(selectedLine)
+			menu := t.menuService.GetShowBranchesMenu(selectedLine)
 			menu.Show(x+3, y+2)
 		}
 	})
