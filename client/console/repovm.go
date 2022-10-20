@@ -242,12 +242,20 @@ func (t *repoVM) showCommitDetails() {
 		sid = "Uncommitted"
 	}
 	title := "Commit: " + sid
+	remote := ""
+	if c.IsLocalOnly {
+		remote = cui.Dark("Remote:   ") + cui.GreenDk("▲") + " pushable\n"
+	}
+	if c.IsRemoteOnly {
+		remote = cui.Dark("Remote:   ") + cui.Blue("▼") + " pullable\n"
+	}
 
 	commitText := fmt.Sprintf(
 		cui.Dark("Id:")+"       %s\n"+
 			cui.Dark("Branch:  ")+" %s\n"+
 			cui.Dark("Children:")+" %s\n"+
 			cui.Dark("Parents: ")+" %s\n"+
+			remote+
 			"%s\n\n"+
 			cui.Blue(strings.Repeat("_", 50))+
 			cui.Blue("\n%d Files:\n")+
