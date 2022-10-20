@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	currentLineMarker = '│' // The marker for current line (left)
+	currentLineMarker = '┃' // The marker for current line (left)
 )
 
 type BoundFunc func(ww, wh int) Rect
