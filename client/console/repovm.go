@@ -3,11 +3,9 @@ package console
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
@@ -225,46 +223,9 @@ func (t *repoVM) showCommitDetails() {
 		log.Warnf("Failed: %v", err)
 		return
 	}
-	files := strings.Join(cd.Files, "\n")
-	id := c.ID
-	sid := c.SID
-	parents := lo.Map(c.ParentIDs, func(v string, _ int) string { return v[:6] })
-	children := lo.Map(c.ChildIDs, func(v string, _ int) string {
-		if v == git.UncommittedID {
-			return "uncommitted"
-		} else {
-			return v[:6]
-		}
-	})
 
-	if c.ID == git.UncommittedID {
-		id = ""
-		sid = "Uncommitted"
-	}
-	title := "Commit: " + sid
-	remote := ""
-	if c.IsLocalOnly {
-		remote = cui.Dark("Remote:   ") + cui.GreenDk("▲") + " pushable\n"
-	}
-	if c.IsRemoteOnly {
-		remote = cui.Dark("Remote:   ") + cui.Blue("▼") + " pullable\n"
-	}
+	title, message := getCommitDetails(c, cb, cd)
 
-	commitText := fmt.Sprintf(
-		cui.Dark("Id:")+"       %s\n"+
-			cui.Dark("Branch:  ")+" %s\n"+
-			cui.Dark("Children:")+" %s\n"+
-			cui.Dark("Parents: ")+" %s\n"+
-			remote+
-			"%s\n\n"+
-			cui.Blue(strings.Repeat("_", 50))+
-			cui.Blue("\n%d Files:\n")+
-			"%s",
-		id, cui.ColorText(cui.Color(cb.Color), cb.Name),
-		strings.Join(children, ", "), strings.Join(parents, ", "),
-		cd.Message, len(cd.Files), files)
-
-	message := commitText
 	t.ui.ShowMessageBox(title, message)
 }
 
