@@ -58,6 +58,7 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().HasFrame = false
 
 	view.SetKey(gocui.KeyEnter, t.onEnterClick)
+	view.SetKey(gocui.KeyTab, t.onTabClick)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
 	view.SetKey('r', t.vm.triggerRefresh)
 	view.SetKey('R', t.vm.triggerRefresh)
@@ -189,6 +190,12 @@ func (t *RepoView) onEnterClick() {
 	t.ShowCommitDetails()
 }
 
+func (t *RepoView) onTabClick() {
+	if t.isDetailsMode() {
+		t.detailsView.SetCurrentView()
+	}
+}
+
 func (t *RepoView) showContextMenu() {
 	// Show context menu
 	vp := t.view.ViewPage()
@@ -241,7 +248,7 @@ func (t *RepoView) onMoved() {
 
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
-	t.detailsView.SetCurrent(line, t.vm.repo, t.vm.repoID, t.vm.api)
+	t.detailsView.SetCurrentLine(line, t.vm.repo, t.vm.repoID, t.vm.api)
 }
 
 func (t *RepoView) ShowCommitDetails() {
@@ -256,7 +263,7 @@ func (t *RepoView) ShowCommitDetails() {
 	})
 	t.view.SetBound(mb)
 
-	t.detailsView = NewDetailsView(t.ui)
+	t.detailsView = NewDetailsView(t.ui, t)
 	detailsBounds := cui.Relative(mb, func(b cui.Rect) cui.Rect {
 		return cui.Rect{X: b.X, Y: b.Y + b.H + 1, W: b.W - 1, H: hight - 1}
 	})
@@ -264,7 +271,7 @@ func (t *RepoView) ShowCommitDetails() {
 	t.detailsView.Show(detailsBounds)
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
-	t.detailsView.SetCurrent(line, t.vm.repo, t.vm.repoID, t.vm.api)
+	t.detailsView.SetCurrentLine(line, t.vm.repo, t.vm.repoID, t.vm.api)
 }
 
 func (t *RepoView) hideCommitDetails() {
