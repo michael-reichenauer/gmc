@@ -192,11 +192,6 @@ func (t *repoVM) isGraphClick(x int, y int) bool {
 	return x < sx
 }
 
-func (t *repoVM) isSubjectClick(x int, y int) bool {
-	sx := t.repoLayout.getSubjectXCoordinate(t.repo)
-	return x > sx
-}
-
 func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphRow) {
 	firstIndex := viewPage.FirstLine
 	count := viewPage.Height
@@ -299,12 +294,12 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (t *repoVM) GetRecentBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetRecentBranches() []api.Branch {
 	var branches []api.Branch
 
 	_ = t.api.GetBranches(api.GetBranchesReq{
 		RepoID:              t.repoID,
-		IncludeOnlyNotShown: skipShown,
+		IncludeOnlyNotShown: false,
 		SortOnLatest:        true,
 	}, &branches)
 	if len(branches) > 15 {
@@ -313,10 +308,10 @@ func (t *repoVM) GetRecentBranches(skipShown bool) []api.Branch {
 	return branches
 }
 
-func (t *repoVM) GetAllBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetAllBranches() []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: skipShown}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
 	return branches
 }
 
@@ -328,10 +323,16 @@ func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	return branches
 }
 
-func (t *repoVM) GetNotShownAmbiguousBranches() []api.Branch {
+func (t *repoVM) GetAllGitBranches() []api.Branch {
+	return lo.Filter(t.GetAllBranches(), func(v api.Branch, _ int) bool {
+		return v.IsGitBranch
+	})
+}
+
+func (t *repoVM) GetAmbiguousBranches() []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: true}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
 
 	var bs []api.Branch
 	for _, b := range branches {

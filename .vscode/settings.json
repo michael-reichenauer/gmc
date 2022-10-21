@@ -6,6 +6,7 @@
     "gocui",
     "imkira",
     "ldflags",
+    "linq",
     "pullable",
     "pushable",
     "rundll",

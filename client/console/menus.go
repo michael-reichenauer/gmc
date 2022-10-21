@@ -6,6 +6,7 @@ import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/linq"
 	"github.com/samber/lo"
 )
 
@@ -100,85 +101,43 @@ func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
 }
 
 func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
-	ambiguousBranches := t.vm.GetNotShownAmbiguousBranches()
-	branches := t.vm.GetCommitBranches(selectedIndex)
+	ambiguousBranches := t.vm.GetAmbiguousBranches()
 	items := []cui.MenuItem{}
 
-	current, ok := t.vm.CurrentNotShownBranch()
+	current, ok := t.vm.CurrentBranch()
 	if ok {
-		// Current branch is not already shown
-		_, ok = lo.Find(branches, func(b api.Branch) bool {
-			return current.DisplayName == b.DisplayName
-		})
-		if !ok {
-			// Current branch is not amongst the commit branches
-			items = append(items, t.toOpenBranchMenuItem(current))
-		}
+		items = append(items, t.toShowBranchMenuItem(current))
 	}
+	items = append(items, linq.Map(t.vm.GetCommitBranches(selectedIndex), t.toShowBranchMenuItem)...)
 
-	items = append(items, t.getShowCommitBranchesMenuItems(selectedIndex)...)
-
-	if len(items) > 0 {
-		items = append(items, cui.MenuSeparator(""))
-	}
+	items = append(items, cui.MenuSeparator(""))
 
 	items = append(items, cui.MenuItem{Text: "Recent Branches", ItemsFunc: func() []cui.MenuItem {
-		return lo.Map(t.vm.GetRecentBranches(true), func(v api.Branch, _ int) cui.MenuItem {
-			return t.toOpenBranchMenuItem(v)
-		})
+		return linq.Map(t.vm.GetRecentBranches(), t.toShowBranchMenuItem)
 	}})
-
 	items = append(items, cui.MenuItem{Text: "Live Branches", ItemsFunc: func() []cui.MenuItem {
-		var allGitSubItems []cui.MenuItem
-		for _, b := range t.vm.GetAllBranches(true) {
-			if b.IsGitBranch {
-				allGitSubItems = append(allGitSubItems, t.toOpenBranchMenuItem(b))
-			}
-		}
-		return allGitSubItems
+		return linq.Map(t.vm.GetAllGitBranches(), t.toShowBranchMenuItem)
 	}})
-
 	items = append(items, cui.MenuItem{Text: "Live and Deleted Branches", ItemsFunc: func() []cui.MenuItem {
-		var allSubItems []cui.MenuItem
-		for _, b := range t.vm.GetAllBranches(true) {
-			allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
-		}
-		return allSubItems
+		return linq.Map(t.vm.GetAllBranches(), t.toShowBranchMenuItem)
 	}})
-
 	if len(ambiguousBranches) > 0 {
 		items = append(items, cui.MenuItem{Text: "Ambiguous Branches", ItemsFunc: func() []cui.MenuItem {
-			var allSubItems []cui.MenuItem
-			for _, b := range t.vm.GetNotShownAmbiguousBranches() {
-				allSubItems = append(allSubItems, t.toOpenBranchMenuItem(b))
-			}
-			return allSubItems
+			return linq.Map(t.vm.GetAmbiguousBranches(), t.toShowBranchMenuItem)
 		}})
 	}
 
 	return items
 }
 
-func (t *menus) getShowCommitBranchesMenuItems(selectedIndex int) []cui.MenuItem {
-	var items []cui.MenuItem
-	branches := t.vm.GetCommitBranches(selectedIndex)
-	for _, b := range branches {
-		items = append(items, t.toOpenBranchMenuItem(b))
-	}
-	return items
+func (t *menus) getHideBranchMenuItems() []cui.MenuItem {
+	return linq.Map(t.vm.GetShownBranches(true), t.toHideBranchMenuItem)
 }
 
-func (t *menus) getHideBranchMenuItems() []cui.MenuItem {
-	var items []cui.MenuItem
-	commitBranches := t.vm.GetShownBranches(true)
-	for _, b := range commitBranches {
-		name := b.Name // closure save
-		closeItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.HideBranch(name)
-		}}
-		items = append(items, closeItem)
-	}
-	return items
+func (t *menus) toHideBranchMenuItem(branch api.Branch) cui.MenuItem {
+	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+		t.vm.HideBranch(branch.Name)
+	}}
 }
 
 func (t *menus) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuItem {
@@ -195,28 +154,27 @@ func (t *menus) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuItem {
 			vv := v
 			return cui.MenuItem{Text: vv, Action: func() { t.vm.SetAsParentBranch(b.Name, vv) }}
 		})
-
-		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent",
-			Items: subItems})
+		items = append(items, cui.MenuItem{Text: "Set Ambiguous Branch Parent", Items: subItems})
 	}
 
 	return items
 }
 
+func (t *menus) toSwitchBranchMenuItem(branch api.Branch) cui.MenuItem {
+	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+		t.vm.SwitchToBranch(branch.Name, branch.DisplayName)
+	}}
+}
+
+func (t *menus) isNotCurrentBranch(branch api.Branch) bool {
+	return !branch.IsCurrent
+}
+
 func (t *menus) getSwitchBranchMenuItems(onlyShown bool) []cui.MenuItem {
 	var items []cui.MenuItem
-	commitBranches := t.vm.GetShownBranches(false)
-	for _, b := range commitBranches {
-		if b.IsCurrent {
-			continue
-		}
 
-		bb := b // closure save
-		switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
-		}}
-		items = append(items, switchItem)
-	}
+	items = append(items, linq.FilterMap(t.vm.GetShownBranches(false),
+		t.isNotCurrentBranch, t.toSwitchBranchMenuItem)...)
 
 	if onlyShown {
 		return items
@@ -224,49 +182,23 @@ func (t *menus) getSwitchBranchMenuItems(onlyShown bool) []cui.MenuItem {
 
 	items = append(items, cui.MenuSeparator(""))
 
-	items = append(items, cui.MenuItem{Text: "Latest Branches", ItemsFunc: func() []cui.MenuItem {
-		var activeSubItems []cui.MenuItem
-		for _, b := range t.vm.GetRecentBranches(true) {
-			bb := b // closure save
-			switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
-			}}
-			activeSubItems = append(activeSubItems, switchItem)
-		}
-		return activeSubItems
+	items = append(items, cui.MenuItem{Text: "Recent Branches", ItemsFunc: func() []cui.MenuItem {
+		return linq.FilterMap(t.vm.GetRecentBranches(),
+			t.isNotCurrentBranch, t.toSwitchBranchMenuItem)
 	}})
 
 	items = append(items, cui.MenuItem{Text: "Live Branches", ItemsFunc: func() []cui.MenuItem {
-		var allGitSubItems []cui.MenuItem
-		for _, b := range t.vm.GetAllBranches(true) {
-			bb := b // closure save
-			if !b.IsGitBranch {
-				continue
-			}
-			switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
-			}}
-			allGitSubItems = append(allGitSubItems, switchItem)
-		}
-		return allGitSubItems
+		return linq.Map(t.vm.GetAllGitBranches(), t.toSwitchBranchMenuItem)
 	}})
 
 	items = append(items, cui.MenuItem{Text: "Live and Deleted Branches", ItemsFunc: func() []cui.MenuItem {
-		var allSubItems []cui.MenuItem
-		for _, b := range t.vm.GetAllBranches(true) {
-			bb := b // closure save
-			switchItem := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-				t.vm.SwitchToBranch(bb.Name, bb.DisplayName)
-			}}
-			allSubItems = append(allSubItems, switchItem)
-		}
-		return allSubItems
+		return linq.Map(t.vm.GetAllBranches(), t.toSwitchBranchMenuItem)
 	}})
 
 	return items
 }
 
-func (t *menus) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
+func (t *menus) toShowBranchMenuItem(branch api.Branch) cui.MenuItem {
 	text := t.branchItemText(branch)
 	if !branch.IsGitBranch {
 		// Not a git branch, mark the branch a bit darker
@@ -277,14 +209,6 @@ func (t *menus) toOpenBranchMenuItem(branch api.Branch) cui.MenuItem {
 		t.vm.ShowBranch(branch.Name, "")
 	}}
 }
-
-// func (t *menuService) toSetAsParentBranchMenuItem(branch api.Branch) cui.MenuItem {
-// 	text := t.branchItemText(branch)
-
-// 	return cui.MenuItem{Text: text, Action: func() {
-// 		t.vm.SetAsParentBranch(branch.Name)
-// 	}}
-// }
 
 func (t *menus) branchItemText(branch api.Branch) string {
 	prefix := " "
@@ -406,7 +330,7 @@ func (t *menus) getFileDiffsMenuItems() []cui.MenuItem {
 
 func (t *menus) getDeleteBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
-	branches := t.vm.GetAllBranches(false)
+	branches := t.vm.GetAllBranches()
 	for _, b := range branches {
 		if !b.IsGitBranch || b.IsMainBranch || b.IsCurrent {
 			// Do not delete main branch
