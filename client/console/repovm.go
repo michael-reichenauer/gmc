@@ -3,11 +3,9 @@ package console
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
@@ -27,6 +25,7 @@ type RepoViewer interface {
 	ShowLineAtTop(line int)
 	OpenRepoMenuItems() []cui.MenuItem
 	ShowSearchView()
+	ShowCommitDetails()
 }
 
 type repoVM struct {
@@ -188,9 +187,9 @@ func (t *repoVM) getLines(viewPage cui.ViewPage, selectedBranchName string) (int
 	return firstIndex, t.repoLayout.getPageLines(commits, graph, viewPage.Width, selectedBranchName, t.repo)
 }
 
-func (t *repoVM) isMoreClick(x int, y int) bool {
-	moreX := t.repoLayout.getMoreIndex(t.repo)
-	return x == moreX
+func (t *repoVM) isGraphClick(x int, y int) bool {
+	sx := t.repoLayout.getSubjectXCoordinate(t.repo)
+	return x < sx
 }
 
 func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphRow) {
@@ -208,39 +207,6 @@ func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphR
 	commits := t.repo.Commits[firstIndex : firstIndex+count]
 	graphRows := t.repo.ConsoleGraph[firstIndex : firstIndex+count]
 	return firstIndex, commits, graphRows
-}
-
-func (t *repoVM) showCommitDetails() {
-	c := t.repo.Commits[t.currentIndex]
-	cb := t.repo.Branches[c.BranchIndex]
-
-	var cd api.CommitDetailsRsp
-	err := t.api.GetCommitDetails(api.CommitDetailsReq{RepoID: t.repoID, CommitID: c.ID}, &cd)
-	if err != nil {
-		log.Warnf("Failed: %v", err)
-		return
-	}
-	files := strings.Join(cd.Files, "\n")
-	id := c.ID
-	sid := c.SID
-
-	if c.ID == git.UncommittedID {
-		id = ""
-		sid = "Uncommitted"
-	}
-	title := "Commit: " + sid
-
-	commitText := fmt.Sprintf(
-		cui.Dark("Id:")+"     %s\n"+
-			cui.Dark("Branch:")+" %s\n"+
-			"%s\n\n"+
-			cui.Blue(strings.Repeat("_", 50))+
-			cui.Blue("\n%d Files:\n")+
-			"%s",
-		id, cui.ColorText(cui.Color(cb.Color), cb.Name), cd.Message, len(cd.Files), files)
-
-	message := commitText
-	t.ui.ShowMessageBox(title, message)
 }
 
 func (t *repoVM) showCommitDialog() {
@@ -328,12 +294,12 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 	return branches[0], true
 }
 
-func (t *repoVM) GetRecentBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetRecentBranches() []api.Branch {
 	var branches []api.Branch
 
 	_ = t.api.GetBranches(api.GetBranchesReq{
 		RepoID:              t.repoID,
-		IncludeOnlyNotShown: skipShown,
+		IncludeOnlyNotShown: false,
 		SortOnLatest:        true,
 	}, &branches)
 	if len(branches) > 15 {
@@ -342,10 +308,10 @@ func (t *repoVM) GetRecentBranches(skipShown bool) []api.Branch {
 	return branches
 }
 
-func (t *repoVM) GetAllBranches(skipShown bool) []api.Branch {
+func (t *repoVM) GetAllBranches() []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: skipShown}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
 	return branches
 }
 
@@ -357,10 +323,16 @@ func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	return branches
 }
 
-func (t *repoVM) GetNotShownAmbiguousBranches() []api.Branch {
+func (t *repoVM) GetAllGitBranches() []api.Branch {
+	return lo.Filter(t.GetAllBranches(), func(v api.Branch, _ int) bool {
+		return v.IsGitBranch
+	})
+}
+
+func (t *repoVM) GetAmbiguousBranches() []api.Branch {
 	var branches []api.Branch
 
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: true}, &branches)
+	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
 
 	var bs []api.Branch
 	for _, b := range branches {
@@ -409,8 +381,9 @@ func (t *repoVM) ScrollToBranch(name string, commitId string) {
 	})
 }
 
-func (t *repoVM) SetAsParentBranch(name string) {
-	_ = t.api.SetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+func (t *repoVM) SetAsParentBranch(branchName, parentName string) {
+	_ = t.api.SetAsParentBranch(api.SetParentReq{RepoID: t.repoID,
+		BranchName: branchName, ParentName: parentName}, api.NilRsp)
 }
 
 func (t *repoVM) UnsetAsParentBranch(name string) {
@@ -422,6 +395,7 @@ func (t *repoVM) HideBranch(name string) {
 }
 
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
+	log.Infof("Switch to %q, %q", name, displayName)
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error {

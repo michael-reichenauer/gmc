@@ -8,14 +8,14 @@ func MenuSeparator(text string) MenuItem {
 }
 
 type MenuItem struct {
-	Text         string
-	Title        string
-	Key          string
-	Action       func()
-	SubItems     []MenuItem
-	SubItemsFunc func() []MenuItem
-	isSeparator  bool
-	ReuseBounds  bool
+	Text        string
+	Title       string
+	Key         string
+	Action      func()
+	Items       []MenuItem
+	ItemsFunc   func() []MenuItem
+	isSeparator bool
+	ReuseBounds bool
 }
 
 type Menu interface {

@@ -331,16 +331,15 @@ func (t *apiServer) Commit(info api.CommitInfoReq, _ api.NoRsp) error {
 	return repo.Commit(info.Message)
 }
 
-func (t *apiServer) SetAsParentBranch(name api.BranchName, _ api.NoRsp) error {
+func (t *apiServer) SetAsParentBranch(name api.SetParentReq, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")
-	log.Infof("Set as parent %q", name)
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
 	}
 
-	return repo.SetAsParentBranch(name.BranchName)
+	return repo.SetAsParentBranch(name.BranchName, name.ParentName)
 }
 
 func (t *apiServer) UnsetAsParentBranch(name api.BranchName, _ api.NoRsp) error {

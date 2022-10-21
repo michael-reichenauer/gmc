@@ -66,25 +66,60 @@ func (t *repoLayout) getPageLines(
 func (t *repoLayout) getBranchTips(repo api.Repo) map[string]tip {
 	tm := make(map[string]tip)
 	for _, b := range repo.Branches {
+
 		t, ok := tm[b.TipID]
 		if !ok {
 			t = tip{}
 		}
+
+		if b.AmbiguousTipId != "" {
+			at, ok := tm[b.AmbiguousTipId]
+			if !ok {
+				at = tip{}
+			}
+
+			atx := "ambiguous"
+			at.text = at.text + cui.White("(╸") + cui.Dark(atx) + cui.White(")")
+			at.len = at.len + len(atx) + 3
+			tm[b.AmbiguousTipId] = at
+		}
+
+		if t.len > 40 {
+			// To many tips
+			if !strings.HasSuffix(t.text, "(...") {
+				t.text = t.text + cui.Dark("(...")
+				t.len = t.len + 3
+				tm[b.TipID] = t
+			}
+			continue
+		}
 		txt := b.DisplayName
+		if len(txt) > 16 {
+			txt = "..." + txt[len(txt)-16:]
+		}
 		if b.IsRemote {
 			txt = "^/" + txt
 		}
+
 		t.len = t.len + len(txt) + 2
-		t.text = t.text + cui.ColorText(cui.Color(b.Color), "("+txt+")")
+		color := cui.Color(b.Color)
+
+		tagTxt := cui.ColorText(color, "("+txt+")")
+		if !b.IsGitBranch {
+			tagTxt = cui.ColorText(color, "(╸") + cui.Dark(txt) + cui.ColorText(color, ")")
+			t.len = t.len + 1
+		}
+
+		t.text = t.text + tagTxt
 		tm[b.TipID] = t
 	}
 
 	return tm
 }
 
-func (t *repoLayout) getMoreIndex(repo api.Repo) int {
+func (t *repoLayout) getSubjectXCoordinate(repo api.Repo) int {
 	graphWidth := t.getGraphWidth(repo.ConsoleGraph)
-	return graphWidth - 2
+	return graphWidth
 }
 
 func (t *repoLayout) getGraphWidth(graph api.Graph) int {

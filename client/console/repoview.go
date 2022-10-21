@@ -18,8 +18,9 @@ type RepoView struct {
 	ui          cui.UI
 	mainService mainService
 	vm          *repoVM
-	menuService *menuService
+	menuService Menus
 	searchView  *SearchView
+	detailsView *DetailsView
 }
 
 func NewRepoView(ui cui.UI, api api.Api, mainService mainService, repoID string) *RepoView {
@@ -28,7 +29,7 @@ func NewRepoView(ui cui.UI, api api.Api, mainService mainService, repoID string)
 		mainService: mainService,
 	}
 	h.vm = newRepoVM(ui, h, api, repoID)
-	h.menuService = newMenuService(ui, h.vm)
+	h.menuService = newMenus(ui, h.vm)
 	h.view = h.newView()
 	return h
 }
@@ -52,10 +53,12 @@ func (t *RepoView) newView() cui.View {
 	view.Properties().Name = "RepoView"
 	view.Properties().OnMouseLeft = t.mouseLeft
 	view.Properties().OnMouseRight = t.showContextMenuAt
+	view.Properties().OnMoved = t.onMoved
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HasFrame = false
 
 	view.SetKey(gocui.KeyEnter, t.onEnterClick)
+	view.SetKey(gocui.KeyTab, t.onTabClick)
 	view.SetKey(gocui.KeyF5, t.vm.triggerRefresh)
 	view.SetKey('r', t.vm.triggerRefresh)
 	view.SetKey('R', t.vm.triggerRefresh)
@@ -73,18 +76,16 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey('P', t.vm.PushCurrentBranch)
 	view.SetKey('u', t.vm.PullCurrentBranch)
 	view.SetKey('U', t.vm.PullCurrentBranch)
-	view.SetKey('m', t.showMergeMenu)
-	view.SetKey('M', t.showMergeMenu)
+	view.SetKey('m', t.showContextMenu)
+	view.SetKey('M', t.showContextMenu)
 
 	view.SetKey('f', t.vm.ShowSearchView)
 	view.SetKey('F', t.vm.ShowSearchView)
 
 	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
 	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)
-	//view.SetKey(gocui.KeyCtrlS, h.vm.saveTotalDebugState)
-	//view.SetKey(gocui.KeyCtrlB, h.vm.ChangeBranchColor)
 
-	view.SetKey(gocui.KeyEsc, t.quit)
+	view.SetKey(gocui.KeyEsc, t.onEscKey)
 	view.SetKey(gocui.KeyCtrlC, t.ui.Quit)
 
 	return view
@@ -117,10 +118,6 @@ func (t *RepoView) viewPageData(viewPort cui.ViewPage) cui.ViewText {
 
 	t.setWindowTitle(repoPage)
 
-	// if len(repoPage.lines) > 0 {
-	// 	//h.detailsView.SetCurrent(repoPage.currentIndex)
-	// }
-
 	return cui.ViewText{Lines: repoPage.lines, Total: repoPage.total}
 }
 
@@ -140,34 +137,41 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 }
 
 func (t *RepoView) showMergeMenu() {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
-	menu := t.menuService.getMergeMenu(t.vm.repo.CurrentBranchName)
+	menu := t.menuService.GetMergeMenu(t.vm.repo.CurrentBranchName)
 	menu.Show(11, line-vp.FirstLine)
 }
 
 // Called by left-arrow, to show a hide branches menu
 func (t *RepoView) showHideBranchesMenu() {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
-	menu := t.menuService.getShowHideBranchesMenu()
+	menu := t.menuService.GetHideBranchesMenu()
 	menu.Show(11, line-vp.FirstLine)
 }
 
 // Called by right-arrow to show commit branches to show/expand
 func (t *RepoView) showCommitBranchesMenu() {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	line := vp.CurrentLine
 
-	menu := t.menuService.getShowBranchesMenu(line)
+	menu := t.menuService.GetShowBranchesMenu(line)
 	menu.Show(11, line-vp.FirstLine)
 }
 
 func (t *RepoView) onEnterClick() {
-	log.Infof("onEnterClick %v", t.searchView != nil)
-
-	if t.searchView != nil {
+	if t.isInSearchMode() {
 		c := t.vm.repo.Commits[t.vm.currentIndex]
 		b := t.vm.repo.Branches[c.BranchIndex]
 		t.searchView.onCancel()
@@ -178,35 +182,53 @@ func (t *RepoView) onEnterClick() {
 		return
 	}
 
+	if t.isDetailsMode() {
+		t.hideCommitDetails()
+		return
+	}
+
+	t.ShowCommitDetails()
+}
+
+func (t *RepoView) onTabClick() {
+	if t.isDetailsMode() {
+		t.detailsView.SetCurrentView()
+	}
+}
+
+func (t *RepoView) showContextMenu() {
 	// Show context menu
 	vp := t.view.ViewPage()
-	menu := t.menuService.getContextMenu(vp.CurrentLine)
+	menu := t.menuService.GetContextMenu(vp.CurrentLine)
 	menu.Show(40, 0)
 }
 
 func (t *RepoView) showContextMenuAt(x int, y int) {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
-	menu := t.menuService.getContextMenu(vp.FirstLine + y)
+	menu := t.menuService.GetContextMenu(vp.FirstLine + y)
 	menu.Show(x+1, vp.CurrentLine-vp.FirstLine)
 }
 
 func (t *RepoView) mouseLeft(x int, y int) {
+	if t.isInSearchMode() {
+		return
+	}
 	vp := t.view.ViewPage()
 	selectedLine := vp.FirstLine + y
 	t.view.SetCurrentLine(selectedLine)
-	if !t.vm.isMoreClick(x, y) {
-		return
-	}
-	if len(t.vm.GetCommitBranches(selectedLine)) == 0 {
-		return
-	}
-
-	menu := t.menuService.getShowBranchesMenu(selectedLine)
-	menu.Show(x+3, y+2)
+	t.ui.Post(func() {
+		if t.vm.isGraphClick(x, y) {
+			menu := t.menuService.GetShowBranchesMenu(selectedLine)
+			menu.Show(x+3, y+2)
+		}
+	})
 }
 
 func (t *RepoView) ShowSearchView() {
-	if t.searchView != nil {
+	if t.isInSearchMode() {
 		return
 	}
 
@@ -219,29 +241,74 @@ func (t *RepoView) ShowSearchView() {
 	t.searchView.Show()
 }
 
+func (t *RepoView) onMoved() {
+	if !t.isDetailsMode() {
+		return
+	}
+
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	t.detailsView.SetCurrentLine(line, t.vm.repo, t.vm.repoID, t.vm.api)
+}
+
+func (t *RepoView) ShowCommitDetails() {
+	if t.isDetailsMode() {
+		t.hideCommitDetails()
+		return
+	}
+
+	hight := 15
+	mb := cui.Relative(cui.FullScreen(), func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - hight}
+	})
+	t.view.SetBound(mb)
+
+	t.detailsView = NewDetailsView(t.ui, t)
+	detailsBounds := cui.Relative(mb, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y + b.H + 1, W: b.W - 1, H: hight - 1}
+	})
+
+	t.detailsView.Show(detailsBounds)
+	vp := t.view.ViewPage()
+	line := vp.CurrentLine
+	t.detailsView.SetCurrentLine(line, t.vm.repo, t.vm.repoID, t.vm.api)
+}
+
+func (t *RepoView) hideCommitDetails() {
+	if !t.isDetailsMode() {
+		return
+	}
+
+	t.detailsView.Close()
+	t.detailsView = nil
+	t.view.SetBound(cui.FullScreen())
+}
+
 func (t *RepoView) Search(text string) {
 	log.Infof("Search in search %q", text)
 	t.vm.SetSearch(text)
 }
 
 func (t *RepoView) CloseSearch() {
-	if t.searchView != nil {
+	if t.isInSearchMode() {
 		t.searchView = nil
 	}
 	t.vm.SetSearch("")
 	t.view.SetBound(cui.FullScreen())
 }
 
-func (t *RepoView) nextView() {
-	if t.searchView != nil {
-		t.searchView.SetCurrentView()
-	}
-}
-
-func (t *RepoView) quit() {
-	if t.searchView != nil {
+func (t *RepoView) onEscKey() {
+	if t.isInSearchMode() {
 		t.searchView.SetCurrentView()
 		return
 	}
 	t.ui.Quit()
+}
+
+func (t *RepoView) isInSearchMode() bool {
+	return t.searchView != nil
+}
+
+func (t *RepoView) isDetailsMode() bool {
+	return t.detailsView != nil
 }

@@ -35,7 +35,7 @@ type RepoService interface {
 	PullBranch(name string) error
 
 	GetFreshRepo() (Repo, error)
-	SetAsParentBranch(b *Branch, name string) error
+	SetAsParentBranch(b *Branch, pb *Branch) error
 	UnsetAsParentBranch(name string) error
 }
 
@@ -417,16 +417,13 @@ func (t *repoService) pushMetaData() error {
 	return t.git.PushKeyValue(metaDataKey)
 }
 
-func (t *repoService) SetAsParentBranch(b *Branch, name string) error {
-	if b.ParentBranch == nil {
-		return fmt.Errorf("branch has no parent branch %q", name)
-	}
-	if !b.ParentBranch.IsAmbiguousBranch {
-		return fmt.Errorf("parent branch is not a ambiguous branch %q", b.ParentBranch.Name)
+func (t *repoService) SetAsParentBranch(b *Branch, pb *Branch) error {
+	if len(b.AmbiguousBranches) == 0 {
+		return fmt.Errorf("branch is not a ambiguous branch %q", b.Name)
 	}
 
-	parentName := b.BaseName()
-	otherChildren := lo.Filter(b.ParentBranch.AmbiguousBranches, func(v *Branch, _ int) bool {
+	parentName := pb.BaseName()
+	otherChildren := lo.Filter(b.AmbiguousBranches, func(v *Branch, _ int) bool {
 		return v.BaseName() != parentName
 	})
 	otherChildrenNames := lo.Map(otherChildren, func(v *Branch, _ int) string {

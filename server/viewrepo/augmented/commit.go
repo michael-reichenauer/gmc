@@ -27,6 +27,8 @@ type Commit struct {
 	Branches       []*Branch
 	BranchTipNames []string
 	isLikely       bool
+	IsAmbiguous    bool
+	IsAmbiguousTip bool
 }
 
 func newGitCommit(gc git.Commit) *Commit {
