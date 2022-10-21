@@ -26,43 +26,8 @@ func newMenus(ui cui.UI, vm *repoVM) Menus {
 }
 
 func (t *menus) GetContextMenu(currentLineIndex int) cui.Menu {
-	c := t.vm.repo.Commits[currentLineIndex]
-	menu := t.ui.NewMenu("")
-
-	// Commit items
-	menu.Add(cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
-	menu.Add(cui.MenuItem{Text: "Toggle Details ...", Key: "Enter", Action: t.vm.repoViewer.ShowCommitDetails})
-	menu.Add(cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
-	menu.Add(cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
-
-	// Branches items
-	menu.Add(cui.MenuSeparator("Branches"))
-	menu.Add(cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
-		return t.getShowBranchesMenuItems(currentLineIndex)
-	}})
-	menu.Add(cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", ItemsFunc: t.getHideBranchMenuItems})
-	menu.Add(cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", ItemsFunc: func() []cui.MenuItem {
-		return t.getSwitchBranchMenuItems(false)
-	}})
-	menu.Add(cui.MenuItem{Text: "Push", Title: "Push", ItemsFunc: t.getPushBranchMenuItems})
-	menu.Add(cui.MenuItem{Text: "Pull/Update", Title: "Update", ItemsFunc: t.getPullBranchMenuItems})
-	menu.Add(cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "M",
-		ItemsFunc: t.getMergeMenuItems})
-	menu.Add(cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
-	menu.Add(cui.MenuItem{Text: "Delete Branch", ItemsFunc: t.getDeleteBranchMenuItems})
-
-	items := t.getBranchHierarchyMenuItems(c)
-	if len(items) > 0 {
-		menu.Add(cui.MenuItem{Text: "Branch Hierarchy", Items: items})
-	}
-
-	// Other items
-	menu.Add(cui.MenuSeparator("More"))
-	menu.Add(cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
-	menu.Add(cui.MenuItem{Text: "File History", Title: "All Files", ItemsFunc: t.getFileDiffsMenuItems})
-	menu.Add(cui.MenuItem{Text: "Open Repo", Title: "Open", ItemsFunc: t.vm.repoViewer.OpenRepoMenuItems})
-	menu.Add(cui.MenuItem{Text: "About ...", Action: t.showAbout})
-
+	menu := t.ui.NewMenu("Main Menu")
+	menu.AddItems(t.getContextMenuItems(currentLineIndex))
 	return menu
 }
 
@@ -72,6 +37,8 @@ func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
+	menu.Add(cui.MenuSeparator(""))
+	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getContextMenuItems(selectedIndex)})
 	return menu
 }
 
@@ -89,6 +56,47 @@ func (t *menus) GetMergeMenu(name string) cui.Menu {
 
 func (t *menus) showAbout() {
 	t.ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", t.ui.Version()))
+}
+
+func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
+	c := t.vm.repo.Commits[currentLineIndex]
+	items := []cui.MenuItem{}
+
+	// Commit items
+	items = append(items, cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
+	items = append(items, cui.MenuItem{Text: "Toggle Details ...", Key: "Enter", Action: t.vm.repoViewer.ShowCommitDetails})
+	items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
+	items = append(items, cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
+
+	// Branches items
+	items = append(items, cui.MenuSeparator("Branches"))
+	items = append(items, cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
+		return t.getShowBranchesMenuItems(currentLineIndex)
+	}})
+	items = append(items, cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", ItemsFunc: t.getHideBranchMenuItems})
+	items = append(items, cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", ItemsFunc: func() []cui.MenuItem {
+		return t.getSwitchBranchMenuItems(false)
+	}})
+	items = append(items, cui.MenuItem{Text: "Push", Title: "Push", ItemsFunc: t.getPushBranchMenuItems})
+	items = append(items, cui.MenuItem{Text: "Pull/Update", Title: "Update", ItemsFunc: t.getPullBranchMenuItems})
+	items = append(items, cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "M",
+		ItemsFunc: t.getMergeMenuItems})
+	items = append(items, cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
+	items = append(items, cui.MenuItem{Text: "Delete Branch", ItemsFunc: t.getDeleteBranchMenuItems})
+
+	hi := t.getBranchHierarchyMenuItems(c)
+	if len(items) > 0 {
+		items = append(items, cui.MenuItem{Text: "Branch Hierarchy", Items: hi})
+	}
+
+	// Other items
+	items = append(items, cui.MenuSeparator("More"))
+	items = append(items, cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
+	items = append(items, cui.MenuItem{Text: "File History", Title: "All Files", ItemsFunc: t.getFileDiffsMenuItems})
+	items = append(items, cui.MenuItem{Text: "Open Repo", Title: "Open", ItemsFunc: t.vm.repoViewer.OpenRepoMenuItems})
+	items = append(items, cui.MenuItem{Text: "About ...", Action: t.showAbout})
+
+	return items
 }
 
 func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
