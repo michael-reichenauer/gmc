@@ -38,7 +38,7 @@ func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
-	menu.Add(cui.MenuSeparator(""))
+	menu.Add(cui.MenuSeparator("More"))
 	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getContextMenuItems(selectedIndex)})
 	return menu
 }
@@ -110,6 +110,9 @@ func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
 	}
 	items = append(items, linq.Map(t.vm.GetCommitBranches(selectedIndex), t.toShowBranchMenuItem)...)
 
+	if len(items) > 0 {
+		items = append(items, cui.MenuSeparator(""))
+	}
 	items = append(items, cui.MenuItem{Text: "Recent Branches", ItemsFunc: func() []cui.MenuItem {
 		return linq.Map(t.vm.GetRecentBranches(), t.toShowBranchMenuItem)
 	}})
