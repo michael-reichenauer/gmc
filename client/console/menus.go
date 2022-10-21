@@ -80,7 +80,7 @@ func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
 	}})
 	items = append(items, cui.MenuItem{Text: "Push", Title: "Push", ItemsFunc: t.getPushBranchMenuItems})
 	items = append(items, cui.MenuItem{Text: "Pull/Update", Title: "Update", ItemsFunc: t.getPullBranchMenuItems})
-	items = append(items, cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName), Key: "M",
+	items = append(items, cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName),
 		ItemsFunc: t.getMergeMenuItems})
 	items = append(items, cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
 	items = append(items, cui.MenuItem{Text: "Delete Branch", ItemsFunc: t.getDeleteBranchMenuItems})
