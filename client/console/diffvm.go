@@ -195,8 +195,16 @@ func (t *diffVM) addDiffSummery(commitDiff api.CommitDiff) {
 			diffType := t.toDiffType(df)
 			if df.DiffMode == api.DiffConflicts {
 				t.addLeft(cui.Yellow(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
+			} else if df.DiffMode == api.DiffAdded {
+				t.addLeft(cui.Green(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
+			} else if df.DiffMode == api.DiffRemoved {
+				t.addLeft(cui.Red(fmt.Sprintf("  %s %s", diffType, df.PathAfter)))
 			} else {
-				t.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+				if df.IsRenamed {
+					t.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter) + cui.Dark(fmt.Sprintf(" (renamed from %s)", df.PathBefore)))
+				} else {
+					t.addLeft(fmt.Sprintf("  %s %s", diffType, df.PathAfter))
+				}
 			}
 		}
 	}
@@ -237,7 +245,7 @@ func (t *diffVM) addFileHeader(df api.FileDiff) {
 	fileText := cui.Cyan(fmt.Sprintf("%s %s", t.toDiffType(df), df.PathAfter))
 	t.addLeftAndRight(fileText)
 	if df.IsRenamed {
-		renamedText := cui.Dark(fmt.Sprintf("Renamed: %s -> %s", df.PathBefore, df.PathAfter))
+		renamedText := cui.Dark(fmt.Sprintf("Renamed:    %s -> %s", df.PathBefore, df.PathAfter))
 		t.addLeftAndRight(renamedText)
 	}
 }

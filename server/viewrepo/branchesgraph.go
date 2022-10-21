@@ -2,6 +2,7 @@ package viewrepo
 
 import (
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/samber/lo"
 )
 
@@ -60,7 +61,10 @@ func (t *branchesGraph) drawOtherBranchTip(repo *repo, b *branch, c *commit) {
 	y := c.Index
 	color := b.color
 	// this tip commit is not part of the branch (multiple branch tips on the same commit)
-	repo.drawHorizontalLine(c.Branch.x+1, x+1, y, color)   //              ─
+	repo.drawHorizontalLine(c.Branch.x+1, x+1, y, color) //              ─
+	if c.IsAmbiguous {
+		color = cui.CWhite
+	}
 	repo.SetGraphBranch(x, y, api.BBottom|api.Pass, color) //           ┺
 
 }
@@ -80,6 +84,9 @@ func (t *branchesGraph) drawBranch(repo *repo, b *branch, c *commit) {
 		return
 	}
 
+	if c.IsAmbiguous {
+		color = cui.CWhite
+	}
 	if c == c.Branch.tip {
 		repo.SetGraphBranch(x, y, api.BTip, color) //       ┏   (branch tip)
 	}
@@ -169,6 +176,9 @@ func (s *branchesGraph) drawMergeFromParentBranch(repo *repo, commit *commit) {
 	// Other branch is on the right side, merged from child branch,  ╮
 	color := commit.MergeParent.Branch.color
 
+	if commit.MergeParent.IsAmbiguous {
+		color = cui.CWhite
+	}
 	repo.drawHorizontalLine(x+1, x2, y, color) //                 ─
 	if commit.Branch != commit.MergeParent.Branch {
 		repo.SetGraphConnect(x2, y, api.MergeFromRight, color) //   ╮
@@ -192,6 +202,10 @@ func (s *branchesGraph) drawBranchFromParent(repo *repo, c *commit) {
 	x2 := c.Parent.Branch.x
 	y2 := c.Parent.Index
 	color := c.Branch.color
+
+	if c.IsAmbiguous {
+		color = cui.CWhite
+	}
 
 	if c.Parent.Branch.index < c.Branch.index {
 		// Other branch is left side  ╭

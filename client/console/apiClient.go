@@ -105,7 +105,7 @@ func (t client) DeleteBranch(args api.BranchName, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
-func (t *client) SetAsParentBranch(args api.BranchName, rsp api.NoRsp) error {
+func (t *client) SetAsParentBranch(args api.SetParentReq, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 

@@ -122,7 +122,7 @@ func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
 		return t.getDirItems(paths, func(path string) { t.showRepo(path) })
 	}
 
-	items = append(items, cui.MenuItem{Text: "Browse Folders", Title: "Browse", SubItemsFunc: openItemsFunc})
+	items = append(items, cui.MenuItem{Text: "Browse Folders", Title: "Browse", ItemsFunc: openItemsFunc})
 	return items
 }
 
@@ -145,7 +145,7 @@ func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.Me
 			Text:   name,
 			Title:  path,
 			Action: func() { action(path) },
-			SubItemsFunc: func() []cui.MenuItem {
+			ItemsFunc: func() []cui.MenuItem {
 				var dirs []string
 				err := t.api.GetSubDirs(path, &dirs)
 				if err != nil {

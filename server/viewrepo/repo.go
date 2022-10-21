@@ -152,6 +152,7 @@ func (t *repo) toBranch(b *augmented.Branch, index int) *branch {
 		localName:            b.LocalName,
 		isCurrent:            b.IsCurrent,
 		isSetAsParent:        b.IsSetAsParent,
+		AmbiguousTipId:       b.AmbiguousTipId,
 		ambiguousBranchNames: ambiguousBranchNames,
 	}
 }
@@ -165,19 +166,21 @@ func (t *repo) toCommit(c *augmented.Commit, index int, includeGraph bool) *comm
 	}
 
 	return &commit{
-		ID:         c.Id,
-		SID:        c.Sid,
-		Subject:    c.Subject,
-		Message:    c.Message,
-		Author:     c.Author,
-		AuthorTime: c.AuthorTime,
-		ParentIDs:  c.ParentIDs,
-		ChildIDs:   c.ChildIDs,
-		IsCurrent:  c.IsCurrent,
-		Branch:     branch,
-		Index:      index,
-		graph:      graph,
-		BranchTips: c.BranchTipNames,
+		ID:             c.Id,
+		SID:            c.Sid,
+		Subject:        c.Subject,
+		Message:        c.Message,
+		Author:         c.Author,
+		AuthorTime:     c.AuthorTime,
+		ParentIDs:      c.ParentIDs,
+		ChildIDs:       c.ChildIDs,
+		IsCurrent:      c.IsCurrent,
+		Branch:         branch,
+		Index:          index,
+		graph:          graph,
+		BranchTips:     c.BranchTipNames,
+		IsAmbiguous:    c.IsAmbiguous,
+		IsAmbiguousTip: c.IsAmbiguousTip,
 	}
 }
 

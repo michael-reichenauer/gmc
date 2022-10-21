@@ -178,7 +178,7 @@ func (*menuView) maxMoreWidth(items []MenuItem) int {
 	maxMoreWidth := 0
 	for _, item := range items {
 		moreWidth := 0
-		if len(item.SubItems) > 0 || item.SubItemsFunc != nil {
+		if len(item.Items) > 0 || item.ItemsFunc != nil {
 			moreWidth = 1
 			if moreWidth > maxMoreWidth {
 				maxMoreWidth = moreWidth
@@ -211,7 +211,7 @@ func (t *menuView) toItemText(width int, item MenuItem) string {
 
 	more := ""
 	if t.moreWidth > 0 {
-		if len(item.SubItems) > 0 || item.SubItemsFunc != nil {
+		if len(item.Items) > 0 || item.ItemsFunc != nil {
 			more = " ►"
 		} else {
 			more = "  "
@@ -319,7 +319,7 @@ func (t *menuView) action(firstLine, index int, isMoreClicked bool) {
 	item := t.items[index]
 	log.Debugf("action item %d %q, %v", index, item.Text, item.Action == nil)
 
-	hasSubActions := len(item.SubItems) != 0 || item.SubItemsFunc != nil
+	hasSubActions := len(item.Items) != 0 || item.ItemsFunc != nil
 	if hasSubActions && (item.Action == nil || isMoreClicked) {
 		t.subItem(firstLine, index)
 		return
@@ -339,15 +339,15 @@ func (t *menuView) subItem(firstLine, index int) {
 	item := t.items[index]
 	log.Debugf("sub item %d %q", index, item.Text)
 
-	if item.SubItemsFunc != nil {
-		t.showSubItemsPlaceholderMenu(firstLine, index, item, item.SubItemsFunc)
+	if item.ItemsFunc != nil {
+		t.showSubItemsPlaceholderMenu(firstLine, index, item, item.ItemsFunc)
 		return
 	}
-	if len(item.SubItems) == 0 {
+	if len(item.Items) == 0 {
 		return
 	}
 
-	t.showSubItemsMenu(firstLine, index, item, item.SubItems)
+	t.showSubItemsMenu(firstLine, index, item, item.Items)
 }
 
 func (t *menuView) showSubItemsMenu(firstLine, index int, item MenuItem, subItems []MenuItem) *menuView {

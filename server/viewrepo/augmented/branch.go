@@ -21,6 +21,7 @@ type Branch struct {
 	IsAmbiguousBranch bool
 	IsNamedBranch     bool
 	IsSetAsParent     bool
+	AmbiguousTipId    string
 	AmbiguousBranches []*Branch
 }
 
