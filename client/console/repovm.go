@@ -395,6 +395,7 @@ func (t *repoVM) HideBranch(name string) {
 }
 
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
+	log.Infof("Switch to %q, %q", name, displayName)
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error {

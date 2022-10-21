@@ -110,8 +110,6 @@ func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
 	}
 	items = append(items, linq.Map(t.vm.GetCommitBranches(selectedIndex), t.toShowBranchMenuItem)...)
 
-	items = append(items, cui.MenuSeparator(""))
-
 	items = append(items, cui.MenuItem{Text: "Recent Branches", ItemsFunc: func() []cui.MenuItem {
 		return linq.Map(t.vm.GetRecentBranches(), t.toShowBranchMenuItem)
 	}})
@@ -226,25 +224,19 @@ func (t *menus) branchItemText(branch api.Branch) string {
 
 func (t *menus) getPushBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
+
+	// Add current branch if it has commits that can be pushed
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasLocalOnly {
-		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "P", Action: func() {
-			t.vm.PushBranch(current.Name)
-		}}
+		pushItem := t.toPushBranchMenuItem(current)
+		pushItem.Key = "P"
 		items = append(items, pushItem)
 	}
 
-	// Add other branches if they have commits (but only if the can be pushed cleanly)
-	var otherItems []cui.MenuItem
-	for _, b := range t.vm.repo.Branches {
-		if !b.IsCurrent && !b.IsRemote && b.HasLocalOnly && !b.HasRemoteOnly {
-			bClosure := b
-			pushItem := cui.MenuItem{Text: t.branchItemText(bClosure), Action: func() {
-				t.vm.PushBranch(bClosure.DisplayName)
-			}}
-			otherItems = append(otherItems, pushItem)
-		}
-	}
+	// Add other branches if they have push commits (but only if the can be pushed cleanly)
+	otherItems := linq.FilterMap(t.vm.repo.Branches,
+		func(v api.Branch) bool { return !v.IsCurrent && !v.IsRemote && v.HasLocalOnly && !v.HasRemoteOnly },
+		t.toPushBranchMenuItem)
 
 	// Add separator between current and other branches
 	if len(items) > 0 && len(otherItems) > 0 {
@@ -258,27 +250,19 @@ func (t *menus) getPushBranchMenuItems() []cui.MenuItem {
 
 func (t *menus) getPullBranchMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
-	current, ok := t.vm.CurrentBranch()
 
 	// Add current branch if it has commits that can be pulled
+	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasRemoteOnly {
-		pushItem := cui.MenuItem{Text: t.branchItemText(current), Key: "U", Action: func() {
-			t.vm.PullCurrentBranch()
-		}}
+		pushItem := t.toPullBranchMenuItem(current)
+		pushItem.Key = "U"
 		items = append(items, pushItem)
 	}
 
-	// Add other branches if they have commits (but only if the can be pulled cleanly)
-	var otherItems []cui.MenuItem
-	for _, b := range t.vm.repo.Branches {
-		if !b.IsCurrent && b.IsRemote && b.HasRemoteOnly && !b.HasLocalOnly {
-			bClosure := b
-			pushItem := cui.MenuItem{Text: t.branchItemText(bClosure), Action: func() {
-				t.vm.PullBranch(bClosure.DisplayName)
-			}}
-			otherItems = append(otherItems, pushItem)
-		}
-	}
+	// Add other branches if they have pull commits (but only if the can be pulled cleanly)
+	otherItems := linq.FilterMap(t.vm.repo.Branches,
+		func(b api.Branch) bool { return !b.IsCurrent && b.IsRemote && b.HasRemoteOnly && !b.HasLocalOnly },
+		t.toPullBranchMenuItem)
 
 	// Add separator between current and other branches
 	if len(items) > 0 && len(otherItems) > 0 {
@@ -289,30 +273,39 @@ func (t *menus) getPullBranchMenuItems() []cui.MenuItem {
 	return items
 }
 
+func (t *menus) toPushBranchMenuItem(branch api.Branch) cui.MenuItem {
+	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+		t.vm.PushBranch(branch.DisplayName)
+	}}
+}
+
+func (t *menus) toPullBranchMenuItem(branch api.Branch) cui.MenuItem {
+	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+		t.vm.PullBranch(branch.DisplayName)
+	}}
+}
+
 func (t *menus) getMergeMenuItems() []cui.MenuItem {
 	current, ok := t.vm.CurrentBranch()
 	if !ok {
+		// No current branch (detached branch)
 		return nil
 	}
-	var items []cui.MenuItem
-	commitBranches := t.vm.GetShownBranches(false)
-	for _, b := range commitBranches {
-		name := b.Name // closure save
-		if b.DisplayName == current.DisplayName {
-			continue
-		}
-		item := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.MergeFromBranch(name)
-		}}
-		items = append(items, item)
-	}
-	return items
+
+	return linq.FilterMap(t.vm.GetShownBranches(false),
+		func(b api.Branch) bool { return b.DisplayName != current.DisplayName },
+		func(b api.Branch) cui.MenuItem {
+			return cui.MenuItem{Text: t.branchItemText(b), Action: func() {
+				t.vm.MergeFromBranch(b.Name)
+			}}
+		})
 }
 
 func (t *menus) getFileDiffsMenuItems() []cui.MenuItem {
 	c := t.vm.repo.Commits[t.vm.currentIndex]
 	ref := c.ID
 	if c.ID == git.UncommittedID {
+		// For uncommitted changes, the ref is the current branch
 		cb, ok := t.vm.CurrentBranch()
 		if !ok {
 			return []cui.MenuItem{}
@@ -320,28 +313,18 @@ func (t *menus) getFileDiffsMenuItems() []cui.MenuItem {
 		ref = cb.Name
 	}
 
-	files := t.vm.GetFiles(ref)
-	return lo.Map(files, func(v string, _ int) cui.MenuItem {
-		return cui.MenuItem{Text: v, Action: func() {
-			t.vm.showFileDiff(v)
-		}}
-	})
+	return linq.Map(t.vm.GetFiles(ref),
+		func(v string) cui.MenuItem {
+			return cui.MenuItem{Text: v, Action: func() { t.vm.showFileDiff(v) }}
+		})
 }
 
 func (t *menus) getDeleteBranchMenuItems() []cui.MenuItem {
-	var items []cui.MenuItem
-	branches := t.vm.GetAllBranches()
-	for _, b := range branches {
-		if !b.IsGitBranch || b.IsMainBranch || b.IsCurrent {
-			// Do not delete main branch
-			continue
-		}
-		name := b.Name // closure save
-		item := cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-			t.vm.DeleteBranch(name)
-		}}
-		items = append(items, item)
-	}
-	return items
-
+	return linq.FilterMap(t.vm.GetAllBranches(),
+		func(b api.Branch) bool { return b.IsGitBranch && !b.IsMainBranch && !b.IsCurrent },
+		func(b api.Branch) cui.MenuItem {
+			return cui.MenuItem{Text: t.branchItemText(b), Action: func() {
+				t.vm.DeleteBranch(b.Name)
+			}}
+		})
 }
