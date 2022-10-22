@@ -50,6 +50,11 @@ type BranchName struct {
 	BranchName string
 }
 
+type IdReq struct {
+	RepoID string
+	Id     string
+}
+
 type SetParentReq struct {
 	RepoID     string
 	BranchName string

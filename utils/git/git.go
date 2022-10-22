@@ -50,6 +50,11 @@ type Git interface {
 	SetKeyValue(key, value string) error
 	PushKeyValue(key string) error
 	PullKeyValue(key string) error
+	UndoCommit(id string) error
+	UncommitLastCommit() error
+	UndoAllUncommittedChanges() error
+	UndoUncommittedFileChanges(path string) error
+	CleanWorkingFolder() error
 }
 
 type git struct {
@@ -153,6 +158,26 @@ func (t *git) Checkout(name string) error {
 
 func (t *git) Commit(message string) error {
 	return t.commitService.commitAllChanges(message)
+}
+
+func (t *git) UndoCommit(id string) error {
+	return t.commitService.undoCommit(id)
+}
+
+func (t *git) UncommitLastCommit() error {
+	return t.commitService.uncommitLastCommit()
+}
+
+func (t *git) UndoAllUncommittedChanges() error {
+	return t.commitService.undoAllUncommittedChanges()
+}
+
+func (t *git) UndoUncommittedFileChanges(path string) error {
+	return t.commitService.undoUncommittedFileChanges(path)
+}
+
+func (t *git) CleanWorkingFolder() error {
+	return t.commitService.cleanWorkingFolder()
 }
 
 func (t *git) PushBranch(name string) error {
