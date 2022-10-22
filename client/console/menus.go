@@ -239,6 +239,12 @@ func (t *menus) getUndoMenuItems() []cui.MenuItem {
 		}
 	}
 
+	c := t.vm.repo.Commits[t.vm.currentIndex]
+	txt := fmt.Sprintf("Undo Commit %s", c.SID)
+	items = append(items, cui.MenuItem{Text: txt, Action: func() {
+		t.vm.UndoCommit(c.ID)
+	}})
+
 	return items
 }
 

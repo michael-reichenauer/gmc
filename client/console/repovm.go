@@ -331,6 +331,14 @@ func (t *repoVM) UncommitLastCommit() {
 		nil)
 }
 
+func (t *repoVM) UndoCommit(id string) {
+	t.startCommand(
+		"Uncommit commit",
+		func() error { return t.api.UndoCommit(api.IdReq{RepoID: t.repoID, Id: id}, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to undo commit:\n%s:\n%s", id, err) },
+		nil)
+}
+
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
 	_ = t.api.GetBranches(
