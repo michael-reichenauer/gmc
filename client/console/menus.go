@@ -57,7 +57,9 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	// Commit items
 	items = append(items, cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
 	items = append(items, cui.MenuItem{Text: "Toggle Details ...", Key: "Enter", Action: t.vm.repoViewer.ShowCommitDetails})
-	items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
+	if c.ID == git.UncommittedID {
+		items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
+	}
 	items = append(items, cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
 	items = append(items, cui.MenuItem{Text: "Undo", Title: "Undo", ItemsFunc: t.getUndoMenuItems})
 
