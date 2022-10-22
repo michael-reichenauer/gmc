@@ -212,6 +212,11 @@ func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphR
 }
 
 func (t *repoVM) showCommitDialog() {
+	current, ok := t.CurrentBranch()
+	if !ok || current.TipID != git.UncommittedID {
+		return
+	}
+
 	if t.repo.Conflicts > 0 {
 		t.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
