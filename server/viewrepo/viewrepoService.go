@@ -150,6 +150,10 @@ func (t *ViewRepoService) UndoCommit(id string) error {
 	return t.augmentedRepo.UndoCommit(id)
 }
 
+func (t *ViewRepoService) UndoUncommittedFileChanges(path string) error {
+	return t.augmentedRepo.UndoUncommittedFileChanges(path)
+}
+
 func (t *ViewRepoService) UncommitLastCommit() error {
 	return t.augmentedRepo.UncommitLastCommit()
 }

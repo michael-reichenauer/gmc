@@ -40,6 +40,7 @@ type RepoService interface {
 	UndoCommit(id string) error
 	UncommitLastCommit() error
 	UndoAllUncommittedChanges() error
+	UndoUncommittedFileChanges(path string) error
 	CleanWorkingFolder() error
 }
 
@@ -128,6 +129,10 @@ func (s *repoService) UncommitLastCommit() error {
 
 func (s *repoService) UndoAllUncommittedChanges() error {
 	return s.git.UndoAllUncommittedChanges()
+}
+
+func (s *repoService) UndoUncommittedFileChanges(path string) error {
+	return s.git.UndoUncommittedFileChanges(path)
 }
 
 func (s *repoService) CleanWorkingFolder() error {

@@ -2,6 +2,7 @@ package git
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
@@ -53,6 +54,22 @@ func (t *commitService) undoAllUncommittedChanges() error {
 	return nil
 }
 
+func (t *commitService) undoUncommittedFileChanges(path string) error {
+	_, err := t.cmd.Git("checkout", "--force", "--", path)
+	if err != nil {
+		if t.isFileUnknown(err, path) {
+			err := os.Remove(path)
+			if err != nil {
+				return fmt.Errorf("failed to reset, %v", err)
+			}
+			return nil
+		}
+		return fmt.Errorf("failed to reset, %v", err)
+	}
+
+	return nil
+}
+
 func (t *commitService) cleanWorkingFolder() error {
 	_, err := t.cmd.Git("reset", "--hard")
 	if err != nil {
@@ -83,4 +100,9 @@ func (t *commitService) uncommitLastCommit() error {
 	}
 
 	return nil
+}
+
+func (t *commitService) isFileUnknown(err error, path string) bool {
+	msg := fmt.Sprintf("error: pathspec '%s' did not match any file(s) known", path)
+	return strings.HasPrefix(err.Error(), msg)
 }

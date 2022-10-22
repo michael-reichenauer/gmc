@@ -53,6 +53,7 @@ type Git interface {
 	UndoCommit(id string) error
 	UncommitLastCommit() error
 	UndoAllUncommittedChanges() error
+	UndoUncommittedFileChanges(path string) error
 	CleanWorkingFolder() error
 }
 
@@ -169,6 +170,10 @@ func (t *git) UncommitLastCommit() error {
 
 func (t *git) UndoAllUncommittedChanges() error {
 	return t.commitService.undoAllUncommittedChanges()
+}
+
+func (t *git) UndoUncommittedFileChanges(path string) error {
+	return t.commitService.undoUncommittedFileChanges(path)
 }
 
 func (t *git) CleanWorkingFolder() error {

@@ -341,6 +341,16 @@ func (t *apiServer) UndoCommit(info api.IdReq, _ api.NoRsp) error {
 	return repo.UndoCommit(info.Id)
 }
 
+func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(info.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.UndoUncommittedFileChanges(info.Ref)
+}
+
 func (t *apiServer) UncommitLastCommit(repoID string, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")

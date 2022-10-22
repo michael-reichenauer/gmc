@@ -6,6 +6,8 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/linq"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
@@ -315,6 +317,16 @@ func (t *repoVM) GetAllBranches() []api.Branch {
 	return branches
 }
 
+func (t *repoVM) GetUncommittedFiles() []string {
+	var diff api.CommitDiff
+	err := t.api.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: git.UncommittedID}, &diff)
+	if err != nil {
+		return []string{}
+	}
+
+	return linq.Map(diff.FileDiffs, func(v api.FileDiff) string { return v.PathAfter })
+}
+
 func (t *repoVM) UndoAllUncommittedChanges() {
 	t.startCommand(
 		"Undo all uncommitted changes",
@@ -339,6 +351,15 @@ func (t *repoVM) UndoCommit(id string) {
 		nil)
 }
 
+func (t *repoVM) UndoUncommittedFileChanges(path string) {
+	t.startCommand(
+		"Undo uncommitted file",
+		func() error {
+			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path}, api.NilRsp)
+		},
+		func(err error) string { return fmt.Sprintf("Failed to undo file:\n%s:\n%s", path, err) },
+		nil)
+}
 func (t *repoVM) CleanWorkingFolder() {
 	t.startCommand(
 		"Clean working folder",

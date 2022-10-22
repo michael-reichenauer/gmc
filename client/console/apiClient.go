@@ -65,6 +65,10 @@ func (t *client) UncommitLastCommit(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
+func (t *client) UndoUncommittedFileChanges(args api.FilesReq, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
 func (t *client) UndoAllUncommittedChanges(args string, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
