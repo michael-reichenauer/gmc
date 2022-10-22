@@ -146,6 +146,26 @@ func (t *ViewRepoService) Commit(Commit string) error {
 	return t.augmentedRepo.Commit(Commit)
 }
 
+func (t *ViewRepoService) UndoCommit(id string) error {
+	return t.augmentedRepo.UndoCommit(id)
+}
+
+func (t *ViewRepoService) UndoUncommittedFileChanges(path string) error {
+	return t.augmentedRepo.UndoUncommittedFileChanges(path)
+}
+
+func (t *ViewRepoService) UncommitLastCommit() error {
+	return t.augmentedRepo.UncommitLastCommit()
+}
+
+func (t *ViewRepoService) UndoAllUncommittedChanges() error {
+	return t.augmentedRepo.UndoAllUncommittedChanges()
+}
+
+func (t *ViewRepoService) CleanWorkingFolder() error {
+	return t.augmentedRepo.CleanWorkingFolder()
+}
+
 func (t *ViewRepoService) BranchColor(branch *branch) cui.Color {
 	if branch.parentBranch == nil {
 		// branch has no parent or parent is remote of this branch, lets use it

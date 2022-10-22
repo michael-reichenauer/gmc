@@ -136,16 +136,6 @@ func (t *RepoView) setWindowTitle(port repoPage) {
 		port.repoPath, port.currentBranchName, changesText, port.selectedBranchName))
 }
 
-func (t *RepoView) showMergeMenu() {
-	if t.isInSearchMode() {
-		return
-	}
-	vp := t.view.ViewPage()
-	line := vp.CurrentLine
-	menu := t.menuService.GetMergeMenu(t.vm.repo.CurrentBranchName)
-	menu.Show(11, line-vp.FirstLine)
-}
-
 // Called by left-arrow, to show a hide branches menu
 func (t *RepoView) showHideBranchesMenu() {
 	if t.isInSearchMode() {
@@ -199,7 +189,7 @@ func (t *RepoView) onTabClick() {
 func (t *RepoView) showContextMenu() {
 	// Show context menu
 	vp := t.view.ViewPage()
-	menu := t.menuService.GetContextMenu(vp.CurrentLine)
+	menu := t.menuService.GetMainMenu(vp.CurrentLine)
 	menu.Show(40, 0)
 }
 
@@ -208,7 +198,7 @@ func (t *RepoView) showContextMenuAt(x int, y int) {
 		return
 	}
 	vp := t.view.ViewPage()
-	menu := t.menuService.GetContextMenu(vp.FirstLine + y)
+	menu := t.menuService.GetMainMenu(vp.FirstLine + y)
 	menu.Show(x+1, vp.CurrentLine-vp.FirstLine)
 }
 

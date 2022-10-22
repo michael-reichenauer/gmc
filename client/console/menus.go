@@ -11,10 +11,9 @@ import (
 )
 
 type Menus interface {
-	GetContextMenu(currentLineIndex int) cui.Menu
+	GetMainMenu(currentLineIndex int) cui.Menu
 	GetShowBranchesMenu(selectedIndex int) cui.Menu
 	GetHideBranchesMenu() cui.Menu
-	GetMergeMenu(name string) cui.Menu
 }
 
 type menus struct {
@@ -26,9 +25,9 @@ func newMenus(ui cui.UI, vm *repoVM) Menus {
 	return &menus{ui: ui, vm: vm}
 }
 
-func (t *menus) GetContextMenu(currentLineIndex int) cui.Menu {
+func (t *menus) GetMainMenu(currentLineIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Main Menu")
-	menu.AddItems(t.getContextMenuItems(currentLineIndex))
+	menu.AddItems(t.getMainMenuItems(currentLineIndex))
 	return menu
 }
 
@@ -36,10 +35,12 @@ func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Branches")
 	menu.Add(cui.MenuSeparator("Show"))
 	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
+
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
+
 	menu.Add(cui.MenuSeparator("More"))
-	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getContextMenuItems(selectedIndex)})
+	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getMainMenuItems(selectedIndex)})
 	return menu
 }
 
@@ -49,25 +50,18 @@ func (t *menus) GetHideBranchesMenu() cui.Menu {
 	return menu
 }
 
-func (t *menus) GetMergeMenu(name string) cui.Menu {
-	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
-	menu.AddItems(t.getMergeMenuItems())
-	return menu
-}
-
-func (t *menus) showAbout() {
-	t.ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", t.ui.Version()))
-}
-
-func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
+func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	c := t.vm.repo.Commits[currentLineIndex]
 	items := []cui.MenuItem{}
 
 	// Commit items
 	items = append(items, cui.MenuSeparator(fmt.Sprintf("Commit: %s", c.SID)))
 	items = append(items, cui.MenuItem{Text: "Toggle Details ...", Key: "Enter", Action: t.vm.repoViewer.ShowCommitDetails})
-	items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
+	if c.ID == git.UncommittedID {
+		items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
+	}
 	items = append(items, cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
+	items = append(items, cui.MenuItem{Text: "Undo", Title: "Undo", ItemsFunc: t.getUndoMenuItems})
 
 	// Branches items
 	items = append(items, cui.MenuSeparator("Branches"))
@@ -95,7 +89,7 @@ func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
 	items = append(items, cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
 	items = append(items, cui.MenuItem{Text: "File History", Title: "All Files", ItemsFunc: t.getFileDiffsMenuItems})
 	items = append(items, cui.MenuItem{Text: "Open Repo", Title: "Open", ItemsFunc: t.vm.repoViewer.OpenRepoMenuItems})
-	items = append(items, cui.MenuItem{Text: "About ...", Action: t.showAbout})
+	items = append(items, cui.MenuItem{Text: "About ...", Action: func() { ShowAboutDlg(t.ui) }})
 
 	return items
 }
@@ -223,6 +217,54 @@ func (t *menus) branchItemText(branch api.Branch) string {
 	} else {
 		return prefix + " " + branch.DisplayName
 	}
+}
+
+func (t *menus) getUndoMenuItems() []cui.MenuItem {
+	var items []cui.MenuItem
+
+	// Add current branch if it has commits that can be pushed
+	current, ok := t.vm.CurrentBranch()
+	if ok {
+		if current.TipID == git.UncommittedID {
+			items = append(items, cui.MenuItem{Text: "Undo Uncommitted File",
+				Title:     "Undo File",
+				ItemsFunc: t.getUncommittedFilesMenuItems})
+			items = append(items, cui.MenuSeparator(""))
+			items = append(items, cui.MenuItem{Text: "Undo All Uncommitted Changes",
+				Action: func() { t.vm.UndoAllUncommittedChanges() }})
+		} else {
+			c, ok := linq.Find(t.vm.repo.Commits, func(v api.Commit) bool { return v.ID == current.TipID })
+			if ok {
+				if c.IsLocalOnly {
+					items = append(items, cui.MenuItem{Text: "Uncommit Last Commit", Action: func() {
+						t.vm.UncommitLastCommit()
+					}})
+				}
+			}
+		}
+	}
+
+	if current.TipID != git.UncommittedID {
+		c := t.vm.repo.Commits[t.vm.currentIndex]
+		txt := fmt.Sprintf("Undo Commit %s", c.SID)
+		items = append(items, cui.MenuItem{Text: txt, Action: func() {
+			t.vm.UndoCommit(c.ID)
+		}})
+	}
+
+	items = append(items, cui.MenuItem{Text: "Clean Working Folder", Action: func() {
+		t.vm.CleanWorkingFolder()
+	}})
+
+	return items
+}
+
+func (t *menus) getUncommittedFilesMenuItems() []cui.MenuItem {
+	files := t.vm.GetUncommittedFiles()
+
+	return linq.Map(files, func(v string) cui.MenuItem {
+		return cui.MenuItem{Text: v, Action: func() { t.vm.UndoUncommittedFileChanges(v) }}
+	})
 }
 
 func (t *menus) getPushBranchMenuItems() []cui.MenuItem {

@@ -6,6 +6,8 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/linq"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
@@ -210,6 +212,11 @@ func (t *repoVM) getPage(viewPage cui.ViewPage) (int, []api.Commit, []api.GraphR
 }
 
 func (t *repoVM) showCommitDialog() {
+	current, ok := t.CurrentBranch()
+	if !ok || current.TipID != git.UncommittedID {
+		return
+	}
+
 	if t.repo.Conflicts > 0 {
 		t.ui.ShowErrorMessageBox("Conflicts must be resolved before committing.")
 		return
@@ -313,6 +320,57 @@ func (t *repoVM) GetAllBranches() []api.Branch {
 
 	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
 	return branches
+}
+
+func (t *repoVM) GetUncommittedFiles() []string {
+	var diff api.CommitDiff
+	err := t.api.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: git.UncommittedID}, &diff)
+	if err != nil {
+		return []string{}
+	}
+
+	return linq.Map(diff.FileDiffs, func(v api.FileDiff) string { return v.PathAfter })
+}
+
+func (t *repoVM) UndoAllUncommittedChanges() {
+	t.startCommand(
+		"Undo all uncommitted changes",
+		func() error { return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
+		nil)
+}
+
+func (t *repoVM) UncommitLastCommit() {
+	t.startCommand(
+		"Uncommit last local commit",
+		func() error { return t.api.UncommitLastCommit(t.repoID, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to uncommit:\n%s", err) },
+		nil)
+}
+
+func (t *repoVM) UndoCommit(id string) {
+	t.startCommand(
+		"Uncommit commit",
+		func() error { return t.api.UndoCommit(api.IdReq{RepoID: t.repoID, Id: id}, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to undo commit:\n%s:\n%s", id, err) },
+		nil)
+}
+
+func (t *repoVM) UndoUncommittedFileChanges(path string) {
+	t.startCommand(
+		"Undo uncommitted file",
+		func() error {
+			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path}, api.NilRsp)
+		},
+		func(err error) string { return fmt.Sprintf("Failed to undo file:\n%s:\n%s", path, err) },
+		nil)
+}
+func (t *repoVM) CleanWorkingFolder() {
+	t.startCommand(
+		"Clean working folder",
+		func() error { return t.api.CleanWorkingFolder(t.repoID, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to clean working folder:\n%s", err) },
+		nil)
 }
 
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {

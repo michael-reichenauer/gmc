@@ -2,6 +2,11 @@ package linq
 
 import "github.com/samber/lo"
 
+// Find search an element in a slice based on a predicate. It returns element and true if element was found.
+func Find[V any](collection []V, predicate func(V) bool) (V, bool) {
+	return lo.Find(collection, predicate)
+}
+
 // Filter iterates over elements of collection, returning an array of all elements predicate returns truthy for.
 func Filter[V any](collection []V, predicate func(V) bool) []V {
 	return lo.Filter(collection, func(v V, _ int) bool { return predicate(v) })

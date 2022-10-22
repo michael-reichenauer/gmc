@@ -2,9 +2,11 @@ package git
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
+	"os"
 	"path"
 	"strings"
+
+	"github.com/michael-reichenauer/gmc/utils"
 )
 
 // commits
@@ -36,4 +38,71 @@ func (t *commitService) commitAllChanges(message string) error {
 func (t *commitService) isMergeInProgress() bool {
 	mergeHeadPath := path.Join(t.cmd.WorkingDir(), ".git", "MERGE_HEAD")
 	return utils.FileExists(mergeHeadPath)
+}
+
+func (t *commitService) undoAllUncommittedChanges() error {
+	_, err := t.cmd.Git("reset", "--hard")
+	if err != nil {
+		return fmt.Errorf("failed to reset, %v", err)
+	}
+
+	_, err = t.cmd.Git("clean", "-fd")
+	if err != nil {
+		return fmt.Errorf("failed to clean, %v", err)
+	}
+
+	return nil
+}
+
+func (t *commitService) undoUncommittedFileChanges(path string) error {
+	_, err := t.cmd.Git("checkout", "--force", "--", path)
+	if err != nil {
+		if t.isFileUnknown(err, path) {
+			err := os.Remove(path)
+			if err != nil {
+				return fmt.Errorf("failed to reset, %v", err)
+			}
+			return nil
+		}
+		return fmt.Errorf("failed to reset, %v", err)
+	}
+
+	return nil
+}
+
+func (t *commitService) cleanWorkingFolder() error {
+	_, err := t.cmd.Git("reset", "--hard")
+	if err != nil {
+		return fmt.Errorf("failed to reset, %v", err)
+	}
+
+	_, err = t.cmd.Git("clean", "-fxd")
+	if err != nil {
+		return fmt.Errorf("failed to clean, %v", err)
+	}
+
+	return nil
+}
+
+func (t *commitService) undoCommit(id string) error {
+	_, err := t.cmd.Git("revert", "--no-commit", id)
+	if err != nil {
+		return fmt.Errorf("failed to reset, %v", err)
+	}
+
+	return nil
+}
+
+func (t *commitService) uncommitLastCommit() error {
+	_, err := t.cmd.Git("reset", "HEAD~1")
+	if err != nil {
+		return fmt.Errorf("failed to reset, %v", err)
+	}
+
+	return nil
+}
+
+func (t *commitService) isFileUnknown(err error, path string) bool {
+	msg := fmt.Sprintf("error: pathspec '%s' did not match any file(s) known", path)
+	return strings.HasPrefix(err.Error(), msg)
 }

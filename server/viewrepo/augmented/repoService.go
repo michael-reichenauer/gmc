@@ -37,6 +37,11 @@ type RepoService interface {
 	GetFreshRepo() (Repo, error)
 	SetAsParentBranch(b *Branch, pb *Branch) error
 	UnsetAsParentBranch(name string) error
+	UndoCommit(id string) error
+	UncommitLastCommit() error
+	UndoAllUncommittedChanges() error
+	UndoUncommittedFileChanges(path string) error
+	CleanWorkingFolder() error
 }
 
 type RepoChange struct {
@@ -112,6 +117,26 @@ func (s *repoService) SwitchToBranch(name string) error {
 
 func (s *repoService) Commit(message string) error {
 	return s.git.Commit(message)
+}
+
+func (s *repoService) UndoCommit(id string) error {
+	return s.git.UndoCommit(id)
+}
+
+func (s *repoService) UncommitLastCommit() error {
+	return s.git.UncommitLastCommit()
+}
+
+func (s *repoService) UndoAllUncommittedChanges() error {
+	return s.git.UndoAllUncommittedChanges()
+}
+
+func (s *repoService) UndoUncommittedFileChanges(path string) error {
+	return s.git.UndoUncommittedFileChanges(path)
+}
+
+func (s *repoService) CleanWorkingFolder() error {
+	return s.git.CleanWorkingFolder()
 }
 
 func (s *repoService) PushBranch(name string) error {
