@@ -331,6 +331,46 @@ func (t *apiServer) Commit(info api.CommitInfoReq, _ api.NoRsp) error {
 	return repo.Commit(info.Message)
 }
 
+func (t *apiServer) UndoCommit(info api.IdReq, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(info.RepoID)
+	if err != nil {
+		return err
+	}
+	return repo.UndoCommit(info.Id)
+}
+
+func (t *apiServer) UncommitLastCommit(repoID string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
+	}
+	return repo.UncommitLastCommit()
+}
+
+func (t *apiServer) UndoAllUncommittedChanges(repoID string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
+	}
+	return repo.UndoAllUncommittedChanges()
+}
+
+func (t *apiServer) CleanWorkingFolder(repoID string, _ api.NoRsp) error {
+	log.Infof(">")
+	defer log.Infof("<")
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
+	}
+	return repo.CleanWorkingFolder()
+}
+
 func (t *apiServer) SetAsParentBranch(name api.SetParentReq, _ api.NoRsp) error {
 	log.Infof(">")
 	defer log.Infof("<")

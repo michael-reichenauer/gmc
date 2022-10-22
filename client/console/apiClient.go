@@ -57,6 +57,22 @@ func (t client) Commit(args api.CommitInfoReq, rsp api.NoRsp) error {
 	return t.client.Call(args, rsp)
 }
 
+func (t *client) CleanWorkingFolder(args string, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *client) UncommitLastCommit(args string, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *client) UndoAllUncommittedChanges(args string, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
+func (t *client) UndoCommit(args api.IdReq, rsp api.NoRsp) error {
+	return t.client.Call(args, rsp)
+}
+
 func (t client) GetCommitDiff(args api.CommitDiffInfoReq, rsp *api.CommitDiff) error {
 	return t.client.Call(args, rsp)
 }

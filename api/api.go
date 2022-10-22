@@ -19,6 +19,10 @@ type Api interface {
 	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq, branches *[]Branch) error
 
 	Commit(info CommitInfoReq, _ NoRsp) error
+	UndoCommit(id IdReq, _ NoRsp) error
+	UncommitLastCommit(repoID string, _ NoRsp) error
+	UndoAllUncommittedChanges(repoID string, _ NoRsp) error
+	CleanWorkingFolder(repoID string, _ NoRsp) error
 
 	ShowBranch(name BranchName, _ NoRsp) error
 	HideBranch(name BranchName, _ NoRsp) error
