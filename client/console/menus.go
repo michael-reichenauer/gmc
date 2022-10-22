@@ -7,7 +7,6 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/linq"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -223,13 +222,21 @@ func (t *menus) getUndoMenuItems() []cui.MenuItem {
 
 	// Add current branch if it has commits that can be pushed
 	current, ok := t.vm.CurrentBranch()
-	if ok && current.TipID == git.UncommittedID {
-		log.Infof("Has uncommitted changes")
-		undoItem := cui.MenuItem{Text: "Undo Uncommitted Changes", Action: func() {
-			t.vm.UndoAllUncommittedChanges()
-		}}
-
-		items = append(items, undoItem)
+	if ok {
+		if current.TipID == git.UncommittedID {
+			items = append(items, cui.MenuItem{Text: "Undo Uncommitted Changes", Action: func() {
+				t.vm.UndoAllUncommittedChanges()
+			}})
+		} else {
+			c, ok := linq.Find(t.vm.repo.Commits, func(v api.Commit) bool { return v.ID == current.TipID })
+			if ok {
+				if c.IsLocalOnly {
+					items = append(items, cui.MenuItem{Text: "Uncommit Last Commit", Action: func() {
+						t.vm.UncommitLastCommit()
+					}})
+				}
+			}
+		}
 	}
 
 	return items

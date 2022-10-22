@@ -318,10 +318,16 @@ func (t *repoVM) GetAllBranches() []api.Branch {
 func (t *repoVM) UndoAllUncommittedChanges() {
 	t.startCommand(
 		"Undo all uncommitted changes",
-		func() error {
-			return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp)
-		},
+		func() error { return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
+		nil)
+}
+
+func (t *repoVM) UncommitLastCommit() {
+	t.startCommand(
+		"Uncommit last local commit",
+		func() error { return t.api.UncommitLastCommit(t.repoID, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to uncommit:\n%s", err) },
 		nil)
 }
 
