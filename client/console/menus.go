@@ -299,7 +299,7 @@ func (t *menus) getPullBranchMenuItems() []cui.MenuItem {
 	// Add current branch if it has commits that can be pulled
 	current, ok := t.vm.CurrentBranch()
 	if ok && current.HasRemoteOnly {
-		pushItem := t.toPullBranchMenuItem(current)
+		pushItem := t.toPullCurrentBranchMenuItem(current)
 		pushItem.Key = "U"
 		items = append(items, pushItem)
 	}
@@ -327,6 +327,12 @@ func (t *menus) toPushBranchMenuItem(branch api.Branch) cui.MenuItem {
 func (t *menus) toPullBranchMenuItem(branch api.Branch) cui.MenuItem {
 	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
 		t.vm.PullBranch(branch.DisplayName)
+	}}
+}
+
+func (t *menus) toPullCurrentBranchMenuItem(branch api.Branch) cui.MenuItem {
+	return cui.MenuItem{Text: t.branchItemText(branch), Action: func() {
+		t.vm.PullCurrentBranch()
 	}}
 }
 
