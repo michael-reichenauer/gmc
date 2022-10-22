@@ -339,6 +339,14 @@ func (t *repoVM) UndoCommit(id string) {
 		nil)
 }
 
+func (t *repoVM) CleanWorkingFolder() {
+	t.startCommand(
+		"Clean working folder",
+		func() error { return t.api.CleanWorkingFolder(t.repoID, api.NilRsp) },
+		func(err error) string { return fmt.Sprintf("Failed to clean working folder:\n%s", err) },
+		nil)
+}
+
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
 	_ = t.api.GetBranches(

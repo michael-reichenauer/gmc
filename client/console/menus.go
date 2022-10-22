@@ -245,6 +245,10 @@ func (t *menus) getUndoMenuItems() []cui.MenuItem {
 		t.vm.UndoCommit(c.ID)
 	}})
 
+	items = append(items, cui.MenuItem{Text: "Clean Working Folder", Action: func() {
+		t.vm.CleanWorkingFolder()
+	}})
+
 	return items
 }
 
