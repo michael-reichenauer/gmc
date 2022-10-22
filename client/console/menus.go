@@ -11,10 +11,9 @@ import (
 )
 
 type Menus interface {
-	GetContextMenu(currentLineIndex int) cui.Menu
+	GetMainMenu(currentLineIndex int) cui.Menu
 	GetShowBranchesMenu(selectedIndex int) cui.Menu
 	GetHideBranchesMenu() cui.Menu
-	GetMergeMenu(name string) cui.Menu
 }
 
 type menus struct {
@@ -26,9 +25,9 @@ func newMenus(ui cui.UI, vm *repoVM) Menus {
 	return &menus{ui: ui, vm: vm}
 }
 
-func (t *menus) GetContextMenu(currentLineIndex int) cui.Menu {
+func (t *menus) GetMainMenu(currentLineIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Main Menu")
-	menu.AddItems(t.getContextMenuItems(currentLineIndex))
+	menu.AddItems(t.getMainMenuItems(currentLineIndex))
 	return menu
 }
 
@@ -36,10 +35,12 @@ func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Branches")
 	menu.Add(cui.MenuSeparator("Show"))
 	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
+
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
+
 	menu.Add(cui.MenuSeparator("More"))
-	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getContextMenuItems(selectedIndex)})
+	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getMainMenuItems(selectedIndex)})
 	return menu
 }
 
@@ -49,17 +50,7 @@ func (t *menus) GetHideBranchesMenu() cui.Menu {
 	return menu
 }
 
-func (t *menus) GetMergeMenu(name string) cui.Menu {
-	menu := t.ui.NewMenu(fmt.Sprintf("Merge Into: %s", name))
-	menu.AddItems(t.getMergeMenuItems())
-	return menu
-}
-
-func (t *menus) showAbout() {
-	t.ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", t.ui.Version()))
-}
-
-func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
+func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	c := t.vm.repo.Commits[currentLineIndex]
 	items := []cui.MenuItem{}
 
@@ -95,7 +86,7 @@ func (t *menus) getContextMenuItems(currentLineIndex int) []cui.MenuItem {
 	items = append(items, cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
 	items = append(items, cui.MenuItem{Text: "File History", Title: "All Files", ItemsFunc: t.getFileDiffsMenuItems})
 	items = append(items, cui.MenuItem{Text: "Open Repo", Title: "Open", ItemsFunc: t.vm.repoViewer.OpenRepoMenuItems})
-	items = append(items, cui.MenuItem{Text: "About ...", Action: t.showAbout})
+	items = append(items, cui.MenuItem{Text: "About ...", Action: func() { ShowAboutDlg(t.ui) }})
 
 	return items
 }
