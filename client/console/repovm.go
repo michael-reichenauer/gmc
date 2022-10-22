@@ -315,6 +315,16 @@ func (t *repoVM) GetAllBranches() []api.Branch {
 	return branches
 }
 
+func (t *repoVM) UndoAllUncommittedChanges() {
+	t.startCommand(
+		"Undo all uncommitted changes",
+		func() error {
+			return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp)
+		},
+		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
+		nil)
+}
+
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 	var branches []api.Branch
 	_ = t.api.GetBranches(

@@ -7,6 +7,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/linq"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -59,6 +60,7 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	items = append(items, cui.MenuItem{Text: "Toggle Details ...", Key: "Enter", Action: t.vm.repoViewer.ShowCommitDetails})
 	items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
 	items = append(items, cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
+	items = append(items, cui.MenuItem{Text: "Undo", Title: "Undo", ItemsFunc: t.getUndoMenuItems})
 
 	// Branches items
 	items = append(items, cui.MenuSeparator("Branches"))
@@ -214,6 +216,23 @@ func (t *menus) branchItemText(branch api.Branch) string {
 	} else {
 		return prefix + " " + branch.DisplayName
 	}
+}
+
+func (t *menus) getUndoMenuItems() []cui.MenuItem {
+	var items []cui.MenuItem
+
+	// Add current branch if it has commits that can be pushed
+	current, ok := t.vm.CurrentBranch()
+	if ok && current.TipID == git.UncommittedID {
+		log.Infof("Has uncommitted changes")
+		undoItem := cui.MenuItem{Text: "Undo Uncommitted Changes", Action: func() {
+			t.vm.UndoAllUncommittedChanges()
+		}}
+
+		items = append(items, undoItem)
+	}
+
+	return items
 }
 
 func (t *menus) getPushBranchMenuItems() []cui.MenuItem {
