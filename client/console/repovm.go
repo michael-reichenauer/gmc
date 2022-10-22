@@ -526,10 +526,10 @@ func (t *repoVM) startCommand(
 	go func() {
 		err := doFunc()
 		t.ui.Post(func() {
+			progress.Close()
 			if err != nil {
 				t.ui.ShowErrorMessageBox(errorFunc(err))
 			}
-			progress.Close()
 		})
 	}()
 }
