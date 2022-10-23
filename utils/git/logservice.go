@@ -156,6 +156,8 @@ func (t *logService) parseMessage(lineParts []string) (string, string) {
 		message = strings.Join(lineParts[5:], "|")
 	}
 	message = strings.ReplaceAll(message, "\r", "")
+	message = strings.TrimSuffix(message, "\n")
 	lines := strings.Split(message, "\n")
-	return lines[0], message
+	subject := strings.TrimSuffix(lines[0], "\n")
+	return subject, message
 }
