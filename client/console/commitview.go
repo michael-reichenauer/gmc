@@ -5,6 +5,7 @@ import (
 
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/utils/async"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
@@ -139,22 +140,36 @@ func (h *CommitView) onOk() {
 	if len(msg) > 0 {
 		total = total + "\n" + msg
 	}
-	progress := h.ui.ShowProgress("Committing ...")
-	go func() {
-		err := h.committer.Commit(api.CommitInfoReq{RepoID: h.repoID, Message: total}, api.NilRsp)
-		h.ui.Post(func() {
-			progress.Close()
-			if err != nil {
-				log.Eventf("commit-error", "failed to commit, %v", err)
-				h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
-				h.Close()
-				return
-			}
 
+	progress := h.ui.ShowProgress("Committing ...")
+	req := api.CommitInfoReq{RepoID: h.repoID, Message: total}
+	async.RunE(func() error { return h.committer.Commit(req, api.NilRsp) }).
+		Then(func(r any) {
+			progress.Close()
 			log.Event("commit-ok")
-			h.Close()
-		})
-	}()
+		}).
+		Catch(func(e error) {
+			progress.Close()
+			log.Eventf("commit-error", "failed to commit, %v", e)
+			h.ui.ShowErrorMessageBox("Failed to commit,\n%v", e)
+		}).
+		Finally(func() { h.Close() })
+
+	// go func() {
+	// 	err := h.committer.Commit(api.CommitInfoReq{RepoID: h.repoID, Message: total}, api.NilRsp)
+	// 	h.ui.Post(func() {
+	// 		progress.Close()
+	// 		if err != nil {
+	// 			log.Eventf("commit-error", "failed to commit, %v", err)
+	// 			h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
+	// 			h.Close()
+	// 			return
+	// 		}
+
+	// 		log.Event("commit-ok")
+	// 		h.Close()
+	// 	})
+	// }()
 }
 
 func (h *CommitView) showDiff() {
