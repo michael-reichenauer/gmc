@@ -10,7 +10,9 @@ import (
 
 var inChannel, outChannel = utils.InfiniteChannel()
 
-func Run() {
+func Run(startFunc func()) {
+	Do(startFunc)
+
 	for f := range outChannel {
 		if f == nil {
 			break
@@ -19,12 +21,13 @@ func Run() {
 	}
 }
 
-func RunWith(otherFunc func(doFunc func())) {
+func RunWith(startFunc func(), doWrapper func(f func())) {
+	Do(startFunc)
 	for f := range outChannel {
 		if f == nil {
 			break
 		}
-		otherFunc(f.(func()))
+		doWrapper(f.(func()))
 	}
 }
 

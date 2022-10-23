@@ -8,7 +8,7 @@ import (
 )
 
 func TestRun(t *testing.T) {
-	one.Do(func() {
+	one.Run(func() {
 		t.Log("test")
 
 		as := Run(func() (int, error) { return call(2) }).
@@ -24,13 +24,6 @@ func TestRun(t *testing.T) {
 				one.Close()
 			})
 	})
-
-	// one.RunWith(func(f func()) {
-	// 	t.Log(">")
-	// 	f()
-	// 	t.Log("<")
-	// })
-	one.Run()
 }
 
 func call(count int) (int, error) {

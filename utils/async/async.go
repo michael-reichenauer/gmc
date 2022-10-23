@@ -1,23 +1,32 @@
 package async
 
-import "github.com/michael-reichenauer/gmc/utils/one"
+import (
+	"fmt"
 
-type Async[Result any] struct {
-	result      Result
-	isResultSet bool
-	err         error
-	isErrorSet  bool
+	"github.com/michael-reichenauer/gmc/utils/log"
+	"github.com/michael-reichenauer/gmc/utils/one"
+)
 
-	errorCallbacks   []func(err error)
-	resultCallbacks  []func(r Result)
-	finallyCallbacks []func()
-	isCompleted      bool
+type Task[Result any] interface {
+	Then(resultCallback func(r Result)) Task[Result]
+	Catch(errCallback func(e error)) Task[Result]
+	Finally(finallyCallback func()) Task[Result]
+	next(nextCallback func(r Result, err error)) Task[Result]
+}
+
+type task[Result any] struct {
+	result          Result
+	err             error
+	isCompleted     bool
+	errorCallback   func(err error)
+	resultCallback  func(r Result)
+	finallyCallback func()
 
 	nextCallbacks []func(r Result, err error)
 }
 
-func Run[Result any](runFunc func() (Result, error)) *Async[Result] {
-	a := &Async[Result]{}
+func Run[Result any](runFunc func() (Result, error)) Task[Result] {
+	a := &task[Result]{}
 
 	go func() {
 		r, err := runFunc()
@@ -34,51 +43,23 @@ func Run[Result any](runFunc func() (Result, error)) *Async[Result] {
 	return a
 }
 
-func RunAction(runFunc func() error) *Async[any] {
-	a := &Async[any]{}
-
-	go func() {
-		err := runFunc()
-		one.Do(func() {
-			if err != nil {
-				a.setError(err)
-				return
-			}
-			a.setResult(nil)
-		})
-	}()
-
-	return a
+func RunNoErr[Result any](runFunc func() Result) Task[Result] {
+	return Run(func() (Result, error) { return runFunc(), nil })
 }
 
-func RunNoErr[Result any](runFunc func() Result) *Async[Result] {
-	a := &Async[Result]{}
-
-	go func() {
-		r := runFunc()
-		one.Do(func() {
-			a.setResult(r)
-		})
-	}()
-
-	return a
+func RunAction(runFunc func() error) Task[any] {
+	return Run(func() (any, error) { return nil, runFunc() })
 }
 
-func RunActionNoErr(runFunc func()) *Async[any] {
-	a := &Async[any]{}
-
-	go func() {
+func RunActionNoErr(runFunc func()) Task[any] {
+	return Run(func() (any, error) {
 		runFunc()
-		one.Do(func() {
-			a.setResult(nil)
-		})
-	}()
-
-	return a
+		return nil, nil
+	})
 }
 
-func ThenRun[PreResult any, Result any](prev *Async[PreResult], runFunc func(r PreResult) (Result, error)) *Async[Result] {
-	a := &Async[Result]{}
+func ThenRun[PreResult any, Result any](prev Task[PreResult], runFunc func(r PreResult) (Result, error)) Task[Result] {
+	a := &task[Result]{}
 
 	prev.next(func(preResult PreResult, preErr error) {
 		if preErr != nil {
@@ -102,12 +83,30 @@ func ThenRun[PreResult any, Result any](prev *Async[PreResult], runFunc func(r P
 	return a
 }
 
-func (t *Async[Result]) Then(resultCallback func(r Result)) *Async[Result] {
-	one.Do(func() {
-		// Store callback to be called when/if result is set
-		t.resultCallbacks = append(t.resultCallbacks, resultCallback)
+func ThenRunNoErr[PreResult any, Result any](prev Task[PreResult], runFunc func(r PreResult) Result) Task[any] {
+	return ThenRun(prev, func(r PreResult) (any, error) { return runFunc(r), nil })
+}
 
-		if t.isResultSet {
+func ThenRunAction[PreResult any](prev Task[PreResult], runFunc func(r PreResult) error) Task[any] {
+	return ThenRun(prev, func(r PreResult) (any, error) { return nil, runFunc(r) })
+}
+
+func ThenRunActionNoErr[PreResult any](prev Task[PreResult], runFunc func(r PreResult)) Task[any] {
+	return ThenRun(prev, func(pr PreResult) (any, error) {
+		runFunc(pr)
+		return nil, nil
+	})
+}
+
+func (t *task[Result]) Then(callback func(r Result)) Task[Result] {
+	one.Do(func() {
+		if t.resultCallback != nil {
+			panic(log.Fatal(fmt.Errorf("only one Then() call allows on a task")))
+		}
+		// Store callback to be called when/if result is set
+		t.resultCallback = callback
+
+		if t.isCompleted {
 			// Result already set, call result callback
 			t.callResultCallback()
 		}
@@ -116,12 +115,15 @@ func (t *Async[Result]) Then(resultCallback func(r Result)) *Async[Result] {
 	return t
 }
 
-func (t *Async[Result]) Catch(errCallback func(e error)) *Async[Result] {
+func (t *task[Result]) Catch(callback func(e error)) Task[Result] {
 	one.Do(func() {
+		if t.errorCallback != nil {
+			panic(log.Fatal(fmt.Errorf("only one Catch() call allows on a task")))
+		}
 		// Store callback to be called when/if error is set
-		t.errorCallbacks = append(t.errorCallbacks, errCallback)
+		t.errorCallback = callback
 
-		if t.isErrorSet {
+		if t.isCompleted {
 			// Error already set, call error callback
 			t.callErrCallback()
 		}
@@ -130,12 +132,15 @@ func (t *Async[Result]) Catch(errCallback func(e error)) *Async[Result] {
 	return t
 }
 
-func (t *Async[Result]) Finally(finallyCallback func()) *Async[Result] {
+func (t *task[Result]) Finally(callback func()) Task[Result] {
 	one.Do(func() {
+		if t.finallyCallback != nil {
+			panic(log.Fatal(fmt.Errorf("only one Finally() call allows on a task")))
+		}
 		// Store callback to be called when/if result/error is set
-		t.finallyCallbacks = append(t.finallyCallbacks, finallyCallback)
+		t.finallyCallback = callback
 
-		if t.isResultSet || t.isErrorSet {
+		if t.isCompleted {
 			// Result or error already set, call finally callback
 			t.callFinallyCallback()
 		}
@@ -144,7 +149,7 @@ func (t *Async[Result]) Finally(finallyCallback func()) *Async[Result] {
 	return t
 }
 
-func (t *Async[Result]) next(nextCallback func(r Result, err error)) *Async[Result] {
+func (t *task[Result]) next(nextCallback func(r Result, err error)) Task[Result] {
 	one.Do(func() {
 		// Store callback to be called when/if result is set
 		t.nextCallbacks = append(t.nextCallbacks, nextCallback)
@@ -158,67 +163,58 @@ func (t *Async[Result]) next(nextCallback func(r Result, err error)) *Async[Resu
 	return t
 }
 
-func (t *Async[Result]) setResult(result Result) {
+func (t *task[Result]) setResult(result Result) {
 	if t.isCompleted {
-		// Already completed
 		return
 	}
+
 	t.result = result
-	t.isResultSet = true
 	t.isCompleted = true
 	t.callResultCallback()
 }
 
-func (t *Async[Result]) setError(err error) {
+func (t *task[Result]) setError(err error) {
 	if t.isCompleted {
-		// Already completed
 		return
 	}
 
 	t.err = err
-	t.isErrorSet = true
 	t.isCompleted = true
 	t.callErrCallback()
 }
 
-func (t *Async[Result]) callResultCallback() {
-	if t.resultCallbacks != nil {
-		callbacks := t.resultCallbacks
-		t.resultCallbacks = nil
-		for _, callback := range callbacks {
-			callback(t.result)
-		}
+func (t *task[Result]) callResultCallback() {
+	if t.resultCallback != nil {
+		callback := t.resultCallback
+		t.resultCallback = nil
+		callback(t.result)
 	}
 
 	t.callFinallyCallback()
 }
 
-func (t *Async[Result]) callErrCallback() {
-	if t.errorCallbacks != nil {
-		callbacks := t.errorCallbacks
-		t.errorCallbacks = nil
+func (t *task[Result]) callErrCallback() {
+	if t.errorCallback != nil {
+		callback := t.errorCallback
+		t.errorCallback = nil
 		t.isCompleted = true
-		for _, callback := range callbacks {
-			callback(t.err)
-		}
+		callback(t.err)
 	}
 
 	t.callFinallyCallback()
 }
 
-func (t *Async[Result]) callFinallyCallback() {
-	if t.finallyCallbacks != nil {
-		callbacks := t.finallyCallbacks
-		t.finallyCallbacks = nil
-		for _, callback := range callbacks {
-			callback()
-		}
+func (t *task[Result]) callFinallyCallback() {
+	if t.finallyCallback != nil {
+		callback := t.finallyCallback
+		t.finallyCallback = nil
+		callback()
 	}
 
 	t.callNextCallback()
 }
 
-func (t *Async[Result]) callNextCallback() {
+func (t *task[Result]) callNextCallback() {
 	if t.nextCallbacks != nil {
 		callbacks := t.nextCallbacks
 		t.nextCallbacks = nil
