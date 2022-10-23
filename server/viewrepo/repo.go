@@ -66,7 +66,7 @@ func (t *repo) addVirtualStatusCommit(gRepo augmented.Repo) {
 	}
 
 	allChanges := gRepo.Status.AllChanges()
-	statusText := fmt.Sprintf("%d uncommitted changes", allChanges)
+	statusText := fmt.Sprintf("%d uncommitted files", allChanges)
 	if gRepo.Status.IsMerging && gRepo.Status.MergeMessage != "" {
 		statusText = fmt.Sprintf("%s, %s", gRepo.Status.MergeMessage, statusText)
 	}

@@ -1,6 +1,7 @@
 package console
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/jroimartin/gocui"
@@ -17,42 +18,43 @@ type Committer interface {
 	Commit(info api.CommitInfoReq, rsp api.NoRsp) error
 }
 
-func NewCommitView(ui cui.UI, committer Committer, repoID, branchName string) *CommitView {
-	h := &CommitView{ui: ui, committer: committer, repoID: repoID, branchName: branchName}
+func NewCommitView(ui cui.UI, committer Committer, repoID, branchName string, changes int) *CommitView {
+	h := &CommitView{ui: ui, committer: committer, repoID: repoID, branchName: branchName, changes: changes}
 	return h
 }
 
 type CommitView struct {
 	ui          cui.UI
 	committer   Committer
-	boxView     cui.View
+	commitView  cui.View
 	messageView cui.View
 	buttonsView cui.View
 	repoID      string
 	branchName  string
+	changes     int
 }
 
 func (h *CommitView) Show(message string) {
 	log.Infof("Commit message %q", message)
-	h.boxView = h.newCommitView()
+	h.commitView = h.newCommitView()
 	h.buttonsView = h.newButtonsView()
 	h.messageView = h.newMessageView(message)
 
 	bb, tb, bbb := h.getBounds()
-	h.boxView.Show(bb)
+	h.commitView.Show(bb)
 	h.buttonsView.Show(bbb)
 	h.messageView.Show(tb)
 
-	h.boxView.SetTop()
+	h.commitView.SetTop()
 	h.messageView.SetTop()
 	h.buttonsView.SetTop()
-	h.boxView.SetCurrentView()
+	h.commitView.SetCurrentView()
 }
 
 // The total dialog with title and frame
 func (h *CommitView) newCommitView() cui.View {
 	view := h.ui.NewView("")
-	view.Properties().Title = "Commit on: " + h.branchName
+	view.Properties().Title = fmt.Sprintf("Commit %d files on: %s", h.changes, h.branchName)
 	view.Properties().Name = "CommitView"
 	view.Properties().IsEditable = true
 	view.Properties().HideHorizontalScrollbar = true
@@ -98,14 +100,14 @@ func (h *CommitView) newButtonsView() cui.View {
 func (h *CommitView) Close() {
 	h.messageView.Close()
 	h.buttonsView.Close()
-	h.boxView.Close()
+	h.commitView.Close()
 }
 
 func (h *CommitView) goToMessage() {
 	h.messageView.SetCurrentView()
 }
 func (h *CommitView) goToSubject() {
-	h.boxView.SetCurrentView()
+	h.commitView.SetCurrentView()
 }
 
 func (h *CommitView) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
@@ -134,7 +136,7 @@ func (h *CommitView) onCancel() {
 }
 
 func (h *CommitView) onOk() {
-	subject := strings.Trim(h.boxView.ReadLines()[0], "\n")
+	subject := strings.Trim(h.commitView.ReadLines()[0], "\n")
 	msg := strings.TrimRight(strings.Join(h.messageView.ReadLines(), "\n"), "\n")
 	total := subject
 	if len(msg) > 0 {

@@ -222,7 +222,7 @@ func (t *repoVM) showCommitDialog() {
 		return
 	}
 
-	commitView := NewCommitView(t.ui, t.api, t.repoID, t.repo.CurrentBranchName)
+	commitView := NewCommitView(t.ui, t.api, t.repoID, t.repo.CurrentBranchName, t.repo.UncommittedChanges)
 	message := t.repo.MergeMessage
 	commitView.Show(message)
 }
@@ -334,7 +334,7 @@ func (t *repoVM) GetUncommittedFiles() []string {
 
 func (t *repoVM) UndoAllUncommittedChanges() {
 	t.startCommand(
-		"Undo all uncommitted changes",
+		"Undo all uncommitted files",
 		func() error { return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp) },
 		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
 		nil)
