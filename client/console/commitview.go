@@ -72,7 +72,7 @@ func (h *CommitView) newCommitView() cui.View {
 
 func (h *CommitView) newMessageView(text string) cui.View {
 	view := h.ui.NewView(text)
-	view.Properties().Title = "..."
+	view.Properties().Title = strings.Repeat(" ", 67)
 	view.Properties().IsEditable = true
 	view.Properties().HasFrame = false
 	view.Properties().HideHorizontalScrollbar = true
@@ -89,6 +89,7 @@ func (h *CommitView) newMessageView(text string) cui.View {
 // The OK/Cancel buttons
 func (h *CommitView) newButtonsView() cui.View {
 	view := h.ui.NewView(" [OK] [Cancel]")
+	view.Properties().Title = strings.Repeat(" ", 67)
 	view.Properties().HasFrame = true
 	view.Properties().OnMouseLeft = h.onButtonsClick
 	view.Properties().HideVerticalScrollbar = true
