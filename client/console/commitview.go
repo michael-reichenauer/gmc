@@ -62,6 +62,8 @@ func (h *CommitView) newCommitView() cui.View {
 	view.SetKey(gocui.KeyCtrlC, h.onCancel)
 	view.SetKey(gocui.KeyEsc, h.onCancel)
 	view.SetKey(gocui.KeyCtrlD, h.showDiff)
+	view.SetKey(gocui.KeyTab, h.goToMessage)
+	view.SetKey(gocui.KeyArrowDown, h.goToMessage)
 	return view
 }
 
@@ -77,6 +79,7 @@ func (h *CommitView) newMessageView(text string) cui.View {
 	view.SetKey(gocui.KeyCtrlC, h.onCancel)
 	view.SetKey(gocui.KeyEsc, h.onCancel)
 	view.SetKey(gocui.KeyCtrlD, h.showDiff)
+	view.SetKey(gocui.KeyTab, h.goToSubject)
 	return view
 }
 
@@ -95,6 +98,13 @@ func (h *CommitView) Close() {
 	h.messageView.Close()
 	h.buttonsView.Close()
 	h.boxView.Close()
+}
+
+func (h *CommitView) goToMessage() {
+	h.messageView.SetCurrentView()
+}
+func (h *CommitView) goToSubject() {
+	h.boxView.SetCurrentView()
 }
 
 func (h *CommitView) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
