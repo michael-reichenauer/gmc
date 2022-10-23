@@ -14,7 +14,6 @@ func TestCurrentUncommittedRepo(t *testing.T) {
 	diff, err := g.CommitDiff(UncommittedID)
 	assert.NoError(t, err)
 	t.Logf("Diff: %#v", diff)
-
 }
 
 func TestCommitDiff(t *testing.T) {
