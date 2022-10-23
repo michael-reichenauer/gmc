@@ -11,12 +11,12 @@ func TestRun(t *testing.T) {
 	one.Run(func() {
 		t.Log("test")
 
-		as := Run(func() (int, error) { return call(2) }).
+		as := RunRE(func() (int, error) { return call(2) }).
 			Then(func(r int) { t.Logf("Result1 %d", r) }).
 			Catch(func(e error) { t.Logf("Error: %s", e) }).
 			Finally(func() { t.Log("Finally done") })
 
-		ThenRun(as, func(r int) (string, error) { return otherCall(r) }).
+		ThenRunRE(as, func(r int) (string, error) { return otherCall(r) }).
 			Then(func(r string) { t.Logf("other result: %q", r) }).
 			Catch(func(e error) { t.Logf("other Error: %v", e) }).
 			Finally(func() {
