@@ -154,22 +154,6 @@ func (h *CommitView) onOk() {
 			h.ui.ShowErrorMessageBox("Failed to commit,\n%v", e)
 		}).
 		Finally(func() { h.Close() })
-
-	// go func() {
-	// 	err := h.committer.Commit(api.CommitInfoReq{RepoID: h.repoID, Message: total}, api.NilRsp)
-	// 	h.ui.Post(func() {
-	// 		progress.Close()
-	// 		if err != nil {
-	// 			log.Eventf("commit-error", "failed to commit, %v", err)
-	// 			h.ui.ShowErrorMessageBox("Failed to commit,\n%v", err)
-	// 			h.Close()
-	// 			return
-	// 		}
-
-	// 		log.Event("commit-ok")
-	// 		h.Close()
-	// 	})
-	// }()
 }
 
 func (h *CommitView) showDiff() {
