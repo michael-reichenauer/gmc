@@ -25,7 +25,7 @@ type CommitView struct {
 	ui          cui.UI
 	committer   Committer
 	boxView     cui.View
-	textView    cui.View
+	messageView cui.View
 	buttonsView cui.View
 	repoID      string
 	branchName  string
@@ -35,66 +35,77 @@ func (h *CommitView) Show(message string) {
 	log.Infof("Commit message %q", message)
 	h.boxView = h.newCommitView()
 	h.buttonsView = h.newButtonsView()
-	h.textView = h.newTextView(message)
+	h.messageView = h.newMessageView(message)
 
 	bb, tb, bbb := h.getBounds()
 	h.boxView.Show(bb)
 	h.buttonsView.Show(bbb)
-	h.textView.Show(tb)
+	h.messageView.Show(tb)
 
 	h.boxView.SetTop()
+	h.messageView.SetTop()
 	h.buttonsView.SetTop()
-	h.textView.SetTop()
-	h.textView.SetCurrentView()
+	h.boxView.SetCurrentView()
 }
 
+// The total dialog with title and frame
 func (h *CommitView) newCommitView() cui.View {
 	view := h.ui.NewView("")
 	view.Properties().Title = "Commit on: " + h.branchName
 	view.Properties().Name = "CommitView"
-	view.Properties().HideHorizontalScrollbar = true
-	view.Properties().HideVerticalScrollbar = true
-	view.Properties().HideCurrentLineMarker = true
-	return view
-}
-
-func (h *CommitView) newButtonsView() cui.View {
-	view := h.ui.NewView(" [OK] [Cancel]")
-	view.Properties().OnMouseLeft = h.onButtonsClick
-	view.Properties().HideHorizontalScrollbar = true
-	view.Properties().HideVerticalScrollbar = true
-	view.Properties().HideCurrentLineMarker = true
-	return view
-}
-
-func (h *CommitView) newTextView(text string) cui.View {
-	view := h.ui.NewView(text)
-	view.Properties().HideCurrentLineMarker = true
 	view.Properties().IsEditable = true
+	view.Properties().HideHorizontalScrollbar = true
+	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
+	view.SetKey(gocui.KeyEnter, h.onOk)
 	view.SetKey(gocui.KeyCtrlO, h.onOk)
 	view.SetKey(gocui.KeyCtrlC, h.onCancel)
 	view.SetKey(gocui.KeyEsc, h.onCancel)
 	view.SetKey(gocui.KeyCtrlD, h.showDiff)
+	return view
+}
+
+func (h *CommitView) newMessageView(text string) cui.View {
+	view := h.ui.NewView(text)
+	view.Properties().Title = "..."
+	view.Properties().IsEditable = true
+	view.Properties().HasFrame = false
+	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
+	view.SetKey(gocui.KeyCtrlO, h.onOk)
+	view.SetKey(gocui.KeyCtrlC, h.onCancel)
+	view.SetKey(gocui.KeyEsc, h.onCancel)
+	view.SetKey(gocui.KeyCtrlD, h.showDiff)
+	return view
+}
+
+// The OK/Cancel buttons
+func (h *CommitView) newButtonsView() cui.View {
+	view := h.ui.NewView(" [OK] [Cancel]")
+	view.Properties().HasFrame = true
+	view.Properties().OnMouseLeft = h.onButtonsClick
+	view.Properties().HideVerticalScrollbar = true
+	view.Properties().HideCurrentLineMarker = true
 	view.Properties().HideHorizontalScrollbar = true
 	return view
 }
 
 func (h *CommitView) Close() {
-	h.textView.Close()
+	h.messageView.Close()
 	h.buttonsView.Close()
 	h.boxView.Close()
 }
 
 func (h *CommitView) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
 	box := cui.CenterBounds(10, 5, 70, 15)
-	text := cui.Relative(box, func(b cui.Rect) cui.Rect {
-		return cui.Rect{X: b.X, Y: b.Y, W: b.W, H: b.H - 2}
+	msg := cui.Relative(box, func(b cui.Rect) cui.Rect {
+		return cui.Rect{X: b.X, Y: b.Y + 2, W: b.W, H: b.H - 4}
 	})
 	buttons := cui.Relative(box, func(b cui.Rect) cui.Rect {
 		return cui.Rect{X: b.X, Y: b.Y + b.H - 1, W: b.W, H: 1}
 	})
-	return box, text, buttons
+	return box, msg, buttons
 }
 
 func (h *CommitView) onButtonsClick(x int, y int) {
@@ -112,10 +123,15 @@ func (h *CommitView) onCancel() {
 }
 
 func (h *CommitView) onOk() {
-	msg := strings.Join(h.textView.ReadLines(), "\n")
+	subject := strings.Trim(h.boxView.ReadLines()[0], "\n")
+	msg := strings.TrimRight(strings.Join(h.messageView.ReadLines(), "\n"), "\n")
+	total := subject
+	if len(msg) > 0 {
+		total = total + "\n" + msg
+	}
 	progress := h.ui.ShowProgress("Committing ...")
 	go func() {
-		err := h.committer.Commit(api.CommitInfoReq{RepoID: h.repoID, Message: msg}, api.NilRsp)
+		err := h.committer.Commit(api.CommitInfoReq{RepoID: h.repoID, Message: total}, api.NilRsp)
 		h.ui.Post(func() {
 			progress.Close()
 			if err != nil {
