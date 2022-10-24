@@ -76,6 +76,8 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	items = append(items, cui.MenuItem{Text: "Pull/Update", Title: "Update", ItemsFunc: t.getPullBranchMenuItems})
 	items = append(items, cui.MenuItem{Text: "Merge", Title: fmt.Sprintf("Merge Into: %s", t.vm.repo.CurrentBranchName),
 		ItemsFunc: t.getMergeMenuItems})
+	items = append(items, cui.MenuItem{Text: "MergeSquash", Title: fmt.Sprintf("MergeSquash Into: %s", t.vm.repo.CurrentBranchName),
+		ItemsFunc: t.getMergeSquashMenuItems})
 	items = append(items, cui.MenuItem{Text: "Create Branch ...", Key: "B", Action: t.vm.showCreateBranchDialog})
 	items = append(items, cui.MenuItem{Text: "Delete Branch", ItemsFunc: t.getDeleteBranchMenuItems})
 
@@ -351,6 +353,22 @@ func (t *menus) getMergeMenuItems() []cui.MenuItem {
 		func(b api.Branch) cui.MenuItem {
 			return cui.MenuItem{Text: t.branchItemText(b), Action: func() {
 				t.vm.MergeFromBranch(b.Name)
+			}}
+		})
+}
+
+func (t *menus) getMergeSquashMenuItems() []cui.MenuItem {
+	current, ok := t.vm.CurrentBranch()
+	if !ok {
+		// No current branch (detached branch)
+		return nil
+	}
+
+	return linq.FilterMap(t.vm.GetShownBranches(false),
+		func(b api.Branch) bool { return b.DisplayName != current.DisplayName },
+		func(b api.Branch) cui.MenuItem {
+			return cui.MenuItem{Text: t.branchItemText(b), Action: func() {
+				t.vm.MergeSquashFromBranch(b.Name)
 			}}
 		})
 }

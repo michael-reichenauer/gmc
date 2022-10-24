@@ -14,6 +14,7 @@ import (
 )
 
 type RepoService interface {
+	Git() git.Git
 	RepoChanges() chan RepoChange
 	RepoPath() string
 	TriggerManualRefresh()
@@ -88,6 +89,10 @@ func NewRepoService(rootPath string) RepoService {
 		repo:            make(chan Repo, 1),
 		manualRefresh:   make(chan struct{}, 1),
 	}
+}
+
+func (s *repoService) Git() git.Git {
+	return s.git
 }
 
 func (s *repoService) RepoChanges() chan RepoChange {

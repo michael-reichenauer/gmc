@@ -73,6 +73,10 @@ func NewViewRepoService(configService *config.Service, rootPath string) *ViewRep
 	}
 }
 
+func (t *ViewRepoService) Git() git.Git {
+	return t.augmentedRepo.Git()
+}
+
 func (t *ViewRepoService) ObserveChanges() observer.Stream {
 	return t.changes.Observe()
 }

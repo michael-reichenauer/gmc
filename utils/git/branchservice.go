@@ -2,9 +2,10 @@ package git
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
 	"strconv"
 	"strings"
+
+	"github.com/michael-reichenauer/gmc/utils"
 )
 
 type Branch struct {
@@ -81,6 +82,20 @@ func (t *branchesService) mergeBranch(name string) error {
 	name = StripRemotePrefix(name)
 	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
 	output, err := t.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", name)
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 1") &&
+			strings.Contains(output, "CONFLICT") {
+			return ErrConflicts
+		}
+		return err
+	}
+	return nil
+}
+
+func (t *branchesService) mergeSquashBranch(name string) error {
+	name = StripRemotePrefix(name)
+	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
+	output, err := t.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", "--squash", name)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") &&
 			strings.Contains(output, "CONFLICT") {

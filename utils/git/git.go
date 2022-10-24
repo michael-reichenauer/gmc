@@ -41,6 +41,7 @@ type Git interface {
 	CreateBranch(name string) error
 	CreateBranchAt(name string, id string) error
 	MergeBranch(name string) error
+	MergeSquashBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string) error
 	GetTags() ([]Tag, error)
@@ -194,6 +195,10 @@ func (t *git) PullBranch(name string) error {
 
 func (t *git) MergeBranch(name string) error {
 	return t.branchService.mergeBranch(name)
+}
+
+func (t *git) MergeSquashBranch(name string) error {
+	return t.branchService.mergeSquashBranch(name)
 }
 
 func (t *git) CreateBranch(name string) error {
