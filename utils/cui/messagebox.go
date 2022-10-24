@@ -141,7 +141,7 @@ func (t *MessageBox) onButtonsClick(x int, y int) {
 		if x < 9 {
 			t.Close()
 		} else if x > 9 && x < 14 {
-			t.handleOmk()
+			t.handleOk()
 		}
 		return
 	}
