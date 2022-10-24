@@ -19,8 +19,10 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/one"
 )
 
+var HelpFile string
+
 const (
-	version = "0.54"
+	version = "0.55"
 )
 
 var (

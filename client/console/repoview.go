@@ -82,6 +82,8 @@ func (t *RepoView) newView() cui.View {
 	view.SetKey('f', t.vm.ShowSearchView)
 	view.SetKey('F', t.vm.ShowSearchView)
 	view.SetKey('a', t.showAbout)
+	view.SetKey('h', func() { ShowHelpDlg(t.ui) })
+	view.SetKey('H', func() { ShowHelpDlg(t.ui) })
 
 	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
 	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)

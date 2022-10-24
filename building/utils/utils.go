@@ -1,6 +1,9 @@
 package tools
 
 import (
+	"archive/zip"
+	"io"
+
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -17,19 +20,19 @@ func EchoLn() {
 }
 
 func Echo(format string, args ...interface{}) {
-	fmt.Printf(Now() + " " + format+"\n", args...)
+	fmt.Printf(Now()+" "+format+"\n", args...)
 }
 
 func ErrorEcho(format string, args ...interface{}) {
-	fmt.Fprintf(os.Stderr, Now() + " " + format+"\n", args...)
+	fmt.Fprintf(os.Stderr, Now()+" "+format+"\n", args...)
 }
 
 func Cmd(cmd string, args ...string) error {
 	return CmdWithEnv(nil, cmd, args...)
 }
 
-func Now() string{
-    return time.Now().Format("2006-01-02T15:04:05.0000")
+func Now() string {
+	return time.Now().Format("2006-01-02T15:04:05.0000")
 }
 
 // https://blog.kowalczyk.info/article/wOYk/advanced-command-execution-in-go-with-osexec.html
@@ -56,16 +59,42 @@ func RemoveFile(path string) error {
 }
 
 func CopyFile(src, dst string) error {
-    bytesRead, err := ioutil.ReadFile(src)
-    if err != nil {
-        return err
-    }
-
-    err = ioutil.WriteFile(dst, bytesRead, 0755)
-    if err != nil {
+	bytesRead, err := ioutil.ReadFile(src)
+	if err != nil {
 		return err
-    }
+	}
 
+	err = ioutil.WriteFile(dst, bytesRead, 0755)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ZipFile(src, zipPath string) error {
+	archive, err := os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	defer archive.Close()
+	zipWriter := zip.NewWriter(archive)
+
+	f1, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer f1.Close()
+
+	w1, err := zipWriter.Create(src)
+	if err != nil {
+		return err
+	}
+	if _, err := io.Copy(w1, f1); err != nil {
+		return err
+	}
+
+	zipWriter.Close()
 	return nil
 }
 
