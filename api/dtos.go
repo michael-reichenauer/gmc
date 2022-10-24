@@ -19,15 +19,6 @@ const (
 	DiffConflictEnd
 )
 
-type NoArg int
-type NoRsp *int
-
-var (
-	NilArg NoArg = 0
-	NilRsp NoRsp = &no
-	no     int
-)
-
 type CheckoutReq struct {
 	RepoID      string
 	Name        string

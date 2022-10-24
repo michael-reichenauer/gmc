@@ -192,9 +192,7 @@ func (t *apiServer) HideBranch(name api.BranchName) error {
 	return nil
 }
 
-func (t *apiServer) Checkout(args api.CheckoutReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) Checkout(args api.CheckoutReq) error {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
 		return err
@@ -202,9 +200,7 @@ func (t *apiServer) Checkout(args api.CheckoutReq, _ api.NoRsp) error {
 	return repo.SwitchToBranch(args.Name, args.DisplayName)
 }
 
-func (t *apiServer) PushBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) PushBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -212,9 +208,7 @@ func (t *apiServer) PushBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.PushBranch(name.BranchName)
 }
 
-func (t *apiServer) PullCurrentBranch(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) PullCurrentBranch(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -222,9 +216,7 @@ func (t *apiServer) PullCurrentBranch(repoID string, _ api.NoRsp) error {
 	return repo.PullCurrentBranch()
 }
 
-func (t *apiServer) PullBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) PullBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -232,9 +224,7 @@ func (t *apiServer) PullBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.PullBranch(name.BranchName)
 }
 
-func (t *apiServer) MergeBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) MergeBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -242,9 +232,7 @@ func (t *apiServer) MergeBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.MergeBranch(name.BranchName)
 }
 
-func (t *apiServer) CreateBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) CreateBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -252,9 +240,7 @@ func (t *apiServer) CreateBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.CreateBranch(name.BranchName)
 }
 
-func (t *apiServer) DeleteBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) DeleteBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -339,9 +325,7 @@ func (t *apiServer) CleanWorkingFolder(repoID string) error {
 	return repo.CleanWorkingFolder()
 }
 
-func (t *apiServer) SetAsParentBranch(name api.SetParentReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) SetAsParentBranch(name api.SetParentReq) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -350,9 +334,7 @@ func (t *apiServer) SetAsParentBranch(name api.SetParentReq, _ api.NoRsp) error 
 	return repo.SetAsParentBranch(name.BranchName, name.ParentName)
 }
 
-func (t *apiServer) UnsetAsParentBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UnsetAsParentBranch(name api.BranchName) error {
 	log.Infof("Set as parent %q", name)
 	repo, err := t.repo(name.RepoID)
 	if err != nil {

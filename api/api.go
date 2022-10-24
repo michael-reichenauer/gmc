@@ -30,13 +30,13 @@ type Api interface {
 	ShowBranch(name BranchName) error
 	HideBranch(name BranchName) error
 
-	Checkout(args CheckoutReq, _ NoRsp) error
-	PushBranch(name BranchName, _ NoRsp) error
-	PullCurrentBranch(repoID string, _ NoRsp) error
-	PullBranch(name BranchName, _ NoRsp) error
-	MergeBranch(name BranchName, _ NoRsp) error
-	CreateBranch(name BranchName, _ NoRsp) error
-	DeleteBranch(name BranchName, _ NoRsp) error
-	SetAsParentBranch(req SetParentReq, _ NoRsp) error
-	UnsetAsParentBranch(name BranchName, _ NoRsp) error
+	Checkout(args CheckoutReq) error
+	PushBranch(name BranchName) error
+	PullCurrentBranch(repoID string) error
+	PullBranch(name BranchName) error
+	MergeBranch(name BranchName) error
+	CreateBranch(name BranchName) error
+	DeleteBranch(name BranchName) error
+	SetAsParentBranch(req SetParentReq) error
+	UnsetAsParentBranch(name BranchName) error
 }

@@ -423,11 +423,11 @@ func (t *repoVM) ScrollToBranch(name string, commitId string) {
 
 func (t *repoVM) SetAsParentBranch(branchName, parentName string) {
 	_ = t.api.SetAsParentBranch(api.SetParentReq{RepoID: t.repoID,
-		BranchName: branchName, ParentName: parentName}, api.NilRsp)
+		BranchName: branchName, ParentName: parentName})
 }
 
 func (t *repoVM) UnsetAsParentBranch(name string) {
-	_ = t.api.UnsetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+	_ = t.api.UnsetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 }
 
 func (t *repoVM) HideBranch(name string) {
@@ -439,7 +439,7 @@ func (t *repoVM) SwitchToBranch(name string, displayName string) {
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error {
-			return t.api.Checkout(api.CheckoutReq{RepoID: t.repoID, Name: name, DisplayName: displayName}, api.NilRsp)
+			return t.api.Checkout(api.CheckoutReq{RepoID: t.repoID, Name: name, DisplayName: displayName})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
@@ -448,7 +448,7 @@ func (t *repoVM) SwitchToBranch(name string, displayName string) {
 func (t *repoVM) PushBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func() error { return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
@@ -461,7 +461,7 @@ func (t *repoVM) PushCurrentBranch() {
 	t.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
 		func() error {
-			return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: current.Name}, api.NilRsp)
+			return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: current.Name})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
@@ -475,7 +475,7 @@ func (t *repoVM) PullCurrentBranch() {
 
 	t.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return t.api.PullCurrentBranch(t.repoID, api.NilRsp) },
+		func() error { return t.api.PullCurrentBranch(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -484,7 +484,7 @@ func (t *repoVM) PullBranch(name string) {
 	log.Infof("Pull branch %q", name)
 	t.startCommand(
 		fmt.Sprintf("Pull/Update branch:\n%s", name),
-		func() error { return t.api.PullBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func() error { return t.api.PullBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", name, err) },
 		nil)
 }
@@ -492,7 +492,7 @@ func (t *repoVM) PullBranch(name string) {
 func (t *repoVM) MergeFromBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return t.api.MergeBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func() error { return t.api.MergeBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
@@ -520,11 +520,11 @@ func (t *repoVM) CreateBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 			if err != nil {
 				return err
 			}
-			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 			if err != nil {
 				return err
 			}
@@ -538,7 +538,7 @@ func (t *repoVM) DeleteBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
 		func() error {
-			return t.api.DeleteBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			return t.api.DeleteBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
