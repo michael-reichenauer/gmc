@@ -337,7 +337,7 @@ func (t *repoVM) UncommitLastCommit() {
 func (t *repoVM) UndoCommit(id string) {
 	t.startCommand(
 		"Uncommit commit",
-		func() error { return t.api.UndoCommit(api.IdReq{RepoID: t.repoID, Id: id}) },
+		func() error { return t.api.UndoCommit(t.repoID, id) },
 		func(err error) string { return fmt.Sprintf("Failed to undo commit:\n%s:\n%s", id, err) },
 		nil)
 }

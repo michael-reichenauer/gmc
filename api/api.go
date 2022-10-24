@@ -21,7 +21,7 @@ type Api interface {
 	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq) ([]Branch, error)
 
 	Commit(info CommitInfoReq) error
-	UndoCommit(id IdReq) error
+	UndoCommit(repoID, id string) error
 	UndoUncommittedFileChanges(info FilesReq) error
 	UncommitLastCommit(repoID string) error
 	UndoAllUncommittedChanges(repoID string) error

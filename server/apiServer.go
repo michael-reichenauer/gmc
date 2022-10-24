@@ -283,12 +283,12 @@ func (t *apiServer) Commit(info api.CommitInfoReq) error {
 	return repo.Commit(info.Message)
 }
 
-func (t *apiServer) UndoCommit(info api.IdReq) error {
-	repo, err := t.repo(info.RepoID)
+func (t *apiServer) UndoCommit(repoId, id string) error {
+	repo, err := t.repo(repoId)
 	if err != nil {
 		return err
 	}
-	return repo.UndoCommit(info.Id)
+	return repo.UndoCommit(id)
 }
 
 func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq) error {
