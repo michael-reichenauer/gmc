@@ -12,6 +12,7 @@ import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/async"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -33,91 +34,80 @@ func NewApiServer(configService *config.Service) api.Api {
 	return &apiServer{configService: configService, repos: make(map[string]repoInfo)}
 }
 
-func (t *apiServer) GetRecentWorkingDirs(_ api.NoArg, rsp *[]string) error {
-	*rsp = t.configService.GetState().RecentFolders
-	return nil
+func (t *apiServer) GetRecentWorkingDirs() ([]string, error) {
+	return t.configService.GetState().RecentFolders, nil
 }
 
-func (t *apiServer) GetSubDirs(parentDirPath string, dirs *[]string) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetSubDirs(parentDirPath string) ([]string, error) {
 	if parentDirPath == "" {
 		// Path not specified, return recent used parent paths and root folders
 		paths := t.configService.GetState().RecentParentFolders
 		paths = append(paths, utils.GetVolumes()...)
-		*dirs = paths
-		return nil
+		return paths, nil
 	}
 
 	// Get sub dirs for the parent dirs
-	*dirs, err = utils.GetSubDirs(parentDirPath)
-	return
+	return utils.GetSubDirs(parentDirPath)
 }
 
-func (t *apiServer) OpenRepo(path string, repoID *string) error {
-	log.Infof(">")
-	defer log.Infof("<")
-	if path == "" {
-		// No path specified, assume current working dir
-		path = utils.CurrentDir()
-	}
-	rootPath, err := git.WorkingTreeRoot(path)
-	if err != nil {
-		// Could not locate a working dir root
-		return err
-	}
+func (t *apiServer) OpenRepo(path string) async.Task[string] {
+	return async.RunRE(func() (string, error) {
+		if path == "" {
+			// No path specified, assume current working dir
+			path = utils.CurrentDir()
+		}
+		rootPath, err := git.WorkingTreeRoot(path)
+		if err != nil {
+			// Could not locate a working dir root
+			return "", err
+		}
 
-	// Got root working dir path, open repo
-	viewRepo := viewrepo.NewViewRepoService(t.configService, rootPath)
-	stream := viewRepo.ObserveChanges()
-	id := t.storeRepo(viewRepo, stream)
+		// Got root working dir path, open repo
+		viewRepo := viewrepo.NewViewRepoService(t.configService, rootPath)
+		stream := viewRepo.ObserveChanges()
+		id := t.storeRepo(viewRepo, stream)
 
-	viewRepo.StartMonitor()
+		viewRepo.StartMonitor()
 
-	// Remember working dir paths to use for "open recent" lists
-	parentDir := filepath.Dir(rootPath)
-	t.configService.SetState(func(s *config.State) {
-		s.RecentFolders = utils.RecentPaths(s.RecentFolders, rootPath, 10)
-		s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
+		// Remember working dir paths to use for "open recent" lists
+		parentDir := filepath.Dir(rootPath)
+		t.configService.SetState(func(s *config.State) {
+			s.RecentFolders = utils.RecentPaths(s.RecentFolders, rootPath, 10)
+			s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
+		})
+
+		return id, nil
 	})
-	*repoID = id
-	return nil
 }
 
-func (t *apiServer) CloseRepo(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) CloseRepo(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
 	}
+
 	t.removeRepo(repoID)
 	repo.CloseRepo()
 	return nil
 }
 
-func (t *apiServer) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *apiServer) GetRepoChanges(repoID string) ([]api.RepoChange, error) {
 	changesStream, err := t.getStream(repoID)
 	if err != nil {
-		return err
+		return []api.RepoChange{}, err
 	}
 
 	var changes []api.RepoChange
-	defer func() { log.Debugf("GetRepoChanges: < (%d events)", len(changes)) }()
 
 	// Wait for event or timeout
 	select {
 	case <-changesStream.Changes():
 		changesStream.Next()
 		change := changesStream.Value()
-		log.Debugf("one event")
 		changes = append(changes, change.(api.RepoChange))
 	case <-time.After(getChangesTimeout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
-		log.Debugf("timeout")
-		return nil
+		return []api.RepoChange{}, nil
 	}
 
 	// Got some event, check if there are more events and return them as well
@@ -131,15 +121,12 @@ func (t *apiServer) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
 		default:
 			// no more queued changes,
 			log.Debugf("no more events (%d events)", len(changes))
-			*rsp = changes
-			return nil
+			return changes, nil
 		}
 	}
 }
 
-func (t *apiServer) TriggerRefreshRepo(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) TriggerRefreshRepo(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -148,9 +135,7 @@ func (t *apiServer) TriggerRefreshRepo(repoID string, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) TriggerSearch(search api.Search, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) TriggerSearch(search api.Search) error {
 	repo, err := t.repo(search.RepoID)
 	if err != nil {
 		return err
@@ -159,45 +144,37 @@ func (t *apiServer) TriggerSearch(search api.Search, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) GetBranches(args api.GetBranchesReq, branches *[]api.Branch) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetBranches(args api.GetBranchesReq) ([]api.Branch, error) {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
-		return err
+		return []api.Branch{}, err
 	}
-	*branches = repo.GetBranches(args)
-	return nil
+
+	return repo.GetBranches(args), nil
 }
 
-func (t *apiServer) GetFiles(args api.FilesReq, files *[]string) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetFiles(args api.FilesReq) ([]string, error) {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	*files, err = repo.GetFiles(args.Ref)
+	files, err := repo.GetFiles(args.Ref)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	return nil
+	return files, nil
 }
 
-func (t *apiServer) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, branches *[]api.Branch) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq) ([]api.Branch, error) {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
-		return err
+		return []api.Branch{}, err
 	}
-	*branches = repo.GetAmbiguousBranchBranches(args)
-	return nil
+
+	return repo.GetAmbiguousBranchBranches(args), nil
 }
 
-func (t *apiServer) ShowBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) ShowBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -206,9 +183,7 @@ func (t *apiServer) ShowBranch(name api.BranchName, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) HideBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) HideBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -217,9 +192,7 @@ func (t *apiServer) HideBranch(name api.BranchName, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) Checkout(args api.CheckoutReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) Checkout(args api.CheckoutReq) error {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
 		return err
@@ -227,9 +200,7 @@ func (t *apiServer) Checkout(args api.CheckoutReq, _ api.NoRsp) error {
 	return repo.SwitchToBranch(args.Name, args.DisplayName)
 }
 
-func (t *apiServer) PushBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) PushBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -237,9 +208,7 @@ func (t *apiServer) PushBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.PushBranch(name.BranchName)
 }
 
-func (t *apiServer) PullCurrentBranch(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) PullCurrentBranch(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -247,9 +216,7 @@ func (t *apiServer) PullCurrentBranch(repoID string, _ api.NoRsp) error {
 	return repo.PullCurrentBranch()
 }
 
-func (t *apiServer) PullBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) PullBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -257,9 +224,7 @@ func (t *apiServer) PullBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.PullBranch(name.BranchName)
 }
 
-func (t *apiServer) MergeBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) MergeBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -267,9 +232,7 @@ func (t *apiServer) MergeBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.MergeBranch(name.BranchName)
 }
 
-func (t *apiServer) CreateBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) CreateBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -277,9 +240,7 @@ func (t *apiServer) CreateBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.CreateBranch(name.BranchName)
 }
 
-func (t *apiServer) DeleteBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) DeleteBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -287,43 +248,34 @@ func (t *apiServer) DeleteBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.DeleteBranch(name.BranchName)
 }
 
-func (t *apiServer) GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetCommitDiff(info api.CommitDiffInfoReq) (api.CommitDiff, error) {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
-		return err
+		return api.CommitDiff{}, err
 	}
-	*diff, err = repo.GetCommitDiff(info.CommitID)
-	return
+
+	return repo.GetCommitDiff(info.CommitID)
 }
 
-func (t *apiServer) GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetFileDiff(info api.FileDiffInfoReq) ([]api.CommitDiff, error) {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
-		return err
+		return []api.CommitDiff{}, err
 	}
-	*diff, err = repo.GetFileDiff(info.Path)
-	return
+
+	return repo.GetFileDiff(info.Path)
 }
 
-func (t *apiServer) GetCommitDetails(args api.CommitDetailsReq, rsp *api.CommitDetailsRsp) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetCommitDetails(args api.CommitDetailsReq) (api.CommitDetailsRsp, error) {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
-		return err
+		return api.CommitDetailsRsp{}, err
 	}
 
-	*rsp, err = repo.GetCommitDetails(args.CommitID)
-	return
+	return repo.GetCommitDetails(args.CommitID)
 }
 
-func (t *apiServer) Commit(info api.CommitInfoReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) Commit(info api.CommitInfoReq) error {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
 		return err
@@ -331,19 +283,15 @@ func (t *apiServer) Commit(info api.CommitInfoReq, _ api.NoRsp) error {
 	return repo.Commit(info.Message)
 }
 
-func (t *apiServer) UndoCommit(info api.IdReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
-	repo, err := t.repo(info.RepoID)
+func (t *apiServer) UndoCommit(repoId, id string) error {
+	repo, err := t.repo(repoId)
 	if err != nil {
 		return err
 	}
-	return repo.UndoCommit(info.Id)
+	return repo.UndoCommit(id)
 }
 
-func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq) error {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
 		return err
@@ -351,9 +299,7 @@ func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq, _ api.NoRsp) e
 	return repo.UndoUncommittedFileChanges(info.Ref)
 }
 
-func (t *apiServer) UncommitLastCommit(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UncommitLastCommit(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -361,9 +307,7 @@ func (t *apiServer) UncommitLastCommit(repoID string, _ api.NoRsp) error {
 	return repo.UncommitLastCommit()
 }
 
-func (t *apiServer) UndoAllUncommittedChanges(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UndoAllUncommittedChanges(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -371,7 +315,7 @@ func (t *apiServer) UndoAllUncommittedChanges(repoID string, _ api.NoRsp) error 
 	return repo.UndoAllUncommittedChanges()
 }
 
-func (t *apiServer) CleanWorkingFolder(repoID string, _ api.NoRsp) error {
+func (t *apiServer) CleanWorkingFolder(repoID string) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(repoID)
@@ -381,9 +325,7 @@ func (t *apiServer) CleanWorkingFolder(repoID string, _ api.NoRsp) error {
 	return repo.CleanWorkingFolder()
 }
 
-func (t *apiServer) SetAsParentBranch(name api.SetParentReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) SetAsParentBranch(name api.SetParentReq) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -392,9 +334,7 @@ func (t *apiServer) SetAsParentBranch(name api.SetParentReq, _ api.NoRsp) error 
 	return repo.SetAsParentBranch(name.BranchName, name.ParentName)
 }
 
-func (t *apiServer) UnsetAsParentBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UnsetAsParentBranch(name api.BranchName) error {
 	log.Infof("Set as parent %q", name)
 	repo, err := t.repo(name.RepoID)
 	if err != nil {

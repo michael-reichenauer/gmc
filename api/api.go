@@ -1,40 +1,42 @@
 package api
 
+import "github.com/michael-reichenauer/gmc/utils/async"
+
 type Api interface {
-	GetRecentWorkingDirs(_ NoArg, dirs *[]string) error
-	GetSubDirs(dirPath string, dirs *[]string) error
+	GetRecentWorkingDirs() ([]string, error)
+	GetSubDirs(dirPath string) ([]string, error)
 
-	OpenRepo(path string, repoID *string) error
-	CloseRepo(repoID string, _ NoRsp) error
+	OpenRepo(path string) async.Task[string]
+	CloseRepo(repoID string) error
 
-	GetRepoChanges(repoID string, changes *[]RepoChange) error
-	TriggerRefreshRepo(repoID string, _ NoRsp) error
-	TriggerSearch(search Search, _ NoRsp) error
+	GetRepoChanges(repoID string) ([]RepoChange, error)
+	TriggerRefreshRepo(repoID string) error
+	TriggerSearch(search Search) error
 
-	GetBranches(args GetBranchesReq, branches *[]Branch) error
-	GetFiles(args FilesReq, files *[]string) error
-	GetCommitDiff(info CommitDiffInfoReq, diff *CommitDiff) error
-	GetFileDiff(info FileDiffInfoReq, diff *[]CommitDiff) error
-	GetCommitDetails(req CommitDetailsReq, rsp *CommitDetailsRsp) error
-	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq, branches *[]Branch) error
+	GetBranches(args GetBranchesReq) ([]Branch, error)
+	GetFiles(args FilesReq) ([]string, error)
+	GetCommitDiff(info CommitDiffInfoReq) (CommitDiff, error)
+	GetFileDiff(info FileDiffInfoReq) ([]CommitDiff, error)
+	GetCommitDetails(req CommitDetailsReq) (CommitDetailsRsp, error)
+	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq) ([]Branch, error)
 
-	Commit(info CommitInfoReq, _ NoRsp) error
-	UndoCommit(id IdReq, _ NoRsp) error
-	UndoUncommittedFileChanges(info FilesReq, _ NoRsp) error
-	UncommitLastCommit(repoID string, _ NoRsp) error
-	UndoAllUncommittedChanges(repoID string, _ NoRsp) error
-	CleanWorkingFolder(repoID string, _ NoRsp) error
+	Commit(info CommitInfoReq) error
+	UndoCommit(repoID, id string) error
+	UndoUncommittedFileChanges(info FilesReq) error
+	UncommitLastCommit(repoID string) error
+	UndoAllUncommittedChanges(repoID string) error
+	CleanWorkingFolder(repoID string) error
 
-	ShowBranch(name BranchName, _ NoRsp) error
-	HideBranch(name BranchName, _ NoRsp) error
+	ShowBranch(name BranchName) error
+	HideBranch(name BranchName) error
 
-	Checkout(args CheckoutReq, _ NoRsp) error
-	PushBranch(name BranchName, _ NoRsp) error
-	PullCurrentBranch(repoID string, _ NoRsp) error
-	PullBranch(name BranchName, _ NoRsp) error
-	MergeBranch(name BranchName, _ NoRsp) error
-	CreateBranch(name BranchName, _ NoRsp) error
-	DeleteBranch(name BranchName, _ NoRsp) error
-	SetAsParentBranch(req SetParentReq, _ NoRsp) error
-	UnsetAsParentBranch(name BranchName, _ NoRsp) error
+	Checkout(args CheckoutReq) error
+	PushBranch(name BranchName) error
+	PullCurrentBranch(repoID string) error
+	PullBranch(name BranchName) error
+	MergeBranch(name BranchName) error
+	CreateBranch(name BranchName) error
+	DeleteBranch(name BranchName) error
+	SetAsParentBranch(req SetParentReq) error
+	UnsetAsParentBranch(name BranchName) error
 }

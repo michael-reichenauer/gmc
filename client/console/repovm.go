@@ -72,8 +72,8 @@ func (t *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
 	progress := t.ui.ShowProgress("Trigger")
 	t.startCommand(
-		fmt.Sprintf("Trigger refresh repo"),
-		func() error { return t.api.TriggerRefreshRepo(t.repoID, api.NilRsp) },
+		"Trigger refresh repo",
+		func() error { return t.api.TriggerRefreshRepo(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		func() {
 			t.ui.Post(func() {
@@ -84,8 +84,8 @@ func (t *repoVM) triggerRefresh() {
 
 func (t *repoVM) SetSearch(text string) {
 	t.startCommand(
-		fmt.Sprintf("Trigger search repo"),
-		func() error { return t.api.TriggerSearch(api.Search{RepoID: t.repoID, Text: text}, api.NilRsp) },
+		"Trigger search repo",
+		func() error { return t.api.TriggerSearch(api.Search{RepoID: t.repoID, Text: text}) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		nil)
 }
@@ -93,15 +93,14 @@ func (t *repoVM) SetSearch(text string) {
 func (t *repoVM) close() {
 	log.Infof("Close")
 	close(t.done)
-	_ = t.api.CloseRepo(t.repoID, api.NilRsp)
+	_ = t.api.CloseRepo(t.repoID)
 }
 
 func (t *repoVM) monitorModelRoutine() {
 	repoChanges := make(chan api.RepoChange)
 	go func() {
 		for {
-			var changes []api.RepoChange
-			err := t.api.GetRepoChanges(t.repoID, &changes)
+			changes, err := t.api.GetRepoChanges(t.repoID)
 			if err != nil {
 				close(repoChanges)
 				return
@@ -262,25 +261,19 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 		return nil
 	}
 
-	var branches []api.Branch
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID}, &branches)
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID})
 
 	return branches
 }
 
 func (t *repoVM) GetFiles(ref string) []string {
-	var files []string
-	_ = t.api.GetFiles(api.FilesReq{RepoID: t.repoID, Ref: ref}, &files)
-
+	files, _ := t.api.GetFiles(api.FilesReq{RepoID: t.repoID, Ref: ref})
 	return files
 }
 
 func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
-	var branches []api.Branch
-	err := t.api.GetBranches(
-		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
-		&branches)
-
+	branches, err := t.api.GetBranches(
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true})
 	if err != nil || len(branches) == 0 {
 		return api.Branch{}, false
 	}
@@ -289,10 +282,8 @@ func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 }
 
 func (t *repoVM) CurrentBranch() (api.Branch, bool) {
-	var branches []api.Branch
-	err := t.api.GetBranches(
-		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true},
-		&branches)
+	branches, err := t.api.GetBranches(
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true})
 
 	if err != nil || len(branches) == 0 {
 		return api.Branch{}, false
@@ -302,13 +293,11 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 }
 
 func (t *repoVM) GetRecentBranches() []api.Branch {
-	var branches []api.Branch
-
-	_ = t.api.GetBranches(api.GetBranchesReq{
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{
 		RepoID:              t.repoID,
 		IncludeOnlyNotShown: false,
 		SortOnLatest:        true,
-	}, &branches)
+	})
 	if len(branches) > 15 {
 		branches = branches[:15]
 	}
@@ -316,15 +305,12 @@ func (t *repoVM) GetRecentBranches() []api.Branch {
 }
 
 func (t *repoVM) GetAllBranches() []api.Branch {
-	var branches []api.Branch
-
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false})
 	return branches
 }
 
 func (t *repoVM) GetUncommittedFiles() []string {
-	var diff api.CommitDiff
-	err := t.api.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: git.UncommittedID}, &diff)
+	diff, err := t.api.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: git.UncommittedID})
 	if err != nil {
 		return []string{}
 	}
@@ -335,7 +321,7 @@ func (t *repoVM) GetUncommittedFiles() []string {
 func (t *repoVM) UndoAllUncommittedChanges() {
 	t.startCommand(
 		"Undo all uncommitted files",
-		func() error { return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp) },
+		func() error { return t.api.UndoAllUncommittedChanges(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
 		nil)
 }
@@ -343,7 +329,7 @@ func (t *repoVM) UndoAllUncommittedChanges() {
 func (t *repoVM) UncommitLastCommit() {
 	t.startCommand(
 		"Uncommit last local commit",
-		func() error { return t.api.UncommitLastCommit(t.repoID, api.NilRsp) },
+		func() error { return t.api.UncommitLastCommit(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to uncommit:\n%s", err) },
 		nil)
 }
@@ -351,7 +337,7 @@ func (t *repoVM) UncommitLastCommit() {
 func (t *repoVM) UndoCommit(id string) {
 	t.startCommand(
 		"Uncommit commit",
-		func() error { return t.api.UndoCommit(api.IdReq{RepoID: t.repoID, Id: id}, api.NilRsp) },
+		func() error { return t.api.UndoCommit(t.repoID, id) },
 		func(err error) string { return fmt.Sprintf("Failed to undo commit:\n%s:\n%s", id, err) },
 		nil)
 }
@@ -360,7 +346,7 @@ func (t *repoVM) UndoUncommittedFileChanges(path string) {
 	t.startCommand(
 		"Undo uncommitted file",
 		func() error {
-			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path}, api.NilRsp)
+			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to undo file:\n%s:\n%s", path, err) },
 		nil)
@@ -368,16 +354,14 @@ func (t *repoVM) UndoUncommittedFileChanges(path string) {
 func (t *repoVM) CleanWorkingFolder() {
 	t.startCommand(
 		"Clean working folder",
-		func() error { return t.api.CleanWorkingFolder(t.repoID, api.NilRsp) },
+		func() error { return t.api.CleanWorkingFolder(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to clean working folder:\n%s", err) },
 		nil)
 }
 
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
-	var branches []api.Branch
-	_ = t.api.GetBranches(
-		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster},
-		&branches)
+	branches, _ := t.api.GetBranches(
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster})
 	return branches
 }
 
@@ -388,9 +372,7 @@ func (t *repoVM) GetAllGitBranches() []api.Branch {
 }
 
 func (t *repoVM) GetAmbiguousBranches() []api.Branch {
-	var branches []api.Branch
-
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false})
 
 	var bs []api.Branch
 	for _, b := range branches {
@@ -404,7 +386,7 @@ func (t *repoVM) GetAmbiguousBranches() []api.Branch {
 func (t *repoVM) ShowBranch(name string, commitId string) {
 	t.startCommand(
 		fmt.Sprintf("Show Branch:\n%s", name), func() error {
-			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to show branch:\n%s\n%s", name, err) },
 		func() { t.ScrollToBranch(name, commitId) })
@@ -441,15 +423,15 @@ func (t *repoVM) ScrollToBranch(name string, commitId string) {
 
 func (t *repoVM) SetAsParentBranch(branchName, parentName string) {
 	_ = t.api.SetAsParentBranch(api.SetParentReq{RepoID: t.repoID,
-		BranchName: branchName, ParentName: parentName}, api.NilRsp)
+		BranchName: branchName, ParentName: parentName})
 }
 
 func (t *repoVM) UnsetAsParentBranch(name string) {
-	_ = t.api.UnsetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+	_ = t.api.UnsetAsParentBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 }
 
 func (t *repoVM) HideBranch(name string) {
-	_ = t.api.HideBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+	_ = t.api.HideBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 }
 
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
@@ -457,7 +439,7 @@ func (t *repoVM) SwitchToBranch(name string, displayName string) {
 	t.startCommand(
 		fmt.Sprintf("Switch/checkout:\n%s", name),
 		func() error {
-			return t.api.Checkout(api.CheckoutReq{RepoID: t.repoID, Name: name, DisplayName: displayName}, api.NilRsp)
+			return t.api.Checkout(api.CheckoutReq{RepoID: t.repoID, Name: name, DisplayName: displayName})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
 		nil)
@@ -466,7 +448,7 @@ func (t *repoVM) SwitchToBranch(name string, displayName string) {
 func (t *repoVM) PushBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func() error { return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
 		nil)
 }
@@ -479,7 +461,7 @@ func (t *repoVM) PushCurrentBranch() {
 	t.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
 		func() error {
-			return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: current.Name}, api.NilRsp)
+			return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: current.Name})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
@@ -493,7 +475,7 @@ func (t *repoVM) PullCurrentBranch() {
 
 	t.startCommand(
 		fmt.Sprintf("Pull/Update current branch:\n%s", current.Name),
-		func() error { return t.api.PullCurrentBranch(t.repoID, api.NilRsp) },
+		func() error { return t.api.PullCurrentBranch(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -502,7 +484,7 @@ func (t *repoVM) PullBranch(name string) {
 	log.Infof("Pull branch %q", name)
 	t.startCommand(
 		fmt.Sprintf("Pull/Update branch:\n%s", name),
-		func() error { return t.api.PullBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func() error { return t.api.PullBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
 		func(err error) string { return fmt.Sprintf("Failed to pull/update:\n%s\n%s", name, err) },
 		nil)
 }
@@ -510,7 +492,7 @@ func (t *repoVM) PullBranch(name string) {
 func (t *repoVM) MergeFromBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return t.api.MergeBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp) },
+		func() error { return t.api.MergeBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
@@ -538,11 +520,11 @@ func (t *repoVM) CreateBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 			if err != nil {
 				return err
 			}
-			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 			if err != nil {
 				return err
 			}
@@ -556,7 +538,7 @@ func (t *repoVM) DeleteBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
 		func() error {
-			return t.api.DeleteBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			return t.api.DeleteBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
 		nil)
@@ -569,8 +551,6 @@ func (t *repoVM) GetAmbiguousBranchBranchesMenuItems() []api.Branch {
 		return nil
 	}
 
-	var branches []api.Branch
-	_ = t.api.GetAmbiguousBranchBranches(api.AmbiguousBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
-
+	branches, _ := t.api.GetAmbiguousBranchBranches(api.AmbiguousBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID})
 	return branches
 }

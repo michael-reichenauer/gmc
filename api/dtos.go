@@ -19,15 +19,6 @@ const (
 	DiffConflictEnd
 )
 
-type NoArg int
-type NoRsp *int
-
-var (
-	NilArg NoArg = 0
-	NilRsp NoRsp = &no
-	no     int
-)
-
 type CheckoutReq struct {
 	RepoID      string
 	Name        string
@@ -48,11 +39,6 @@ type GetBranchesReq struct {
 type BranchName struct {
 	RepoID     string
 	BranchName string
-}
-
-type IdReq struct {
-	RepoID string
-	Id     string
 }
 
 type SetParentReq struct {

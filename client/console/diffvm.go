@@ -10,8 +10,8 @@ import (
 )
 
 type DiffGetter interface {
-	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
-	GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) error
+	GetCommitDiff(info api.CommitDiffInfoReq) (api.CommitDiff, error)
+	GetFileDiff(info api.FileDiffInfoReq) ([]api.CommitDiff, error)
 }
 
 type diffVM struct {
@@ -54,8 +54,7 @@ func (t *diffVM) loadCommitDiff() {
 	progress := t.ui.ShowProgress("Getting diff ...")
 
 	go func() {
-		var diff api.CommitDiff
-		err := t.diffGetter.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: t.commitID}, &diff)
+		diff, err := t.diffGetter.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: t.commitID})
 		t.viewer.PostOnUIThread(func() {
 			progress.Close()
 			if err != nil {
@@ -73,8 +72,7 @@ func (t *diffVM) loadFileDiff() {
 	progress := t.ui.ShowProgress("Getting diff ...")
 
 	go func() {
-		var diff []api.CommitDiff
-		err := t.diffGetter.GetFileDiff(api.FileDiffInfoReq{RepoID: t.repoID, Path: t.path}, &diff)
+		diff, err := t.diffGetter.GetFileDiff(api.FileDiffInfoReq{RepoID: t.repoID, Path: t.path})
 		t.viewer.PostOnUIThread(func() {
 			progress.Close()
 			if err != nil {
