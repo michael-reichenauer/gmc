@@ -34,25 +34,20 @@ func NewApiServer(configService *config.Service) api.Api {
 	return &apiServer{configService: configService, repos: make(map[string]repoInfo)}
 }
 
-func (t *apiServer) GetRecentWorkingDirs(_ api.NoArg, rsp *[]string) error {
-	*rsp = t.configService.GetState().RecentFolders
-	return nil
+func (t *apiServer) GetRecentWorkingDirs() ([]string, error) {
+	return t.configService.GetState().RecentFolders, nil
 }
 
-func (t *apiServer) GetSubDirs(parentDirPath string, dirs *[]string) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetSubDirs(parentDirPath string) ([]string, error) {
 	if parentDirPath == "" {
 		// Path not specified, return recent used parent paths and root folders
 		paths := t.configService.GetState().RecentParentFolders
 		paths = append(paths, utils.GetVolumes()...)
-		*dirs = paths
-		return nil
+		return paths, nil
 	}
 
 	// Get sub dirs for the parent dirs
-	*dirs, err = utils.GetSubDirs(parentDirPath)
-	return
+	return utils.GetSubDirs(parentDirPath)
 }
 
 func (t *apiServer) OpenRepo(path string) async.Task[string] {
@@ -85,40 +80,34 @@ func (t *apiServer) OpenRepo(path string) async.Task[string] {
 	})
 }
 
-func (t *apiServer) CloseRepo(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) CloseRepo(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
 	}
+
 	t.removeRepo(repoID)
 	repo.CloseRepo()
 	return nil
 }
 
-func (t *apiServer) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
-	log.Debugf(">")
-	defer log.Debugf("<")
+func (t *apiServer) GetRepoChanges(repoID string) ([]api.RepoChange, error) {
 	changesStream, err := t.getStream(repoID)
 	if err != nil {
-		return err
+		return []api.RepoChange{}, err
 	}
 
 	var changes []api.RepoChange
-	defer func() { log.Debugf("GetRepoChanges: < (%d events)", len(changes)) }()
 
 	// Wait for event or timeout
 	select {
 	case <-changesStream.Changes():
 		changesStream.Next()
 		change := changesStream.Value()
-		log.Debugf("one event")
 		changes = append(changes, change.(api.RepoChange))
 	case <-time.After(getChangesTimeout):
 		// Timeout while whiting for changes, return empty list. Client will retry again
-		log.Debugf("timeout")
-		return nil
+		return []api.RepoChange{}, nil
 	}
 
 	// Got some event, check if there are more events and return them as well
@@ -132,8 +121,7 @@ func (t *apiServer) GetRepoChanges(repoID string, rsp *[]api.RepoChange) error {
 		default:
 			// no more queued changes,
 			log.Debugf("no more events (%d events)", len(changes))
-			*rsp = changes
-			return nil
+			return changes, nil
 		}
 	}
 }

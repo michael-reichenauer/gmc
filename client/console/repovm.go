@@ -93,15 +93,14 @@ func (t *repoVM) SetSearch(text string) {
 func (t *repoVM) close() {
 	log.Infof("Close")
 	close(t.done)
-	_ = t.api.CloseRepo(t.repoID, api.NilRsp)
+	_ = t.api.CloseRepo(t.repoID)
 }
 
 func (t *repoVM) monitorModelRoutine() {
 	repoChanges := make(chan api.RepoChange)
 	go func() {
 		for {
-			var changes []api.RepoChange
-			err := t.api.GetRepoChanges(t.repoID, &changes)
+			changes, err := t.api.GetRepoChanges(t.repoID)
 			if err != nil {
 				close(repoChanges)
 				return

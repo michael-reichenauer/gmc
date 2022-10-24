@@ -60,8 +60,7 @@ func (t *MainWindow) showOpenRepoMenu() {
 func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
 	var items []cui.MenuItem
 
-	var recentDirs []string
-	err := t.api.GetRecentWorkingDirs(api.NilArg, &recentDirs)
+	recentDirs, err := t.api.GetRecentWorkingDirs()
 	if err != nil {
 		return items
 	}
@@ -70,8 +69,7 @@ func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
 		items = append(items, cui.MenuSeparator(""))
 	}
 
-	var paths []string
-	err = t.api.GetSubDirs("", &paths)
+	paths, err := t.api.GetSubDirs("")
 	if err != nil {
 		return items
 	}
@@ -104,8 +102,7 @@ func (t *MainWindow) getDirItems(paths []string, action func(f string)) []cui.Me
 			Title:  path,
 			Action: func() { action(path) },
 			ItemsFunc: func() []cui.MenuItem {
-				var dirs []string
-				err := t.api.GetSubDirs(path, &dirs)
+				dirs, err := t.api.GetSubDirs(path)
 				if err != nil {
 					log.Warnf("Failed to list %q folder, %v", path, err)
 				}

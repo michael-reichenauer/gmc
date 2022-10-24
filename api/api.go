@@ -3,13 +3,13 @@ package api
 import "github.com/michael-reichenauer/gmc/utils/async"
 
 type Api interface {
-	GetRecentWorkingDirs(_ NoArg, dirs *[]string) error
-	GetSubDirs(dirPath string, dirs *[]string) error
+	GetRecentWorkingDirs() ([]string, error)
+	GetSubDirs(dirPath string) ([]string, error)
 
 	OpenRepo(path string) async.Task[string]
-	CloseRepo(repoID string, _ NoRsp) error
+	CloseRepo(repoID string) error
 
-	GetRepoChanges(repoID string, changes *[]RepoChange) error
+	GetRepoChanges(repoID string) ([]RepoChange, error)
 	TriggerRefreshRepo(repoID string, _ NoRsp) error
 	TriggerSearch(search Search, _ NoRsp) error
 
