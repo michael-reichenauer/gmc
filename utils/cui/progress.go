@@ -116,6 +116,7 @@ func (t *progress) textFunc(ViewPage) string {
 	t.view.SetTop()
 
 	if sinceStart < showFullTimeout {
+		t.view.ShowFrame(true)
 		// Show just a small wait icon for a while
 		// log.Infof("Show icon progress for %q, ...", t.text)
 		length := t.length - 3
@@ -136,6 +137,7 @@ func (t *progress) textFunc(ViewPage) string {
 		t.showProgress = true
 		t.length = 0
 	}
+
 	// Show full progress
 	t.view.ShowFrame(true)
 	pt := strings.Repeat("━", t.length)
