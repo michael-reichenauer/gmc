@@ -34,6 +34,7 @@ func (t *MainWindow) showRepo(path string) {
 			repoView.Show()
 		}).
 		Catch(func(err error) {
+			progress.Close()
 			if path != "" {
 				log.Warnf("Failed to open %q, %v", path, err)
 				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to show repo for:\n%s\nError: %v", path, err)))
