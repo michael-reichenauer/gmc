@@ -14,6 +14,7 @@ func main() {
 	Echo("Cleaning ...")
 	Must(RemoveFile("gmc_windows"))
 	Must(RemoveFile("gmc.exe"))
+	Must(RemoveFile("gmc.zip"))
 	Must(RemoveFile("gmc_linux"))
 	Must(RemoveFile("gmc"))
 	Must(RemoveFile("gmc_mac"))
@@ -33,6 +34,7 @@ func main() {
 	env := []string{"GOOS=windows", "GOARCH=amd64"}
 	Must(CmdWithEnv(env, "go", "build", "-tags", "release", "-ldflags", "-s -w", "-o", "gmc_windows", "main.go"))
 	Must(CopyFile("gmc_windows", "gmc.exe"))
+	Must(ZipFile("gmc.exe", "gmc.zip"))
 
 	Echo("Building Linux gmc ...")
 	env = []string{"GOOS=linux", "GOARCH=amd64"}
