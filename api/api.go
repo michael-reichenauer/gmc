@@ -35,7 +35,7 @@ type Api interface {
 	PullCurrentBranch(repoID string) error
 	PullBranch(name BranchName) error
 	MergeBranch(name BranchName) error
-	MergeSquashBranch(name BranchName) error
+	MergeSquashBranch(repoID, branchName string) error
 	CreateBranch(name BranchName) error
 	DeleteBranch(name BranchName) error
 	SetAsParentBranch(req SetParentReq) error

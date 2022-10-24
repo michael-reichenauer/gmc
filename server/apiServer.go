@@ -232,12 +232,12 @@ func (t *apiServer) MergeBranch(name api.BranchName) error {
 	return repo.MergeBranch(name.BranchName)
 }
 
-func (t *apiServer) MergeSquashBranch(name api.BranchName) error {
-	repo, err := t.repo(name.RepoID)
+func (t *apiServer) MergeSquashBranch(repoID, branchName string) error {
+	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
 	}
-	return repo.Git().MergeSquashBranch(name.BranchName)
+	return repo.Git().MergeSquashBranch(branchName)
 }
 
 func (t *apiServer) CreateBranch(name api.BranchName) error {

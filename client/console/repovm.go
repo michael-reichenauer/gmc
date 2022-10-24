@@ -500,7 +500,7 @@ func (t *repoVM) MergeFromBranch(name string) {
 func (t *repoVM) MergeSquashFromBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Merging to Branch:\n%s", name),
-		func() error { return t.api.MergeSquashBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
+		func() error { return t.api.MergeSquashBranch(t.repoID, name) },
 		func(err error) string { return fmt.Sprintf("Failed to merge:\n%s\n%s", name, err) },
 		nil)
 }
