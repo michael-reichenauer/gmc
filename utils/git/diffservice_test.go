@@ -7,6 +7,15 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCurrentUncommittedRepo(t *testing.T) {
+	tests.ManualTest(t)
+
+	g := New("")
+	diff, err := g.CommitDiff(UncommittedID)
+	assert.NoError(t, err)
+	t.Logf("Diff: %#v", diff)
+}
+
 func TestCommitDiff(t *testing.T) {
 	wf := tests.CreateTempFolder()
 	file1 := "a.txt"

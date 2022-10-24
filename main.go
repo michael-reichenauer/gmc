@@ -16,12 +16,12 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
+	"github.com/michael-reichenauer/gmc/utils/one"
 	"github.com/michael-reichenauer/gmc/utils/rpc"
-	"github.com/michael-reichenauer/gmc/utils/timer"
 )
 
 const (
-	version = "0.52"
+	version = "0.53"
 )
 
 var (
@@ -32,7 +32,6 @@ var (
 )
 
 func main() {
-	st := timer.Start()
 	flag.Parse()
 
 	if *showVersionFlag {
@@ -98,9 +97,11 @@ func main() {
 	// Start client cmd ui
 	ui := cui.NewCommandUI(version)
 	ui.Run(func() {
-		log.Debugf("Show main window %s", st)
-		mainWindow := console.NewMainWindow(ui)
-		mainWindow.Show(rpcServer.URL, *workingDirFlag)
-		//mainWindow.Show(rpcServer.URL, "/")
+		one.RunWith(func() {
+			mainWindow := console.NewMainWindow(ui)
+			mainWindow.Show(rpcServer.URL, *workingDirFlag)
+		}, func(f func()) {
+			ui.Post(f)
+		})
 	})
 }

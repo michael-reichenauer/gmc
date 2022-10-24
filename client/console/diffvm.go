@@ -180,7 +180,7 @@ func (t *diffVM) setDiffSides(firstCharIndex int) {
 func (t *diffVM) addDiffSummery(commitDiff api.CommitDiff) {
 	t.addLeftAndRight(cui.YellowDk(strings.Repeat("═", viewWidth)))
 	if commitDiff.Id == "" {
-		t.addLeft("Commit: uncommitted changes")
+		t.addLeft("Commit: uncommitted")
 	} else {
 		t.addLeft(fmt.Sprintf("Commit:  %s", commitDiff.Id[:6]))
 		t.addLeft(fmt.Sprintf("Author:  %s", commitDiff.Author))
