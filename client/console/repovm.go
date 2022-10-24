@@ -551,8 +551,6 @@ func (t *repoVM) GetAmbiguousBranchBranchesMenuItems() []api.Branch {
 		return nil
 	}
 
-	var branches []api.Branch
-	_ = t.api.GetAmbiguousBranchBranches(api.AmbiguousBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID}, &branches)
-
+	branches, _ := t.api.GetAmbiguousBranchBranches(api.AmbiguousBranchBranchesReq{RepoID: t.repoID, CommitID: commit.ID})
 	return branches
 }

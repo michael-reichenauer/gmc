@@ -18,9 +18,9 @@ type Api interface {
 	GetCommitDiff(info CommitDiffInfoReq) (CommitDiff, error)
 	GetFileDiff(info FileDiffInfoReq) ([]CommitDiff, error)
 	GetCommitDetails(req CommitDetailsReq) (CommitDetailsRsp, error)
-	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq, branches *[]Branch) error
+	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq) ([]Branch, error)
 
-	Commit(info CommitInfoReq, _ NoRsp) error
+	Commit(info CommitInfoReq) error
 	UndoCommit(id IdReq, _ NoRsp) error
 	UndoUncommittedFileChanges(info FilesReq, _ NoRsp) error
 	UncommitLastCommit(repoID string, _ NoRsp) error
