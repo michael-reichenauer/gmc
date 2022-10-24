@@ -17,7 +17,7 @@ func Run(startFunc func()) {
 		if f == nil {
 			break
 		}
-		f.(func())()
+		asFunc(f)()
 	}
 }
 
@@ -27,7 +27,8 @@ func RunWith(startFunc func(), doWrapper func(f func())) {
 		if f == nil {
 			break
 		}
-		doWrapper(f.(func()))
+
+		doWrapper(asFunc(f))
 	}
 }
 
@@ -49,4 +50,16 @@ func DoAfter(duration time.Duration, f func()) {
 		t.Stop()
 		Do(f)
 	})
+}
+
+func asFunc(f interface{}) func() {
+	//return f.(func())
+	return func() {
+		st := time.Now()
+		f.(func())()
+		d := time.Since(st)
+		if d > 50*time.Millisecond {
+			log.Warnf("One thread duration (%v)", time.Since(st))
+		}
+	}
 }
