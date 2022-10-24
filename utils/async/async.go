@@ -9,7 +9,7 @@ import (
 
 type Task[Result any] interface {
 	Then(resultCallback func(r Result)) Task[Result]
-	Catch(errCallback func(e error)) Task[Result]
+	Catch(errCallback func(err error)) Task[Result]
 	Finally(finallyCallback func()) Task[Result]
 	onCompleted(nextCallback func(r Result, err error)) Task[Result]
 }
@@ -96,7 +96,7 @@ func (t *task[Result]) Then(callback func(r Result)) Task[Result] {
 	return t
 }
 
-func (t *task[Result]) Catch(callback func(e error)) Task[Result] {
+func (t *task[Result]) Catch(callback func(err error)) Task[Result] {
 	one.Do(func() {
 		if t.catchCallback != nil {
 			panic(log.Fatal(fmt.Errorf("only one Catch() call allows on a task")))
