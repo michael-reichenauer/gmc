@@ -10,11 +10,11 @@ type Api interface {
 	CloseRepo(repoID string) error
 
 	GetRepoChanges(repoID string) ([]RepoChange, error)
-	TriggerRefreshRepo(repoID string, _ NoRsp) error
-	TriggerSearch(search Search, _ NoRsp) error
+	TriggerRefreshRepo(repoID string) error
+	TriggerSearch(search Search) error
 
-	GetBranches(args GetBranchesReq, branches *[]Branch) error
-	GetFiles(args FilesReq, files *[]string) error
+	GetBranches(args GetBranchesReq) ([]Branch, error)
+	GetFiles(args FilesReq) ([]string, error)
 	GetCommitDiff(info CommitDiffInfoReq, diff *CommitDiff) error
 	GetFileDiff(info FileDiffInfoReq, diff *[]CommitDiff) error
 	GetCommitDetails(req CommitDetailsReq, rsp *CommitDetailsRsp) error

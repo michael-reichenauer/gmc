@@ -126,9 +126,7 @@ func (t *apiServer) GetRepoChanges(repoID string) ([]api.RepoChange, error) {
 	}
 }
 
-func (t *apiServer) TriggerRefreshRepo(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) TriggerRefreshRepo(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -137,9 +135,7 @@ func (t *apiServer) TriggerRefreshRepo(repoID string, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) TriggerSearch(search api.Search, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) TriggerSearch(search api.Search) error {
 	repo, err := t.repo(search.RepoID)
 	if err != nil {
 		return err
@@ -148,29 +144,25 @@ func (t *apiServer) TriggerSearch(search api.Search, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) GetBranches(args api.GetBranchesReq, branches *[]api.Branch) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetBranches(args api.GetBranchesReq) ([]api.Branch, error) {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
-		return err
+		return []api.Branch{}, err
 	}
-	*branches = repo.GetBranches(args)
-	return nil
+
+	return repo.GetBranches(args), nil
 }
 
-func (t *apiServer) GetFiles(args api.FilesReq, files *[]string) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetFiles(args api.FilesReq) ([]string, error) {
 	repo, err := t.repo(args.RepoID)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	*files, err = repo.GetFiles(args.Ref)
+	files, err := repo.GetFiles(args.Ref)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
-	return nil
+	return files, nil
 }
 
 func (t *apiServer) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesReq, branches *[]api.Branch) error {

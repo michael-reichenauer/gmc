@@ -72,8 +72,8 @@ func (t *repoVM) triggerRefresh() {
 	log.Event("repoview-refresh")
 	progress := t.ui.ShowProgress("Trigger")
 	t.startCommand(
-		fmt.Sprintf("Trigger refresh repo"),
-		func() error { return t.api.TriggerRefreshRepo(t.repoID, api.NilRsp) },
+		"Trigger refresh repo",
+		func() error { return t.api.TriggerRefreshRepo(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		func() {
 			t.ui.Post(func() {
@@ -84,8 +84,8 @@ func (t *repoVM) triggerRefresh() {
 
 func (t *repoVM) SetSearch(text string) {
 	t.startCommand(
-		fmt.Sprintf("Trigger search repo"),
-		func() error { return t.api.TriggerSearch(api.Search{RepoID: t.repoID, Text: text}, api.NilRsp) },
+		"Trigger search repo",
+		func() error { return t.api.TriggerSearch(api.Search{RepoID: t.repoID, Text: text}) },
 		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
 		nil)
 }
@@ -261,25 +261,19 @@ func (t *repoVM) GetCommitBranches(selectedIndex int) []api.Branch {
 		return nil
 	}
 
-	var branches []api.Branch
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID}, &branches)
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCommitBranches: c.ID})
 
 	return branches
 }
 
 func (t *repoVM) GetFiles(ref string) []string {
-	var files []string
-	_ = t.api.GetFiles(api.FilesReq{RepoID: t.repoID, Ref: ref}, &files)
-
+	files, _ := t.api.GetFiles(api.FilesReq{RepoID: t.repoID, Ref: ref})
 	return files
 }
 
 func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
-	var branches []api.Branch
-	err := t.api.GetBranches(
-		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true},
-		&branches)
-
+	branches, err := t.api.GetBranches(
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true, IncludeOnlyNotShown: true})
 	if err != nil || len(branches) == 0 {
 		return api.Branch{}, false
 	}
@@ -288,10 +282,8 @@ func (t *repoVM) CurrentNotShownBranch() (api.Branch, bool) {
 }
 
 func (t *repoVM) CurrentBranch() (api.Branch, bool) {
-	var branches []api.Branch
-	err := t.api.GetBranches(
-		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true},
-		&branches)
+	branches, err := t.api.GetBranches(
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyCurrent: true})
 
 	if err != nil || len(branches) == 0 {
 		return api.Branch{}, false
@@ -301,13 +293,11 @@ func (t *repoVM) CurrentBranch() (api.Branch, bool) {
 }
 
 func (t *repoVM) GetRecentBranches() []api.Branch {
-	var branches []api.Branch
-
-	_ = t.api.GetBranches(api.GetBranchesReq{
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{
 		RepoID:              t.repoID,
 		IncludeOnlyNotShown: false,
 		SortOnLatest:        true,
-	}, &branches)
+	})
 	if len(branches) > 15 {
 		branches = branches[:15]
 	}
@@ -315,9 +305,7 @@ func (t *repoVM) GetRecentBranches() []api.Branch {
 }
 
 func (t *repoVM) GetAllBranches() []api.Branch {
-	var branches []api.Branch
-
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false})
 	return branches
 }
 
@@ -373,10 +361,8 @@ func (t *repoVM) CleanWorkingFolder() {
 }
 
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
-	var branches []api.Branch
-	_ = t.api.GetBranches(
-		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster},
-		&branches)
+	branches, _ := t.api.GetBranches(
+		api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyShown: true, SkipMaster: skipMaster})
 	return branches
 }
 
@@ -387,9 +373,7 @@ func (t *repoVM) GetAllGitBranches() []api.Branch {
 }
 
 func (t *repoVM) GetAmbiguousBranches() []api.Branch {
-	var branches []api.Branch
-
-	_ = t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false}, &branches)
+	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false})
 
 	var bs []api.Branch
 	for _, b := range branches {
