@@ -95,7 +95,7 @@ func (t *branchesService) mergeBranch(name string) error {
 func (t *branchesService) mergeSquashBranch(name string) error {
 	name = StripRemotePrefix(name)
 	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
-	output, err := t.cmd.Git("merge", "--no-ff", "--no-commit", "--stat", "--squash", name)
+	output, err := t.cmd.Git("merge", "--no-commit", "--stat", "--squash", name)
 	if err != nil {
 		if strings.Contains(err.Error(), "exit status 1") &&
 			strings.Contains(output, "CONFLICT") {
