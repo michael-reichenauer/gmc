@@ -81,6 +81,7 @@ func (t *RepoView) newView() cui.View {
 
 	view.SetKey('f', t.vm.ShowSearchView)
 	view.SetKey('F', t.vm.ShowSearchView)
+	view.SetKey('a', t.showAbout)
 
 	view.SetKey(gocui.KeyArrowRight, t.showCommitBranchesMenu)
 	view.SetKey(gocui.KeyArrowLeft, t.showHideBranchesMenu)
@@ -191,6 +192,10 @@ func (t *RepoView) showContextMenu() {
 	vp := t.view.ViewPage()
 	menu := t.menuService.GetMainMenu(vp.CurrentLine)
 	menu.Show(40, 0)
+}
+
+func (t *RepoView) showAbout() {
+	ShowAboutDlg(t.ui)
 }
 
 func (t *RepoView) showContextMenuAt(x int, y int) {
