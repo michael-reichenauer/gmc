@@ -31,8 +31,7 @@ func (t *detailsVM) setCurrentLine(line int, repo api.Repo, repoId string, ap ap
 	c := repo.Commits[line]
 	cb := repo.Branches[c.BranchIndex]
 
-	var cd api.CommitDetailsRsp
-	err := ap.GetCommitDetails(api.CommitDetailsReq{RepoID: repoId, CommitID: c.ID}, &cd)
+	cd, err := ap.GetCommitDetails(api.CommitDetailsReq{RepoID: repoId, CommitID: c.ID})
 	if err != nil {
 		log.Warnf("Failed: %v", err)
 		return
@@ -67,17 +66,17 @@ func getDetails(c api.Commit, cb api.Branch, cd api.CommitDetailsRsp) (string, s
 
 	remote := ""
 	if c.IsLocalOnly {
-		remote = cui.Dark("Remote:   ") + cui.GreenDk("▲") + " pushable\n"
+		remote = cui.Dark("Remote sync: ") + cui.GreenDk("▲") + " pushable\n"
 	}
 	if c.IsRemoteOnly {
-		remote = cui.Dark("Remote:   ") + cui.Blue("▼") + " pullable\n"
+		remote = cui.Dark("Remote sync:     ") + cui.Blue("▼") + " pullable\n"
 	}
 
 	message := fmt.Sprintf(
-		cui.Dark("Id:")+"       %s\n"+
-			cui.Dark("Branch:  ")+" %s\n"+
-			cui.Dark("Children:")+" %s\n"+
-			cui.Dark("Parents: ")+" %s\n"+
+		cui.Dark("Id:")+"          %s\n"+
+			cui.Dark("Branch:     ")+" %s\n"+
+			cui.Dark("Children:   ")+" %s\n"+
+			cui.Dark("Parents:    ")+" %s\n"+
 			remote+
 			"%s\n\n"+
 			cui.Blue(strings.Repeat("_", 50))+
