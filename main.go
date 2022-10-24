@@ -17,11 +17,10 @@ import (
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/log/logger"
 	"github.com/michael-reichenauer/gmc/utils/one"
-	"github.com/michael-reichenauer/gmc/utils/rpc"
 )
 
 const (
-	version = "0.53"
+	version = "0.54"
 )
 
 var (
@@ -78,28 +77,14 @@ func main() {
 	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
-	// Start rpc sever and serve rpc requests
-	rpcServer := rpc.NewServer()
-	if err := rpcServer.RegisterService("", server.NewApiServer(configService)); err != nil {
-		panic(log.Fatal(err))
-	}
-	if err := rpcServer.Start("http://127.0.0.1:0/api/ws", "/api/events"); err != nil {
-		panic(log.Fatal(err))
-	}
-	defer rpcServer.Close()
-
-	go func() {
-		if err := rpcServer.Serve(); err != nil {
-			panic(log.Fatal(err))
-		}
-	}()
+	api := server.NewApiServer(configService)
 
 	// Start client cmd ui
 	ui := cui.NewCommandUI(version)
 	ui.Run(func() {
 		one.RunWith(func() {
 			mainWindow := console.NewMainWindow(ui)
-			mainWindow.Show(rpcServer.URL, *workingDirFlag)
+			mainWindow.Show(api, *workingDirFlag)
 		}, func(f func()) {
 			ui.Post(f)
 		})
