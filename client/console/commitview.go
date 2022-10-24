@@ -13,8 +13,8 @@ import (
 )
 
 type Committer interface {
-	GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) error
-	GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) error
+	GetCommitDiff(info api.CommitDiffInfoReq) (api.CommitDiff, error)
+	GetFileDiff(info api.FileDiffInfoReq) ([]api.CommitDiff, error)
 	Commit(info api.CommitInfoReq, rsp api.NoRsp) error
 }
 

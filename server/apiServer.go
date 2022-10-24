@@ -268,26 +268,22 @@ func (t *apiServer) DeleteBranch(name api.BranchName, _ api.NoRsp) error {
 	return repo.DeleteBranch(name.BranchName)
 }
 
-func (t *apiServer) GetCommitDiff(info api.CommitDiffInfoReq, diff *api.CommitDiff) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetCommitDiff(info api.CommitDiffInfoReq) (api.CommitDiff, error) {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
-		return err
+		return api.CommitDiff{}, err
 	}
-	*diff, err = repo.GetCommitDiff(info.CommitID)
-	return
+
+	return repo.GetCommitDiff(info.CommitID)
 }
 
-func (t *apiServer) GetFileDiff(info api.FileDiffInfoReq, diff *[]api.CommitDiff) (err error) {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) GetFileDiff(info api.FileDiffInfoReq) ([]api.CommitDiff, error) {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
-		return err
+		return []api.CommitDiff{}, err
 	}
-	*diff, err = repo.GetFileDiff(info.Path)
-	return
+
+	return repo.GetFileDiff(info.Path)
 }
 
 func (t *apiServer) GetCommitDetails(args api.CommitDetailsReq, rsp *api.CommitDetailsRsp) (err error) {

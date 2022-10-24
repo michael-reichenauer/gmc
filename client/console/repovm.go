@@ -310,8 +310,7 @@ func (t *repoVM) GetAllBranches() []api.Branch {
 }
 
 func (t *repoVM) GetUncommittedFiles() []string {
-	var diff api.CommitDiff
-	err := t.api.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: git.UncommittedID}, &diff)
+	diff, err := t.api.GetCommitDiff(api.CommitDiffInfoReq{RepoID: t.repoID, CommitID: git.UncommittedID})
 	if err != nil {
 		return []string{}
 	}

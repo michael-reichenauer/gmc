@@ -15,8 +15,8 @@ type Api interface {
 
 	GetBranches(args GetBranchesReq) ([]Branch, error)
 	GetFiles(args FilesReq) ([]string, error)
-	GetCommitDiff(info CommitDiffInfoReq, diff *CommitDiff) error
-	GetFileDiff(info FileDiffInfoReq, diff *[]CommitDiff) error
+	GetCommitDiff(info CommitDiffInfoReq) (CommitDiff, error)
+	GetFileDiff(info FileDiffInfoReq) ([]CommitDiff, error)
 	GetCommitDetails(req CommitDetailsReq, rsp *CommitDetailsRsp) error
 	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq, branches *[]Branch) error
 
