@@ -174,9 +174,7 @@ func (t *apiServer) GetAmbiguousBranchBranches(args api.AmbiguousBranchBranchesR
 	return repo.GetAmbiguousBranchBranches(args), nil
 }
 
-func (t *apiServer) ShowBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) ShowBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -185,9 +183,7 @@ func (t *apiServer) ShowBranch(name api.BranchName, _ api.NoRsp) error {
 	return nil
 }
 
-func (t *apiServer) HideBranch(name api.BranchName, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) HideBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
@@ -301,9 +297,7 @@ func (t *apiServer) Commit(info api.CommitInfoReq) error {
 	return repo.Commit(info.Message)
 }
 
-func (t *apiServer) UndoCommit(info api.IdReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UndoCommit(info api.IdReq) error {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
 		return err
@@ -311,9 +305,7 @@ func (t *apiServer) UndoCommit(info api.IdReq, _ api.NoRsp) error {
 	return repo.UndoCommit(info.Id)
 }
 
-func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq) error {
 	repo, err := t.repo(info.RepoID)
 	if err != nil {
 		return err
@@ -321,9 +313,7 @@ func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq, _ api.NoRsp) e
 	return repo.UndoUncommittedFileChanges(info.Ref)
 }
 
-func (t *apiServer) UncommitLastCommit(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UncommitLastCommit(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -331,9 +321,7 @@ func (t *apiServer) UncommitLastCommit(repoID string, _ api.NoRsp) error {
 	return repo.UncommitLastCommit()
 }
 
-func (t *apiServer) UndoAllUncommittedChanges(repoID string, _ api.NoRsp) error {
-	log.Infof(">")
-	defer log.Infof("<")
+func (t *apiServer) UndoAllUncommittedChanges(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
@@ -341,7 +329,7 @@ func (t *apiServer) UndoAllUncommittedChanges(repoID string, _ api.NoRsp) error 
 	return repo.UndoAllUncommittedChanges()
 }
 
-func (t *apiServer) CleanWorkingFolder(repoID string, _ api.NoRsp) error {
+func (t *apiServer) CleanWorkingFolder(repoID string) error {
 	log.Infof(">")
 	defer log.Infof("<")
 	repo, err := t.repo(repoID)

@@ -21,14 +21,14 @@ type Api interface {
 	GetAmbiguousBranchBranches(args AmbiguousBranchBranchesReq) ([]Branch, error)
 
 	Commit(info CommitInfoReq) error
-	UndoCommit(id IdReq, _ NoRsp) error
-	UndoUncommittedFileChanges(info FilesReq, _ NoRsp) error
-	UncommitLastCommit(repoID string, _ NoRsp) error
-	UndoAllUncommittedChanges(repoID string, _ NoRsp) error
-	CleanWorkingFolder(repoID string, _ NoRsp) error
+	UndoCommit(id IdReq) error
+	UndoUncommittedFileChanges(info FilesReq) error
+	UncommitLastCommit(repoID string) error
+	UndoAllUncommittedChanges(repoID string) error
+	CleanWorkingFolder(repoID string) error
 
-	ShowBranch(name BranchName, _ NoRsp) error
-	HideBranch(name BranchName, _ NoRsp) error
+	ShowBranch(name BranchName) error
+	HideBranch(name BranchName) error
 
 	Checkout(args CheckoutReq, _ NoRsp) error
 	PushBranch(name BranchName, _ NoRsp) error

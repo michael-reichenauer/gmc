@@ -321,7 +321,7 @@ func (t *repoVM) GetUncommittedFiles() []string {
 func (t *repoVM) UndoAllUncommittedChanges() {
 	t.startCommand(
 		"Undo all uncommitted files",
-		func() error { return t.api.UndoAllUncommittedChanges(t.repoID, api.NilRsp) },
+		func() error { return t.api.UndoAllUncommittedChanges(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
 		nil)
 }
@@ -329,7 +329,7 @@ func (t *repoVM) UndoAllUncommittedChanges() {
 func (t *repoVM) UncommitLastCommit() {
 	t.startCommand(
 		"Uncommit last local commit",
-		func() error { return t.api.UncommitLastCommit(t.repoID, api.NilRsp) },
+		func() error { return t.api.UncommitLastCommit(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to uncommit:\n%s", err) },
 		nil)
 }
@@ -337,7 +337,7 @@ func (t *repoVM) UncommitLastCommit() {
 func (t *repoVM) UndoCommit(id string) {
 	t.startCommand(
 		"Uncommit commit",
-		func() error { return t.api.UndoCommit(api.IdReq{RepoID: t.repoID, Id: id}, api.NilRsp) },
+		func() error { return t.api.UndoCommit(api.IdReq{RepoID: t.repoID, Id: id}) },
 		func(err error) string { return fmt.Sprintf("Failed to undo commit:\n%s:\n%s", id, err) },
 		nil)
 }
@@ -346,7 +346,7 @@ func (t *repoVM) UndoUncommittedFileChanges(path string) {
 	t.startCommand(
 		"Undo uncommitted file",
 		func() error {
-			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path}, api.NilRsp)
+			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to undo file:\n%s:\n%s", path, err) },
 		nil)
@@ -354,7 +354,7 @@ func (t *repoVM) UndoUncommittedFileChanges(path string) {
 func (t *repoVM) CleanWorkingFolder() {
 	t.startCommand(
 		"Clean working folder",
-		func() error { return t.api.CleanWorkingFolder(t.repoID, api.NilRsp) },
+		func() error { return t.api.CleanWorkingFolder(t.repoID) },
 		func(err error) string { return fmt.Sprintf("Failed to clean working folder:\n%s", err) },
 		nil)
 }
@@ -386,7 +386,7 @@ func (t *repoVM) GetAmbiguousBranches() []api.Branch {
 func (t *repoVM) ShowBranch(name string, commitId string) {
 	t.startCommand(
 		fmt.Sprintf("Show Branch:\n%s", name), func() error {
-			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 		},
 		func(err error) string { return fmt.Sprintf("Failed to show branch:\n%s\n%s", name, err) },
 		func() { t.ScrollToBranch(name, commitId) })
@@ -431,7 +431,7 @@ func (t *repoVM) UnsetAsParentBranch(name string) {
 }
 
 func (t *repoVM) HideBranch(name string) {
-	_ = t.api.HideBranch(api.BranchName{RepoID: t.repoID, BranchName: name}, api.NilRsp)
+	_ = t.api.HideBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 }
 
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
