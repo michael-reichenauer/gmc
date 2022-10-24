@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
@@ -518,7 +519,10 @@ func (t *repoVM) startCommand(
 		t.ui.Post(func() {
 			progress.Close()
 			if err != nil {
-				t.ui.ShowErrorMessageBox(errorFunc(err))
+				msg := errorFunc(err)
+				if msg != "" {
+					t.ui.ShowErrorMessageBox(msg)
+				}
 			}
 		})
 	}()
@@ -542,13 +546,28 @@ func (t *repoVM) CreateBranch(name string) {
 		func() { t.ShowBranch(name, "") })
 }
 
-func (t *repoVM) DeleteBranch(name string) {
+func (t *repoVM) DeleteBranch(name string, isForced bool) {
 	t.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
 		func() error {
-			return t.api.DeleteBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
+			return t.api.DeleteBranch(t.repoID, name, isForced)
 		},
-		func(err error) string { return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err) },
+		func(err error) string {
+			if strings.Contains(err.Error(), "is not fully merged") {
+				text := fmt.Sprintf("Branch %q is not fully merged.", name)
+				text2 := "\n\nDo our want to force delete the branch?"
+				msgBox := t.ui.MessageBox("Warning", cui.Yellow(text)+text2)
+				msgBox.ShowCancel = true
+				msgBox.OnOK = func() {
+					t.DeleteBranch(name, true)
+				}
+				msgBox.Show()
+				return ""
+			} else {
+				return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err)
+			}
+			//return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err)
+		},
 		nil)
 }
 

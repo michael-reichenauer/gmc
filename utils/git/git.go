@@ -43,7 +43,7 @@ type Git interface {
 	MergeBranch(name string) error
 	MergeSquashBranch(name string) error
 	DeleteRemoteBranch(name string) error
-	DeleteLocalBranch(name string) error
+	DeleteLocalBranch(name string, isForced bool) error
 	GetTags() ([]Tag, error)
 	PullCurrentBranch() error
 	PullBranch(name string) error
@@ -213,8 +213,8 @@ func (t *git) DeleteRemoteBranch(name string) error {
 	return t.remoteService.deleteRemoteBranch(name)
 }
 
-func (t *git) DeleteLocalBranch(name string) error {
-	return t.branchService.deleteLocalBranch(name)
+func (t *git) DeleteLocalBranch(name string, isForced bool) error {
+	return t.branchService.deleteLocalBranch(name, isForced)
 }
 
 func (t *git) GetTags() ([]Tag, error) {

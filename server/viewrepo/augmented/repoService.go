@@ -31,7 +31,7 @@ type RepoService interface {
 	CreateBranch(name string) error
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
-	DeleteLocalBranch(name string) error
+	DeleteLocalBranch(name string, isForced bool) error
 	PullCurrentBranch() error
 	PullBranch(name string) error
 
@@ -172,8 +172,8 @@ func (s *repoService) DeleteRemoteBranch(name string) error {
 	return s.git.DeleteRemoteBranch(name)
 }
 
-func (s *repoService) DeleteLocalBranch(name string) error {
-	return s.git.DeleteLocalBranch(name)
+func (s *repoService) DeleteLocalBranch(name string, isForced bool) error {
+	return s.git.DeleteLocalBranch(name, isForced)
 }
 
 func (s *repoService) TriggerManualRefresh() {

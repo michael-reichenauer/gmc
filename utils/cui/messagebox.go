@@ -9,6 +9,7 @@ import (
 type MessageBox struct {
 	OnOK        func()
 	OnClose     func()
+	ShowCancel  bool
 	ui          *ui
 	boxView     View
 	textView    View
@@ -48,7 +49,11 @@ func (t *MessageBox) newBoxView() View {
 }
 
 func (t *MessageBox) newButtonsView() View {
-	view := t.ui.NewView(" [OK]")
+	text := " [OK]"
+	if t.ShowCancel {
+		text = " [Cancel]" + text
+	}
+	view := t.ui.NewView(text)
 	view.Properties().Name = "MessageBoxButtons"
 	view.Properties().OnMouseLeft = t.onButtonsClick
 	view.Properties().HideHorizontalScrollbar = true
@@ -63,7 +68,12 @@ func (t *MessageBox) newTextView() View {
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().IsWrap = true
-	view.SetKey(gocui.KeyEnter, t.handleOk)
+	if t.ShowCancel {
+		view.SetKey(gocui.KeyEnter, t.Close)
+	} else {
+		view.SetKey(gocui.KeyEnter, t.handleOk)
+	}
+
 	view.SetKey(gocui.KeyCtrlO, t.handleOk)
 	view.SetKey(gocui.KeyEsc, t.Close)
 	view.SetKey(gocui.KeyCtrlC, t.Close)
@@ -127,6 +137,15 @@ func (t *MessageBox) maxTextWidth(lines []string) int {
 }
 
 func (t *MessageBox) onButtonsClick(x int, y int) {
+	if t.ShowCancel {
+		if x < 9 {
+			t.Close()
+		} else if x > 9 && x < 14 {
+			t.handleOmk()
+		}
+		return
+	}
+
 	if x < 4 {
 		t.handleOk()
 	}

@@ -851,7 +851,7 @@ func (t *ViewRepoService) CreateBranch(name string) error {
 	return t.augmentedRepo.CreateBranch(name)
 }
 
-func (t *ViewRepoService) DeleteBranch(name string) error {
+func (t *ViewRepoService) DeleteBranch(name string, isForced bool) error {
 	viewRepo := t.getViewRepo()
 	branch, ok := viewRepo.augmentedRepo.BranchByName(name)
 	if !ok {
@@ -897,7 +897,7 @@ func (t *ViewRepoService) DeleteBranch(name string) error {
 
 	if localBranch != nil {
 		// Deleting local branch
-		err := t.augmentedRepo.DeleteLocalBranch(localBranch.Name)
+		err := t.augmentedRepo.DeleteLocalBranch(localBranch.Name, isForced)
 		if err != nil {
 			return err
 		}

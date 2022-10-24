@@ -396,7 +396,7 @@ func (t *menus) getDeleteBranchMenuItems() []cui.MenuItem {
 		func(b api.Branch) bool { return b.IsGitBranch && !b.IsMainBranch && !b.IsCurrent },
 		func(b api.Branch) cui.MenuItem {
 			return cui.MenuItem{Text: t.branchItemText(b), Action: func() {
-				t.vm.DeleteBranch(b.Name)
+				t.vm.DeleteBranch(b.Name, false)
 			}}
 		})
 }

@@ -116,9 +116,15 @@ func (t *branchesService) createBranchAt(name string, id string) error {
 	return err
 }
 
-func (t *branchesService) deleteLocalBranch(name string) error {
-	_, err := t.cmd.Git("branch", "--delete", name)
+func (t *branchesService) deleteLocalBranch(name string, isForced bool) error {
+	var err error
+	if isForced {
+		_, err = t.cmd.Git("branch", "--delete", "-D", name)
+	} else {
+		_, err = t.cmd.Git("branch", "--delete", name)
+	}
 	return err
+
 }
 
 func (t *branchesService) parseBranchesOutput(branchesText string) ([]Branch, error) {
