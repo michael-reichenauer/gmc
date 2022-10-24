@@ -2,6 +2,7 @@ package one
 
 import (
 	"fmt"
+	"runtime"
 	"time"
 
 	"github.com/michael-reichenauer/gmc/utils"
@@ -9,6 +10,11 @@ import (
 )
 
 var inChannel, outChannel = utils.InfiniteChannel()
+
+type funcInfo struct {
+	f    func()
+	info callerInfo
+}
 
 func Run(startFunc func()) {
 	Do(startFunc)
@@ -36,7 +42,8 @@ func Do(f func()) {
 	if f == nil {
 		panic(log.Fatal(fmt.Errorf("nil do function is not supported")))
 	}
-	inChannel <- f
+	ci := caller(2)
+	inChannel <- funcInfo{f: f, info: ci}
 }
 
 func Close() {
@@ -56,10 +63,31 @@ func asFunc(f interface{}) func() {
 	//return f.(func())
 	return func() {
 		st := time.Now()
-		f.(func())()
-		d := time.Since(st)
-		if d > 50*time.Millisecond {
-			log.Warnf("One thread duration (%v)", time.Since(st))
-		}
+		fi := f.(funcInfo)
+		fi.f()
+		checkDuration(st, fi.info)
+	}
+}
+
+type callerInfo struct {
+	file     string
+	line     int
+	function string
+}
+
+func caller(skip int) callerInfo {
+	rpc := make([]uintptr, 1)
+	n := runtime.Callers(skip+1, rpc[:])
+	if n < 1 {
+		return callerInfo{}
+	}
+	frame, _ := runtime.CallersFrames(rpc).Next()
+	return callerInfo{file: frame.File, line: frame.Line, function: frame.Function}
+}
+
+func checkDuration(startTime time.Time, info callerInfo) {
+	d := time.Since(startTime)
+	if d > 10*time.Millisecond {
+		log.Warnf("One thread duration (%v) for %s:%d in %s", d, info.file, info.line, info.function)
 	}
 }

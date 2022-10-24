@@ -127,14 +127,12 @@ func (t *task[Result]) Finally(callback func()) Task[Result] {
 }
 
 func runRE[Result any](taskFunc func() (Result, error)) Task[Result] {
-	info := caller(3)
 	task := &task[Result]{}
-	task.run(taskFunc, info)
+	task.run(taskFunc)
 	return task
 }
 
 func thenRunRE[PrevResult any, Result any](prevTask Task[PrevResult], taskFunc func(r PrevResult) (Result, error)) Task[Result] {
-	info := caller(3)
 	task := &task[Result]{}
 
 	// Schedule this task to run once previous task has completed
@@ -146,17 +144,15 @@ func thenRunRE[PrevResult any, Result any](prevTask Task[PrevResult], taskFunc f
 		}
 
 		// No previous error, so this task can run
-		task.run(func() (Result, error) { return taskFunc(prevResult) }, info)
+		task.run(func() (Result, error) { return taskFunc(prevResult) })
 	})
 
 	return task
 }
 
-func (t *task[Result]) run(runFunc func() (Result, error), info callerInfo) {
+func (t *task[Result]) run(runFunc func() (Result, error)) {
 	go func() {
-		st := time.Now()
 		r, err := runFunc()
-		checkDuration(st, info)
 
 		one.Do(func() {
 			if err != nil {
