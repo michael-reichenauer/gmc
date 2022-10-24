@@ -8,55 +8,20 @@ import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/michael-reichenauer/gmc/utils/rpc"
 )
 
 type MainWindow struct {
-	ui        cui.UI
-	api       api.Api
-	rpcClient *rpc.Client
+	ui  cui.UI
+	api api.Api
 }
 
 func NewMainWindow(ui cui.UI) *MainWindow {
 	return &MainWindow{ui: ui}
 }
 
-func (t *MainWindow) Show(serverUri, path string) {
-	progress := t.ui.ShowProgress("Connecting client to server")
-
-	go func() {
-		// Create rpc client and create service client
-		rpcClient := rpc.NewClient()
-		rpcClient.IsLogCalls = true
-		//rpcClient.Latency = 600 * time.Millisecond
-		rpcClient.OnConnectionError = func(err error) {
-			t.ui.Post(func() {
-				progress.Close()
-				log.Warnf("connection error")
-				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Connection to server failed:\n%v", err)))
-				msgBox.OnClose = func() { t.ui.Post(func() { t.ui.Quit() }) }
-				msgBox.Show()
-			})
-		}
-
-		err := rpcClient.Connect(serverUri)
-		api := NewApiClient(rpcClient.NewServiceClient(""))
-
-		t.ui.Post(func() {
-			progress.Close()
-			if err != nil {
-				log.Warnf("connect error")
-				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to connect to server:\n%v", err)))
-				msgBox.OnClose = func() { t.ui.Post(func() { t.ui.Quit() }) }
-				msgBox.Show()
-				return
-			}
-			t.api = api
-			t.rpcClient = rpcClient
-
-			t.showRepo(path)
-		})
-	}()
+func (t *MainWindow) Show(api api.Api, path string) {
+	t.api = api
+	t.showRepo(path)
 }
 
 func (t *MainWindow) showRepo(path string) {
@@ -87,7 +52,6 @@ func (t *MainWindow) showRepo(path string) {
 }
 
 func (t *MainWindow) Close() {
-	t.rpcClient.Close()
 }
 
 func (t *MainWindow) showOpenRepoMenu() {
