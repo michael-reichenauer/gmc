@@ -12,6 +12,7 @@ import (
 	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/server/viewrepo"
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/async"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -54,34 +55,34 @@ func (t *apiServer) GetSubDirs(parentDirPath string, dirs *[]string) (err error)
 	return
 }
 
-func (t *apiServer) OpenRepo(path string, repoID *string) error {
-	log.Infof(">")
-	defer log.Infof("<")
-	if path == "" {
-		// No path specified, assume current working dir
-		path = utils.CurrentDir()
-	}
-	rootPath, err := git.WorkingTreeRoot(path)
-	if err != nil {
-		// Could not locate a working dir root
-		return err
-	}
+func (t *apiServer) OpenRepo(path string) async.Task[string] {
+	return async.RunRE(func() (string, error) {
+		if path == "" {
+			// No path specified, assume current working dir
+			path = utils.CurrentDir()
+		}
+		rootPath, err := git.WorkingTreeRoot(path)
+		if err != nil {
+			// Could not locate a working dir root
+			return "", err
+		}
 
-	// Got root working dir path, open repo
-	viewRepo := viewrepo.NewViewRepoService(t.configService, rootPath)
-	stream := viewRepo.ObserveChanges()
-	id := t.storeRepo(viewRepo, stream)
+		// Got root working dir path, open repo
+		viewRepo := viewrepo.NewViewRepoService(t.configService, rootPath)
+		stream := viewRepo.ObserveChanges()
+		id := t.storeRepo(viewRepo, stream)
 
-	viewRepo.StartMonitor()
+		viewRepo.StartMonitor()
 
-	// Remember working dir paths to use for "open recent" lists
-	parentDir := filepath.Dir(rootPath)
-	t.configService.SetState(func(s *config.State) {
-		s.RecentFolders = utils.RecentPaths(s.RecentFolders, rootPath, 10)
-		s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
+		// Remember working dir paths to use for "open recent" lists
+		parentDir := filepath.Dir(rootPath)
+		t.configService.SetState(func(s *config.State) {
+			s.RecentFolders = utils.RecentPaths(s.RecentFolders, rootPath, 10)
+			s.RecentParentFolders = utils.RecentPaths(s.RecentParentFolders, parentDir, 5)
+		})
+
+		return id, nil
 	})
-	*repoID = id
-	return nil
 }
 
 func (t *apiServer) CloseRepo(repoID string, _ api.NoRsp) error {

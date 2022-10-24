@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
-	"github.com/michael-reichenauer/gmc/utils/async"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
@@ -28,24 +27,22 @@ func (t *MainWindow) Show(api api.Api, path string) {
 func (t *MainWindow) showRepo(path string) {
 	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 
-	async.RunRE(func() (string, error) {
-		var repoId string
-		err := t.api.OpenRepo(path, &repoId)
-		return repoId, err
-	}).Then(func(repoId string) {
-		progress.Close()
-		repoView := NewRepoView(t.ui, t.api, t, repoId)
-		repoView.Show()
-	}).Catch(func(err error) {
-		if path != "" {
-			log.Warnf("Failed to open %q, %v", path, err)
-			msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to show repo for:\n%s\nError: %v", path, err)))
-			msgBox.OnClose = func() { t.ui.Post(func() { t.showOpenRepoMenu() }) }
-			msgBox.Show()
-		} else {
-			t.showOpenRepoMenu()
-		}
-	})
+	t.api.OpenRepo(path).
+		Then(func(repoId string) {
+			progress.Close()
+			repoView := NewRepoView(t.ui, t.api, t, repoId)
+			repoView.Show()
+		}).
+		Catch(func(err error) {
+			if path != "" {
+				log.Warnf("Failed to open %q, %v", path, err)
+				msgBox := t.ui.MessageBox("Error !", cui.Red(fmt.Sprintf("Failed to show repo for:\n%s\nError: %v", path, err)))
+				msgBox.OnClose = func() { t.ui.Post(func() { t.showOpenRepoMenu() }) }
+				msgBox.Show()
+			} else {
+				t.showOpenRepoMenu()
+			}
+		})
 }
 
 func (t *MainWindow) Close() {
