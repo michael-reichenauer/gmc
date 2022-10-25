@@ -51,7 +51,7 @@ func (t *MessageBox) newBoxView() View {
 func (t *MessageBox) newButtonsView() View {
 	text := " [OK]"
 	if t.ShowCancel {
-		text = " [Cancel]" + text
+		text = text + " [Cancel]"
 	}
 	view := t.ui.NewView(text)
 	view.Properties().Name = "MessageBoxButtons"
@@ -138,15 +138,17 @@ func (t *MessageBox) maxTextWidth(lines []string) int {
 
 func (t *MessageBox) onButtonsClick(x int, y int) {
 	if t.ShowCancel {
-		if x < 9 {
-			t.Close()
-		} else if x > 9 && x < 14 {
+		if x > 0 && x < 5 {
 			t.handleOk()
 		}
+		if x > 5 && x < 14 {
+			t.Close()
+		}
+
 		return
 	}
 
-	if x < 4 {
+	if x < 5 {
 		t.handleOk()
 	}
 }

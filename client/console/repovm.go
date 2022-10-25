@@ -228,7 +228,7 @@ func (t *repoVM) showCommitDialog() {
 }
 
 func (t *repoVM) showCreateBranchDialog() {
-	branchView := NewBranchView(t.ui, t)
+	branchView := newBranchDlg(t.ui, t.CreateBranch)
 	branchView.Show()
 }
 
@@ -532,10 +532,12 @@ func (t *repoVM) CreateBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
+			parent := t.repo.CurrentBranchName
+			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name, ParentName: parent})
 			if err != nil {
 				return err
 			}
+
 			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
 			if err != nil {
 				return err

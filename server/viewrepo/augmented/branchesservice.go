@@ -128,6 +128,9 @@ func (h *branchesService) determineCommitBranch(
 	} else if branch := h.isLocalRemoteBranch(c); branch != nil {
 		// Commit has only local and its remote branch, prefer remote remote branch
 		return branch
+	} else if branch := h.hasParentChildSetBranch(c, branchesChildren); branch != nil {
+		// The commit has several possible branches, and one is set as parent of the others
+		return branch
 	} else if branch := h.hasChildrenPriorityBranch(c, branchesChildren); branch != nil {
 		// The commit has several possible branches, but children
 		return branch
@@ -183,6 +186,36 @@ func (h *branchesService) isLocalRemoteBranch(c *Commit) *Branch {
 			return c.Branches[1]
 		}
 	}
+	return nil
+}
+
+func (h *branchesService) hasParentChildSetBranch(commit *Commit, branchesChildren map[string][]string) *Branch {
+	for _, b := range commit.Branches {
+		childBranches := branchesChildren[b.BaseName()]
+		if len(childBranches) == 0 {
+			// This branch has no children branches
+			continue
+		}
+
+		// assume c.Branch is parent of all other children branches (cc.Branch)
+		assumeIsParent := true
+		for _, bb := range commit.Branches {
+			if b == bb || b.Name == bb.RemoteName {
+				continue
+			}
+			if !utils.StringsContains(childBranches, bb.BaseName()) {
+				// bb is not a child of b
+				assumeIsParent = false
+				break
+			}
+		}
+
+		if assumeIsParent {
+			// b was parent of all other branches
+			return b
+		}
+	}
+
 	return nil
 }
 

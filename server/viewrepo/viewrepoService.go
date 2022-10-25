@@ -847,8 +847,13 @@ func (t *ViewRepoService) MergeBranch(name string) error {
 	return t.augmentedRepo.MergeBranch(name)
 }
 
-func (t *ViewRepoService) CreateBranch(name string) error {
-	return t.augmentedRepo.CreateBranch(name)
+func (t *ViewRepoService) CreateBranch(name, parentName string) error {
+	viewRepo := t.getViewRepo()
+	parent, ok := viewRepo.augmentedRepo.BranchByName(parentName)
+	if !ok {
+		return fmt.Errorf("unknown git branch %q", parentName)
+	}
+	return t.augmentedRepo.CreateBranch(name, parent)
 }
 
 func (t *ViewRepoService) DeleteBranch(name string, isForced bool) error {

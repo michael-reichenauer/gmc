@@ -28,7 +28,7 @@ type RepoService interface {
 	SwitchToBranch(name string) error
 	Commit(commit string) error
 	PushBranch(name string) error
-	CreateBranch(name string) error
+	CreateBranch(name string, parentBranch *Branch) error
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
 	DeleteLocalBranch(name string, isForced bool) error
@@ -160,8 +160,28 @@ func (s *repoService) MergeBranch(name string) error {
 	return s.git.MergeBranch(name)
 }
 
-func (s *repoService) CreateBranch(name string) error {
-	return s.git.CreateBranch(name)
+func (t *repoService) CreateBranch(name string, parentBranch *Branch) error {
+	err := t.git.CreateBranch(name)
+	if err != nil {
+		return err
+	}
+
+	parentName := parentBranch.BaseName()
+	metaData := t.getMetaData()
+
+	parentChildrenNames, ok := metaData.BranchesChildren[parentName]
+	if !ok {
+		parentChildrenNames = []string{}
+		metaData.BranchesChildren[parentName] = parentChildrenNames
+	}
+
+	// Add child name as child to parent
+	if !lo.Contains(parentChildrenNames, name) {
+		parentChildrenNames = append(parentChildrenNames, name)
+		metaData.BranchesChildren[parentName] = parentChildrenNames
+	}
+	_ = t.setMetaData(metaData) // ignore error if parent/child cannot be set now
+	return nil
 }
 
 func (s *repoService) GetFiles(ref string) ([]string, error) {
