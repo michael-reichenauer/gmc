@@ -228,7 +228,7 @@ func (t *repoVM) showCommitDialog() {
 }
 
 func (t *repoVM) showCreateBranchDialog() {
-	branchView := NewBranchView(t.ui, t)
+	branchView := newBranchDlg(t.ui, t.CreateBranch)
 	branchView.Show()
 }
 
