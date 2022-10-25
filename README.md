@@ -6,9 +6,9 @@ Gmc is a cross-platform console UI Git client (go source), which makes it easier
 
 ## Background
 
-Usually, Git clients visualize the repository as an overwhelming number of branches, which makes the commits history difficult to understand. As a workaround, many developers simplify git history by rebasing or squashing.
+Usually, Git clients visualize the repository as an overwhelming number of branches, which makes the commits history difficult to understand. As a workaround, many developers simplify git history by squashing or rebasing.
 
-Some clients try to reduce the branching complexity by hiding commits. The Gmc approach is to make it possible to toggle which branches to show and which branches to hide. Thus a user can focus on tracking branches that really matter to them. For a developer, it might be to track just the main branch and the current working branch and for a team leader, it might be tracking main and a few selected features branches.
+Some clients try to reduce the branching complexity by hiding commits. The gmc approach is to make it possible to toggle which branches to show and which branches to hide. Thus a user can focus on tracking branches that really matter to them. For a developer, it might be to track just the main branch and the current working branch and for a team leader, it might be tracking main and a few selected features branches.
 
 Gmc provides a user experience, where the visualization of branches and commits history is understandable and usable without the need for rebasing or squashing. Gmc also simplifies the usage of the most common commands by providing context menus and simplified dialogs. Gmc console window supports both key-based navigation and mouse support.
 
@@ -16,6 +16,17 @@ Gmc provides a user experience, where the visualization of branches and commits 
 
 * alpha
 
-## Download
+## Install
 
-* [Windows, Linux, Mac](https://github.com/michael-reichenauer/gmc/releases)
+* Use go to download/build and install:
+
+  `> go install github.com/michael-reichenauer/gmc@latest`
+
+* Run with:
+  
+  `> gmc`
+* Use arrow keys to navigate and press `'m'` key to show the main menu, where all commands wit keyboard shortcuts are available.
+
+## Releases
+
+* https://github.com/michael-reichenauer/gmc/releases
