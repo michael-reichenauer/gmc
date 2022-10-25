@@ -532,13 +532,8 @@ func (t *repoVM) CreateBranch(name string) {
 	t.startCommand(
 		fmt.Sprintf("Creating Branch:\n%s", name),
 		func() error {
-			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
-			if err != nil {
-				return err
-			}
-
-			parentName := t.repo.CurrentBranchName
-			err = t.api.SetAsParentBranch(api.SetParentReq{RepoID: t.repoID, BranchName: name, ParentName: parentName})
+			parent := t.repo.CurrentBranchName
+			err := t.api.CreateBranch(api.BranchName{RepoID: t.repoID, BranchName: name, ParentName: parent})
 			if err != nil {
 				return err
 			}

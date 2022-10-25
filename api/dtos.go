@@ -39,6 +39,7 @@ type GetBranchesReq struct {
 type BranchName struct {
 	RepoID     string
 	BranchName string
+	ParentName string
 }
 
 type SetParentReq struct {

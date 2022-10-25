@@ -245,7 +245,7 @@ func (t *apiServer) CreateBranch(name api.BranchName) error {
 	if err != nil {
 		return err
 	}
-	return repo.CreateBranch(name.BranchName)
+	return repo.CreateBranch(name.BranchName, name.ParentName)
 }
 
 func (t *apiServer) DeleteBranch(repoID, branchName string, isForced bool) error {
