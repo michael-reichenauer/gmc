@@ -14,6 +14,7 @@ import (
 )
 
 type RepoService interface {
+	Git() git.Git
 	RepoChanges() chan RepoChange
 	RepoPath() string
 	TriggerManualRefresh()
@@ -27,10 +28,10 @@ type RepoService interface {
 	SwitchToBranch(name string) error
 	Commit(commit string) error
 	PushBranch(name string) error
-	CreateBranch(name string) error
+	CreateBranch(name string, parentBranch *Branch) error
 	MergeBranch(name string) error
 	DeleteRemoteBranch(name string) error
-	DeleteLocalBranch(name string) error
+	DeleteLocalBranch(name string, isForced bool) error
 	PullCurrentBranch() error
 	PullBranch(name string) error
 
@@ -88,6 +89,10 @@ func NewRepoService(rootPath string) RepoService {
 		repo:            make(chan Repo, 1),
 		manualRefresh:   make(chan struct{}, 1),
 	}
+}
+
+func (s *repoService) Git() git.Git {
+	return s.git
 }
 
 func (s *repoService) RepoChanges() chan RepoChange {
@@ -155,8 +160,28 @@ func (s *repoService) MergeBranch(name string) error {
 	return s.git.MergeBranch(name)
 }
 
-func (s *repoService) CreateBranch(name string) error {
-	return s.git.CreateBranch(name)
+func (t *repoService) CreateBranch(name string, parentBranch *Branch) error {
+	err := t.git.CreateBranch(name)
+	if err != nil {
+		return err
+	}
+
+	parentName := parentBranch.BaseName()
+	metaData := t.getMetaData()
+
+	parentChildrenNames, ok := metaData.BranchesChildren[parentName]
+	if !ok {
+		parentChildrenNames = []string{}
+		metaData.BranchesChildren[parentName] = parentChildrenNames
+	}
+
+	// Add child name as child to parent
+	if !lo.Contains(parentChildrenNames, name) {
+		parentChildrenNames = append(parentChildrenNames, name)
+		metaData.BranchesChildren[parentName] = parentChildrenNames
+	}
+	_ = t.setMetaData(metaData) // ignore error if parent/child cannot be set now
+	return nil
 }
 
 func (s *repoService) GetFiles(ref string) ([]string, error) {
@@ -167,8 +192,8 @@ func (s *repoService) DeleteRemoteBranch(name string) error {
 	return s.git.DeleteRemoteBranch(name)
 }
 
-func (s *repoService) DeleteLocalBranch(name string) error {
-	return s.git.DeleteLocalBranch(name)
+func (s *repoService) DeleteLocalBranch(name string, isForced bool) error {
+	return s.git.DeleteLocalBranch(name, isForced)
 }
 
 func (s *repoService) TriggerManualRefresh() {

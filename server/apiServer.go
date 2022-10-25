@@ -232,20 +232,29 @@ func (t *apiServer) MergeBranch(name api.BranchName) error {
 	return repo.MergeBranch(name.BranchName)
 }
 
+func (t *apiServer) MergeSquashBranch(repoID, branchName string) error {
+	repo, err := t.repo(repoID)
+	if err != nil {
+		return err
+	}
+	return repo.Git().MergeSquashBranch(branchName)
+}
+
 func (t *apiServer) CreateBranch(name api.BranchName) error {
 	repo, err := t.repo(name.RepoID)
 	if err != nil {
 		return err
 	}
-	return repo.CreateBranch(name.BranchName)
+	return repo.CreateBranch(name.BranchName, name.ParentName)
 }
 
-func (t *apiServer) DeleteBranch(name api.BranchName) error {
-	repo, err := t.repo(name.RepoID)
+func (t *apiServer) DeleteBranch(repoID, branchName string, isForced bool) error {
+	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
 	}
-	return repo.DeleteBranch(name.BranchName)
+
+	return repo.DeleteBranch(branchName, isForced)
 }
 
 func (t *apiServer) GetCommitDiff(info api.CommitDiffInfoReq) (api.CommitDiff, error) {

@@ -2,9 +2,10 @@ package git
 
 import (
 	"fmt"
-	"github.com/michael-reichenauer/gmc/utils"
 	"strconv"
 	"strings"
+
+	"github.com/michael-reichenauer/gmc/utils"
 )
 
 type Branch struct {
@@ -91,6 +92,20 @@ func (t *branchesService) mergeBranch(name string) error {
 	return nil
 }
 
+func (t *branchesService) mergeSquashBranch(name string) error {
+	name = StripRemotePrefix(name)
+	// $"merge --no-ff --no-commit --stat --progress {name}", ct);
+	output, err := t.cmd.Git("merge", "--no-commit", "--stat", "--squash", name)
+	if err != nil {
+		if strings.Contains(err.Error(), "exit status 1") &&
+			strings.Contains(output, "CONFLICT") {
+			return ErrConflicts
+		}
+		return err
+	}
+	return nil
+}
+
 func (t *branchesService) createBranch(name string) error {
 	_, err := t.cmd.Git("checkout", "-b", name)
 	return err
@@ -101,9 +116,15 @@ func (t *branchesService) createBranchAt(name string, id string) error {
 	return err
 }
 
-func (t *branchesService) deleteLocalBranch(name string) error {
-	_, err := t.cmd.Git("branch", "--delete", name)
+func (t *branchesService) deleteLocalBranch(name string, isForced bool) error {
+	var err error
+	if isForced {
+		_, err = t.cmd.Git("branch", "--delete", "-D", name)
+	} else {
+		_, err = t.cmd.Git("branch", "--delete", name)
+	}
 	return err
+
 }
 
 func (t *branchesService) parseBranchesOutput(branchesText string) ([]Branch, error) {

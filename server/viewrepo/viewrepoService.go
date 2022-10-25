@@ -73,6 +73,10 @@ func NewViewRepoService(configService *config.Service, rootPath string) *ViewRep
 	}
 }
 
+func (t *ViewRepoService) Git() git.Git {
+	return t.augmentedRepo.Git()
+}
+
 func (t *ViewRepoService) ObserveChanges() observer.Stream {
 	return t.changes.Observe()
 }
@@ -843,11 +847,16 @@ func (t *ViewRepoService) MergeBranch(name string) error {
 	return t.augmentedRepo.MergeBranch(name)
 }
 
-func (t *ViewRepoService) CreateBranch(name string) error {
-	return t.augmentedRepo.CreateBranch(name)
+func (t *ViewRepoService) CreateBranch(name, parentName string) error {
+	viewRepo := t.getViewRepo()
+	parent, ok := viewRepo.augmentedRepo.BranchByName(parentName)
+	if !ok {
+		return fmt.Errorf("unknown git branch %q", parentName)
+	}
+	return t.augmentedRepo.CreateBranch(name, parent)
 }
 
-func (t *ViewRepoService) DeleteBranch(name string) error {
+func (t *ViewRepoService) DeleteBranch(name string, isForced bool) error {
 	viewRepo := t.getViewRepo()
 	branch, ok := viewRepo.augmentedRepo.BranchByName(name)
 	if !ok {
@@ -893,7 +902,7 @@ func (t *ViewRepoService) DeleteBranch(name string) error {
 
 	if localBranch != nil {
 		// Deleting local branch
-		err := t.augmentedRepo.DeleteLocalBranch(localBranch.Name)
+		err := t.augmentedRepo.DeleteLocalBranch(localBranch.Name, isForced)
 		if err != nil {
 			return err
 		}
