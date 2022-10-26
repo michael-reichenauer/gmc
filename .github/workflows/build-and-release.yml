@@ -73,6 +73,17 @@ jobs:
           asset_name: gmc_windows
           asset_content_type: application/octet-stream
 
+      - name: Upload Windows setup file
+        if: steps.check-branch.outputs.isRelease == 'true'
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./installation/installer/gmcSetup.exe
+          asset_name: gmcSetup.exe
+          asset_content_type: application/octet-stream
+
       # - name: Upload Windows artifact (gmc.exe zipped)
       #   if: steps.check-branch.outputs.isRelease == 'true'
       #   uses: actions/upload-release-asset@v1

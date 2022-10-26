@@ -45,16 +45,16 @@ type Asset struct {
 	Browser_download_url string
 }
 
-type autoUpdate struct {
+type AutoUpdate struct {
 	config  *config.Service
 	version string
 }
 
-func NewAutoUpdate(config *config.Service, version string) *autoUpdate {
-	return &autoUpdate{config: config, version: version}
+func NewAutoUpdate(config *config.Service, version string) *AutoUpdate {
+	return &AutoUpdate{config: config, version: version}
 }
 
-func (h *autoUpdate) Start() {
+func (h *AutoUpdate) Start() {
 	state := h.config.GetState()
 
 	stabUrls := lo.Map(state.StableRelease.Assets, func(v config.Asset, _ int) string { return v.Url })
@@ -74,7 +74,7 @@ func (h *autoUpdate) Start() {
 	go h.periodicCheckForUpdatesRoutine()
 }
 
-func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
+func (h *AutoUpdate) periodicCheckForUpdatesRoutine() {
 	log.Event("autoupdate-start-periodic-check")
 	h.cleanTmpFiles()
 	for {
@@ -83,11 +83,11 @@ func (h *autoUpdate) periodicCheckForUpdatesRoutine() {
 	}
 }
 
-func (h *autoUpdate) UpdateIfAvailable() {
+func (h *AutoUpdate) UpdateIfAvailable() (string, string, error) {
 	conf := h.config.GetConfig()
 	if conf.DisableAutoUpdate {
 		log.Event("autoupdate-disabled")
-		return
+		return "", "", nil
 	}
 
 	h.checkRemoteReleases()
@@ -95,14 +95,15 @@ func (h *autoUpdate) UpdateIfAvailable() {
 	log.Eventf("autoupdate-check", "local: %s, remote %s, allow preview=%v", h.version, remoteVersion, conf.AllowPreview)
 
 	if !isUpdateAvailable {
-		return
+		return h.version, strings.TrimPrefix(remoteVersion, "v"), nil
 	}
 
 	log.Event("autoupdate-update-available")
-	h.update(conf.AllowPreview)
+	vo, vn, err := h.update(conf.AllowPreview)
+	return vo, strings.TrimPrefix(vn, "v"), err
 }
 
-func (h *autoUpdate) isUpdateAvailable(allowPreview bool) (string, bool) {
+func (h *AutoUpdate) isUpdateAvailable(allowPreview bool) (string, bool) {
 	state := h.config.GetState()
 	release := h.selectRelease(state, allowPreview)
 	if release.Version == "" {
@@ -121,27 +122,27 @@ func (h *autoUpdate) isUpdateAvailable(allowPreview bool) (string, bool) {
 	return release.Version, true
 }
 
-func (h *autoUpdate) update(allowPreview bool) {
+func (h *AutoUpdate) update(allowPreview bool) (string, string, error) {
 	state := h.config.GetState()
 	release := h.selectRelease(state, allowPreview)
 
 	if state.InstalledVersion == release.Version {
 		// Already downloaded and installed the newer version
 		log.Infof("Already downloaded and installed the remote version %s", release.Version)
-		return
+		return state.InstalledVersion, release.Version, nil
 	}
 
 	downloadPath, err := h.download(release)
 	if err != nil {
 		log.Warnf("Failed to download %s for %s, %v", release.Version, runtime.GOOS, err)
-		return
+		return "", "", fmt.Errorf("failed to download %s, %v", release.Version, err)
 	}
 	log.Event("autoupdate-downloaded")
 
-	h.replaceRunningBinary(release, downloadPath)
+	return h.replaceRunningBinary(release, downloadPath)
 }
 
-func (h *autoUpdate) selectRelease(state config.State, allowPreview bool) config.Release {
+func (h *AutoUpdate) selectRelease(state config.State, allowPreview bool) config.Release {
 	release := state.StableRelease
 	if allowPreview &&
 		len(state.PreRelease.Assets) > 0 &&
@@ -152,7 +153,7 @@ func (h *autoUpdate) selectRelease(state config.State, allowPreview bool) config
 	return release
 }
 
-func (h *autoUpdate) checkRemoteReleases() {
+func (h *AutoUpdate) checkRemoteReleases() {
 	state := h.config.GetState()
 
 	body, etag, err := h.httpGet(releasesUri, state.ReleasesEtag)
@@ -186,7 +187,7 @@ func (h *autoUpdate) checkRemoteReleases() {
 	})
 }
 
-func (h *autoUpdate) getPreRelease(releases []Release) (Release, bool) {
+func (h *AutoUpdate) getPreRelease(releases []Release) (Release, bool) {
 	for _, r := range releases {
 		if r.Prerelease {
 			return r, true
@@ -195,7 +196,7 @@ func (h *autoUpdate) getPreRelease(releases []Release) (Release, bool) {
 	return Release{}, false
 }
 
-func (h *autoUpdate) getStableRelease(releases []Release) (Release, bool) {
+func (h *AutoUpdate) getStableRelease(releases []Release) (Release, bool) {
 	for _, r := range releases {
 		if !r.Prerelease {
 			return r, true
@@ -204,7 +205,7 @@ func (h *autoUpdate) getStableRelease(releases []Release) (Release, bool) {
 	return Release{}, false
 }
 
-func (h *autoUpdate) toConfigRelease(release Release) config.Release {
+func (h *AutoUpdate) toConfigRelease(release Release) config.Release {
 	log.Infof("Release info: %+v", release)
 	var assets []config.Asset
 	for _, a := range release.Assets {
@@ -221,7 +222,7 @@ func (h *autoUpdate) toConfigRelease(release Release) config.Release {
 	}
 }
 
-func (h *autoUpdate) isNewer(v1 string, v2 string) bool {
+func (h *AutoUpdate) isNewer(v1 string, v2 string) bool {
 	v1 = strings.TrimPrefix(v1, "v")
 	v2 = strings.TrimPrefix(v2, "v")
 	if v1 != "" && v2 == "" {
@@ -241,7 +242,7 @@ func (h *autoUpdate) isNewer(v1 string, v2 string) bool {
 	return version1.GreaterThan(version2)
 }
 
-func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath string) {
+func (h *AutoUpdate) replaceRunningBinary(release config.Release, downloadedPath string) (string, string, error) {
 	// Switch current binary
 	// Move current binary to temp path
 	tmpPath := h.tempBinPath()
@@ -250,7 +251,7 @@ func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath
 	err := os.Rename(currentPath, tmpPath)
 	if err != nil {
 		log.Warnf("Failed to move running binary %q to %sq %v", currentPath, tmpPath, err)
-		return
+		return "", "", fmt.Errorf("failed to replace running binary %v", err)
 	}
 	log.Infof("Moved %q to %q", currentPath, tmpPath)
 
@@ -259,7 +260,7 @@ func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath
 	err = os.Rename(downloadedPath, currentPath)
 	if err != nil {
 		log.Warnf("Failed to move downloaded binary %q to %q, %v", downloadedPath, currentPath, err)
-		return
+		return "", "", fmt.Errorf("failed to replace running binary %v", err)
 	}
 	log.Infof("Moved %s to %s", downloadedPath, currentPath)
 
@@ -269,9 +270,10 @@ func (h *autoUpdate) replaceRunningBinary(release config.Release, downloadedPath
 	})
 	log.Infof("Replaced %s->%s at %q", h.version, release.Version, currentPath)
 	log.Event("autoupdate-replaced")
+	return h.version, release.Version, nil
 }
 
-func (h *autoUpdate) download(release config.Release) (string, error) {
+func (h *AutoUpdate) download(release config.Release) (string, error) {
 	log.Infof("Downloading %s ...", release.Version)
 	downloadPath := h.versionedBinPath(release.Version)
 	if utils.FileExists(downloadPath) {
@@ -302,7 +304,7 @@ func (h *autoUpdate) download(release config.Release) (string, error) {
 	return downloadPath, nil
 }
 
-func (h *autoUpdate) getBinURI(release config.Release) (string, error) {
+func (h *AutoUpdate) getBinURI(release config.Release) (string, error) {
 	// Determine the binary based on the os
 	var binaryName string
 	switch runtime.GOOS {
@@ -331,15 +333,15 @@ func (h *autoUpdate) getBinURI(release config.Release) (string, error) {
 	return binURI, nil
 }
 
-func (h *autoUpdate) versionedBinPath(version string) string {
+func (h *AutoUpdate) versionedBinPath(version string) string {
 	return utils.BinPath() + "." + version + tmpSuffix
 }
 
-func (h *autoUpdate) tempBinPath() string {
+func (h *AutoUpdate) tempBinPath() string {
 	return utils.BinPath() + "." + utils.RandomString(10) + tmpSuffix
 }
 
-func (h *autoUpdate) cleanTmpFiles() {
+func (h *AutoUpdate) cleanTmpFiles() {
 	binPath := utils.BinPath()
 	binDir := filepath.Dir(binPath)
 	var tmpFiles []string
@@ -365,7 +367,7 @@ func (h *autoUpdate) cleanTmpFiles() {
 	}
 }
 
-func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string, err error) {
+func (h *AutoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string, err error) {
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		panic(log.Fatal(err))
@@ -387,9 +389,7 @@ func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string
 	etagValue := resp.Header["Etag"]
 	if len(etagValue) > 0 {
 		etag = etagValue[0]
-		if strings.HasPrefix(etag, "W/") {
-			etag = etag[2:]
-		}
+		etag = strings.TrimPrefix(etag, "W/")
 	}
 
 	if resp.StatusCode == http.StatusNotModified {
@@ -397,6 +397,7 @@ func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string
 	}
 	if resp.StatusCode != http.StatusOK {
 		log.Infof("Invalid status for %s: %d", url, resp.StatusCode)
+		err = fmt.Errorf("invalid status for %s: %d", url, resp.StatusCode)
 		return
 	}
 
@@ -404,7 +405,7 @@ func (h *autoUpdate) httpGet(url, requestEtag string) (bytes []byte, etag string
 	return
 }
 
-func (h *autoUpdate) makeBinaryExecutable(path string) error {
+func (h *AutoUpdate) makeBinaryExecutable(path string) error {
 	if runtime.GOOS == "windows" {
 		// Not needed on windows
 		return nil

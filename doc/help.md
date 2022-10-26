@@ -14,7 +14,8 @@ Some useful keyboard shortcuts are:
 | Tab        | Switch between repo and commit details views    |
 |            |                                                 |
 | C          | Shows the commit dialog                         |
-| D          | Shows the commit diff view                      |
+| D          | Shows the commit diff view in repo and commit   |
+| Ctrl+D     | Shows the commit diff in commit dialog          |
 | Enter      | Shows commit details                            |
 | Ctrl+O     | To trigger click on 'OK' buttons in dialogs     |
 
