@@ -22,7 +22,7 @@ import (
 var HelpFile string
 
 const (
-	version = "0.58"
+	version = "0.59"
 )
 
 var (
@@ -30,6 +30,7 @@ var (
 	showVersionFlag = flag.Bool("version", false, "print gmc version")
 	pauseFlag       = flag.Bool("pause", false, "pause at start until user click enter (allow time to attach debugger)")
 	externalWindow  = flag.Bool("external", false, "start gmc in external window (used by ide)")
+	updateFlag      = flag.Bool("update", false, "start gmc and try to update and close")
 )
 
 func main() {
@@ -37,6 +38,18 @@ func main() {
 
 	if *showVersionFlag {
 		fmt.Printf("%s", version)
+		return
+	}
+
+	configService := config.NewConfig(version, "")
+	configService.SetState(func(s *config.State) {
+		s.InstalledVersion = version
+	})
+
+	autoUpdate := installation.NewAutoUpdate(configService, version)
+
+	if *updateFlag {
+		updateIfAvailable(autoUpdate)
 		return
 	}
 
@@ -71,12 +84,6 @@ func main() {
 
 	program.LogProgramInfo(version, *workingDirFlag)
 
-	configService := config.NewConfig(version, "")
-	configService.SetState(func(s *config.State) {
-		s.InstalledVersion = version
-	})
-
-	autoUpdate := installation.NewAutoUpdate(configService, version)
 	autoUpdate.Start()
 
 	api := server.NewApiServer(configService)
@@ -91,4 +98,17 @@ func main() {
 			ui.Post(f)
 		})
 	})
+}
+
+func updateIfAvailable(autoUpdate *installation.AutoUpdate) {
+	oldVersion, newVersion, err := autoUpdate.UpdateIfAvailable()
+	if err != nil {
+		fmt.Printf("Failed to update %s to %s, %v \n", oldVersion, newVersion, err)
+		return
+	}
+	if oldVersion == newVersion {
+		fmt.Printf("gmc is latest version %s\n", oldVersion)
+		return
+	}
+	fmt.Printf("gmc updated from %s to %s\n", oldVersion, newVersion)
 }
