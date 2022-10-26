@@ -5,8 +5,7 @@
 *.so
 *.dylib
 *.tmp
-gmc.exe
-gmc.zip
+*.zip
 gmc_windows
 gmc_linux
 gmc_mac
@@ -16,7 +15,6 @@ __debug_bin
 installation/installer/tools/Addins
 installation/installer/tools/Cake
 installation/installer/tools/Tools*
-installation/installer/tools/nuget.exe
 
 # web
 # dependencies
