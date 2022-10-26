@@ -1,8 +1,4 @@
-#tool nuget:?package=NUnit.ConsoleRunner&version=3.4.0
 #tool nuget:?package=Tools.InnoSetup&version=5.5.9
-#tool nuget:?package=Microsoft.VSSDK.Vsixsigntool&version=15.7.27703
-#addin nuget:?package=Cake.VersionReader&version=5.0.0
-#addin nuget:?package=Cake.VsixSignTool&version=1.2.0
 
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS

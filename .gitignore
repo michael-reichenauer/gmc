@@ -13,6 +13,10 @@ gmc_mac
 main
 gmc
 __debug_bin
+installation/installer/tools/Addins
+installation/installer/tools/Cake
+installation/installer/tools/Tools*
+installation/installer/tools/nuget.exe
 
 # web
 # dependencies
