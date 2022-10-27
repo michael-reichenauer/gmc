@@ -568,7 +568,6 @@ func (t *repoVM) DeleteBranch(name string, isForced bool) {
 			} else {
 				return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err)
 			}
-			//return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err)
 		},
 		nil)
 }
