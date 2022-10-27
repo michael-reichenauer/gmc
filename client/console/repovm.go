@@ -27,6 +27,7 @@ type RepoViewer interface {
 	NotifyChanged()
 	ShowLineAtTop(line int)
 	OpenRepoMenuItems() []cui.MenuItem
+	ShowRepo(path string)
 	ShowSearchView()
 	ShowCommitDetails()
 }
@@ -229,6 +230,11 @@ func (t *repoVM) showCommitDialog() {
 
 func (t *repoVM) showCreateBranchDialog() {
 	branchView := newBranchDlg(t.ui, t.CreateBranch)
+	branchView.Show()
+}
+
+func (t *repoVM) showCloneDialog() {
+	branchView := newCloneDlg(t.ui, t.Clone)
 	branchView.Show()
 }
 
@@ -546,6 +552,21 @@ func (t *repoVM) CreateBranch(name string) {
 		},
 		func(err error) string { return fmt.Sprintf("Failed to create branch:\n%s\n%s", name, err) },
 		func() { t.ShowBranch(name, "") })
+}
+
+func (t *repoVM) Clone(uri, path string) {
+	progress := t.ui.ShowProgress(fmt.Sprintf("Cloning:\n%s\n%s", uri, path))
+	t.api.CloneRepo(uri, path).
+		Then(func(_ any) {
+			progress.Close()
+			log.Infof("Cloned %s into %s", uri, path)
+			t.repoViewer.ShowRepo(path)
+		}).
+		Catch(func(err error) {
+			progress.Close()
+			t.ui.ShowErrorMessageBox("Error",
+				fmt.Sprintf("Failed to clone:\n%q into: \n%q\n%v", uri, path, err))
+		})
 }
 
 func (t *repoVM) DeleteBranch(name string, isForced bool) {

@@ -21,10 +21,10 @@ func NewMainWindow(ui cui.UI) *MainWindow {
 
 func (t *MainWindow) Show(api api.Api, path string) {
 	t.api = api
-	t.showRepo(path)
+	t.ShowRepo(path)
 }
 
-func (t *MainWindow) showRepo(path string) {
+func (t *MainWindow) ShowRepo(path string) {
 	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 
 	t.api.OpenRepo(path).
@@ -76,7 +76,7 @@ func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
 	}
 
 	openItemsFunc := func() []cui.MenuItem {
-		return t.getDirItems(paths, func(path string) { t.showRepo(path) })
+		return t.getDirItems(paths, func(path string) { t.ShowRepo(path) })
 	}
 
 	items = append(items, cui.MenuItem{Text: "Browse Folders", Title: "Browse", ItemsFunc: openItemsFunc})
@@ -87,7 +87,7 @@ func (t *MainWindow) getRecentRepoMenuItems(recentDirs []string) []cui.MenuItem 
 	var items []cui.MenuItem
 	for _, f := range recentDirs {
 		path := f
-		items = append(items, cui.MenuItem{Text: path, Action: func() { t.showRepo(path) }})
+		items = append(items, cui.MenuItem{Text: path, Action: func() { t.ShowRepo(path) }})
 	}
 	return items
 }

@@ -80,6 +80,13 @@ func (t *apiServer) OpenRepo(path string) async.Task[string] {
 	})
 }
 
+func (t *apiServer) CloneRepo(uri, path string) async.Task[any] {
+	return async.RunE(func() error {
+		git := git.New("")
+		return git.Clone(uri, path)
+	})
+}
+
 func (t *apiServer) CloseRepo(repoID string) error {
 	repo, err := t.repo(repoID)
 	if err != nil {

@@ -99,6 +99,7 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	items = append(items, cui.MenuItem{Text: "Search/Filter ...", Key: "F", Action: t.vm.ShowSearchView})
 	items = append(items, cui.MenuItem{Text: "File History", Title: "All Files", ItemsFunc: t.getFileDiffsMenuItems})
 	items = append(items, cui.MenuItem{Text: "Open Repo", Title: "Open", ItemsFunc: t.vm.repoViewer.OpenRepoMenuItems})
+	items = append(items, cui.MenuItem{Text: "Clone Repo ...", Title: "Clone", Action: t.vm.showCloneDialog})
 	items = append(items, cui.MenuItem{Text: "Help ...", Key: "H", Action: func() { ShowHelpDlg(t.ui) }})
 
 	items = append(items, cui.MenuItem{Text: "About ...", Action: func() { ShowAboutDlg(t.ui) }})

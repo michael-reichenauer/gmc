@@ -11,6 +11,7 @@ import (
 
 type mainService interface {
 	OpenRepoMenuItems() []cui.MenuItem
+	ShowRepo(path string)
 }
 
 type RepoView struct {
@@ -45,6 +46,10 @@ func (t *RepoView) ScrollVertical(scroll int) {
 
 func (t *RepoView) OpenRepoMenuItems() []cui.MenuItem {
 	return t.mainService.OpenRepoMenuItems()
+}
+
+func (t *RepoView) ShowRepo(path string) {
+	t.mainService.ShowRepo(path)
 }
 
 func (t *RepoView) newView() cui.View {
