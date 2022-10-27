@@ -5,6 +5,7 @@ import (
 
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type CloneDlg interface {
@@ -76,6 +77,7 @@ func (t *cloneDlg) newUriView() cui.View {
 	view.SetKey(gocui.KeyCtrlC, t.onCancel)
 	view.SetKey(gocui.KeyEsc, t.onCancel)
 	view.SetKey(gocui.KeyTab, func() { t.pathView.SetCurrentView() })
+	view.SetKey(gocui.KeyCtrlV, func() { log.Infof("ctrl v") })
 	return view
 }
 
@@ -103,7 +105,7 @@ func (t *cloneDlg) Close() {
 }
 
 func (t *cloneDlg) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
-	box := cui.CenterBounds(45, 8, 45, 8)
+	box := cui.CenterBounds(45, 8, 70, 8)
 	uri := cui.Relative(box, func(b cui.Rect) cui.Rect {
 		return cui.Rect{X: b.X + 7, Y: b.Y + 1, W: b.W - 9, H: 1}
 	})
