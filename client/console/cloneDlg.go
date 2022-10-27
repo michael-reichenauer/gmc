@@ -1,6 +1,7 @@
 package console
 
 import (
+	"os"
 	"strings"
 
 	"github.com/jroimartin/gocui"
@@ -110,11 +111,9 @@ func (t *cloneDlg) goToUri() {
 }
 
 func (t *cloneDlg) goToPath() {
-	path := strings.TrimSpace(t.pathView.ReadLines()[0])
+	path := t.getAdjustedPath()
+	t.pathView.SetText(path)
 
-	if strings.HasPrefix(path, "/") {
-		t.pathView.SetText(path + t.getUriRepoName())
-	}
 	t.pathView.SetCurrentView()
 }
 
@@ -147,11 +146,7 @@ func (t *cloneDlg) onCancel() {
 
 func (t *cloneDlg) onOk() {
 	uri := strings.TrimSpace(t.uriView.ReadLines()[0])
-	path := strings.TrimSpace(t.pathView.ReadLines()[0])
-
-	if strings.HasSuffix(path, "/") {
-		path = path + t.getUriRepoName()
-	}
+	path := t.getAdjustedPath()
 
 	if uri == "" || path == "" {
 		t.ui.ShowErrorMessageBox("Error", "Empty uri or path is not allowed.")
@@ -162,12 +157,19 @@ func (t *cloneDlg) onOk() {
 	t.Close()
 }
 
-func (t *cloneDlg) getUriRepoName() string {
-	uri := strings.TrimSpace(t.uriView.ReadLines()[0])
-	parts := strings.Split(uri, "/")
-	if len(parts) > 1 {
-		return strings.TrimSuffix(parts[len(parts)-1], ".git")
-	}
+func (t *cloneDlg) getAdjustedPath() string {
+	ps := string(os.PathSeparator)
 
-	return ""
+	path := strings.TrimSpace(t.pathView.ReadLines()[0])
+	if strings.HasPrefix(path, ps) {
+		uri := strings.TrimSpace(t.uriView.ReadLines()[0])
+		parts := strings.Split(uri, ps)
+		repoName := ""
+		if len(parts) > 1 {
+			repoName = strings.TrimSuffix(parts[len(parts)-1], ".git")
+		}
+
+		path = path + repoName
+	}
+	return path
 }
