@@ -242,7 +242,7 @@ func (t *menus) branchItemText(branch api.Branch) string {
 	if branch.IsIn {
 		prefix = "╮"
 	} else if branch.IsOut {
-		prefix = "╭"
+		prefix = "╯"
 	}
 	if branch.IsCurrent {
 		return prefix + "●" + branch.DisplayName
