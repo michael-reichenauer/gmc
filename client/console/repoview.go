@@ -5,30 +5,34 @@ import (
 
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type mainService interface {
 	OpenRepoMenuItems() []cui.MenuItem
+	ShowRepo(path string)
 }
 
 type RepoView struct {
-	view        cui.View
-	ui          cui.UI
-	mainService mainService
-	vm          *repoVM
-	menuService Menus
-	searchView  *SearchView
-	detailsView *DetailsView
+	view          cui.View
+	ui            cui.UI
+	mainService   mainService
+	configService *config.Service
+	vm            *repoVM
+	menuService   Menus
+	searchView    *SearchView
+	detailsView   *DetailsView
 }
 
-func NewRepoView(ui cui.UI, api api.Api, mainService mainService, repoID string) *RepoView {
+func NewRepoView(ui cui.UI, api api.Api, mainService mainService, configService *config.Service, repoID string) *RepoView {
 	h := &RepoView{
-		ui:          ui,
-		mainService: mainService,
+		ui:            ui,
+		mainService:   mainService,
+		configService: configService,
 	}
-	h.vm = newRepoVM(ui, h, api, repoID)
+	h.vm = newRepoVM(ui, h, configService, api, repoID)
 	h.menuService = newMenus(ui, h.vm)
 	h.view = h.newView()
 	return h
@@ -45,6 +49,10 @@ func (t *RepoView) ScrollVertical(scroll int) {
 
 func (t *RepoView) OpenRepoMenuItems() []cui.MenuItem {
 	return t.mainService.OpenRepoMenuItems()
+}
+
+func (t *RepoView) ShowRepo(path string) {
+	t.mainService.ShowRepo(path)
 }
 
 func (t *RepoView) newView() cui.View {

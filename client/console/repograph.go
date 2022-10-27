@@ -13,9 +13,9 @@ type RepoGraph struct {
 
 var (
 	currentCommitMarker = cui.White("●")
-	mergeInMarker       = cui.Dark("╮")
-	branchOurMarker     = cui.Dark("╭")
-	inOutMarker         = cui.Dark("<")
+	// mergeInMarker       = cui.Dark("╮")
+	// branchOutMarker     = cui.Dark("╯")
+	// inOutMarker         = cui.Dark("<")
 )
 
 func NewRepoGraph() *RepoGraph {

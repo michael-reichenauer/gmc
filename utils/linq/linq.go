@@ -7,6 +7,11 @@ func Find[V any](collection []V, predicate func(V) bool) (V, bool) {
 	return lo.Find(collection, predicate)
 }
 
+func Contains[V any](collection []V, predicate func(V) bool) bool {
+	_, ok := Find(collection, predicate)
+	return ok
+}
+
 // Filter iterates over elements of collection, returning an array of all elements predicate returns truthy for.
 func Filter[V any](collection []V, predicate func(V) bool) []V {
 	return lo.Filter(collection, func(v V, _ int) bool { return predicate(v) })

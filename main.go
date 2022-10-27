@@ -22,7 +22,7 @@ import (
 var HelpFile string
 
 const (
-	version = "0.60"
+	version = "0.61"
 )
 
 var (
@@ -92,7 +92,7 @@ func main() {
 	ui := cui.NewCommandUI(version)
 	ui.Run(func() {
 		one.RunWith(func() {
-			mainWindow := console.NewMainWindow(ui)
+			mainWindow := console.NewMainWindow(ui, configService)
 			mainWindow.Show(api, *workingDirFlag)
 		}, func(f func()) {
 			ui.Post(f)
