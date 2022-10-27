@@ -161,7 +161,7 @@ func (t *cloneDlg) getAdjustedPath() string {
 	ps := string(os.PathSeparator)
 
 	path := strings.TrimSpace(t.pathView.ReadLines()[0])
-	if strings.HasPrefix(path, ps) {
+	if strings.HasSuffix(path, ps) {
 		uri := strings.TrimSpace(t.uriView.ReadLines()[0])
 		parts := strings.Split(uri, ps)
 		repoName := ""
