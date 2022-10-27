@@ -6,17 +6,19 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type MainWindow struct {
-	ui  cui.UI
-	api api.Api
+	ui            cui.UI
+	api           api.Api
+	configService *config.Service
 }
 
-func NewMainWindow(ui cui.UI) *MainWindow {
-	return &MainWindow{ui: ui}
+func NewMainWindow(ui cui.UI, configService *config.Service) *MainWindow {
+	return &MainWindow{ui: ui, configService: configService}
 }
 
 func (t *MainWindow) Show(api api.Api, path string) {
@@ -30,7 +32,7 @@ func (t *MainWindow) ShowRepo(path string) {
 	t.api.OpenRepo(path).
 		Then(func(repoId string) {
 			progress.Close()
-			repoView := NewRepoView(t.ui, t.api, t, repoId)
+			repoView := NewRepoView(t.ui, t.api, t, t.configService, repoId)
 			repoView.Show()
 		}).
 		Catch(func(err error) {

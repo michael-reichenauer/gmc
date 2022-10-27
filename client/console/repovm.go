@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/linq"
@@ -35,6 +36,7 @@ type RepoViewer interface {
 type repoVM struct {
 	ui                cui.UI
 	repoViewer        RepoViewer
+	configService     *config.Service
 	api               api.Api
 	repoLayout        *repoLayout
 	isDetails         bool
@@ -55,14 +57,15 @@ type trace struct {
 	BranchNames []string
 }
 
-func newRepoVM(ui cui.UI, repoViewer RepoViewer, api api.Api, repoID string) *repoVM {
+func newRepoVM(ui cui.UI, repoViewer RepoViewer, configService *config.Service, api api.Api, repoID string) *repoVM {
 	return &repoVM{
-		ui:         ui,
-		repoViewer: repoViewer,
-		api:        api,
-		repoID:     repoID,
-		repoLayout: newRepoLayout(),
-		done:       make(chan struct{}),
+		ui:            ui,
+		repoViewer:    repoViewer,
+		api:           api,
+		repoID:        repoID,
+		repoLayout:    newRepoLayout(),
+		done:          make(chan struct{}),
+		configService: configService,
 	}
 }
 
@@ -234,7 +237,13 @@ func (t *repoVM) showCreateBranchDialog() {
 }
 
 func (t *repoVM) showCloneDialog() {
-	branchView := newCloneDlg(t.ui, t.Clone)
+	baseBath := ""
+	paths := t.configService.GetState().RecentParentFolders
+	if len(paths) > 0 {
+		baseBath = paths[0] + "/"
+	}
+
+	branchView := newCloneDlg(t.ui, baseBath, t.Clone)
 	branchView.Show()
 }
 
@@ -564,8 +573,7 @@ func (t *repoVM) Clone(uri, path string) {
 		}).
 		Catch(func(err error) {
 			progress.Close()
-			t.ui.ShowErrorMessageBox("Error",
-				fmt.Sprintf("Failed to clone:\n%q into: \n%q\n%v", uri, path, err))
+			t.ui.ShowErrorMessageBox("Failed to clone:\n%q into: \n%q\n%v", uri, path, err)
 		})
 }
 

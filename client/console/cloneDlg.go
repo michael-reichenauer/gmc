@@ -5,15 +5,14 @@ import (
 
 	"github.com/jroimartin/gocui"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type CloneDlg interface {
 	Show()
 }
 
-func newCloneDlg(ui cui.UI, clone func(uri, path string)) CloneDlg {
-	h := &cloneDlg{ui: ui, clone: clone}
+func newCloneDlg(ui cui.UI, basePath string, clone func(uri, path string)) CloneDlg {
+	h := &cloneDlg{ui: ui, clone: clone, basePath: basePath}
 	return h
 }
 
@@ -24,6 +23,7 @@ type cloneDlg struct {
 	uriView     cui.View
 	pathView    cui.View
 	buttonsView cui.View
+	basePath    string
 }
 
 func (t *cloneDlg) Show() {
@@ -71,29 +71,30 @@ func (t *cloneDlg) newUriView() cui.View {
 	view.Properties().IsEditable = true
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideHorizontalScrollbar = true
-	view.Properties().OnMouseLeft = func(_, _ int) { t.uriView.SetCurrentView() }
+	view.Properties().OnMouseLeft = func(_, _ int) { t.goToUri() }
 	view.SetKey(gocui.KeyCtrlO, t.onOk)
 	view.SetKey(gocui.KeyEnter, t.onOk)
 	view.SetKey(gocui.KeyCtrlC, t.onCancel)
 	view.SetKey(gocui.KeyEsc, t.onCancel)
-	view.SetKey(gocui.KeyTab, func() { t.pathView.SetCurrentView() })
-	view.SetKey(gocui.KeyCtrlV, func() { log.Infof("ctrl v") })
+	view.SetKey(gocui.KeyTab, t.goToUri)
+	view.SetKey(gocui.KeyArrowDown, t.goToPath)
 	return view
 }
 
 func (t *cloneDlg) newPathView() cui.View {
-	view := t.ui.NewView("")
+	view := t.ui.NewView(t.basePath)
 	view.Properties().HasFrame = true
 	view.Properties().HideCurrentLineMarker = true
 	view.Properties().IsEditable = true
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideHorizontalScrollbar = true
-	view.Properties().OnMouseLeft = func(_, _ int) { t.pathView.SetCurrentView() }
+	view.Properties().OnMouseLeft = func(_, _ int) { t.goToPath() }
 	view.SetKey(gocui.KeyCtrlO, t.onOk)
 	view.SetKey(gocui.KeyEnter, t.onOk)
 	view.SetKey(gocui.KeyCtrlC, t.onCancel)
 	view.SetKey(gocui.KeyEsc, t.onCancel)
-	view.SetKey(gocui.KeyTab, func() { t.uriView.SetCurrentView() })
+	view.SetKey(gocui.KeyTab, t.goToUri)
+	view.SetKey(gocui.KeyArrowUp, t.goToUri)
 	return view
 }
 
@@ -102,6 +103,19 @@ func (t *cloneDlg) Close() {
 	t.pathView.Close()
 	t.buttonsView.Close()
 	t.boxView.Close()
+}
+
+func (t *cloneDlg) goToUri() {
+	t.uriView.SetCurrentView()
+}
+
+func (t *cloneDlg) goToPath() {
+	path := strings.TrimSpace(t.pathView.ReadLines()[0])
+
+	if strings.HasPrefix(path, "/") {
+		t.pathView.SetText(path + t.getUriRepoName())
+	}
+	t.pathView.SetCurrentView()
 }
 
 func (t *cloneDlg) getBounds() (cui.BoundFunc, cui.BoundFunc, cui.BoundFunc, cui.BoundFunc) {
@@ -134,6 +148,11 @@ func (t *cloneDlg) onCancel() {
 func (t *cloneDlg) onOk() {
 	uri := strings.TrimSpace(t.uriView.ReadLines()[0])
 	path := strings.TrimSpace(t.pathView.ReadLines()[0])
+
+	if strings.HasSuffix(path, "/") {
+		path = path + t.getUriRepoName()
+	}
+
 	if uri == "" || path == "" {
 		t.ui.ShowErrorMessageBox("Error", "Empty uri or path is not allowed.")
 		return
@@ -141,4 +160,14 @@ func (t *cloneDlg) onOk() {
 
 	t.clone(uri, path)
 	t.Close()
+}
+
+func (t *cloneDlg) getUriRepoName() string {
+	uri := strings.TrimSpace(t.uriView.ReadLines()[0])
+	parts := strings.Split(uri, "/")
+	if len(parts) > 1 {
+		return strings.TrimSuffix(parts[len(parts)-1], ".git")
+	}
+
+	return ""
 }

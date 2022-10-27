@@ -130,6 +130,7 @@ type View interface {
 	DeleteKey(key interface{})
 	ViewPage() ViewPage
 	ReadLines() []string
+	SetText(text string)
 	Clear()
 	PostOnUIThread(func())
 	Close()
@@ -460,6 +461,13 @@ func (h *view) Read() string {
 
 func (h *view) ReadLines() []string {
 	return h.guiView.BufferLines()
+}
+
+func (h *view) SetText(text string) {
+	h.Clear()
+	if _, err := h.guiView.Write([]byte(text)); err != nil {
+		panic(log.Fatal(err))
+	}
 }
 
 func (h *view) Size() (int, int) {
