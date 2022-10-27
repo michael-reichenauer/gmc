@@ -3,6 +3,7 @@ package console
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
@@ -240,7 +241,7 @@ func (t *repoVM) showCloneDialog() {
 	baseBath := ""
 	paths := t.configService.GetState().RecentParentFolders
 	if len(paths) > 0 {
-		baseBath = paths[0] + "/"
+		baseBath = paths[0] + string(os.PathSeparator)
 	}
 
 	branchView := newCloneDlg(t.ui, baseBath, t.Clone)
