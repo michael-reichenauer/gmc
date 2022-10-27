@@ -29,7 +29,11 @@ branches. More or less branches can be selected by using the
 menus ('`M`', `RightArrow` or `LeftArrow`) or clicking in the
 graph.
 
+### Indicators for not Shown Branches
+
 The gray '`╮`' and '`╯`' indicators right of a branch indicates
 where, currently not shown branches, merge in or branch out
-of the branch with left of these indicators.
-
+of the branch with left of these indicators. 
+Using the  `RightArrow` on such a commit line (or click) to 
+show the branches menu, will list the hidden branch and make
+it easy show.
