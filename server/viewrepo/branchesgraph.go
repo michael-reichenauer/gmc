@@ -3,6 +3,7 @@ package viewrepo
 import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -34,7 +35,15 @@ func (t *branchesGraph) SetGraph(repo *repo) {
 
 			if c.MergeParent != nil {
 				t.drawMerge(repo, c) // Drawing   ╭ or  ╮
+			} else if c.More.Has(api.MoreMergeIn) { // Drawing a ╮
+				log.Infof("%s  ╮ merge in  %q", c.SID, c.Subject)
+				t.drawMoreMergeIn(repo, c) // Drawing  ╮
 			}
+			if c.More.Has(api.MoreBranchOut) { // ╯
+				log.Infof("%s ╭ branch out %q", c.SID, c.Subject)
+				t.drawMoreBranchOut(repo, c) // Drawing  ╮
+			}
+
 			if c.Parent != nil && c.Parent.Branch != c.Branch {
 				// Commit parent is on other branch (i.e. commit is first/bottom commit on this branch)
 				// Draw branched from parent branch  ╯ or ╰
@@ -48,11 +57,12 @@ func (t *branchesGraph) SetGraph(repo *repo) {
 
 func (t *branchesGraph) trimUnusedGraphColumns(repo *repo) {
 	// trim unused graph columns
-	maxBranchX := lo.MaxBy(repo.Branches, func(v1 *branch, max *branch) bool {
+	rightMostBranch := lo.MaxBy(repo.Branches, func(v1 *branch, max *branch) bool {
 		return v1.x > max.x
 	})
+	maxX := rightMostBranch.x + 2 // allow more markers ╮ and ╯ on right side of rightmost branches
 	for _, c := range repo.Commits {
-		c.graph = c.graph[:maxBranchX.x+1]
+		c.graph = c.graph[:maxX]
 	}
 }
 
@@ -141,14 +151,30 @@ func (s *branchesGraph) drawMerge(repo *repo, commit *commit) {
 	// Commit is a merge commit, has 2 parents
 	if commit.MergeParent.Branch.index < commit.Branch.index {
 		// Other branch is on the left side, merged from parent parent branch ╭
-		s.drawMergeFromChildBranch(repo, commit)
+		s.drawMergeFromParentBranch(repo, commit)
 	} else {
 		// Other branch is on the right side, merged from child branch,  ╮
-		s.drawMergeFromParentBranch(repo, commit)
+		s.drawMergeFromChildBranch(repo, commit)
 	}
 }
 
-func (s *branchesGraph) drawMergeFromChildBranch(repo *repo, commit *commit) {
+func (s *branchesGraph) drawMoreMergeIn(repo *repo, commit *commit) {
+	// Commit is a merge commit, has 2 parents, but other branch is not shown  ╮
+	x := commit.Branch.x
+	y := commit.Index
+	color := cui.CDark
+	repo.SetGraphConnect(x+1, y, api.MergeFromRight, color) //   ╮
+}
+
+func (s *branchesGraph) drawMoreBranchOut(repo *repo, commit *commit) {
+	// Commit has some branch branching out, but that branch is not shown ╯
+	x := commit.Branch.x
+	y := commit.Index
+	color := cui.CDark
+	repo.SetGraphConnect(x+1, y, api.BranchToRight, color) //   ╯
+}
+
+func (s *branchesGraph) drawMergeFromParentBranch(repo *repo, commit *commit) {
 	x := commit.Branch.x
 	y := commit.Index
 	x2 := commit.MergeParent.Branch.x
@@ -166,7 +192,7 @@ func (s *branchesGraph) drawMergeFromChildBranch(repo *repo, commit *commit) {
 	repo.drawHorizontalLine(x2+1, x, y2, color)           // ──
 }
 
-func (s *branchesGraph) drawMergeFromParentBranch(repo *repo, commit *commit) {
+func (s *branchesGraph) drawMergeFromChildBranch(repo *repo, commit *commit) {
 	// Commit is a merge commit, has 2 parents
 	x := commit.Branch.x
 	y := commit.Index

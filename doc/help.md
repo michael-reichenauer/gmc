@@ -1,4 +1,4 @@
-# gmc
+# gmc Help
 
 ## Keyboard Shortcuts
 
@@ -21,3 +21,15 @@ Some useful keyboard shortcuts are:
 
 More shortcut keys are available and and mentioned in the
 menus.
+
+## Branches Graph
+
+The branches graph on the left side visualizes the selected
+branches. More or less branches can be selected by using the
+menus ('`M`', `RightArrow` or `LeftArrow`) or clicking in the
+graph.
+
+The gray '`╮`' and '`╯`' indicators right of a branch indicates
+where, currently not shown branches, merge in or branch out
+of the branch with left of these indicators.
+

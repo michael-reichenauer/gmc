@@ -162,7 +162,7 @@ func (t *repo) toCommit(c *augmented.Commit, index int, includeGraph bool) *comm
 
 	var graph []api.GraphColumn
 	if includeGraph {
-		graph = make([]api.GraphColumn, len(t.Branches))
+		graph = make([]api.GraphColumn, len(t.Branches)+1)
 	}
 
 	return &commit{
@@ -207,7 +207,7 @@ func (t *repo) toVirtualStatusCommit(branchName string, statusText string, index
 		IsCurrent:  false,
 		Branch:     branch,
 		Index:      index,
-		graph:      make([]api.GraphColumn, len(t.Branches)),
+		graph:      make([]api.GraphColumn, len(t.Branches)+1),
 	}
 }
 

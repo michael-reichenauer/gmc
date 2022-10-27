@@ -11,7 +11,7 @@ import (
 
 const (
 	dateTimeColumnFormat = "2006-01-02 15:04"
-	markersWidth         = 4
+	markersWidth         = 2
 )
 
 type repoLayout struct {
@@ -48,8 +48,8 @@ func (t *repoLayout) getPageLines(
 	for i, c := range commits {
 		var sb strings.Builder
 		t.writeGraph(&sb, graphRows[i])
-		sb.WriteString(" ")
-		t.writeMoreMarker(&sb, c)
+		//sb.WriteString(" ")
+		// t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
 		t.writeAheadBehindMarker(&sb, c)
 		t.writeSubject(&sb, c, selectedBranchName, messageWidth, repo, tips)
@@ -164,17 +164,17 @@ func (t *repoLayout) writeCurrentMarker(sb *strings.Builder, c api.Commit) {
 	}
 }
 
-func (t *repoLayout) writeMoreMarker(sb *strings.Builder, c api.Commit) {
-	if c.More.Has(api.MoreMergeIn) && c.More.Has(api.MoreBranchOut) {
-		sb.WriteString(inOutMarker)
-	} else if c.More.Has(api.MoreMergeIn) {
-		sb.WriteString(mergeInMarker)
-	} else if c.More.Has(api.MoreBranchOut) {
-		sb.WriteString(branchOurMarker)
-	} else {
-		sb.WriteString(" ")
-	}
-}
+// func (t *repoLayout) writeMoreMarker(sb *strings.Builder, c api.Commit) {
+// 	if c.More.Has(api.MoreMergeIn) && c.More.Has(api.MoreBranchOut) {
+// 		sb.WriteString(inOutMarker)
+// 	} else if c.More.Has(api.MoreMergeIn) {
+// 		sb.WriteString(mergeInMarker)
+// 	} else if c.More.Has(api.MoreBranchOut) {
+// 		sb.WriteString(branchOutMarker)
+// 	} else {
+// 		sb.WriteString(" ")
+// 	}
+// }
 
 func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c api.Commit) {
 	if c.IsLocalOnly {

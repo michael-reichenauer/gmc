@@ -33,13 +33,21 @@ func (t *menus) GetMainMenu(currentLineIndex int) cui.Menu {
 
 func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Branches")
-	menu.Add(cui.MenuSeparator("Show"))
-	menu.AddItems(t.getShowBranchesMenuItems(selectedIndex))
+
+	menu.Add(cui.MenuSeparator("Show/Scroll to"))
+	menu.AddItems(t.getShowImmediateBranchesMenuItems(selectedIndex))
 
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
 
+	menu.Add(cui.MenuSeparator("Hide"))
+	menu.AddItems(t.getHideBranchMenuItems())
+
 	menu.Add(cui.MenuSeparator("More"))
+	menu.Add(cui.MenuItem{Text: "Show Branch", Title: "Show More Branches", Key: "->", ItemsFunc: func() []cui.MenuItem {
+		return t.getShowBranchesSubSubMenuItems(selectedIndex)
+	}})
+
 	menu.Add(cui.MenuItem{Text: "Main Menu", Title: "Main Menu", Key: "M", Items: t.getMainMenuItems(selectedIndex)})
 	return menu
 }
@@ -65,8 +73,8 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 
 	// Branches items
 	items = append(items, cui.MenuSeparator("Branches"))
-	items = append(items, cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
-		return t.getShowBranchesMenuItems(currentLineIndex)
+	items = append(items, cui.MenuItem{Text: "Show/Scroll to Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
+		return t.getShowBranchesSubMenuItems(currentLineIndex)
 	}})
 	items = append(items, cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", ItemsFunc: t.getHideBranchMenuItems})
 	items = append(items, cui.MenuItem{Text: "Switch/Checkout", Title: "Switch To", ItemsFunc: func() []cui.MenuItem {
@@ -99,19 +107,38 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 	return items
 }
 
-func (t *menus) getShowBranchesMenuItems(selectedIndex int) []cui.MenuItem {
-	ambiguousBranches := t.vm.GetAmbiguousBranches()
-	items := []cui.MenuItem{}
-
-	current, ok := t.vm.CurrentBranch()
-	if ok {
-		items = append(items, t.toShowBranchMenuItem(current))
-	}
-	items = append(items, linq.Map(t.vm.GetCommitBranches(selectedIndex), t.toShowBranchMenuItem)...)
+func (t *menus) getShowBranchesSubMenuItems(selectedIndex int) []cui.MenuItem {
+	items := t.getShowImmediateBranchesMenuItems(selectedIndex)
 
 	if len(items) > 0 {
 		items = append(items, cui.MenuSeparator(""))
 	}
+
+	items = append(items, t.getShowBranchesSubSubMenuItems(selectedIndex)...)
+
+	return items
+}
+
+func (t *menus) getShowImmediateBranchesMenuItems(selectedIndex int) []cui.MenuItem {
+	items := []cui.MenuItem{}
+
+	items = append(items, linq.Map(t.vm.GetCommitBranches(selectedIndex), t.toShowBranchMenuItem)...)
+
+	current, ok := t.vm.CurrentBranch()
+	if ok && !linq.Contains(t.vm.GetShownBranches(false), func(v api.Branch) bool { return v.IsCurrent }) {
+		items = append(items, t.toShowBranchMenuItem(current))
+	}
+
+	shownItems := linq.Map(t.vm.GetShownBranches(true), t.toShowBranchMenuItem)
+	items = append(items, shownItems...)
+
+	return items
+}
+
+func (t *menus) getShowBranchesSubSubMenuItems(selectedIndex int) []cui.MenuItem {
+	items := []cui.MenuItem{}
+	ambiguousBranches := t.vm.GetAmbiguousBranches()
+
 	items = append(items, cui.MenuItem{Text: "Recent Branches", ItemsFunc: func() []cui.MenuItem {
 		return linq.Map(t.vm.GetRecentBranches(), t.toShowBranchMenuItem)
 	}})
