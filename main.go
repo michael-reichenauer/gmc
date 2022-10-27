@@ -22,7 +22,7 @@ import (
 var HelpFile string
 
 const (
-	version = "0.61"
+	version = "0.62"
 )
 
 var (
