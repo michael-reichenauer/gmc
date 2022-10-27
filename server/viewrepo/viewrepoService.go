@@ -892,6 +892,14 @@ func (t *ViewRepoService) DeleteBranch(name string, isForced bool) error {
 		}
 	}
 
+	if localBranch != nil {
+		// Deleting local branch
+		err := t.augmentedRepo.DeleteLocalBranch(localBranch.Name, isForced)
+		if err != nil {
+			return err
+		}
+	}
+
 	if remoteBranch != nil {
 		// Deleting remote branch
 		err := t.augmentedRepo.DeleteRemoteBranch(remoteBranch.Name)
@@ -900,13 +908,6 @@ func (t *ViewRepoService) DeleteBranch(name string, isForced bool) error {
 		}
 	}
 
-	if localBranch != nil {
-		// Deleting local branch
-		err := t.augmentedRepo.DeleteLocalBranch(localBranch.Name, isForced)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

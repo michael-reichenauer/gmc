@@ -69,6 +69,7 @@ func (h *CommitView) newCommitView(text string) cui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideCurrentLineMarker = true
+	view.Properties().OnMouseLeft = func(_, _ int) { h.goToSubject() }
 	view.SetKey(gocui.KeyEnter, h.onOk)
 	view.SetKey(gocui.KeyCtrlO, h.onOk)
 	view.SetKey(gocui.KeyCtrlC, h.onCancel)
@@ -87,6 +88,7 @@ func (h *CommitView) newMessageView(text string) cui.View {
 	view.Properties().HideHorizontalScrollbar = true
 	view.Properties().HideVerticalScrollbar = true
 	view.Properties().HideCurrentLineMarker = true
+	view.Properties().OnMouseLeft = func(_, _ int) { h.goToMessage() }
 	view.SetKey(gocui.KeyCtrlO, h.onOk)
 	view.SetKey(gocui.KeyCtrlC, h.onCancel)
 	view.SetKey(gocui.KeyEsc, h.onCancel)

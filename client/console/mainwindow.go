@@ -6,31 +6,33 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type MainWindow struct {
-	ui  cui.UI
-	api api.Api
+	ui            cui.UI
+	api           api.Api
+	configService *config.Service
 }
 
-func NewMainWindow(ui cui.UI) *MainWindow {
-	return &MainWindow{ui: ui}
+func NewMainWindow(ui cui.UI, configService *config.Service) *MainWindow {
+	return &MainWindow{ui: ui, configService: configService}
 }
 
 func (t *MainWindow) Show(api api.Api, path string) {
 	t.api = api
-	t.showRepo(path)
+	t.ShowRepo(path)
 }
 
-func (t *MainWindow) showRepo(path string) {
+func (t *MainWindow) ShowRepo(path string) {
 	progress := t.ui.ShowProgress("Opening repo:\n%s", path)
 
 	t.api.OpenRepo(path).
 		Then(func(repoId string) {
 			progress.Close()
-			repoView := NewRepoView(t.ui, t.api, t, repoId)
+			repoView := NewRepoView(t.ui, t.api, t, t.configService, repoId)
 			repoView.Show()
 		}).
 		Catch(func(err error) {
@@ -76,7 +78,7 @@ func (t *MainWindow) OpenRepoMenuItems() []cui.MenuItem {
 	}
 
 	openItemsFunc := func() []cui.MenuItem {
-		return t.getDirItems(paths, func(path string) { t.showRepo(path) })
+		return t.getDirItems(paths, func(path string) { t.ShowRepo(path) })
 	}
 
 	items = append(items, cui.MenuItem{Text: "Browse Folders", Title: "Browse", ItemsFunc: openItemsFunc})
@@ -87,7 +89,7 @@ func (t *MainWindow) getRecentRepoMenuItems(recentDirs []string) []cui.MenuItem 
 	var items []cui.MenuItem
 	for _, f := range recentDirs {
 		path := f
-		items = append(items, cui.MenuItem{Text: path, Action: func() { t.showRepo(path) }})
+		items = append(items, cui.MenuItem{Text: path, Action: func() { t.ShowRepo(path) }})
 	}
 	return items
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
+	"github.com/michael-reichenauer/gmc/common/config"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/linq"
@@ -27,6 +28,7 @@ type RepoViewer interface {
 	NotifyChanged()
 	ShowLineAtTop(line int)
 	OpenRepoMenuItems() []cui.MenuItem
+	ShowRepo(path string)
 	ShowSearchView()
 	ShowCommitDetails()
 }
@@ -34,6 +36,7 @@ type RepoViewer interface {
 type repoVM struct {
 	ui                cui.UI
 	repoViewer        RepoViewer
+	configService     *config.Service
 	api               api.Api
 	repoLayout        *repoLayout
 	isDetails         bool
@@ -54,14 +57,15 @@ type trace struct {
 	BranchNames []string
 }
 
-func newRepoVM(ui cui.UI, repoViewer RepoViewer, api api.Api, repoID string) *repoVM {
+func newRepoVM(ui cui.UI, repoViewer RepoViewer, configService *config.Service, api api.Api, repoID string) *repoVM {
 	return &repoVM{
-		ui:         ui,
-		repoViewer: repoViewer,
-		api:        api,
-		repoID:     repoID,
-		repoLayout: newRepoLayout(),
-		done:       make(chan struct{}),
+		ui:            ui,
+		repoViewer:    repoViewer,
+		api:           api,
+		repoID:        repoID,
+		repoLayout:    newRepoLayout(),
+		done:          make(chan struct{}),
+		configService: configService,
 	}
 }
 
@@ -229,6 +233,17 @@ func (t *repoVM) showCommitDialog() {
 
 func (t *repoVM) showCreateBranchDialog() {
 	branchView := newBranchDlg(t.ui, t.CreateBranch)
+	branchView.Show()
+}
+
+func (t *repoVM) showCloneDialog() {
+	baseBath := ""
+	paths := t.configService.GetState().RecentParentFolders
+	if len(paths) > 0 {
+		baseBath = paths[0] + "/"
+	}
+
+	branchView := newCloneDlg(t.ui, baseBath, t.Clone)
 	branchView.Show()
 }
 
@@ -548,6 +563,20 @@ func (t *repoVM) CreateBranch(name string) {
 		func() { t.ShowBranch(name, "") })
 }
 
+func (t *repoVM) Clone(uri, path string) {
+	progress := t.ui.ShowProgress(fmt.Sprintf("Cloning:\n%s\n%s", uri, path))
+	t.api.CloneRepo(uri, path).
+		Then(func(_ any) {
+			progress.Close()
+			log.Infof("Cloned %s into %s", uri, path)
+			t.repoViewer.ShowRepo(path)
+		}).
+		Catch(func(err error) {
+			progress.Close()
+			t.ui.ShowErrorMessageBox("Failed to clone:\n%q into: \n%q\n%v", uri, path, err)
+		})
+}
+
 func (t *repoVM) DeleteBranch(name string, isForced bool) {
 	t.startCommand(
 		fmt.Sprintf("Deleting Branch:\n%s", name),
@@ -568,7 +597,6 @@ func (t *repoVM) DeleteBranch(name string, isForced bool) {
 			} else {
 				return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err)
 			}
-			//return fmt.Sprintf("Failed to delete:\n%s\n%s", name, err)
 		},
 		nil)
 }

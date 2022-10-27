@@ -7,6 +7,7 @@ type Api interface {
 	GetSubDirs(dirPath string) ([]string, error)
 
 	OpenRepo(path string) async.Task[string]
+	CloneRepo(uri, path string) async.Task[any]
 	CloseRepo(repoID string) error
 
 	GetRepoChanges(repoID string) ([]RepoChange, error)

@@ -3,7 +3,6 @@ package viewrepo
 import (
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils/cui"
-	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/samber/lo"
 )
 
@@ -36,11 +35,9 @@ func (t *branchesGraph) SetGraph(repo *repo) {
 			if c.MergeParent != nil {
 				t.drawMerge(repo, c) // Drawing   ╭ or  ╮
 			} else if c.More.Has(api.MoreMergeIn) { // Drawing a ╮
-				log.Infof("%s  ╮ merge in  %q", c.SID, c.Subject)
 				t.drawMoreMergeIn(repo, c) // Drawing  ╮
 			}
 			if c.More.Has(api.MoreBranchOut) { // ╯
-				log.Infof("%s ╭ branch out %q", c.SID, c.Subject)
 				t.drawMoreBranchOut(repo, c) // Drawing  ╮
 			}
 
