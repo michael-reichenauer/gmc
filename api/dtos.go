@@ -19,12 +19,6 @@ const (
 	DiffConflictEnd
 )
 
-type CheckoutReq struct {
-	RepoID      string
-	Name        string
-	DisplayName string
-}
-
 type GetBranchesReq struct {
 	RepoID                    string
 	IncludeOnlyCurrent        bool

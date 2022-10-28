@@ -31,8 +31,8 @@ type Api interface {
 	ShowBranch(name BranchName) error
 	HideBranch(name BranchName) error
 
-	Checkout(args CheckoutReq) error
-	PushBranch(name BranchName) error
+	Checkout(repoId, name, displayName string) error
+	PushBranch(repoID, branchName string) error
 	PullCurrentBranch(repoID string) error
 	PullBranch(name BranchName) error
 	MergeBranch(name BranchName) error

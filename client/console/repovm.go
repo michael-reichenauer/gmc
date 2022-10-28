@@ -415,22 +415,21 @@ func (t *repoVM) HideBranch(name string) {
 }
 
 func (t *repoVM) SwitchToBranch(name string, displayName string) {
-	log.Infof("Switch to %q, %q", name, displayName)
-	t.startCommand(
-		fmt.Sprintf("Switch/checkout:\n%s", name),
-		func() error {
-			return t.api.Checkout(api.CheckoutReq{RepoID: t.repoID, Name: name, DisplayName: displayName})
-		},
-		func(err error) string { return fmt.Sprintf("Failed to switch/checkout:\n%s\n%s", name, err) },
-		nil)
+	async.RunE(func() error {
+		return t.api.Checkout(t.repoID, name, displayName)
+	}).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to switch/checkout:\n%s\n%s", name, err) })
 }
 
 func (t *repoVM) PushBranch(name string) {
-	t.startCommand(
-		fmt.Sprintf("Pushing Branch:\n%s", name),
-		func() error { return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) },
-		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", name, err) },
-		nil)
+	p := t.ui.ShowProgress("")
+	async.RunE(func() error { return t.api.PushBranch(t.repoID, name) }).
+		Then(func(_ any) { p.Close() }).
+		Catch(func(err error) {
+			p.Close()
+			t.ui.ShowErrorMessageBox("Failed to push:\n%s\n%s", name, err)
+		})
+
 }
 
 func (t *repoVM) PushCurrentBranch() {
@@ -440,9 +439,7 @@ func (t *repoVM) PushCurrentBranch() {
 	}
 	t.startCommand(
 		fmt.Sprintf("Pushing current branch:\n%s", current.Name),
-		func() error {
-			return t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: current.Name})
-		},
+		func() error { return t.api.PushBranch(t.repoID, current.Name) },
 		func(err error) string { return fmt.Sprintf("Failed to push:\n%s\n%s", current.Name, err) },
 		nil)
 }
@@ -517,7 +514,7 @@ func (t *repoVM) CreateBranch(name string) {
 				return err
 			}
 
-			err = t.api.PushBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
+			err = t.api.PushBranch(t.repoID, name)
 			if err != nil {
 				return err
 			}
