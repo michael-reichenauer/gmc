@@ -31,11 +31,6 @@ import (
 //   are detected, the order of the parents are switch so it looks like the local branch was
 //   merged into the remote branch and not the reverse in normal git logs.
 
-// Algorithm:
-// 1 If commit only has one git branch, use that
-// 2 if commit only has one local and corresponding remote branch, use the remote
-// 3
-
 // Default branch priority determines parent child branch relations.
 var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master"}
 
@@ -147,6 +142,10 @@ func (h *branchesService) determineCommitBranches(
 func (h *branchesService) determineCommitBranch(
 	repo *Repo, c *Commit, branchesChildren map[string][]string,
 ) *Branch {
+	// At this point, if a commit c has possible branches in c.Branches[], they will all be
+	// live git branches. However, on return the c.Branches[] may contain deleted or ambiguous
+	// branches as well
+
 	if branch := h.hasOnlyOneBranch(c); branch != nil {
 		// Commit only has one branch, it must have been an actual branch tip originally, use that
 		return branch
@@ -154,41 +153,51 @@ func (h *branchesService) determineCommitBranch(
 		// Commit has only local and its remote branch, prefer remote remote branch
 		return branch
 	} else if branch := h.hasParentChildSetBranch(c, branchesChildren); branch != nil {
-		// The commit has several possible branches, and one is set as parent of the others
+		// The commit has several possible branches, and one is set as parent of the others by the user
 		return branch
 	} else if branch := h.hasChildrenPriorityBranch(c, branchesChildren); branch != nil {
-		// The commit has several possible branches, but children
+		// The commit has several possible branches, and one of the children's branches is set as the
+		// the parent branch of the other children's branches
 		return branch
 	} else if branch := h.isSameChildrenBranches(c); branch != nil {
 		// Commit has no branch but has 2 children with same branch
 		return branch
 	} else if branch := h.isMergedDeletedRemoteBranchTip(repo, c); branch != nil {
-		// Commit has no branch and no children, but has a merge child, lets check if pull merger
+		// Commit has no branch and no children, but has a merge child, the commit is a tip
+		// of a deleted branch. It might be a deleted remote branch. Lets try determine branch name
+		// based on merge child's subject or use a generic branch name based on commit id
 		return branch
 	} else if branch := h.isMergedDeletedBranchTip(repo, c); branch != nil {
-		// Commit is a tip of a deleted branch, which was merged into a parent branch
+		// Commit has no branch and no children, but has a merge child, the commit is a tip
+		// of a deleted remote branch, lets try determine branch name based on merge child's
+		// subject or use a generic branch name based on commit id
 		return branch
-	} else if branch := h.hasOneChild(c); branch != nil {
-		// Commit is middle commit in branch, use the only one child commit branch
+	} else if branch := h.hasOneChildInDeletedBranch(c); branch != nil {
+		// Commit is middle commit in a deleted branch with only one child above, use same branch
 		return branch
 	} else if branch := h.hasOneChildWithLikelyBranch(c); branch != nil {
-		// Commit has one child, which has a likely known branch, use same branch
+		// Commit multiple possible git branches but has one child, which has a likely known branch, use same branch
 		return branch
-	} else if branch := h.hasPriorityBranch(c); branch != nil {
-		// Commit, has several possible branches, and one is in the priority list, e.g. main, develop, ...
+	} else if branch := h.hasMainBranch(c); branch != nil {
+		// Commit, has several possible branches, and one is in the priority list, e.g. main, master, ...
 		return branch
 	} else if branch := h.hasBranchNameInSubject(repo, c); branch != nil {
 		// A branch name could be parsed form the commit subject or a child subject.
+		// The commit will be set to that branch and also if above (first child) commits have
+		// ambiguous branches, the will be reset to same branch as well. This will 'repair' branch
+		// when a parsable commit subjects are encountered.
 		return branch
 	} else if branch := h.hasOnlyOneChild(c); branch != nil {
-		// Commit has one child commit, use that child commit branch
+		// Commit has one child commit and not merge commits, reuse that child commit branch
 		return branch
 	} else if branch := h.isChildAmbiguousBranch(c); branch != nil {
 		// one of the commit children is a ambiguous branch, reuse same ambiguous branch
 		return branch
 	}
 
-	// Commit, has several possible branches, create a new ambiguous branch
+	// Commit, has several possible branches, and we could not determine which branch is best,
+	// create a new ambiguous branch. Later commits may fix this by parsing subjects of later
+	// commits, or the user has to manually set the branch.
 	return repo.addAmbiguousBranch(c)
 }
 
@@ -293,7 +302,7 @@ func (h *branchesService) isSameChildrenBranches(c *Commit) *Branch {
 func (h *branchesService) isMergedDeletedRemoteBranchTip(repo *Repo, c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 0 && len(c.MergeChildren) == 1 {
 		// Commit has no branch and no children, but has a merge child, lets check if pull merger
-		// Trying to use parsed branch name from one of the merge children subjects e.g. Merge branch 'a' into develop
+		// Trying to use parsed branch name from the merge children subjects e.g. Merge branch 'a' into develop
 		name := h.branchNames.branchName(c.Id)
 		if name != "" {
 			// Managed to parse a branch name
@@ -327,7 +336,7 @@ func (h *branchesService) isMergedDeletedBranchTip(repo *Repo, c *Commit) *Branc
 	return nil
 }
 
-func (h *branchesService) hasOneChild(c *Commit) *Branch {
+func (h *branchesService) hasOneChildInDeletedBranch(c *Commit) *Branch {
 	if len(c.Branches) == 0 && len(c.Children) == 1 {
 		// Commit has no branch, but it has one child commit, use that child commit branch
 		return c.Children[0].Branch
@@ -343,7 +352,7 @@ func (h *branchesService) hasOneChildWithLikelyBranch(c *Commit) *Branch {
 	return nil
 }
 
-func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
+func (h *branchesService) hasMainBranch(c *Commit) *Branch {
 	if len(c.Branches) < 1 {
 		return nil
 	}
@@ -359,7 +368,7 @@ func (h *branchesService) hasPriorityBranch(c *Commit) *Branch {
 
 func (h *branchesService) hasBranchNameInSubject(repo *Repo, c *Commit) *Branch {
 	if name := h.branchNames.branchName(c.Id); name != "" {
-		// A branch name could be parsed form the commit subject or a child subject.
+		// A branch name could be parsed form the commit subject or a merge child subject.
 		// Lets use that as a branch name and also let children (commits above)
 		// use that branch if they are an ambiguous branch
 		var current *Commit
@@ -423,7 +432,7 @@ func (h *branchesService) isChildAmbiguousBranch(c *Commit) *Branch {
 }
 
 func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
-	// Try find a branch with the name
+	// Try find a live git branch with the name
 	for _, b := range c.Branches {
 		if name == b.Name {
 			// Found a branch, if the branch has a remote branch, try find that
@@ -435,10 +444,12 @@ func (h *branchesService) tryGetBranchFromName(c *Commit, name string) *Branch {
 					}
 				}
 			}
+
 			// branch b had no remote branch, use local
 			return b
 		}
 	}
+
 	// Try find a branch with the display name
 	for _, b := range c.Branches {
 		if name == b.DisplayName {
