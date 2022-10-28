@@ -79,7 +79,7 @@ func (t *task[Result]) Then(callback func(r Result)) Task[Result] {
 		t.thenCallback = callback
 		t.thenInfo = info
 
-		if t.isCompleted {
+		if t.isCompleted && t.err == nil {
 			// Result already set, call result callback
 			t.callThenCallback()
 		}
@@ -98,7 +98,7 @@ func (t *task[Result]) Catch(callback func(err error)) Task[Result] {
 		t.catchCallback = callback
 		t.catchInfo = info
 
-		if t.isCompleted {
+		if t.isCompleted && t.err != nil {
 			// Error already set, call error callback
 			t.callCatchCallback()
 		}

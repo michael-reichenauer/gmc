@@ -12,8 +12,10 @@ const (
 	progressInterval = 500 * time.Millisecond
 	waitMark         = " ● ● ● ● "
 	waitMark2        = " ●"
-	showIconTimeout  = 800 * time.Millisecond
-	showFullTimeout  = 6 * time.Second
+	showIconTimeout  = 500 * time.Millisecond
+	showFullTimeout  = 15 * time.Second
+	line1            = "┌───────────────────┐"
+	line2            = "└───────────────────┘"
 )
 
 var (
@@ -115,28 +117,26 @@ func (t *progress) textFunc(ViewPage) string {
 	}
 	t.view.SetTop()
 
-	if sinceStart < showFullTimeout {
-		// Show just a small wait icon for a while
-		// log.Infof("Show icon progress for %q, ...", t.text)
-		length := t.length - 3
-		if length < 0 {
-			length = 0
-		}
-
-		mark := fmt.Sprintf("[%-19s]", strings.Repeat(waitMark2, length%10))
-		return MagentaDk(mark)
+	//if sinceStart < showFullTimeout {
+	length := t.length - 2
+	if length < 0 {
+		length = 0
 	}
 
-	// log.Infof("Show full progress for %q, ...", t.text)
-	if !t.showProgress {
-		t.showProgress = true
-		t.length = 0
-	}
+	mark := fmt.Sprintf("%s\n│%-19s│\n%s", line1, strings.Repeat(waitMark2, 1+length%9), line2)
+	return MagentaDk(mark)
+	//}
 
-	// Show full progress
-	t.view.ShowFrame(true)
-	pt := strings.Repeat("━", t.length)
-	return fmt.Sprintf("%s\n%s", t.text, MagentaDk(pt))
+	// // log.Infof("Show full progress for %q, ...", t.text)
+	// if !t.showProgress {
+	// 	t.showProgress = true
+	// 	t.length = 0
+	// }
+
+	// // Show full progress
+	// t.view.ShowFrame(true)
+	// pt := strings.Repeat("━", t.length)
+	// return fmt.Sprintf("%s\n%s", t.text, MagentaDk(pt))
 }
 
 func (t *progress) updateProgress() {

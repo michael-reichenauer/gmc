@@ -23,7 +23,7 @@ type Api interface {
 
 	Commit(info CommitInfoReq) error
 	UndoCommit(repoID, id string) error
-	UndoUncommittedFileChanges(info FilesReq) error
+	UndoUncommittedFileChanges(repoID, path string) error
 	UncommitLastCommit(repoID string) error
 	UndoAllUncommittedChanges(repoID string) error
 	CleanWorkingFolder(repoID string) error

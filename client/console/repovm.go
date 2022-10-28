@@ -8,6 +8,7 @@ import (
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/common/config"
+	"github.com/michael-reichenauer/gmc/utils/async"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
 	"github.com/michael-reichenauer/gmc/utils/linq"
@@ -75,17 +76,7 @@ func (t *repoVM) startRepoMonitor() {
 }
 
 func (t *repoVM) triggerRefresh() {
-	log.Event("repoview-refresh")
-	progress := t.ui.ShowProgress("Trigger")
-	t.startCommand(
-		"Trigger refresh repo",
-		func() error { return t.api.TriggerRefreshRepo(t.repoID) },
-		func(err error) string { return fmt.Sprintf("Failed to trigger:\n%v", err) },
-		func() {
-			t.ui.Post(func() {
-				progress.Close()
-			})
-		})
+	_ = t.api.TriggerRefreshRepo(t.repoID)
 }
 
 func (t *repoVM) SetSearch(text string) {
@@ -336,44 +327,28 @@ func (t *repoVM) GetUncommittedFiles() []string {
 }
 
 func (t *repoVM) UndoAllUncommittedChanges() {
-	t.startCommand(
-		"Undo all uncommitted files",
-		func() error { return t.api.UndoAllUncommittedChanges(t.repoID) },
-		func(err error) string { return fmt.Sprintf("Failed to undo all changes:\n%s", err) },
-		nil)
+	async.RunE(func() error { return t.api.UndoAllUncommittedChanges(t.repoID) }).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to undo all changes:\n%s", err) })
 }
 
 func (t *repoVM) UncommitLastCommit() {
-	t.startCommand(
-		"Uncommit last local commit",
-		func() error { return t.api.UncommitLastCommit(t.repoID) },
-		func(err error) string { return fmt.Sprintf("Failed to uncommit:\n%s", err) },
-		nil)
+	async.RunE(func() error { return t.api.UncommitLastCommit(t.repoID) }).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to uncommit:\n%s", err) })
 }
 
 func (t *repoVM) UndoCommit(id string) {
-	t.startCommand(
-		"Uncommit commit",
-		func() error { return t.api.UndoCommit(t.repoID, id) },
-		func(err error) string { return fmt.Sprintf("Failed to undo commit:\n%s:\n%s", id, err) },
-		nil)
+	async.RunE(func() error { return t.api.UndoCommit(t.repoID, id) }).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to undo commit:\n%s:\n%s", id, err) })
 }
 
 func (t *repoVM) UndoUncommittedFileChanges(path string) {
-	t.startCommand(
-		"Undo uncommitted file",
-		func() error {
-			return t.api.UndoUncommittedFileChanges(api.FilesReq{RepoID: t.repoID, Ref: path})
-		},
-		func(err error) string { return fmt.Sprintf("Failed to undo file:\n%s:\n%s", path, err) },
-		nil)
+	async.RunE(func() error { return t.api.UndoUncommittedFileChanges(t.repoID, path) }).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to undo file:\n%s:\n%s", path, err) })
 }
+
 func (t *repoVM) CleanWorkingFolder() {
-	t.startCommand(
-		"Clean working folder",
-		func() error { return t.api.CleanWorkingFolder(t.repoID) },
-		func(err error) string { return fmt.Sprintf("Failed to clean working folder:\n%s", err) },
-		nil)
+	async.RunE(func() error { return t.api.CleanWorkingFolder(t.repoID) }).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to clean working folder:\n%s", err) })
 }
 
 func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
@@ -383,30 +358,18 @@ func (t *repoVM) GetShownBranches(skipMaster bool) []api.Branch {
 }
 
 func (t *repoVM) GetAllGitBranches() []api.Branch {
-	return lo.Filter(t.GetAllBranches(), func(v api.Branch, _ int) bool {
-		return v.IsGitBranch
-	})
+	return linq.Filter(t.GetAllBranches(), func(v api.Branch) bool { return v.IsGitBranch })
 }
 
 func (t *repoVM) GetAmbiguousBranches() []api.Branch {
 	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false})
-
-	var bs []api.Branch
-	for _, b := range branches {
-		if b.IsAmbiguousBranch {
-			bs = append(bs, b)
-		}
-	}
-	return bs
+	return linq.Filter(branches, func(b api.Branch) bool { return b.IsAmbiguousBranch })
 }
 
 func (t *repoVM) ShowBranch(name string, commitId string) {
-	t.startCommand(
-		fmt.Sprintf("Show Branch:\n%s", name), func() error {
-			return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name})
-		},
-		func(err error) string { return fmt.Sprintf("Failed to show branch:\n%s\n%s", name, err) },
-		func() { t.ScrollToBranch(name, commitId) })
+	t.onRepoUpdatedFunc = func() { t.ScrollToBranch(name, commitId) }
+	async.RunE(func() error { return t.api.ShowBranch(api.BranchName{RepoID: t.repoID, BranchName: name}) }).
+		Catch(func(err error) { t.ui.ShowErrorMessageBox("Failed to show branch:\n%s\n%s", name, err) })
 }
 
 func (t *repoVM) ScrollToBranch(name string, commitId string) {
