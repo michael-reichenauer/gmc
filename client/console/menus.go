@@ -126,7 +126,7 @@ func (t *menus) getShowImmediateBranchesMenuItems(selectedIndex int) []cui.MenuI
 	items = append(items, linq.Map(t.vm.GetCommitBranches(selectedIndex), t.toShowBranchMenuItem)...)
 
 	current, ok := t.vm.CurrentBranch()
-	if ok && !linq.Contains(t.vm.GetShownBranches(false), func(v api.Branch) bool { return v.IsCurrent }) {
+	if ok && !linq.ContainsBy(t.vm.GetShownBranches(false), func(v api.Branch) bool { return v.IsCurrent }) {
 		items = append(items, t.toShowBranchMenuItem(current))
 	}
 

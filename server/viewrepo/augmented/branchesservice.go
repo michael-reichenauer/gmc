@@ -2,8 +2,39 @@ package augmented
 
 import (
 	"github.com/michael-reichenauer/gmc/utils"
+	"github.com/michael-reichenauer/gmc/utils/linq"
 	"github.com/samber/lo"
 )
+
+// - A commit has 0, 1 or 2 parent commits (down/below in list)
+//   - 0 parents: The root (last) commit in the list is the root commit and has no parent.
+//   - 1 parent:  A normal commit
+//   - 2 parents: A merge commit
+// - A commit can have 0 or multiple children (upp/above in list),
+//   - 0 children are the tips commits of live git branches
+//   - 1 child are normal commits, where the child commit only has one parent commit
+//   - 2 or more children are commits from which one or more branches starts or ends (if merge child)
+//   - 1 or more merge children are commit where those children are merge commits with a merge parent
+// - Live branches are branches that have a git branch
+// - Deleted branches have been merged into some commit, i.e for a commit with two parents
+//   the first parent continuos the branch, while the second parent can be tip of a deleted branch,
+//   or just a commit in a another branch
+// - Merge commits often has a subject that indicate the name of the 2 branches;
+//   Target: The current branch, Source the branch merged into the target.
+// - Since the merge commit often has info of target and source branch names, the 2 parents commits
+//   branches can also be reasonable determined.
+// - Multiple branch tips can point to the same commit, that would make those
+// - Main or master (legacy) branch are treated specially since these are considered backbone of the graph
+// - Pull merge: Normally in git when a user does a pull merge, the remote branch is merged into
+//   the local branch, where the remote branch tip will be the second parent of the local commit.
+//   I think this is a bit strange and would confuse the branch graph. So if these commit messages
+//   are detected, the order of the parents are switch so it looks like the local branch was
+//   merged into the remote branch and not the reverse in normal git logs.
+
+// Algorithm:
+// 1 If commit only has one git branch, use that
+// 2 if commit only has one local and corresponding remote branch, use the remote
+// 3
 
 // Default branch priority determines parent child branch relations.
 var DefaultBranchPriority = []string{"origin/main", "main", "origin/master", "master"}
@@ -16,9 +47,9 @@ func newBranchesService() *branchesService {
 	return &branchesService{branchNames: newBranchNameParser()}
 }
 
-func (h *branchesService) setBranchForAllCommits(
-	repo *Repo,
-	branchesChildren map[string][]string) {
+func (h *branchesService) setBranchForAllCommits(repo *Repo) {
+	branchesChildren := repo.MetaData.BranchesChildren
+
 	h.setGitBranchTips(repo)
 	h.setCommitBranchesAndChildren(repo)
 	h.determineCommitBranches(repo, branchesChildren)
@@ -31,13 +62,13 @@ func (h *branchesService) setBranchForAllCommits(
 //     Thus all branch tip commit knows the list of branches it belongs to,
 //     Thus those tip commits parents will also know those branches
 func (h *branchesService) setGitBranchTips(repo *Repo) {
-	var missingBranches []string
+	var invalidBranches []string
 	for _, b := range repo.Branches {
 		tip, ok := repo.TryGetCommitByID(b.TipID)
 		if !ok {
 			// A branch tip id, which commit id does not exist in the repo
 			// Store that branch name so it can be removed from the list below
-			missingBranches = append(missingBranches, b.Name)
+			invalidBranches = append(invalidBranches, b.Name)
 			continue
 		}
 
@@ -53,22 +84,16 @@ func (h *branchesService) setGitBranchTips(repo *Repo) {
 
 	// If some branches do not have existing tip commit id,
 	// Remove them from the list of repo.Branches
-	if missingBranches != nil {
-		var branches []*Branch
-		for _, b := range repo.Branches {
-			if utils.StringsContains(missingBranches, b.Name) {
-				continue
-			}
-			branches = append(branches, b)
-		}
-
-		repo.Branches = branches
+	if len(invalidBranches) > 0 {
+		repo.Branches = linq.Filter(repo.Branches, func(v *Branch) bool {
+			return !linq.Contains(invalidBranches, v.Name)
+		})
 	}
 }
 
 // setCommitBranchesAndChildren iterates all commits and
 //   - Swap commit parents order if the commit is a pull merge
-//     In git, the first parent of pull merge commit is the local branch which is a bit strange
+//     In git, the first parent of pull merge commit is the local branch which I think is strange
 //   - For the first parent commit, the child commit and its branches are set (inherited down)
 //   - For the second parent (mergeParent), the commit is set but not its branches
 func (h *branchesService) setCommitBranchesAndChildren(repo *Repo) {
