@@ -15,6 +15,7 @@ import (
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/linq"
 	"github.com/michael-reichenauer/gmc/utils/log"
 	"github.com/michael-reichenauer/gmc/utils/timer"
 	"github.com/samber/lo"
@@ -133,11 +134,24 @@ func (t *ViewRepoService) GetCommitDetails(id string) (api.CommitDetailsRsp, err
 		return api.CommitDetailsRsp{}, err
 	}
 
-	files := lo.Map(diff.FileDiffs, func(v git.FileDiff, _ int) string {
-		return v.PathBefore
-	})
+	files := linq.Map(diff.FileDiffs, func(v git.FileDiff) string { return v.PathBefore })
 
-	return api.CommitDetailsRsp{Id: c.ID, BranchName: c.Branch.displayName, Message: c.Message, Files: files}, nil
+	branchName := c.Branch.displayName
+	if c.IsAmbiguous {
+		names := ""
+		ab, ok := linq.Find(t.viewRepo.augmentedRepo.Branches, func(b *augmented.Branch) bool {
+			return b.Name == c.Branch.name
+		})
+		if ok {
+			names = strings.Join(
+				linq.Map(ab.AmbiguousBranches, func(b *augmented.Branch) string { return b.DisplayName }),
+				", ")
+		}
+		branchName = fmt.Sprintf("ambiguous (one of: %s)", names)
+	}
+
+	return api.CommitDetailsRsp{Id: c.ID, BranchName: branchName, BranchColor: api.Color(cui.CWhite),
+		Message: c.Message, Files: files}, nil
 }
 
 func (t *ViewRepoService) SwitchToBranch(name string, displayName string) error {

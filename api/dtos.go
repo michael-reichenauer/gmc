@@ -58,10 +58,11 @@ type CommitDetailsReq struct {
 }
 
 type CommitDetailsRsp struct {
-	Id         string
-	BranchName string
-	Message    string
-	Files      []string
+	Id          string
+	BranchName  string
+	BranchColor Color
+	Message     string
+	Files       []string
 }
 
 type CommitDiffInfoReq struct {
