@@ -359,22 +359,23 @@ func (s *repoService) getFreshStatus(repo Repo) (Repo, error) {
 func (s *repoService) GetFreshRepo() (Repo, error) {
 	log.Infof("Getting fresh repo for %s", s.git.RepoPath())
 	st := timer.Start()
+
 	repo := newRepo()
 	repo.RepoPath = s.git.RepoPath()
-
 	gitRepo, err := s.getGitRepo(partialMax)
 	if err != nil {
 		return Repo{}, err
 	}
-	repo.MetaData = gitRepo.MetaData
 
+	repo.MetaData = gitRepo.MetaData
 	repo.Status = newStatus(gitRepo.Status)
 	repo.Tags = toTags(gitRepo.Tags)
 	repo.setGitBranches(gitRepo.Branches)
 	repo.setGitCommits(gitRepo.Commits)
 
-	branchesChildren := repo.MetaData.BranchesChildren
-	s.branchesService.setBranchForAllCommits(repo, branchesChildren)
+	// Determine branch for all commits and determine branch hierarchy
+	s.branchesService.setBranchForAllCommits(repo)
+
 	log.Infof("Repo %v: %d commits, %d branches, %d tags, status: %q (%q)", st, len(gitRepo.Commits), len(gitRepo.Branches), len(gitRepo.Tags), &gitRepo.Status, gitRepo.RootPath)
 	return *repo, nil
 }

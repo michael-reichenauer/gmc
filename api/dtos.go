@@ -19,12 +19,6 @@ const (
 	DiffConflictEnd
 )
 
-type CheckoutReq struct {
-	RepoID      string
-	Name        string
-	DisplayName string
-}
-
 type GetBranchesReq struct {
 	RepoID                    string
 	IncludeOnlyCurrent        bool
@@ -64,10 +58,11 @@ type CommitDetailsReq struct {
 }
 
 type CommitDetailsRsp struct {
-	Id         string
-	BranchName string
-	Message    string
-	Files      []string
+	Id          string
+	BranchName  string
+	BranchColor Color
+	Message     string
+	Files       []string
 }
 
 type CommitDiffInfoReq struct {
@@ -149,10 +144,11 @@ type Commit struct {
 }
 
 type GraphColumn struct {
-	Connect     utils.Bitmask
-	Branch      utils.Bitmask
-	BranchColor Color
-	PassColor   Color
+	Connect      utils.Bitmask
+	Branch       utils.Bitmask
+	BranchColor  Color
+	ConnectColor Color
+	PassColor    Color
 }
 
 type GraphRow []GraphColumn

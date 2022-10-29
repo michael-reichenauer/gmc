@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/utils/git"
+	"github.com/michael-reichenauer/gmc/utils/linq"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/samber/lo"
 )
 
 type MetaData struct {
@@ -95,20 +95,30 @@ func (r *Repo) CurrentBranch() (*Branch, bool) {
 }
 
 func (r *Repo) setGitCommits(gitCommits []git.Commit) {
+	// For repositories with a lot of commits, only the latest 'partialMax' number of commits
+	// are used, i.w. partial commits, which should have parents, but they are unknown
 	isPartialPossible := len(gitCommits) >= partialMax
-	commits := make([]*Commit, len(gitCommits), len(gitCommits)+10)
 	isPartialNeeded := false
-	for i := len(gitCommits) - 1; i > -1; i-- {
+	commits := make([]*Commit, len(gitCommits), len(gitCommits)+10)
+
+	// Iterate git commits in reverse
+	for i := len(gitCommits) - 1; i >= 0; i-- {
 		gc := gitCommits[i]
 		commit := newGitCommit(gc)
+
 		if isPartialPossible {
+			// The repo was truncated, check if commits have missing parents, which will be set
+			// to a virtual/fake "partial commit"
 			if len(commit.ParentIDs) == 1 {
+				// Not a merge commit but check if parent is missing and need a partial commit parent
 				if _, ok := r.commitById[commit.ParentIDs[0]]; !ok {
 					isPartialNeeded = true
 					commit.ParentIDs = []string{git.PartialLogCommitID}
 				}
 			}
+
 			if len(commit.ParentIDs) == 2 {
+				// Merge commit, check if parents are missing and need a partial commit parent
 				if _, ok := r.commitById[commit.ParentIDs[0]]; !ok {
 					isPartialNeeded = true
 					commit.ParentIDs = []string{git.PartialLogCommitID, commit.ParentIDs[1]}
@@ -123,9 +133,11 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 		commits[i] = commit
 		r.commitById[commit.Id] = commit
 	}
+
 	r.Commits = commits
 
 	if isPartialNeeded {
+		// Add a virtual/fake partial commit, which some commits will have as a parent
 		pc := newPartialLogCommit()
 		r.Commits = append(r.Commits, pc)
 		r.commitById[pc.Id] = pc
@@ -140,13 +152,13 @@ func (r *Repo) setGitCommits(gitCommits []git.Commit) {
 }
 
 func (r *Repo) setGitBranches(gitBranches []git.Branch) {
-	r.Branches = lo.Map(gitBranches, func(v git.Branch, _ int) *Branch { return newGitBranch(v) })
+	r.Branches = linq.Map(gitBranches, func(b git.Branch) *Branch { return newGitBranch(b) })
 
 	// Set local name of all remote branches, that have a corresponding local branch as well
 	// Unset RemoteName of local branch if n corresponding remote branch (deleted on remote server)
 	for _, b := range r.Branches {
 		if b.RemoteName != "" {
-			remoteBranch, ok := lo.Find(r.Branches, func(v *Branch) bool { return v.Name == b.RemoteName })
+			remoteBranch, ok := linq.Find(r.Branches, func(v *Branch) bool { return v.Name == b.RemoteName })
 			if ok {
 				// Corresponding remote branch, set local branch name property
 				remoteBranch.LocalName = b.Name

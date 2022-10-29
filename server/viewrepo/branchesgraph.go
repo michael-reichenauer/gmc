@@ -21,8 +21,13 @@ func (t *branchesGraph) SetGraph(repo *repo) {
 	t.setBranchesXLocation(repo)
 
 	for _, b := range repo.Branches {
+		isAmbiguous := false
+
 		for y := b.tip.Index; y <= b.bottom.Index; y++ {
 			c := repo.Commits[y]
+			if c.Branch == b && c.IsAmbiguous {
+				isAmbiguous = true
+			}
 
 			if c == b.tip && c.Branch != b {
 				// this tip commit is not on this branch (multiple branch tips on the same commit)
@@ -30,7 +35,7 @@ func (t *branchesGraph) SetGraph(repo *repo) {
 				continue
 			}
 
-			t.drawBranch(repo, b, c) // Drawing either ┏  ┣ ┃ ┗
+			t.drawBranch(repo, b, c, isAmbiguous) // Drawing either ┏  ┣ ┃ ┗
 
 			if c.MergeParent != nil {
 				t.drawMerge(repo, c) // Drawing   ╭ or  ╮
@@ -76,13 +81,16 @@ func (t *branchesGraph) drawOtherBranchTip(repo *repo, b *branch, c *commit) {
 
 }
 
-func (t *branchesGraph) drawBranch(repo *repo, b *branch, c *commit) {
+func (t *branchesGraph) drawBranch(repo *repo, b *branch, c *commit, isAmbiguous bool) {
 	x := b.x
 	y := c.Index
 	color := b.color
 
 	if c.Branch != b && c != b.tip {
 		// Other branch commit, normal branch line (no commit on that branch)
+		if isAmbiguous {
+			color = cui.CWhite
+		}
 		repo.SetGraphBranch(x, y, api.BLine, color) // ┃
 		return
 	}
@@ -179,6 +187,9 @@ func (s *branchesGraph) drawMergeFromParentBranch(repo *repo, commit *commit) {
 
 	// Other branch is on the left side, merged from parent parent branch ╭
 	color := commit.Branch.color
+	if commit.IsAmbiguous {
+		color = cui.CWhite
+	}
 
 	repo.SetGraphBranch(x, y, api.MergeFromLeft, color) //     ╭
 	repo.SetGraphConnect(x, y, api.MergeFromLeft, color)

@@ -82,7 +82,7 @@ func getDetails(c api.Commit, cb api.Branch, cd api.CommitDetailsRsp) (string, s
 			cui.Blue(strings.Repeat("_", 50))+
 			cui.Blue("\n%d Files:\n")+
 			"%s",
-		id, cui.ColorText(cui.Color(cb.Color), cb.Name),
+		id, cui.ColorText(cui.Color(cd.BranchColor), cd.BranchName),
 		strings.Join(children, ", "), strings.Join(parents, ", "),
 		cd.Message, len(cd.Files), files)
 

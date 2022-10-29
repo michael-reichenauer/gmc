@@ -51,11 +51,14 @@ func TestCurrentRepo(t *testing.T) {
 }
 
 func TestSpecial(t *testing.T) {
+	maxCommits := 100
 	tests.ManualTest(t)
 	// /workspaces/Dependitor
 	// /workspaces/gg
 	//repoPath := "/workspaces/gg"
-	repoPath := ""
+	repoPath := "/workspaces/Terminal.Gui"
+
+	//repoPath := ""
 
 	repoService := augmented.NewRepoService(repoPath)
 	repo, err := repoService.GetFreshRepo()
@@ -65,12 +68,15 @@ func TestSpecial(t *testing.T) {
 	viewRepoService := NewViewRepoService(nil, repoPath)
 	cb, ok := repo.CurrentBranch()
 	assert.True(t, ok)
-	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name, "origin/develop"})
+	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name, "BDisp/mouseGrabView-track-feature", "gui-cs/dependabot/nuget/Microsoft", "gui-cs/dependabot/github_actions/actions/setup-dotnet-2"})
 	assert.Greater(t, len(viewRepo.Commits), 0)
 
 	graph := console.NewRepoGraph()
 
-	for _, c := range viewRepo.Commits {
+	for i, c := range viewRepo.Commits {
+		if i > maxCommits {
+			break
+		}
 		var sb strings.Builder
 		graph.WriteGraph(&sb, c.graph)
 		tt := c.AuthorTime.Format("2006-01-02 15:04")

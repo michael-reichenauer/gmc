@@ -1,22 +1,17 @@
 package console
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type RepoGraph struct {
 }
-
-var (
-	currentCommitMarker = cui.White("●")
-	// mergeInMarker       = cui.Dark("╮")
-	// branchOutMarker     = cui.Dark("╯")
-	// inOutMarker         = cui.Dark("<")
-)
 
 func NewRepoGraph() *RepoGraph {
 	return &RepoGraph{}
@@ -24,28 +19,30 @@ func NewRepoGraph() *RepoGraph {
 
 func (t *RepoGraph) WriteGraph(sb *strings.Builder, row api.GraphRow) {
 	for i := 0; i < len(row); i++ {
-		// Normal branch color
-		bColor := cui.Color(row[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
+		// Colors
+		branchColor := cui.Color(row[i].BranchColor)
+		connectColor := cui.Color(row[i].ConnectColor)
+		passColor := cui.Color(row[i].PassColor)
 
-		cColor := bColor
+		// Draw connect runes (left of the branch)
 		if row[i].Connect == api.Pass &&
-			row[i].PassColor != 0 &&
-			row[i].PassColor != api.Color(cui.CWhite) {
-			cColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+			passColor != 0 &&
+			passColor != cui.CWhite {
+			connectColor = passColor
 		} else if row[i].Connect.Has(api.Pass) {
-			cColor = cui.CWhite
+			connectColor = cui.CWhite
 		}
-		sb.WriteString(cui.ColorRune(cColor, t.graphConnectRune(row[i].Connect)))
+		sb.WriteString(cui.ColorRune(connectColor, t.graphConnectRune(row[i].Connect)))
 
+		// Draw the branch rune
 		if row[i].Branch == api.Pass &&
-			row[i].PassColor != 0 &&
-			row[i].PassColor != api.Color(cui.CWhite) {
-			bColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+			passColor != 0 &&
+			passColor != cui.CWhite {
+			branchColor = passColor
 		} else if row[i].Branch == api.Pass {
-			bColor = cui.CWhite
+			branchColor = cui.CWhite
 		}
-
-		sb.WriteString(cui.ColorRune(bColor, t.graphBranchRune(row[i].Branch)))
+		sb.WriteString(cui.ColorRune(branchColor, t.graphBranchRune(row[i].Branch)))
 	}
 }
 
@@ -90,6 +87,7 @@ func (t *RepoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	case bm == api.BBlank:
 		return ' '
 	default:
+		log.Warnf("Unknown Branch rune %q", strconv.FormatInt(int64(bm), 2))
 		return '*'
 	}
 }
@@ -106,10 +104,15 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 		return '┤'
 	case api.MergeFromRight | api.BranchToRight | api.Pass:
 		return '┴'
+	case api.MergeFromRight | api.BranchToRight | api.ConnectLine:
+		return '┤'
 	case api.BranchToRight:
 		return '╯'
 	case api.BranchToRight | api.ConnectLine | api.Pass:
 		return '┼'
+	case api.BranchToRight | api.ConnectLine | api.Pass | api.MergeFromRight:
+		return '┼'
+
 	case api.BranchToRight | api.Pass:
 		return '┴'
 	case api.BranchToRight | api.ConnectLine:
@@ -120,11 +123,15 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 		return '├'
 	case api.MergeFromLeft | api.ConnectLine:
 		return '├'
+	case api.MergeFromLeft | api.ConnectLine | api.BranchToLeft:
+		return '├'
 	case api.BranchToLeft:
 		return '╰'
 	case api.BranchToLeft | api.ConnectLine:
 		return '├'
 	case api.ConnectLine | api.Pass:
+		return '┼'
+	case api.ConnectLine | api.Pass | api.MergeFromLeft:
 		return '┼'
 	case api.ConnectLine:
 		return '│'
@@ -133,6 +140,7 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	case api.BBlank:
 		return ' '
 	default:
+		log.Warnf("Unknown Connect rune %q", reverse(strconv.FormatInt(int64(bm), 2)))
 		return '*'
 	}
 }
@@ -141,4 +149,14 @@ func (t *RepoGraph) hasLeft(bm utils.Bitmask) bool {
 	return bm.Has(api.BranchToLeft) ||
 		bm.Has(api.MergeFromLeft) ||
 		bm.Has(api.Pass)
+}
+
+func reverse(s string) string {
+	rns := []rune(s)
+	for i, j := 0, len(rns)-1; i < j; i, j = i+1, j-1 {
+		// swap the letters of the string, like first with last and so on.
+		rns[i], rns[j] = rns[j], rns[i]
+	}
+
+	return string(rns)
 }

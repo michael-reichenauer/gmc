@@ -7,9 +7,14 @@ func Find[V any](collection []V, predicate func(V) bool) (V, bool) {
 	return lo.Find(collection, predicate)
 }
 
-func Contains[V any](collection []V, predicate func(V) bool) bool {
-	_, ok := Find(collection, predicate)
-	return ok
+// Contains returns true if an element is present in a collection.
+func Contains[V comparable](collection []V, element V) bool {
+	return lo.Contains(collection, element)
+}
+
+// ContainsBy returns true if predicate function return true.
+func ContainsBy[V any](collection []V, predicate func(V) bool) bool {
+	return lo.ContainsBy(collection, predicate)
 }
 
 // Filter iterates over elements of collection, returning an array of all elements predicate returns truthy for.
