@@ -143,10 +143,11 @@ type Commit struct {
 }
 
 type GraphColumn struct {
-	Connect     utils.Bitmask
-	Branch      utils.Bitmask
-	BranchColor Color
-	PassColor   Color
+	Connect      utils.Bitmask
+	Branch       utils.Bitmask
+	BranchColor  Color
+	ConnectColor Color
+	PassColor    Color
 }
 
 type GraphRow []GraphColumn

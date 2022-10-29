@@ -11,41 +11,36 @@ import (
 type RepoGraph struct {
 }
 
-var (
-	currentCommitMarker = cui.White("●")
-	// mergeInMarker       = cui.Dark("╮")
-	// branchOutMarker     = cui.Dark("╯")
-	// inOutMarker         = cui.Dark("<")
-)
-
 func NewRepoGraph() *RepoGraph {
 	return &RepoGraph{}
 }
 
 func (t *RepoGraph) WriteGraph(sb *strings.Builder, row api.GraphRow) {
 	for i := 0; i < len(row); i++ {
-		// Normal branch color
-		bColor := cui.Color(row[i].BranchColor) //t.branchColors.BranchColor(c.Graph[i].BranchDisplayName)
+		// Colors
+		branchColor := cui.Color(row[i].BranchColor)
+		connectColor := cui.Color(row[i].ConnectColor)
+		passColor := cui.Color(row[i].PassColor)
 
-		cColor := bColor
+		// Draw connect runes (left of the branch)
 		if row[i].Connect == api.Pass &&
-			row[i].PassColor != 0 &&
-			row[i].PassColor != api.Color(cui.CWhite) {
-			cColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+			passColor != 0 &&
+			passColor != cui.CWhite {
+			connectColor = passColor
 		} else if row[i].Connect.Has(api.Pass) {
-			cColor = cui.CWhite
+			connectColor = cui.CWhite
 		}
-		sb.WriteString(cui.ColorRune(cColor, t.graphConnectRune(row[i].Connect)))
+		sb.WriteString(cui.ColorRune(connectColor, t.graphConnectRune(row[i].Connect)))
 
+		// Draw the branch rune
 		if row[i].Branch == api.Pass &&
-			row[i].PassColor != 0 &&
-			row[i].PassColor != api.Color(cui.CWhite) {
-			bColor = cui.Color(row[i].PassColor) // t.branchColors.BranchColor(c.Graph[i].PassName)
+			passColor != 0 &&
+			passColor != cui.CWhite {
+			branchColor = passColor
 		} else if row[i].Branch == api.Pass {
-			bColor = cui.CWhite
+			branchColor = cui.CWhite
 		}
-
-		sb.WriteString(cui.ColorRune(bColor, t.graphBranchRune(row[i].Branch)))
+		sb.WriteString(cui.ColorRune(branchColor, t.graphBranchRune(row[i].Branch)))
 	}
 }
 
