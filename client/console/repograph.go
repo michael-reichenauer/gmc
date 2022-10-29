@@ -125,6 +125,8 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 		return '├'
 	case api.ConnectLine | api.Pass:
 		return '┼'
+	case api.ConnectLine | api.Pass | api.MergeFromLeft:
+		return '┼'
 	case api.ConnectLine:
 		return '│'
 	case api.Pass:
