@@ -138,7 +138,7 @@ func (t *repoLayout) columnWidths(commitWidth int) (msgLength, sidWidth, authorW
 	sidWidth = 6
 	spaceWidth := 1
 
-	if commitWidth < 60 {
+	if commitWidth < 70 {
 		// Disabled author and time if very narrow view
 		sidWidth = 0
 		authorWidth = 0

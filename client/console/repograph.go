@@ -1,11 +1,13 @@
 package console
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/michael-reichenauer/gmc/api"
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/log"
 )
 
 type RepoGraph struct {
@@ -85,6 +87,7 @@ func (t *RepoGraph) graphBranchRune(bm utils.Bitmask) rune {
 	case bm == api.BBlank:
 		return ' '
 	default:
+		log.Warnf("Unknown Branch rune %q", strconv.FormatInt(int64(bm), 2))
 		return '*'
 	}
 }
@@ -107,6 +110,9 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 		return '╯'
 	case api.BranchToRight | api.ConnectLine | api.Pass:
 		return '┼'
+	case api.BranchToRight | api.ConnectLine | api.Pass | api.MergeFromRight:
+		return '┼'
+
 	case api.BranchToRight | api.Pass:
 		return '┴'
 	case api.BranchToRight | api.ConnectLine:
@@ -134,6 +140,7 @@ func (t *RepoGraph) graphConnectRune(bm utils.Bitmask) rune {
 	case api.BBlank:
 		return ' '
 	default:
+		log.Warnf("Unknown Connect rune %q", reverse(strconv.FormatInt(int64(bm), 2)))
 		return '*'
 	}
 }
@@ -142,4 +149,14 @@ func (t *RepoGraph) hasLeft(bm utils.Bitmask) bool {
 	return bm.Has(api.BranchToLeft) ||
 		bm.Has(api.MergeFromLeft) ||
 		bm.Has(api.Pass)
+}
+
+func reverse(s string) string {
+	rns := []rune(s)
+	for i, j := 0, len(rns)-1; i < j; i, j = i+1, j-1 {
+		// swap the letters of the string, like first with last and so on.
+		rns[i], rns[j] = rns[j], rns[i]
+	}
+
+	return string(rns)
 }
