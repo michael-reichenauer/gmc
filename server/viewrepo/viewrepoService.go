@@ -136,7 +136,7 @@ func (t *ViewRepoService) GetCommitDetails(id string) (api.CommitDetailsRsp, err
 
 	files := linq.Map(diff.FileDiffs, func(v git.FileDiff) string { return v.PathBefore })
 
-	branchName := c.Branch.displayName
+	branchName := c.Branch.name
 	if c.IsAmbiguous {
 		names := ""
 		ab, ok := linq.Find(t.viewRepo.augmentedRepo.Branches, func(b *augmented.Branch) bool {
@@ -144,7 +144,7 @@ func (t *ViewRepoService) GetCommitDetails(id string) (api.CommitDetailsRsp, err
 		})
 		if ok {
 			names = strings.Join(
-				linq.Map(ab.AmbiguousBranches, func(b *augmented.Branch) string { return b.DisplayName }),
+				linq.Map(ab.AmbiguousBranches, func(b *augmented.Branch) string { return b.Name }),
 				", ")
 		}
 		branchName = fmt.Sprintf("ambiguous (one of: %s)", names)

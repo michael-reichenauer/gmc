@@ -34,7 +34,6 @@ func (t *menus) GetMainMenu(currentLineIndex int) cui.Menu {
 func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Branches")
 
-	menu.Add(cui.MenuSeparator("Show/Scroll to"))
 	menu.AddItems(t.getShowImmediateBranchesMenuItems(selectedIndex))
 
 	menu.Add(cui.MenuSeparator("Switch to"))
@@ -129,6 +128,11 @@ func (t *menus) getShowImmediateBranchesMenuItems(selectedIndex int) []cui.MenuI
 	if ok && !linq.ContainsBy(t.vm.GetShownBranches(false), func(v api.Branch) bool { return v.IsCurrent }) {
 		items = append(items, t.toShowBranchMenuItem(current))
 	}
+	if len(items) > 0 {
+		items = append([]cui.MenuItem{cui.MenuSeparator("Show")}, items...)
+	}
+
+	items = append(items, cui.MenuSeparator("Scroll to"))
 
 	shownItems := linq.Map(t.vm.GetShownBranches(true), t.toShowBranchMenuItem)
 	items = append(items, shownItems...)

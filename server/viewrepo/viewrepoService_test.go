@@ -68,7 +68,7 @@ func TestSpecial(t *testing.T) {
 	viewRepoService := NewViewRepoService(nil, repoPath)
 	cb, ok := repo.CurrentBranch()
 	assert.True(t, ok)
-	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name})
+	viewRepo := viewRepoService.GetViewModel(repo, []string{cb.Name, "BDisp/mouseGrabView-track-feature", "gui-cs/dependabot/nuget/Microsoft", "gui-cs/dependabot/github_actions/actions/setup-dotnet-2"})
 	assert.Greater(t, len(viewRepo.Commits), 0)
 
 	graph := console.NewRepoGraph()
