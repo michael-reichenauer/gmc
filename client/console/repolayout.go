@@ -46,20 +46,17 @@ func (t *repoLayout) getPageLines(
 
 	graphWidth := t.getGraphWidth(graphRows)
 	commitWidth := viewWidth - graphWidth
-	messageWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
+	messageWidth, sidWidth, authorWidth, timeWidth := t.columnWidths(commitWidth)
 
 	var lines []string
 	for i, c := range commits {
 		var sb strings.Builder
 		t.writeGraph(&sb, graphRows[i])
-		//sb.WriteString(" ")
-		// t.writeMoreMarker(&sb, c)
 		t.writeCurrentMarker(&sb, c)
 		t.writeAheadBehindMarker(&sb, c)
 		t.writeSubject(&sb, c, selectedBranchName, messageWidth, repo, tips)
-		sb.WriteString(" ")
+		t.writeSid(&sb, c, sidWidth)
 		t.writeAuthor(&sb, c, authorWidth)
-		sb.WriteString(" ")
 		t.writeAuthorTime(&sb, c, timeWidth)
 
 		lines = append(lines, sb.String())
@@ -134,22 +131,27 @@ func (t *repoLayout) getGraphWidth(graph api.Graph) int {
 	return len(graph[0])*2 + markersWidth
 }
 
-func (t *repoLayout) columnWidths(commitWidth int) (msgLength, authorWidth, timeWidth int) {
+func (t *repoLayout) columnWidths(commitWidth int) (msgLength, sidWidth, authorWidth, timeWidth int) {
 	// Default widths (norma and wide view)
 	authorWidth = 15
 	timeWidth = 16
+	sidWidth = 6
+	spaceWidth := 1
 
 	if commitWidth < 60 {
 		// Disabled author and time if very narrow view
+		sidWidth = 0
 		authorWidth = 0
 		timeWidth = 0
-	} else if commitWidth < 90 {
+	} else if commitWidth < 100 {
 		// Reducing author and and time if narrow view
+		sidWidth = 0
 		authorWidth = 10
 		timeWidth = 8
+		spaceWidth = 2
 	}
 
-	msgLength = commitWidth - authorWidth - timeWidth
+	msgLength = commitWidth - sidWidth - authorWidth - timeWidth - spaceWidth
 	if msgLength < 0 {
 		msgLength = 0
 	}
@@ -190,12 +192,24 @@ func (t *repoLayout) writeAheadBehindMarker(sb *strings.Builder, c api.Commit) {
 	}
 }
 
+func (t *repoLayout) writeSid(sb *strings.Builder, commit api.Commit, length int) {
+	if length > 0 {
+		sb.WriteString(" ")
+	}
+	sb.WriteString(cui.Dark(utils.Text(commit.SID, length)))
+}
+
 func (t *repoLayout) writeAuthor(sb *strings.Builder, commit api.Commit, length int) {
-	//sb.WriteString(cui.Dark(utils.Text(commit.Author, length)))
-	sb.WriteString(cui.Dark(utils.Text(commit.ID, length)))
+	if length > 0 {
+		sb.WriteString(" ")
+	}
+	sb.WriteString(cui.Dark(utils.Text(commit.Author, length)))
 }
 
 func (t *repoLayout) writeAuthorTime(sb *strings.Builder, c api.Commit, length int) {
+	if length > 0 {
+		sb.WriteString(" ")
+	}
 	if c.IsUncommitted {
 		sb.WriteString(cui.Dark(utils.Text("", length)))
 		return

@@ -363,7 +363,7 @@ func (t *repoVM) GetAllGitBranches() []api.Branch {
 
 func (t *repoVM) GetAmbiguousBranches() []api.Branch {
 	branches, _ := t.api.GetBranches(api.GetBranchesReq{RepoID: t.repoID, IncludeOnlyNotShown: false})
-	return linq.Filter(branches, func(b api.Branch) bool { return b.IsAmbiguousBranch })
+	return linq.Filter(branches, func(b api.Branch) bool { return b.AmbiguousTipId != "" })
 }
 
 func (t *repoVM) ShowBranch(name string, commitId string) {
