@@ -3,6 +3,7 @@ package git
 import (
 	"testing"
 
+	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/tests"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,6 +15,15 @@ func TestCurrentUncommittedRepo(t *testing.T) {
 	diff, err := g.CommitDiff(UncommittedID)
 	assert.NoError(t, err)
 	t.Logf("Diff: %#v", diff)
+}
+
+func TestSpecialRepo(t *testing.T) {
+	tests.ManualTest(t)
+
+	g := New("/workspaces/gmd")
+	diff, err := g.CommitDiff("b472e9694556a33c8e7ffc4714cd7df12fa1ca1c")
+	assert.NoError(t, err)
+	t.Logf("Diff: %s", utils.PrettyString(diff))
 }
 
 func TestCommitDiff(t *testing.T) {
