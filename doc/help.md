@@ -37,3 +37,17 @@ of the branch with left of these indicators.
 Using the  `RightArrow` on such a commit line (or click) to
 show the branches menu, will list the hidden branch and make
 it easy show.
+
+## Commands
+
+* Clean/Restore Working Folder:\
+  Ensures a working folder is as if folder just has been checked out. I.e. restores all uncommitted files and remove all files not tracked
+  by git using:\
+  `> git reset --hard`\
+  `> git clean -fxd`
+* Undo Restore Uncommitted File:\
+  Restores an uncommitted file using:\
+  `> git checkout --force -- <file-path>`
+* Undo Commit:\
+  Creates a new commit, which is the 'opposite' of the selected commit using:\
+  `> git revert --no-commit <commit-sha>`

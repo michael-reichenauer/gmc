@@ -4,8 +4,11 @@ import (
 	"fmt"
 
 	"github.com/michael-reichenauer/gmc/utils/cui"
+	"github.com/michael-reichenauer/gmc/utils/git"
 )
 
 func ShowAboutDlg(ui cui.UI) {
-	ui.ShowMessageBox("About gmc", fmt.Sprintf("Version: %s", ui.Version()))
+	gitVersion := git.Version()
+	ui.ShowMessageBox("About gmc", fmt.Sprintf("gmc: %s\ngit: %s",
+		ui.Version(), gitVersion))
 }
