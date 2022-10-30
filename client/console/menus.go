@@ -181,7 +181,9 @@ func (t *menus) getBranchHierarchyMenuItems(commit api.Commit) []cui.MenuItem {
 		items = append(items, cui.MenuItem{Text: txt, Action: func() {
 			t.vm.UnsetAsParentBranch(b.Name)
 		}})
-	} else if commit.IsAmbiguous && len(b.AmbiguousBranchNames) > 0 {
+	}
+
+	if commit.IsAmbiguous && len(b.AmbiguousBranchNames) > 0 {
 		subItems := lo.Map(b.AmbiguousBranchNames, func(v string, _ int) cui.MenuItem {
 			vv := v
 			return cui.MenuItem{Text: vv, Action: func() { t.vm.SetAsParentBranch(b.Name, vv) }}
