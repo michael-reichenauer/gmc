@@ -68,7 +68,7 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 		items = append(items, cui.MenuItem{Text: "Commit ...", Key: "C", Action: t.vm.showCommitDialog})
 	}
 	items = append(items, cui.MenuItem{Text: "Commit Diff ...", Key: "D", Action: func() { t.vm.showCommitDiff(c.ID) }})
-	items = append(items, cui.MenuItem{Text: "Undo", Title: "Undo", ItemsFunc: t.getUndoMenuItems})
+	items = append(items, cui.MenuItem{Text: "Undo/Restore", Title: "Undo", ItemsFunc: t.getUndoMenuItems})
 
 	// Branches items
 	items = append(items, cui.MenuSeparator("Branches"))
@@ -263,11 +263,11 @@ func (t *menus) getUndoMenuItems() []cui.MenuItem {
 	current, ok := t.vm.CurrentBranch()
 	if ok {
 		if current.TipID == git.UncommittedID {
-			items = append(items, cui.MenuItem{Text: "Undo Uncommitted File",
-				Title:     "Undo File",
+			items = append(items, cui.MenuItem{Text: "Undo/Restore Uncommitted File",
+				Title:     "Undo/Restore File",
 				ItemsFunc: t.getUncommittedFilesMenuItems})
 			items = append(items, cui.MenuSeparator(""))
-			items = append(items, cui.MenuItem{Text: "Undo All Uncommitted Changes",
+			items = append(items, cui.MenuItem{Text: "Undo/Restore all Uncommitted Changes",
 				Action: func() { t.vm.UndoAllUncommittedChanges() }})
 		} else {
 			c, ok := linq.Find(t.vm.repo.Commits, func(v api.Commit) bool { return v.ID == current.TipID })
@@ -289,7 +289,7 @@ func (t *menus) getUndoMenuItems() []cui.MenuItem {
 		}})
 	}
 
-	items = append(items, cui.MenuItem{Text: "Clean Working Folder", Action: func() {
+	items = append(items, cui.MenuItem{Text: "Clean/Restore Working Folder", Action: func() {
 		t.vm.CleanWorkingFolder()
 	}})
 
