@@ -199,20 +199,20 @@ func (t *apiServer) HideBranch(name api.BranchName) error {
 	return nil
 }
 
-func (t *apiServer) Checkout(args api.CheckoutReq) error {
-	repo, err := t.repo(args.RepoID)
+func (t *apiServer) Checkout(repoId, name, displayName string) error {
+	repo, err := t.repo(repoId)
 	if err != nil {
 		return err
 	}
-	return repo.SwitchToBranch(args.Name, args.DisplayName)
+	return repo.SwitchToBranch(name, displayName)
 }
 
-func (t *apiServer) PushBranch(name api.BranchName) error {
-	repo, err := t.repo(name.RepoID)
+func (t *apiServer) PushBranch(repoID, branchName string) error {
+	repo, err := t.repo(repoID)
 	if err != nil {
 		return err
 	}
-	return repo.PushBranch(name.BranchName)
+	return repo.PushBranch(branchName)
 }
 
 func (t *apiServer) PullCurrentBranch(repoID string) error {
@@ -307,12 +307,12 @@ func (t *apiServer) UndoCommit(repoId, id string) error {
 	return repo.UndoCommit(id)
 }
 
-func (t *apiServer) UndoUncommittedFileChanges(info api.FilesReq) error {
-	repo, err := t.repo(info.RepoID)
+func (t *apiServer) UndoUncommittedFileChanges(repoId, path string) error {
+	repo, err := t.repo(repoId)
 	if err != nil {
 		return err
 	}
-	return repo.UndoUncommittedFileChanges(info.Ref)
+	return repo.UndoUncommittedFileChanges(path)
 }
 
 func (t *apiServer) UncommitLastCommit(repoID string) error {

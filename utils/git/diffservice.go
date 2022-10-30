@@ -9,7 +9,6 @@ import (
 
 	"github.com/michael-reichenauer/gmc/utils"
 	"github.com/michael-reichenauer/gmc/utils/log"
-	"github.com/samber/lo"
 )
 
 type DiffMode int
@@ -179,9 +178,7 @@ func (t *diffService) parse(text, path string, isUncommitted bool) ([]CommitDiff
 	}
 
 	// For file history with other similar file paths, the file diff can be empty, lets filter them
-	commitDiffs = lo.Filter(commitDiffs, func(v CommitDiff, _ int) bool {
-		return len(v.FileDiffs) > 0
-	})
+	//commitDiffs = linq.Filter(commitDiffs, func(v CommitDiff) bool { return len(v.FileDiffs) > 0 })
 
 	return commitDiffs, nil
 }

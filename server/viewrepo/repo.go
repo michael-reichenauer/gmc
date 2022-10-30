@@ -239,7 +239,8 @@ func (t *repo) SetGraphBranchPass(x, y int, mark utils.Bitmask, color cui.Color)
 
 func (t *repo) SetGraphConnect(x, y int, mark utils.Bitmask, color cui.Color) {
 	t.Commits[y].graph[x].Connect.Set(mark)
-	t.Commits[y].graph[x].BranchColor = api.Color(color)
+	//t.Commits[y].graph[x].BranchColor = api.Color(color)
+	t.Commits[y].graph[x].ConnectColor = api.Color(color)
 }
 
 func (t *repo) SetGraphPass(x, y int, mark utils.Bitmask, color cui.Color) {
