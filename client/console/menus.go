@@ -39,9 +39,6 @@ func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
 
-	menu.Add(cui.MenuSeparator("Hide"))
-	menu.AddItems(t.getHideBranchMenuItems())
-
 	menu.Add(cui.MenuSeparator("More"))
 	menu.Add(cui.MenuItem{Text: "Show Branch", Title: "Show More Branches", Key: "->", ItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesSubSubMenuItems(selectedIndex)
