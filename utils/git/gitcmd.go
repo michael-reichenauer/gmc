@@ -53,5 +53,6 @@ func (t *gitCmd) Git(args ...string) (string, error) {
 		return string(out), err
 	}
 	log.Infof("OK: git %s (%s) %v", argsText, t.workingDir, st)
-	return string(out), nil
+	output := strings.ReplaceAll(string(out), "\r", "")
+	return output, nil
 }
