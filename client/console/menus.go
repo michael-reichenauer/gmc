@@ -69,7 +69,7 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 
 	// Branches items
 	items = append(items, cui.MenuSeparator("Branches"))
-	items = append(items, cui.MenuItem{Text: "Show/Scroll to Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesSubMenuItems(currentLineIndex)
 	}})
 	items = append(items, cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", ItemsFunc: t.getHideBranchMenuItems})
