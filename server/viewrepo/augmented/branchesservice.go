@@ -373,6 +373,13 @@ func (h *branchesService) hasBranchNameInSubject(repo *Repo, c *Commit) *Branch 
 		// use that branch if they are an ambiguous branch
 		var current *Commit
 		branch := h.tryGetBranchFromName(c, name)
+		if branch != nil && branch.TipID == c.Id {
+			// The commit is branch tip, we should not find higher/previous commit up, since tip would move up
+			c.Branch = branch
+			c.addBranch(branch)
+			c.isLikely = true
+			return branch
+		}
 		if branch != nil && branch.BottomID != "" {
 			// Found an existing branch with that name, set lowest known commit to the bottom
 			// of that known branch
@@ -383,6 +390,10 @@ func (h *branchesService) hasBranchNameInSubject(repo *Repo, c *Commit) *Branch 
 			// branch has no known last (bottom) commit, lets iterate upp (first child) as long
 			// as commits are on an ambiguous branch
 			for current = c; len(current.Children) == 1 && current.Children[0].Branch.IsAmbiguousBranch; current = current.Children[0] {
+				if branch != nil && branch.TipID == current.Id {
+					// Found the commit with the branch tip
+					break
+				}
 			}
 		}
 
