@@ -56,7 +56,8 @@ func TestSpecial(t *testing.T) {
 	// /workspaces/Dependitor
 	// /workspaces/gg
 	//repoPath := "/workspaces/gg"
-	repoPath := "/workspaces/Terminal.Gui"
+	//repoPath := "/workspaces/Terminal.Gui"
+	repoPath := "/workspaces/gmd"
 
 	//repoPath := ""
 

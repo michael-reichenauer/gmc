@@ -33,14 +33,12 @@ func (t *menus) GetMainMenu(currentLineIndex int) cui.Menu {
 
 func (t *menus) GetShowBranchesMenu(selectedIndex int) cui.Menu {
 	menu := t.ui.NewMenu("Branches")
+	menu.Add(cui.MenuSeparator("Show"))
 
 	menu.AddItems(t.getShowImmediateBranchesMenuItems(selectedIndex))
 
 	menu.Add(cui.MenuSeparator("Switch to"))
 	menu.AddItems(t.getSwitchBranchMenuItems(true))
-
-	menu.Add(cui.MenuSeparator("Hide"))
-	menu.AddItems(t.getHideBranchMenuItems())
 
 	menu.Add(cui.MenuSeparator("More"))
 	menu.Add(cui.MenuItem{Text: "Show Branch", Title: "Show More Branches", Key: "->", ItemsFunc: func() []cui.MenuItem {
@@ -72,7 +70,7 @@ func (t *menus) getMainMenuItems(currentLineIndex int) []cui.MenuItem {
 
 	// Branches items
 	items = append(items, cui.MenuSeparator("Branches"))
-	items = append(items, cui.MenuItem{Text: "Show/Scroll to Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
+	items = append(items, cui.MenuItem{Text: "Show Branch", Title: "Show Branch", Key: "->", ItemsFunc: func() []cui.MenuItem {
 		return t.getShowBranchesSubMenuItems(currentLineIndex)
 	}})
 	items = append(items, cui.MenuItem{Text: "Hide Branch", Title: "Hide Branch", Key: "<-", ItemsFunc: t.getHideBranchMenuItems})
@@ -131,8 +129,6 @@ func (t *menus) getShowImmediateBranchesMenuItems(selectedIndex int) []cui.MenuI
 	if len(items) > 0 {
 		items = append([]cui.MenuItem{cui.MenuSeparator("Show")}, items...)
 	}
-
-	items = append(items, cui.MenuSeparator("Scroll to"))
 
 	shownItems := linq.Map(t.vm.GetShownBranches(true), t.toShowBranchMenuItem)
 	items = append(items, shownItems...)

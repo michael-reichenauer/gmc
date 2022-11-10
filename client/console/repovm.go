@@ -235,8 +235,8 @@ func (t *repoVM) showCloneDialog() {
 		baseBath = paths[0] + string(os.PathSeparator)
 	}
 
-	branchView := newCloneDlg(t.ui, baseBath, t.Clone)
-	branchView.Show()
+	cloneView := newCloneDlg(t.ui, baseBath, t.Clone)
+	cloneView.Show()
 }
 
 func (t *repoVM) showCommitDiff(commitID string) {
